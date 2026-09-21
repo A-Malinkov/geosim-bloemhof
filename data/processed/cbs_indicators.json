@@ -1,0 +1,20 @@
+{
+  "_status": "not_computed_yet",
+  "_note": "Placeholder. The app treats _status=not_computed_yet as 'no data' and shows a placeholder panel. Overwrite this file with real output.",
+  "_written_by": "analysis/cbs/fetch_cbs.py",
+  "_schema": {
+    "buurt": "Bloemhof",
+    "code": "BU05991081",
+    "year": 2026,
+    "indicators": [
+      {
+        "label": "Inhabitants",
+        "value": 0,
+        "unit": "",
+        "gemeente": 0,
+        "nl": null
+      }
+    ],
+    "_source": "CBS StatLine OData table 86358NED"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "_status": "not_computed_yet",
+  "_note": "Placeholder. The app treats _status=not_computed_yet as 'no data' and shows a placeholder panel. Overwrite this file with real output.",
+  "_written_by": "analysis/abm_landuse/",
+  "_schema": {
+    "method": "cellular_automata | reinforcement_learning",
+    "cell_size_m": 10,
+    "bbox_rd": "[xmin, ymin, xmax, ymax]",
+    "classes": [
+      "residential",
+      "commercial",
+      "green",
+      "water",
+      "infrastructure"
+    ],
+    "steps": [
+      {
+        "t": 0,
+        "grid": "2D array of class indices"
+      }
+    ],
+    "shares": [
+      {
+        "t": 0,
+        "residential": 0.0
+      }
+    ]
+  }
+}

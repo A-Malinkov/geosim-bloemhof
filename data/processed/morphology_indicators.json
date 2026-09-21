@@ -1,0 +1,24 @@
+{
+  "_note": "Placeholder. The app treats _status=not_computed_yet as 'no data' and shows a placeholder panel. Overwrite this file with real output.",
+  "_written_by": "analysis/morphology/",
+  "_schema": {
+    "_per_scenario": {
+      "svf_mean": 0,
+      "fsi": 0,
+      "gsi": 0,
+      "height_mean_m": 0,
+      "height_std_m": 0,
+      "landuse_mix": 0
+    },
+    "_keys": [
+      "baseline",
+      "scenario_a",
+      "scenario_b"
+    ]
+  },
+  "baseline": {
+    "svf_mean": 0.6849,
+    "svf_median": 0.716
+  },
+  "_svf_source": "analysis/morphology/sky_view_factor.py"
+}

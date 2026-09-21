@@ -1,0 +1,18 @@
+{
+  "_status": "not_computed_yet",
+  "_note": "Placeholder. The app treats _status=not_computed_yet as 'no data' and shows a placeholder panel. Overwrite this file with real output.",
+  "_written_by": "analysis/wind_noise/",
+  "_schema": {
+    "quantity": "wind_speed_ratio | noise_laeq_db",
+    "level_m": 1.75,
+    "bbox_rd": "[xmin, ymin, xmax, ymax] in EPSG:28992",
+    "bbox_wgs84": "[west, south, east, north] in degrees \u2014 needed to drape it",
+    "shape": "[ny, nx]",
+    "values": "row-major 2D array, null = no data",
+    "summary": {
+      "mean": 0,
+      "p95": 0,
+      "exceedance_frac": 0
+    }
+  }
+}

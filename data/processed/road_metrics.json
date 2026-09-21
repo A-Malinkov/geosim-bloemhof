@@ -1,0 +1,24 @@
+{
+  "_status": "not_computed_yet",
+  "_note": "Placeholder. The app treats _status=not_computed_yet as 'no data' and shows a placeholder panel. Overwrite this file with real output.",
+  "_written_by": "analysis/roads/",
+  "_schema": {
+    "_per_scenario": {
+      "metrics": {
+        "n_nodes": 0,
+        "n_edges": 0,
+        "avg_street_length_m": 0,
+        "intersection_density_km2": 0,
+        "circuity": 0,
+        "betweenness_max": 0,
+        "walk_15min_reach_frac": 0
+      },
+      "geojson": "../data/processed/roads_<scenario>.geojson"
+    },
+    "_keys": [
+      "baseline",
+      "scenario_a",
+      "scenario_b"
+    ]
+  }
+}

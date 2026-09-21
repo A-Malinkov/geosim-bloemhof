@@ -1,0 +1,35 @@
+# ---------------------------------------------------------------- secrets
+# Holds the Cesium ion token. Never commit this.
+# Teammates: cp app/config.local.example.js app/config.local.js
+app/config.local.js
+
+# ------------------------------------------------- large, regenerable data
+# AHN elevation rasters and the SVF GeoTIFFs: ~87 MB, and every one of them
+# is rebuilt in about two minutes by:
+#   python analysis/morphology/fetch_ahn.py
+#   python analysis/morphology/sky_view_factor.py
+# git handles large binaries badly — each re-run would add another full copy
+# to history — so they stay out. The small JSON results and the figures in
+# docs/ ARE committed, because those are the actual findings.
+data/raw/*.tif
+data/processed/*.tif
+
+# --------------------------------------------------------------- Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+
+# Virtual environments never belong in the repo: ~1 GB, and they hard-code
+# absolute paths so they are not portable anyway. Build your own:
+#   python3 -m venv ~/.venvs/geosim-rotterdam
+.venv/
+venv/
+env/
+
+# ---------------------------------------------------------- OS / editor
+.DS_Store
+Thumbs.db
+*~
+*.swp
+.idea/

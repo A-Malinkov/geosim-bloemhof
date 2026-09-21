@@ -1,0 +1,18 @@
+{
+  "_status": "not_computed_yet",
+  "_note": "Placeholder. The app treats _status=not_computed_yet as 'no data' and shows a placeholder panel. Overwrite this file with real output.",
+  "_written_by": "analysis/knmi/fetch_knmi.py",
+  "_schema": {
+    "fetched_at": "ISO-8601 UTC timestamp of the fetch",
+    "source_file": "name of the KNMI NetCDF file used",
+    "station": "KNMI station number, e.g. 344",
+    "values": {
+      "temperature_C": 0,
+      "wind_speed_ms": 0,
+      "wind_dir_deg": 0,
+      "humidity_pct": 0,
+      "precipitation_mm": 0,
+      "pressure_hPa": 0
+    }
+  }
+}

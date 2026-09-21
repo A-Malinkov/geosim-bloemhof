@@ -1,0 +1,7 @@
+{
+  "type": "FeatureCollection",
+  "_status": "not_computed_yet",
+  "_written_by": "analysis/scenarios/ (or exported from QGIS)",
+  "_note": "Add Polygon features in EPSG:4326 with properties: scenario (scenario_a|scenario_b), height_m (metres above NAP), base_height_m, use, name.",
+  "features": []
+}

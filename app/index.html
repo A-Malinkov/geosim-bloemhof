@@ -1,0 +1,64 @@
+<!doctype html>
+<!-- =============================================================================
+     index.html — SHARED FILE. Coordinator-owned.
+     Adding a dashboard panel or a layer toggle does NOT require editing this file:
+     call ctx.registerPanel() / ctx.registerLayer() from your own module instead.
+     ========================================================================== -->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Bloemhof, Rotterdam — Geosimulation</title>
+
+  <!-- inline favicon: avoids a 404 in the console on a bare static server -->
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%2312161c'/%3E%3Cpath d='M2 12h3V7H2zm4.5 0h3V4h-3zM11 12h3V9h-3z' fill='%234dd0e1'/%3E%3C/svg%3E" />
+
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.145.0/Widgets/widgets.css" />
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+
+  <!-- Cesium globe -->
+  <div id="cesiumContainer"></div>
+
+  <!-- Boot / error banner -->
+  <div id="boot" class="boot">Loading CesiumJS…</div>
+
+  <!-- Left: layer toggles, filled by ctx.registerLayer() -->
+  <aside id="layerPanel" class="panel panel--left" aria-label="Map layers">
+    <header class="panel__head">
+      <h2>Layers</h2>
+      <button class="panel__collapse" data-target="layerPanel" title="Collapse">–</button>
+    </header>
+    <div id="layerPanelBody" class="panel__body">
+      <p class="muted">No layers registered.</p>
+    </div>
+  </aside>
+
+  <!-- Right: dashboard, filled by ctx.registerPanel() -->
+  <aside id="dashboard" class="panel panel--right" aria-label="Dashboard">
+    <header class="panel__head">
+      <h2>Dashboard</h2>
+      <button class="panel__collapse" data-target="dashboard" title="Collapse">–</button>
+    </header>
+
+    <!-- Scenario switcher is shared UI: it drives every module via ctx.onScenarioChange -->
+    <div class="scenario">
+      <label for="scenarioSelect">Scenario</label>
+      <select id="scenarioSelect"></select>
+    </div>
+
+    <div id="dashboardBody" class="panel__body"></div>
+  </aside>
+
+  <!-- Bottom-left status / attribution -->
+  <div id="status" class="status"></div>
+
+  <!-- CesiumJS from CDN, pinned. Must load before main.js. -->
+  <script>window.CESIUM_BASE_URL = "https://cdnjs.cloudflare.com/ajax/libs/cesium/1.145.0/";</script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.145.0/Cesium.js"></script>
+
+  <script type="module" src="./main.js"></script>
+</body>
+</html>

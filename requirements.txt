@@ -1,0 +1,38 @@
+# Geosimulation final project - Python analysis dependencies
+# Install:  python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
+# Pinned to minor versions; bump deliberately and tell the team.
+
+# --- core numerics / data ---
+numpy~=2.3
+pandas~=2.3
+scipy~=1.16
+
+# --- vector geo ---
+geopandas~=1.1
+shapely~=2.1
+pyproj~=3.7
+pyogrio~=0.11          # GeoPandas I/O engine (replaces fiona; ships binary wheels, no system GDAL needed)
+
+# --- raster geo (AHN height data) ---
+rasterio~=1.4
+rioxarray~=0.19
+xarray~=2025.9
+
+# --- networks / roads ---
+osmnx~=2.0
+networkx~=3.5
+
+# --- plotting ---
+matplotlib~=3.10
+contextily~=1.6
+
+# --- web / APIs (KNMI, CBS, PDOK) ---
+requests~=2.32
+owslib~=0.34
+
+# --- machine learning (weather prediction, RL land-use) ---
+scikit-learn~=1.7
+
+# --- notebooks ---
+jupyterlab~=4.4
+ipykernel~=6.30
