@@ -110,6 +110,57 @@ async function addDensityGrid(ctx) {
   return ds;
 }
 
+/* ---------------------------------------------------------------------------
+ * Land-use mix grid: one polygon per cell, shaded by Shannon entropy.
+ * Written by analysis/morphology/landuse_mix.py.
+ * ------------------------------------------------------------------------ */
+async function addLanduseGrid(ctx) {
+  const { Cesium, viewer } = ctx;
+  const geo = await ctx.loadJson("../data/processed/landuse_grid.geojson",
+                                 { quiet: true });
+  if (!geo?.features?.length) return null;
+
+  const vals = geo.features.filter((f) => !f.properties.sparse)
+                           .map((f) => f.properties.shannon);
+  const hi = vals.length ? Math.max(...vals) : 1;
+
+  const ds = await Cesium.GeoJsonDataSource.load(geo, { clampToGround: true });
+  for (const e of ds.entities.values) {
+    const p = e.properties;
+    const sh = p?.shannon?.getValue?.() ?? 0;
+    const sparse = p?.sparse?.getValue?.() ?? false;
+    const t = Math.max(0, Math.min(1, sh / (hi || 1)));
+    e.polygon.material = Cesium.Color
+      .fromCssColorString(`hsl(213, ${Math.round(45 + 40 * t)}%, ${Math.round(88 - 48 * t)}%)`)
+      .withAlpha(sparse ? 0.2 : 0.72);
+    e.polygon.outline = false;
+    const share = (k) => {
+      const v = p?.[`share_${k}`]?.getValue?.();
+      return v ? `<tr><td>${k}</td><td>${(v * 100).toFixed(0)} %</td></tr>` : "";
+    };
+    e.description =
+      `<table>` +
+      `<tr><td>Shannon</td><td>${sh.toFixed(3)}</td></tr>` +
+      `<tr><td>Simpson</td><td>${(p?.simpson?.getValue?.() ?? 0).toFixed(3)}</td></tr>` +
+      `<tr><td>units</td><td>${p?.n_units?.getValue?.() ?? "—"}</td></tr>` +
+      `<tr><td>dominant</td><td>${p?.dominant?.getValue?.() ?? "—"}</td></tr>` +
+      `</table><hr><table>` +
+      ["residential", "retail", "office", "industry", "education",
+       "healthcare", "sport", "accommodation", "assembly"].map(share).join("") +
+      `</table>`;
+  }
+  await viewer.dataSources.add(ds);
+  ds.show = false;
+  ctx.registerLayer({
+    id: "landuseGrid",
+    label: `Land-use mix (${geo._cell_size_m ?? 100} m)`,
+    group: "Analysis",
+    show: false,
+    target: ds,
+  });
+  return ds;
+}
+
 /** Small inline histogram, drawn as an SVG bar chart. */
 function histogramSvg(hist, mean) {
   if (!hist?.counts?.length) return "";
@@ -199,6 +250,44 @@ export async function setup(ctx) {
       what: "Building density and height variation not computed yet.",
       produces: "data/processed/density_summary.json",
       owner: "analysis/morphology/density_height.py",
+    });
+  }
+
+  /* ---- land-use mix ------------------------------------------------------ */
+  const lu = await ctx.loadJson("../data/processed/landuse_summary.json",
+                                { quiet: true });
+  const luBox = document.createElement("div");
+  body.appendChild(luBox);
+
+  if (lu?.overall) {
+    await addLanduseGrid(ctx);
+    const o = lu.overall;
+    const b = lu.buurt || {};
+    const comp = (b.composition || lu.composition || []).slice(0, 6);
+    const head = b.shannon_area ?? o.shannon_area;
+    luBox.innerHTML =
+      `<h4>Land-use mix</h4>` +
+      `<table class="kv"><tbody>` +
+      `<tr><td>Shannon (area)</td><td>${head.toFixed(3)}</td></tr>` +
+      `<tr><td>Shannon (units)</td><td>${(b.shannon_count ?? o.shannon_count).toFixed(3)}</td></tr>` +
+      `<tr><td>Simpson</td><td>${(b.simpson_area ?? o.simpson_area).toFixed(3)}</td></tr>` +
+      `<tr><td>dominant use</td><td>${o.dominant} (${(o.dominant_share * 100).toFixed(0)} %)</td></tr>` +
+      `</tbody></table>` +
+      `<table class="kv"><thead><tr><th>use</th><th>floor area</th></tr></thead><tbody>` +
+      comp.map((x) =>
+        `<tr><td>${x.category}</td><td>${(x.share * 100).toFixed(1)} %</td></tr>`).join("") +
+      `</tbody></table>` +
+      `<p class="muted">Normalised Shannon entropy over ` +
+      `${lu.parameters.n_categories_in_scheme} BAG use classes, weighted by ` +
+      `usable floor area. 0 = one use only, 1 = an even mix. ` +
+      `Built floor space only — parks, water and streets are not in BAG; ` +
+      `use GSI above for the built/unbuilt split. ` +
+      `Toggle the grid under <em>Analysis</em>.</p>`;
+  } else {
+    ctx.placeholder(luBox, {
+      what: "Land-use mix not computed yet.",
+      produces: "data/processed/landuse_summary.json",
+      owner: "analysis/morphology/landuse_mix.py",
     });
   }
 

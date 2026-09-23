@@ -11,6 +11,8 @@ Owner: **Atanas Malinkov** · feeds `app/modules/indicators.js` and `app/modules
 | `fetch_buildings.py` | 3DBAG footprint areas, storeys and heights via the OGC API | `data/raw/buildings_3dbag.geojson` |
 | `sky_view_factor.py` | Sky View Factor by the multi-directional horizon-angle method | `data/processed/svf*.tif`, `svf_overlay.png`, `svf_summary.json` |
 | `density_height.py` | Spacematrix density (GSI, FSI, L, OSR) and height variation | `data/processed/density_grid.geojson`, `density_summary.json` |
+| `fetch_landuse.py` | BAG addressable units — function and floor area per unit | `data/raw/bag_verblijfsobjecten.geojson` |
+| `landuse_mix.py` | Shannon and Simpson land-use mix indices | `data/processed/landuse_grid.geojson`, `landuse_summary.json` |
 | `make_figures.py` | every report figure | `docs/fig_*.png` |
 
 Run them in this order — the analyses need the downloads first.
@@ -21,6 +23,8 @@ python analysis/morphology/fetch_trees.py       # tree register     ~30 s
 python analysis/morphology/fetch_buildings.py   # 3DBAG buildings   ~1 min
 python analysis/morphology/sky_view_factor.py   # SVF               ~40 s
 python analysis/morphology/density_height.py    # density + height  ~15 s
+python analysis/morphology/fetch_landuse.py     # BAG units         ~5 s
+python analysis/morphology/landuse_mix.py       # land-use mix      ~5 s
 python analysis/morphology/make_figures.py      # all figures       ~40 s
 ```
 
@@ -35,7 +39,11 @@ python analysis/morphology/make_figures.py      # all figures       ~40 s
 - [x] **Height variation** — 8.7 m mean, σ 2.8 m,
       tallest 30.1 m (1,830 principal buildings);
       within-cell σ averages 1.95 m.
-- [ ] Land-use mix
+- [x] **Land-use mix** — Shannon 0.268 of a possible 1.0 for Bloemhof
+      (0.347 across the study square); Simpson 0.249.
+      81% of built floor space is residential.
+
+**Component 4.3 is complete.**
 
 ## Sky View Factor — method
 
@@ -174,3 +182,65 @@ This is the most direct way to show what the design does. Add the proposed
 massing's footprints and floor counts to the building set, re-run, and compare
 GSI/FSI/L/OSR against the baseline — the Spacematrix plot will show the new
 fabric moving relative to the existing one.
+
+
+## Land-use mix — method
+
+Two indices over the BAG `gebruiksdoel` of every addressable unit, weighted by
+usable floor area:
+
+```
+Shannon (normalised)   H = -sum(p_i * ln p_i) / ln(N)      0 = one use, 1 = even mix
+Simpson                D = 1 - sum(p_i^2)                  chance two m² differ
+```
+
+### Results
+
+| | Bloemhof | study square |
+|---|---|---|
+| Shannon, floor-area weighted | **0.268** | 0.347 |
+| Shannon, unit-count weighted | 0.120 | 0.122 |
+| Simpson | 0.249 | 0.333 |
+| Residential share of floor space | — | 81.3 % |
+
+Per 100 m cell the mix ranges 0.00–0.63, mean 0.168.
+
+### Choices worth defending in the report
+
+- **Weighted by floor area, not unit count.** This more than doubles the measured
+  mix (0.120 → 0.268 for Bloemhof) because non-residential units are
+  individually much larger: 81% of floor space is residential but about
+  95% of *units* are. Counting units would let a 40 m² studio outweigh a
+  5,000 m² supermarket. Both numbers are reported so the choice is visible.
+- **N is the full BAG vocabulary (11 classes), fixed a priori** — not "the
+  classes that happen to occur here". Otherwise a cell with homes and one shop
+  would outscore a cell of homes only because its category list is shorter, and
+  cells could not be compared with each other or with another neighbourhood.
+- **Simpson is reported alongside Shannon** as a robustness check. Shannon is
+  sensitive to rare categories; Simpson is dominated by the big ones. They agree
+  here, which is reassuring.
+- **Multi-function units split their floor area evenly.** `gebruiksdoel` can be
+  comma-separated — a shop with a flat above it. Dropping those records or
+  taking the first listed function would both bias the result.
+- **Only units actually in use.** BAG also carries planned, under-construction
+  and withdrawn records; 9,880 of 10,053 survived that filter.
+
+### Why not CBS Bestand Bodemgebruik?
+
+It is the obvious "land use" dataset and was tried first. It is the wrong tool at
+this scale: the newest edition on PDOK is **2017**, and it resolves the whole
+144 ha study square into **10 polygons of 4 categories** with a minimum mapping
+unit larger than a city block here. The resulting index could not vary within
+the neighbourhood. BAG gives ~10,000 current records instead.
+
+**The limitation that buys:** BAG holds addressable units, so parks, water,
+streets and squares are invisible. This is a mix of *built floor space*, not of
+land cover. Pair it with GSI from the density work, which is exactly the
+built/unbuilt split BAG cannot see — together they cover both questions.
+
+### For the scenario comparison
+
+Land-use mix is the indicator our design moves most directly. Add the proposed
+units with their functions and floor areas, re-run, and compare. Bloemhof at
+0.268 is strongly mono-functional, so introducing non-residential ground
+floors is an easy, defensible and measurable improvement.

@@ -456,6 +456,67 @@ def fig_density_maps(dens, grid_geo):
     save(fig, "fig_density_maps.png")
 
 
+# ============================================================ 9. land-use mix
+def fig_landuse(lu, grid_geo):
+    """
+    Composition of built floor space, and how the mix varies across the area.
+
+    The composition bars are nominal categories, so they get ONE colour — a
+    value ramp there would imply an order the categories do not have. The map
+    encodes a magnitude (entropy), so it gets the sequential ramp.
+    """
+    comp = [c for c in lu["composition"] if c["share"] > 0][:9][::-1]
+    names = [c["category"] for c in comp]
+    shares = [100 * c["share"] for c in comp]
+
+    g = grid_geo.get("_grid") or {}
+    nx, ny = g.get("nx"), g.get("ny")
+    a = np.full((ny, nx), np.nan)
+    for f in grid_geo["features"]:
+        pr = f["properties"]
+        if pr.get("sparse"):
+            continue
+        a[pr["row"], pr["col"]] = pr["shannon"]
+    a = a[::-1]
+
+    fig, (ax, ax2) = plt.subplots(1, 2, figsize=(7.4, 4.3),
+                                  gridspec_kw={"width_ratios": [1.15, 1]})
+    tidy(ax, xgrid=True)
+    y = np.arange(len(comp))
+    ax.barh(y, shares, color=SERIES_1, height=0.66, linewidth=0)
+    ax.set_yticks(y, names, fontsize=8.5, color=INK)
+    ax.set_xlabel("share of usable floor area (%)")
+    ax.set_title("What the floor space is used for", loc="left",
+                 fontsize=9.5, pad=6)
+    top = max(shares)
+    ax.text(top - 1, y[-1], f"{top:.0f}%", va="center", ha="right",
+            fontsize=8.5, color="#ffffff", fontweight="bold")
+    ax.set_xlim(0, top * 1.06)
+
+    im = ax2.imshow(a, cmap=SEQ, vmin=0, vmax=float(np.nanmax(a)),
+                    interpolation="nearest")
+    ax2.set_xticks([]); ax2.set_yticks([])
+    for sp in ax2.spines.values():
+        sp.set_visible(False)
+    ax2.set_title("Where the mix is (Shannon entropy)", loc="left",
+                  fontsize=9.5, pad=6)
+    cb = fig.colorbar(im, ax=ax2, fraction=0.046, pad=0.02)
+    cb.outline.set_visible(False)
+    cb.ax.tick_params(colors=MUTED, length=0, labelsize=7.5)
+
+    o = lu["overall"]
+    b = lu.get("buurt") or {}
+    fig.suptitle(f"Land-use mix — {STUDY_AREA.name}, Rotterdam",
+                 x=0.012, ha="left", fontsize=11, fontweight="bold", color=INK)
+    fig.text(0.012, 0.912,
+             f"Shannon {b.get('shannon_area', o['shannon_area']):.3f} of a possible 1.0 · "
+             f"{100 * o['dominant_share']:.0f}% of floor space is {o['dominant']} · "
+             f"cells with fewer than 10 units left blank",
+             fontsize=8.5, color=INK_2, ha="left")
+    fig.tight_layout(rect=[0, 0, 1, 0.885])
+    save(fig, "fig_landuse_mix.png")
+
+
 # ==================================================================== main
 def main() -> int:
     need = [PROCESSED / "svf.tif", PROCESSED / "svf_summary.json",
@@ -500,6 +561,14 @@ def main() -> int:
         fig_density_maps(dens, grid_geo)
     else:
         print("  (skipping density figures — run density_height.py first)")
+
+    lu_path = PROCESSED / "landuse_summary.json"
+    lug_path = PROCESSED / "landuse_grid.geojson"
+    if lu_path.exists() and lug_path.exists():
+        fig_landuse(json.loads(lu_path.read_text()),
+                    json.loads(lug_path.read_text()))
+    else:
+        print("  (skipping land-use figure — run landuse_mix.py first)")
 
     # the canopy effect is a finding, not just a picture — keep the numbers
     veg["svf_canopy_effect"] = effect

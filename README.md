@@ -249,8 +249,9 @@ you run the scripts once to fill in the rest.
 
 ## 7. What already works
 
-Component **2b (3D vegetation)** is done, and component **3** is done except for
-land-use mix (Atanas Malinkov). To reproduce from scratch:
+Components **2b (3D vegetation)** and **3 (all four morphology indicators)** are
+done, and the weather dashboard is live (Atanas Malinkov). To reproduce from
+scratch:
 
 ```bash
 source ~/.venvs/geosim-rotterdam/bin/activate
@@ -260,6 +261,8 @@ python analysis/morphology/fetch_trees.py        # 2,172 trees, 206 species  (~3
 python analysis/morphology/fetch_buildings.py    # 5,804 buildings from 3DBAG(~1 min)
 python analysis/morphology/sky_view_factor.py    # SVF raster + statistics   (~40 s)
 python analysis/morphology/density_height.py     # Spacematrix density       (~15 s)
+python analysis/morphology/fetch_landuse.py      # 9,880 BAG units           (~5 s)
+python analysis/morphology/landuse_mix.py        # land-use mix indices      (~5 s)
 python analysis/morphology/make_figures.py       # report figures into docs/ (~40 s)
 ```
 
@@ -276,6 +279,7 @@ and *Sky View Factor* appears under **Analysis** in the layer panel.
 | SVF under a tree crown vs 15 m from any tree | **0.40 vs 0.70** — trees remove 43 % of visible sky |
 | Density (Spacematrix, Bloemhof) | **GSI 0.324 · FSI 1.024 · 3.16 storeys · OSR 0.66** |
 | Building height | **8.7 m** mean, σ 2.8 m, tallest 30.1 m |
+| Land-use mix (Bloemhof) | Shannon **0.268** of 1.0 · 81 % of floor space residential |
 
 ### Figures (`docs/`)
 
@@ -289,6 +293,7 @@ and *Sky View Factor* appears under **Analysis** in the layer panel.
 | `fig_tree_map.png` | where the trees are, sized by crown, coloured by height |
 | `fig_spacematrix.png` | GSI–FSI scatter with storey and OSR isolines — what kind of density this is |
 | `fig_density_maps.png` | FSI and within-cell height variation across the study area |
+| `fig_landuse_mix.png` | what the floor space is used for, and where the mix is |
 
 Everything else is a wired-up skeleton waiting for its owner.
 
