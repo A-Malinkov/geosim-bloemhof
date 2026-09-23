@@ -150,6 +150,32 @@ export const CONFIG = {
       dataset: "10-minute-in-situ-meteorological-observations",
       datasetVersion: "1.0",
     },
+    /* LIVE FEED — the one source the browser can actually poll.
+     *
+     * Open-Meteo serves KNMI's own numerical weather models and, unlike KNMI's
+     * API, it needs no key and sends CORS headers, so the page can fetch it
+     * directly and refresh itself. That is what makes the dashboard live
+     * rather than a file someone regenerates by hand.
+     *
+     * Model: knmi_harmonie_arome_netherlands — KNMI HARMONIE-AROME, 2 km grid
+     * over the Netherlands and Belgium, updated hourly, out to ~2.5 days.
+     * It returns null for pressure; knmi_seamless has pressure but is a
+     * coarser KNMI/ECMWF blend. Pressure is not used in this project, so we
+     * take the higher resolution and leave pressure out.
+     *
+     * Free tier: 10,000 calls/day, 5,000/hour, 600/minute, non-commercial use.
+     * Polling every 5 minutes from one browser is ~288 calls/day.
+     * Data is CC BY 4.0 and MUST be credited — see `attribution` below.
+     * Verified 2026-09-23. */
+    openMeteo: {
+      forecast: "https://api.open-meteo.com/v1/forecast",
+      archive: "https://archive-api.open-meteo.com/v1/archive",
+      model: "knmi_harmonie_arome_netherlands",
+      refreshSeconds: 300,
+      forecastDays: 3,
+      attribution: "Weather data by Open-Meteo.com (CC BY 4.0), KNMI HARMONIE-AROME",
+    },
+
     // KNMI historical daily station data. Returns JSON. POST form-encoded.
     // No CORS headers -> call it from Python, not the browser.
     knmiDaily: "https://www.daggegevens.knmi.nl/klimatologie/daggegevens",

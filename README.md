@@ -186,19 +186,35 @@ All verified reachable on 2026-09-21. URLs live in `config.js` and
 | Elevation | AHN via PDOK WCS, `dsm_05m` / `dtm_05m` | 0.5 m, EPSG:28992, NAP heights |
 | Neighbourhoods | PDOK CBS wijkenbuurten 2025 WFS | ⚠ ignores `cql_filter`; needs an OGC Filter XML |
 | Demographics | CBS StatLine OData `86358NED` (2026) | 2025 = `86165NED`, 2024 = `85984NED` |
-| Weather, live | KNMI Data Platform Open Data API | see the warning below |
+| Weather, live | Open-Meteo, KNMI HARMONIE-AROME 2 km | browser-callable, no key, CC BY 4.0 |
+| Weather, sensors | KNMI Data Platform Open Data API | Python only — see the warning below |
 | Weather, historical | `daggegevens.knmi.nl`, station 344 | JSON, no CORS → Python only |
 
-### ⚠ KNMI: two traps
+### ⚠ KNMI: two traps, and how the live feed works around them
 1. **The dataset everyone's tutorial uses is dead.** `Actueel10mindataKNMIstations`
    v2 stopped updating on 2025-10-02. The live one is
    `10-minute-in-situ-meteorological-observations` version `1.0`.
 2. **The browser cannot call the KNMI API.** A plain `curl` GET succeeds and even
    returns `Access-Control-Allow-Origin: *`, which is misleading: the browser
    sends a CORS preflight first because of the `Authorization` header, and KNMI's
-   `OPTIONS` response has no CORS headers, so the fetch is blocked. Fetch KNMI
-   data in Python and write JSON to `data/processed/`. Do not re-add a `fetch()`
-   to `api.dataplatform.knmi.nl` in the app.
+   `OPTIONS` response has no CORS headers, so the fetch is blocked. Do not re-add
+   a `fetch()` to `api.dataplatform.knmi.nl` in the app — it fails in every browser.
+
+**So the weather dashboard uses two paths, and it needs both:**
+
+| | Source | Where | What it is |
+|---|---|---|---|
+| **Live, self-refreshing** | Open-Meteo, model `knmi_harmonie_arome_netherlands` | browser, direct | KNMI's own HARMONIE-AROME forecast model, 2 km grid, hourly updates |
+| **Actual sensor readings** | KNMI Open Data + `daggegevens` | Python → JSON | the real station observations §4.4 asks for — *still to be written* |
+
+Open-Meteo needs no key and sends CORS headers, so the page polls it every
+5 minutes and updates itself. That is what makes the dashboard genuinely live
+rather than a file someone regenerates by hand — which the rubric distinguishes
+between. The panel labels which is which, so nobody mistakes model output for a
+sensor reading.
+
+Open-Meteo's free tier is 10,000 calls/day (we use ~288) and its data is
+**CC BY 4.0 — the attribution in the panel must stay**.
 
 The AHN, 3DBAG, Rotterdam 3D and PDOK services all send `Access-Control-Allow-Origin: *`
 and work fine from the browser.
