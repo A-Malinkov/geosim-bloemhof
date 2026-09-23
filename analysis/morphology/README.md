@@ -113,6 +113,13 @@ proposed massing into a copy of the DSM and re-run. That work belongs in
 
 ## Tree register — notes
 
+> **If `fetch_trees.py` fails with HTTP 500**, the Rotterdam ArcGIS host
+> (`diensten.rotterdam.nl`) is down — it does this periodically and it is not a
+> problem with the code. The script exits 2 with an explanation.
+> `data/processed/trees.geojson` is committed, so the app and every downstream
+> analysis carry on. The 3D tree tilesets in the app come from
+> `www.3drotterdam.nl`, a different host, and are unaffected.
+
 - `HOOGTE` is a **class** ("12–15 m."), not a measurement. `height_m` is the class
   midpoint; `height_min_m`/`height_max_m` keep the bounds so nobody mistakes it
   for a survey value.

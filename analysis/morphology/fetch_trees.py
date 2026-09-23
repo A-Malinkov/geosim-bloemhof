@@ -148,10 +148,30 @@ def sample_ground(xs, ys):
 
 
 def main() -> int:
-    bbox = bbox_rd()
-    print(f"Rotterdam tree register — {STUDY_AREA.name}, "
-          f"{STUDY_AREA.radius_m} m radius")
-    feats = fetch_all(bbox)
+    import argparse
+    ap = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--radius", type=int, default=STUDY_AREA.radius_m,
+                    help="half-width of the square around the study centre, in metres")
+    args = ap.parse_args()
+
+    bbox = bbox_rd(args.radius)
+    print(f"Rotterdam tree register — {STUDY_AREA.name}, {args.radius} m radius")
+    try:
+        feats = fetch_all(bbox)
+    except requests.HTTPError as exc:
+        code = exc.response.status_code if exc.response is not None else "?"
+        print(f"\n  the Rotterdam tree service returned HTTP {code}.")
+        print("  This host (diensten.rotterdam.nl) goes down from time to time and")
+        print("  it is nothing to do with this code — the 3D tilesets on")
+        print("  www.3drotterdam.nl are a different host and are unaffected.")
+        print("  data/processed/trees.geojson is committed, so the app and every")
+        print("  downstream analysis keep working. Try again later.")
+        return 2
+    except requests.RequestException as exc:
+        print(f"\n  could not reach the tree service: {type(exc).__name__} {exc}")
+        print("  data/processed/trees.geojson is committed; nothing is blocked.")
+        return 2
     if not feats:
         print("no trees returned")
         return 1
