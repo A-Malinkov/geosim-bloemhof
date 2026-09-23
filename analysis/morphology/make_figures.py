@@ -517,6 +517,80 @@ def fig_landuse(lu, grid_geo):
     save(fig, "fig_landuse_mix.png")
 
 
+# ========================================================= 10. land-use ABM
+def fig_abm(ca, rl):
+    """Final configurations from the CA, the RL plan, and the learning curve."""
+    import matplotlib.patches as mpatches
+    from matplotlib.colors import ListedColormap
+
+    classes = ca["classes"]
+    cols = [tuple(c / 255 for c in ca["colours"][k]) for k in classes]
+    cmap = ListedColormap(cols)
+    names = list(ca["scenarios"].keys())
+
+    def grid_of(png_dir, entry):
+        g = np.array(entry, dtype="int16")
+        return g
+
+    panels = []
+    for n in names:
+        sc = ca["scenarios"][n]
+        panels.append((n, np.array(sc["steps"][-1]["grid"], dtype="int16"),
+                       sc["score"]["landuse_mix"]))
+    if rl:
+        panels.append(("RL agent", np.array(rl["best_grid"], dtype="int16"),
+                       rl["score"]["landuse_mix"]))
+
+    ncol = len(panels)
+    fig = plt.figure(figsize=(7.4, 5.0))
+    gs = fig.add_gridspec(2, ncol, height_ratios=[2.5, 1.0], hspace=0.30,
+                          wspace=0.06, top=0.84, bottom=0.10, left=0.07, right=0.99)
+
+    for i, (name, g, mix) in enumerate(panels):
+        ax = fig.add_subplot(gs[0, i])
+        ax.imshow(g, cmap=cmap, vmin=0, vmax=len(classes) - 1,
+                  interpolation="nearest")
+        ax.set_xticks([]); ax.set_yticks([])
+        for sp in ax.spines.values():
+            sp.set_visible(False)
+        star = " *" if name == ca.get("preferred") else ""
+        ax.set_title(f"{name}{star}\nmix {mix:.3f}", fontsize=8.5, color=INK, pad=4)
+
+    ax2 = fig.add_subplot(gs[1, :])
+    tidy(ax2, ygrid=True)
+    if rl and rl.get("learning_curve"):
+        c = np.array(rl["learning_curve"])
+        ax2.plot(c, color=SERIES_1, lw=0.9, alpha=0.45)
+        k = max(1, len(c) // 20)
+        smooth = np.convolve(c, np.ones(k) / k, mode="valid")
+        ax2.plot(np.arange(len(smooth)) + k // 2, smooth, color=SERIES_2, lw=2)
+        base = rl["baseline_objective"]
+        ax2.axhline(base, color=MUTED, lw=1)
+        ax2.text(len(c) * 0.01, base, " current situation", fontsize=7.5,
+                 color=INK_2, va="bottom")
+        lo = min(base, float(c.min())) - 0.03
+        hi = float(c.max()) + 0.06          # headroom so the legend clears the line
+        ax2.set_ylim(lo, hi)
+        ax2.set_xlim(0, len(c) - 1)
+        ax2.set_xlabel("RL training episode")
+        ax2.set_ylabel("objective")
+    handles = [mpatches.Patch(color=cols[classes.index(k)], label=k)
+               for k in ("residential", "retail", "amenity", "green", "industry")]
+    ax2.legend(handles=handles, frameon=False, fontsize=7.5, ncol=5,
+               loc="upper center", bbox_to_anchor=(0.5, 1.30), handlelength=1.1)
+    for t in ax2.get_legend().get_texts():
+        t.set_color(INK_2)
+
+    fig.suptitle("Land-use configurations from the agent-based models",
+                 x=0.012, y=0.975, ha="left", fontsize=11, fontweight="bold",
+                 color=INK)
+    fig.text(0.012, 0.915,
+             "25 m cells · CA rules are assumed, the RL agent learns them · "
+             "* = preferred by the objective",
+             fontsize=8.5, color=INK_2, ha="left")
+    save(fig, "fig_landuse_abm.png")
+
+
 # ==================================================================== main
 def main() -> int:
     need = [PROCESSED / "svf.tif", PROCESSED / "svf_summary.json",
@@ -569,6 +643,16 @@ def main() -> int:
                     json.loads(lug_path.read_text()))
     else:
         print("  (skipping land-use figure — run landuse_mix.py first)")
+
+    abm_path = PROCESSED / "landuse_abm.json"
+    if abm_path.exists():
+        abm = json.loads(abm_path.read_text())
+        if abm.get("scenarios"):
+            rl_path = PROCESSED / "landuse_rl.json"
+            rl = json.loads(rl_path.read_text()) if rl_path.exists() else None
+            fig_abm(abm, rl)
+    else:
+        print("  (skipping ABM figure — run ca_landuse.py first)")
 
     # the canopy effect is a finding, not just a picture — keep the numbers
     veg["svf_canopy_effect"] = effect

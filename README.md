@@ -267,6 +267,10 @@ python analysis/morphology/make_figures.py       # report figures into docs/ (~4
 
 python analysis/knmi/fetch_knmi.py               # sensors + 5 y history     (~2 min)
 python analysis/knmi/train_forecast.py           # train + score the models  (~6 min)
+
+python analysis/abm_landuse/fetch_landcover.py   # OSM green/water/roads     (~30 s)
+python analysis/abm_landuse/ca_landuse.py        # cellular automaton        (~5 s)
+python analysis/abm_landuse/rl_landuse.py        # RL agent                  (~40 s)
 ```
 
 > The LSTM needs PyTorch, which is **not** in `requirements.txt` (~780 MB).
@@ -289,6 +293,7 @@ and *Sky View Factor* appears under **Analysis** in the layer panel.
 | Land-use mix (Bloemhof) | Shannon **0.268** of 1.0 · 81 % of floor space residential |
 | Weather forecast (temperature, +6 h) | MAE **1.28 °C**, 55 % better than assuming no change |
 | Weather forecast (wind, +6 h) | MAE **1.14 m/s** — but it under-predicts strong winds by 0.6 m/s |
+| Land-use model | CA prefers **scenario_b** (mix 0.460); RL agent reaches 0.535 |
 
 ### Figures (`docs/`)
 
@@ -303,6 +308,7 @@ and *Sky View Factor* appears under **Analysis** in the layer panel.
 | `fig_spacematrix.png` | GSI–FSI scatter with storey and OSR isolines — what kind of density this is |
 | `fig_density_maps.png` | FSI and within-cell height variation across the study area |
 | `fig_landuse_mix.png` | what the floor space is used for, and where the mix is |
+| `fig_landuse_abm.png` | land-use configurations from the CA and the RL agent, plus the learning curve |
 
 Everything else is a wired-up skeleton waiting for its owner.
 

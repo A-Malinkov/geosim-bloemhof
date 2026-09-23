@@ -14,6 +14,10 @@ app/config.local.js
 data/raw/*.tif
 data/processed/*.tif
 
+# osmnx writes its HTTP cache here when analysis/abm_landuse/fetch_landcover.py
+# runs. Regenerable, and it is just a copy of Overpass responses.
+cache/
+
 # --------------------------------------------------------------- Python
 __pycache__/
 *.py[cod]

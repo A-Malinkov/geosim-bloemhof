@@ -255,3 +255,11 @@ table.kv tr:last-child td { border-bottom: none; }
 @media (prefers-reduced-motion: reduce) {
   .live { animation: none; }
 }
+
+/* --------------------------------------------------- land-use model legend */
+.lgdwrap { margin: 6px 0 2px; line-height: 1.9; }
+.lgd { font-size: 10.5px; color: var(--text-dim); margin-right: 8px; white-space: nowrap; }
+.lgd i {
+  display: inline-block; width: 9px; height: 9px; border-radius: 2px;
+  margin-right: 3px; vertical-align: -1px;
+}
