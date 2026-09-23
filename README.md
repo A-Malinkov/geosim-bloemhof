@@ -11,6 +11,11 @@ Change both if the site moves; nothing else hard-codes it.
 
 ---
 
+> **Using an AI assistant on this project?** Point it at
+> [CLAUDE.md](CLAUDE.md) (or [AGENTS.md](AGENTS.md) for tools that read that
+> instead). They carry the conventions and the data-source traps that cost us
+> the most time, so an assistant starting cold does not rediscover them.
+
 ## 1. Getting set up
 
 ### Get the project
