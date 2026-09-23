@@ -92,7 +92,7 @@ Check its root is the project folder; if the data files 404, use `http.server`.
 | 4 | KNMI weather + AI prediction | `app/modules/knmi.js` | `analysis/knmi/` |
 | 5 | Wind + noise simulation | `app/modules/wind_noise.js` | `analysis/wind_noise/` |
 | 6 | CBS socio-demographics | `app/modules/cbs.js` | `analysis/cbs/` |
-| 7 | Agent-based land-use model | `app/modules/landuse.js` | `analysis/abm_landuse/` |
+| 7 | **Agent-based land-use model** — *Atanas Malinkov* | `app/modules/landuse.js` | `analysis/abm_landuse/` |
 | 8 | Road network optimization | `app/modules/roads.js` | `analysis/roads/` |
 | 9 | Design scenarios | `app/modules/scenarios.js` | `analysis/scenarios/` |
 
@@ -254,7 +254,8 @@ you run the scripts once to fill in the rest.
 
 ## Project status
 
-Generated from the outputs in `data/processed/`, not maintained by hand.
+Maintained by hand. Run `python analysis/check_docs.py` to verify the
+numbers here still match `data/processed/`.
 
 | # | Component | Status | Owner |
 |---|---|---|---|
@@ -317,8 +318,8 @@ and *Sky View Factor* appears under **Analysis** in the layer panel.
 | Density (Spacematrix, Bloemhof) | **GSI 0.324 · FSI 1.024 · 3.16 storeys · OSR 0.66** |
 | Building height | **8.7 m** mean, σ 2.8 m, tallest 30.1 m |
 | Land-use mix (Bloemhof) | Shannon **0.268** of 1.0 · 81 % of floor space residential |
-| Weather forecast (temperature, +6 h) | MAE **1.28 °C**, 55 % better than assuming no change |
-| Weather forecast (wind, +6 h) | MAE **1.14 m/s** — but it under-predicts strong winds by 0.6 m/s |
+| Weather forecast (temperature, +6 h) | MAE **1.29 °C**, 54 % better than assuming no change |
+| Weather forecast (wind, +6 h) | MAE **1.13 m/s** — but it under-predicts strong winds by 0.5 m/s |
 | Land-use model | CA prefers **scenario_b** (mix 0.482); RL agent reaches 0.560 |
 
 ### Figures (`docs/`)

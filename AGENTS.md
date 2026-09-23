@@ -36,7 +36,8 @@ cost you time:
    asserting a URL or an API shape. Assert that your file edits actually landed.
 
 9. **READMEs embed computed numbers.** Re-running an analysis silently
-   invalidates them; regenerate and audit afterwards.
+   invalidates them. Regenerate the affected README, then run
+   `python analysis/check_docs.py`.
 
 10. **Check the browser console** before calling anything done. Zero exceptions
     and zero failed requests is the standing bar.
