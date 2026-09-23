@@ -1,0 +1,686 @@
+{
+  "study_area": "Bloemhof",
+  "method": "Spacematrix (Berghauser Pont & Haupt 2010): GSI, FSI, L, OSR",
+  "source": "3DBAG v20250903 (TU Delft), attributes b3_opp_grond / b3_bouwlagen / b3_h_dak_50p / b3_h_maaiveld",
+  "parameters": {
+    "cell_size_m": 100.0,
+    "storey_height_m": 3.078,
+    "storey_height_source": "median of 3239 buildings with both b3_bouwlagen and a height",
+    "principal_min_footprint_m2": 40.0,
+    "principal_min_height_m": 4.0,
+    "min_buildings_per_cell": 3
+  },
+  "counts": {
+    "buildings_total": 5804,
+    "buildings_principal": 3201,
+    "floors_from_3dbag": 3251,
+    "floors_estimated": 2553,
+    "outbuilding_share_of_count": 0.448,
+    "outbuilding_share_of_built_area": 0.104
+  },
+  "grid": {
+    "n_cells_with_buildings": 121,
+    "n_cells_used": 116,
+    "gsi": {
+      "n": 116,
+      "mean": 0.311,
+      "std": 0.123,
+      "median": 0.314,
+      "p10": 0.161,
+      "p90": 0.429,
+      "max": 0.832
+    },
+    "fsi": {
+      "n": 116,
+      "mean": 1.08,
+      "std": 0.564,
+      "median": 1.011,
+      "p10": 0.459,
+      "p90": 1.598,
+      "max": 3.553
+    },
+    "layers": {
+      "n": 116,
+      "mean": 3.445,
+      "std": 1.044,
+      "median": 3.424,
+      "p10": 2.09,
+      "p90": 4.763,
+      "max": 7.063
+    },
+    "osr": {
+      "n": 116,
+      "mean": 1.179,
+      "std": 2.053,
+      "median": 0.674,
+      "p10": 0.359,
+      "p90": 1.879,
+      "max": 17.542
+    },
+    "height_mean_m": {
+      "n": 116,
+      "mean": 10.887,
+      "std": 2.893,
+      "median": 10.803,
+      "p10": 6.599,
+      "p90": 14.881,
+      "max": 17.623
+    },
+    "height_std_m": {
+      "n": 115,
+      "mean": 1.954,
+      "std": 1.823,
+      "median": 1.469,
+      "p10": 0.549,
+      "p90": 3.404,
+      "max": 14.764
+    }
+  },
+  "buurt": {
+    "name": "Bloemhof",
+    "code": "BU05991081",
+    "buurt_area_ha": 78.84,
+    "surveyed_area_ha": 58.94,
+    "coverage_fraction": 0.7476,
+    "_denominator_note": "GSI and FSI use the surveyed area (buurt clipped to the study square), not the full buurt, so they are not diluted by the part outside the study area.",
+    "land_area_m2": 589427.5,
+    "land_area_ha": 58.94,
+    "n_buildings": 3539,
+    "n_principal": 1830,
+    "gsi": 0.3244,
+    "fsi": 1.0236,
+    "height_m": {
+      "n": 1830,
+      "mean": 8.694,
+      "std": 2.845,
+      "median": 8.17,
+      "p10": 6.07,
+      "p90": 12.931,
+      "max": 30.12
+    },
+    "layers": 3.16,
+    "osr": 0.66
+  },
+  "spacematrix": [
+    {
+      "gsi": 0.3062,
+      "fsi": 1.0593,
+      "height_mean_m": 14.44
+    },
+    {
+      "gsi": 0.0745,
+      "fsi": 0.1439,
+      "height_mean_m": 10.66
+    },
+    {
+      "gsi": 0.2931,
+      "fsi": 1.4623,
+      "height_mean_m": 17.62
+    },
+    {
+      "gsi": 0.3179,
+      "fsi": 1.0594,
+      "height_mean_m": 11.03
+    },
+    {
+      "gsi": 0.3009,
+      "fsi": 0.7512,
+      "height_mean_m": 11.68
+    },
+    {
+      "gsi": 0.3455,
+      "fsi": 1.4796,
+      "height_mean_m": 13.46
+    },
+    {
+      "gsi": 0.243,
+      "fsi": 0.8084,
+      "height_mean_m": 9.99
+    },
+    {
+      "gsi": 0.3009,
+      "fsi": 2.1256,
+      "height_mean_m": 13.07
+    },
+    {
+      "gsi": 0.4049,
+      "fsi": 1.1958,
+      "height_mean_m": 8.82
+    },
+    {
+      "gsi": 0.4254,
+      "fsi": 1.0152,
+      "height_mean_m": 7.84
+    },
+    {
+      "gsi": 0.3591,
+      "fsi": 0.9244,
+      "height_mean_m": 8.95
+    },
+    {
+      "gsi": 0.4564,
+      "fsi": 1.2043,
+      "height_mean_m": 8.55
+    },
+    {
+      "gsi": 0.4136,
+      "fsi": 1.4156,
+      "height_mean_m": 12.3
+    },
+    {
+      "gsi": 0.273,
+      "fsi": 0.9445,
+      "height_mean_m": 14.24
+    },
+    {
+      "gsi": 0.333,
+      "fsi": 1.2495,
+      "height_mean_m": 13.43
+    },
+    {
+      "gsi": 0.4362,
+      "fsi": 1.435,
+      "height_mean_m": 11.33
+    },
+    {
+      "gsi": 0.2741,
+      "fsi": 1.0181,
+      "height_mean_m": 12.5
+    },
+    {
+      "gsi": 0.3455,
+      "fsi": 1.4502,
+      "height_mean_m": 12.01
+    },
+    {
+      "gsi": 0.3143,
+      "fsi": 0.8152,
+      "height_mean_m": 8.1
+    },
+    {
+      "gsi": 0.3386,
+      "fsi": 1.006,
+      "height_mean_m": 9.22
+    },
+    {
+      "gsi": 0.2352,
+      "fsi": 0.726,
+      "height_mean_m": 9.58
+    },
+    {
+      "gsi": 0.3986,
+      "fsi": 1.0677,
+      "height_mean_m": 7.4
+    },
+    {
+      "gsi": 0.359,
+      "fsi": 0.8552,
+      "height_mean_m": 6.3
+    },
+    {
+      "gsi": 0.3081,
+      "fsi": 0.6435,
+      "height_mean_m": 6.55
+    },
+    {
+      "gsi": 0.3327,
+      "fsi": 0.933,
+      "height_mean_m": 10.52
+    },
+    {
+      "gsi": 0.4288,
+      "fsi": 1.4307,
+      "height_mean_m": 12.24
+    },
+    {
+      "gsi": 0.2282,
+      "fsi": 0.9661,
+      "height_mean_m": 14.95
+    },
+    {
+      "gsi": 0.4115,
+      "fsi": 1.5501,
+      "height_mean_m": 12.91
+    },
+    {
+      "gsi": 0.2472,
+      "fsi": 0.7255,
+      "height_mean_m": 12.28
+    },
+    {
+      "gsi": 0.4296,
+      "fsi": 1.7954,
+      "height_mean_m": 12.31
+    },
+    {
+      "gsi": 0.3562,
+      "fsi": 0.88,
+      "height_mean_m": 7.24
+    },
+    {
+      "gsi": 0.3885,
+      "fsi": 0.7303,
+      "height_mean_m": 6.25
+    },
+    {
+      "gsi": 0.3367,
+      "fsi": 0.6891,
+      "height_mean_m": 6.39
+    },
+    {
+      "gsi": 0.1871,
+      "fsi": 0.5104,
+      "height_mean_m": 7.98
+    },
+    {
+      "gsi": 0.3759,
+      "fsi": 0.8086,
+      "height_mean_m": 6.33
+    },
+    {
+      "gsi": 0.3215,
+      "fsi": 0.6232,
+      "height_mean_m": 6.26
+    },
+    {
+      "gsi": 0.2813,
+      "fsi": 0.7135,
+      "height_mean_m": 8.59
+    },
+    {
+      "gsi": 0.3913,
+      "fsi": 1.2414,
+      "height_mean_m": 9.09
+    },
+    {
+      "gsi": 0.1497,
+      "fsi": 0.4721,
+      "height_mean_m": 12.44
+    },
+    {
+      "gsi": 0.2276,
+      "fsi": 0.8953,
+      "height_mean_m": 13.51
+    },
+    {
+      "gsi": 0.3093,
+      "fsi": 1.1264,
+      "height_mean_m": 13.52
+    },
+    {
+      "gsi": 0.1906,
+      "fsi": 0.926,
+      "height_mean_m": 15.28
+    },
+    {
+      "gsi": 0.4137,
+      "fsi": 1.0416,
+      "height_mean_m": 7.61
+    },
+    {
+      "gsi": 0.3794,
+      "fsi": 0.6932,
+      "height_mean_m": 6.28
+    },
+    {
+      "gsi": 0.2467,
+      "fsi": 0.5184,
+      "height_mean_m": 6.41
+    },
+    {
+      "gsi": 0.294,
+      "fsi": 0.646,
+      "height_mean_m": 6.11
+    },
+    {
+      "gsi": 0.0803,
+      "fsi": 0.1654,
+      "height_mean_m": 6.41
+    },
+    {
+      "gsi": 0.4085,
+      "fsi": 0.9146,
+      "height_mean_m": 6.65
+    },
+    {
+      "gsi": 0.1965,
+      "fsi": 0.4108,
+      "height_mean_m": 7.0
+    },
+    {
+      "gsi": 0.4195,
+      "fsi": 1.4946,
+      "height_mean_m": 9.65
+    },
+    {
+      "gsi": 0.3053,
+      "fsi": 1.0824,
+      "height_mean_m": 11.14
+    },
+    {
+      "gsi": 0.2438,
+      "fsi": 1.1228,
+      "height_mean_m": 14.93
+    },
+    {
+      "gsi": 0.4331,
+      "fsi": 1.814,
+      "height_mean_m": 13.45
+    },
+    {
+      "gsi": 0.264,
+      "fsi": 0.9317,
+      "height_mean_m": 15.47
+    },
+    {
+      "gsi": 0.3134,
+      "fsi": 1.2776,
+      "height_mean_m": 12.31
+    },
+    {
+      "gsi": 0.393,
+      "fsi": 1.1943,
+      "height_mean_m": 8.15
+    },
+    {
+      "gsi": 0.2604,
+      "fsi": 0.4807,
+      "height_mean_m": 6.13
+    },
+    {
+      "gsi": 0.0958,
+      "fsi": 0.1826,
+      "height_mean_m": 6.31
+    },
+    {
+      "gsi": 0.3345,
+      "fsi": 1.215,
+      "height_mean_m": 9.55
+    },
+    {
+      "gsi": 0.1869,
+      "fsi": 0.6213,
+      "height_mean_m": 10.95
+    },
+    {
+      "gsi": 0.22,
+      "fsi": 1.1089,
+      "height_mean_m": 10.65
+    },
+    {
+      "gsi": 0.3287,
+      "fsi": 0.9234,
+      "height_mean_m": 9.24
+    },
+    {
+      "gsi": 0.3859,
+      "fsi": 1.0682,
+      "height_mean_m": 9.65
+    },
+    {
+      "gsi": 0.3144,
+      "fsi": 1.3951,
+      "height_mean_m": 14.89
+    },
+    {
+      "gsi": 0.2251,
+      "fsi": 0.9391,
+      "height_mean_m": 13.93
+    },
+    {
+      "gsi": 0.3165,
+      "fsi": 1.3803,
+      "height_mean_m": 14.87
+    },
+    {
+      "gsi": 0.4186,
+      "fsi": 1.5909,
+      "height_mean_m": 12.78
+    },
+    {
+      "gsi": 0.4336,
+      "fsi": 1.6057,
+      "height_mean_m": 11.57
+    },
+    {
+      "gsi": 0.1081,
+      "fsi": 0.2956,
+      "height_mean_m": 8.32
+    },
+    {
+      "gsi": 0.8318,
+      "fsi": 2.4914,
+      "height_mean_m": 9.31
+    },
+    {
+      "gsi": 0.2789,
+      "fsi": 0.7783,
+      "height_mean_m": 8.86
+    },
+    {
+      "gsi": 0.2516,
+      "fsi": 0.732,
+      "height_mean_m": 8.13
+    },
+    {
+      "gsi": 0.2916,
+      "fsi": 1.5357,
+      "height_mean_m": 12.32
+    },
+    {
+      "gsi": 0.294,
+      "fsi": 1.1173,
+      "height_mean_m": 10.31
+    },
+    {
+      "gsi": 0.3606,
+      "fsi": 1.4647,
+      "height_mean_m": 11.27
+    },
+    {
+      "gsi": 0.255,
+      "fsi": 0.985,
+      "height_mean_m": 12.9
+    },
+    {
+      "gsi": 0.2124,
+      "fsi": 0.9356,
+      "height_mean_m": 14.62
+    },
+    {
+      "gsi": 0.1464,
+      "fsi": 0.9496,
+      "height_mean_m": 16.16
+    },
+    {
+      "gsi": 0.3509,
+      "fsi": 1.4041,
+      "height_mean_m": 12.64
+    },
+    {
+      "gsi": 0.3401,
+      "fsi": 1.5648,
+      "height_mean_m": 9.93
+    },
+    {
+      "gsi": 0.4175,
+      "fsi": 2.0283,
+      "height_mean_m": 12.02
+    },
+    {
+      "gsi": 0.3432,
+      "fsi": 0.9903,
+      "height_mean_m": 8.88
+    },
+    {
+      "gsi": 0.3454,
+      "fsi": 0.8684,
+      "height_mean_m": 8.21
+    },
+    {
+      "gsi": 0.3553,
+      "fsi": 0.9559,
+      "height_mean_m": 8.36
+    },
+    {
+      "gsi": 0.5022,
+      "fsi": 2.088,
+      "height_mean_m": 13.84
+    },
+    {
+      "gsi": 0.2894,
+      "fsi": 1.3091,
+      "height_mean_m": 15.17
+    },
+    {
+      "gsi": 0.4462,
+      "fsi": 1.6924,
+      "height_mean_m": 8.0
+    },
+    {
+      "gsi": 0.3941,
+      "fsi": 1.4883,
+      "height_mean_m": 12.13
+    },
+    {
+      "gsi": 0.3218,
+      "fsi": 1.2615,
+      "height_mean_m": 10.41
+    },
+    {
+      "gsi": 0.3291,
+      "fsi": 0.9023,
+      "height_mean_m": 8.49
+    },
+    {
+      "gsi": 0.4141,
+      "fsi": 1.1471,
+      "height_mean_m": 9.18
+    },
+    {
+      "gsi": 0.5829,
+      "fsi": 1.1979,
+      "height_mean_m": 9.92
+    },
+    {
+      "gsi": 0.0914,
+      "fsi": 0.4455,
+      "height_mean_m": 16.15
+    },
+    {
+      "gsi": 0.2442,
+      "fsi": 1.0733,
+      "height_mean_m": 14.26
+    },
+    {
+      "gsi": 0.3921,
+      "fsi": 1.5672,
+      "height_mean_m": 13.86
+    },
+    {
+      "gsi": 0.3934,
+      "fsi": 1.3473,
+      "height_mean_m": 10.22
+    },
+    {
+      "gsi": 0.2522,
+      "fsi": 0.9314,
+      "height_mean_m": 11.08
+    },
+    {
+      "gsi": 0.5578,
+      "fsi": 3.2997,
+      "height_mean_m": 13.88
+    },
+    {
+      "gsi": 0.0346,
+      "fsi": 0.1696,
+      "height_mean_m": 14.15
+    },
+    {
+      "gsi": 0.3089,
+      "fsi": 1.2404,
+      "height_mean_m": 13.23
+    },
+    {
+      "gsi": 0.2044,
+      "fsi": 0.6782,
+      "height_mean_m": 13.17
+    },
+    {
+      "gsi": 0.2322,
+      "fsi": 0.7758,
+      "height_mean_m": 12.49
+    },
+    {
+      "gsi": 0.1059,
+      "fsi": 0.3963,
+      "height_mean_m": 10.41
+    },
+    {
+      "gsi": 0.172,
+      "fsi": 0.6348,
+      "height_mean_m": 7.71
+    },
+    {
+      "gsi": 0.6327,
+      "fsi": 3.5533,
+      "height_mean_m": 17.02
+    },
+    {
+      "gsi": 0.3236,
+      "fsi": 1.4815,
+      "height_mean_m": 15.0
+    },
+    {
+      "gsi": 0.3095,
+      "fsi": 1.2715,
+      "height_mean_m": 13.36
+    },
+    {
+      "gsi": 0.2041,
+      "fsi": 0.3223,
+      "height_mean_m": 8.02
+    },
+    {
+      "gsi": 0.295,
+      "fsi": 1.3848,
+      "height_mean_m": 13.18
+    },
+    {
+      "gsi": 0.2481,
+      "fsi": 0.7725,
+      "height_mean_m": 9.62
+    },
+    {
+      "gsi": 0.1728,
+      "fsi": 0.5108,
+      "height_mean_m": 10.4
+    },
+    {
+      "gsi": 0.0736,
+      "fsi": 0.2698,
+      "height_mean_m": 11.27
+    },
+    {
+      "gsi": 0.5775,
+      "fsi": 2.477,
+      "height_mean_m": 12.45
+    },
+    {
+      "gsi": 0.349,
+      "fsi": 1.6862,
+      "height_mean_m": 15.1
+    },
+    {
+      "gsi": 0.0189,
+      "fsi": 0.0559,
+      "height_mean_m": 10.29
+    },
+    {
+      "gsi": 0.0792,
+      "fsi": 0.0862,
+      "height_mean_m": 7.93
+    }
+  ]
+}

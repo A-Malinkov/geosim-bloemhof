@@ -18,7 +18,14 @@
   },
   "baseline": {
     "svf_mean": 0.6849,
-    "svf_median": 0.716
+    "svf_median": 0.716,
+    "fsi": 1.0236,
+    "gsi": 0.3244,
+    "layers": 3.16,
+    "osr": 0.66,
+    "height_mean_m": 8.694,
+    "height_std_m": 2.845
   },
-  "_svf_source": "analysis/morphology/sky_view_factor.py"
+  "_svf_source": "analysis/morphology/sky_view_factor.py",
+  "_density_source": "analysis/morphology/density_height.py"
 }

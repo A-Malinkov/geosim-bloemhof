@@ -233,16 +233,18 @@ you run the scripts once to fill in the rest.
 
 ## 7. What already works
 
-Components **2b (3D vegetation)** and the **Sky View Factor** half of component 3
-are done (Atanas Malinkov). To reproduce from scratch:
+Component **2b (3D vegetation)** is done, and component **3** is done except for
+land-use mix (Atanas Malinkov). To reproduce from scratch:
 
 ```bash
 source ~/.venvs/geosim-rotterdam/bin/activate
 
 python analysis/morphology/fetch_ahn.py          # AHN DSM + DTM + nDSM      (~1 min)
 python analysis/morphology/fetch_trees.py        # 2,172 trees, 206 species  (~30 s)
+python analysis/morphology/fetch_buildings.py    # 5,804 buildings from 3DBAG(~1 min)
 python analysis/morphology/sky_view_factor.py    # SVF raster + statistics   (~40 s)
-python analysis/morphology/make_figures.py       # report figures into docs/ (~30 s)
+python analysis/morphology/density_height.py     # Spacematrix density       (~15 s)
+python analysis/morphology/make_figures.py       # report figures into docs/ (~40 s)
 ```
 
 Then reload the app: the **Vegetation** and **Urban morphology** panels fill in,
@@ -256,6 +258,8 @@ and *Sky View Factor* appears under **Analysis** in the layer panel.
 | Trees in the study area | **2,172**, 206 species, 15.1 / ha |
 | Canopy cover | 7.9 % (upper bound — overlapping crowns counted twice) |
 | SVF under a tree crown vs 15 m from any tree | **0.40 vs 0.70** — trees remove 43 % of visible sky |
+| Density (Spacematrix, Bloemhof) | **GSI 0.324 · FSI 1.024 · 3.16 storeys · OSR 0.66** |
+| Building height | **8.7 m** mean, σ 2.8 m, tallest 30.1 m |
 
 ### Figures (`docs/`)
 
@@ -267,6 +271,8 @@ and *Sky View Factor* appears under **Analysis** in the layer panel.
 | `fig_tree_species.png` | the 12 commonest species |
 | `fig_tree_heights.png` | tree height-class distribution |
 | `fig_tree_map.png` | where the trees are, sized by crown, coloured by height |
+| `fig_spacematrix.png` | GSI–FSI scatter with storey and OSR isolines — what kind of density this is |
+| `fig_density_maps.png` | FSI and within-cell height variation across the study area |
 
 Everything else is a wired-up skeleton waiting for its owner.
 

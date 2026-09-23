@@ -342,6 +342,120 @@ def fig_canopy_effect(svf, open_ground, transform, trees_rd):
             "n_open_cells": int(away.size), "n_canopy_cells": int(under.size)}
 
 
+# ========================================================== 7. Spacematrix
+def fig_spacematrix(dens):
+    """
+    The Spacematrix diagram: GSI against FSI, with L and OSR isolines.
+
+    Berghauser Pont & Haupt (2010). The point of the plot is that FSI alone
+    does not describe a fabric -- where a cell sits in this space tells you
+    whether it is low-rise and packed, mid-rise with courtyards, or towers in
+    open ground. L and OSR are not extra data, they are contours of the same
+    two axes, which is why they are drawn rather than plotted.
+    """
+    pts = dens["spacematrix"]
+    g = np.array([p["gsi"] for p in pts])
+    f = np.array([p["fsi"] for p in pts])
+    h = np.array([p["height_mean_m"] if p["height_mean_m"] is not None else np.nan
+                  for p in pts])
+
+    fig, ax = plt.subplots(figsize=(7.2, 6.2))
+    tidy(ax, xgrid=True, ygrid=True)
+    xmax = max(0.75, float(g.max()) * 1.12)
+    ymax = max(2.5, float(f.max()) * 1.12)
+
+    # L isolines: FSI = L * GSI, straight through the origin
+    for L in (1, 2, 3, 4, 6, 8):
+        ax.plot([0, xmax], [0, L * xmax], color=GRID, lw=0.9, zorder=1)
+        yx = L * xmax
+        tag = f"L {L}"          # "L 4" not a bare "4", so it cannot be read as OSR
+        if yx <= ymax:
+            ax.text(xmax * 0.99, yx, tag, color=MUTED, fontsize=7.5,
+                    va="center", ha="right", zorder=1)
+        else:
+            ax.text(ymax / L, ymax * 0.99, tag, color=MUTED, fontsize=7.5,
+                    va="top", ha="center", zorder=1)
+
+    # OSR isolines: FSI = (1 - GSI) / OSR
+    gg = np.linspace(0.001, min(0.99, xmax), 200)
+    for osr in (0.2, 0.5, 1.0, 2.0):
+        ax.plot(gg, (1 - gg) / osr, color=GRID, lw=0.9, ls="-", zorder=1)
+        yi = (1 - 0.62) / osr
+        if 0.05 < yi < ymax * 0.96:
+            ax.text(0.62, yi, f" OSR {osr:g}", color=MUTED, fontsize=7.5,
+                    va="bottom", ha="left", zorder=1)
+
+    sc = ax.scatter(g, f, c=h, cmap=SEQ, vmin=4, vmax=22, s=26,
+                    linewidths=0.4, edgecolors=SURFACE, zorder=3)
+
+    b = dens.get("buurt")
+    if b:
+        ax.scatter([b["gsi"]], [b["fsi"]], marker="*", s=420, color=SERIES_2,
+                   edgecolors=SURFACE, linewidths=1.2, zorder=4)
+        ax.annotate(f"{b['name']} overall\nGSI {b['gsi']:.2f} · FSI {b['fsi']:.2f} "
+                    f"· {b['layers']:.1f} storeys",
+                    xy=(b["gsi"], b["fsi"]), xytext=(-12, -34),
+                    textcoords="offset points", fontsize=8.5, color=INK,
+                    fontweight="bold", zorder=5, ha="right",
+                    path_effects=[pe.withStroke(linewidth=3.5, foreground=SURFACE)])
+
+    ax.set_xlim(0, xmax); ax.set_ylim(0, ymax)
+    ax.set_xlabel("GSI — ground space index (built footprint / land area)")
+    ax.set_ylabel("FSI — floor space index (floor area / land area)")
+    titled(ax, "Spacematrix — what kind of density is this?",
+           f"one dot per {dens['parameters']['cell_size_m']:.0f} m cell · "
+           f"grey lines are storeys (L) and open space ratio (OSR)")
+    cb = fig.colorbar(sc, ax=ax, fraction=0.04, pad=0.02)
+    cb.set_label("mean building height in cell (m)", color=INK_2, fontsize=8.5)
+    cb.outline.set_visible(False)
+    cb.ax.tick_params(colors=MUTED, length=0)
+    save(fig, "fig_spacematrix.png")
+
+
+# ================================================ 8. density + height maps
+def fig_density_maps(dens, grid_geo):
+    """FSI and within-cell height variation, as two small choropleths."""
+    cell = dens["parameters"]["cell_size_m"]
+    feats = grid_geo["features"]
+    g = grid_geo.get("_grid") or {}
+    nx, ny = g.get("nx"), g.get("ny")
+    if not nx or "row" not in feats[0]["properties"]:
+        print("  (density maps skipped — regenerate density_grid.geojson)")
+        return
+
+    def raster(key):
+        a = np.full((ny, nx), np.nan)
+        for f in feats:
+            p = f["properties"]
+            v = p.get(key)
+            if v is None or p.get("sparse"):
+                continue
+            a[p["row"], p["col"]] = v
+        return a[::-1]           # row 0 is the south edge; flip so north is up
+
+    fig, axes = plt.subplots(1, 2, figsize=(7.4, 4.2))
+    for ax, key, label in (
+            (axes[0], "fsi", "FSI — floor space index"),
+            (axes[1], "height_std_m", "height variation within cell (σ, m)")):
+        a = raster(key)
+        vm = float(np.nanpercentile(a, 97))
+        im = ax.imshow(a, cmap=SEQ, vmin=0, vmax=vm, interpolation="nearest")
+        ax.set_xticks([]); ax.set_yticks([])
+        for sp in ax.spines.values():
+            sp.set_visible(False)
+        ax.set_title(label, loc="left", fontsize=9.5, color=INK, pad=6)
+        cb = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.02)
+        cb.outline.set_visible(False)
+        cb.ax.tick_params(colors=MUTED, length=0, labelsize=7.5)
+    fig.suptitle(f"Density and height variation — {STUDY_AREA.name}, "
+                 f"{cell:.0f} m cells",
+                 x=0.012, ha="left", fontsize=11, fontweight="bold", color=INK)
+    fig.text(0.012, 0.905, "cells with fewer than 3 buildings are left blank",
+             fontsize=8.5, color=INK_2, ha="left")
+    fig.tight_layout(rect=[0, 0, 1, 0.89])
+    save(fig, "fig_density_maps.png")
+
+
 # ==================================================================== main
 def main() -> int:
     need = [PROCESSED / "svf.tif", PROCESSED / "svf_summary.json",
@@ -376,6 +490,16 @@ def main() -> int:
     fig_height_classes(trees)
     fig_tree_map(trees_rd, veg)
     effect = fig_canopy_effect(svf, open_ground, transform, trees_rd)
+
+    dens_path = PROCESSED / "density_summary.json"
+    grid_path = PROCESSED / "density_grid.geojson"
+    if dens_path.exists() and grid_path.exists():
+        dens = json.loads(dens_path.read_text())
+        grid_geo = json.loads(grid_path.read_text())
+        fig_spacematrix(dens)
+        fig_density_maps(dens, grid_geo)
+    else:
+        print("  (skipping density figures — run density_height.py first)")
 
     # the canopy effect is a finding, not just a picture — keep the numbers
     veg["svf_canopy_effect"] = effect
