@@ -1,0 +1,344 @@
+#!/usr/bin/env python3
+"""
+fetch_knmi.py — real KNMI sensor observations and history for the study area.
+
+Component 4.4a. This is the SENSOR half of the weather dashboard. The live,
+self-refreshing panel in the app is KNMI's forecast MODEL via Open-Meteo; this
+script fetches what KNMI's instruments actually measured.
+
+THREE THINGS IT GETS
+--------------------
+1. Latest 10-minute observation, from the KNMI Open Data API.
+   Dataset "10-minute-in-situ-meteorological-observations" version "1.0".
+   NOTE: the dataset most tutorials use, "Actueel10mindataKNMIstations" v2,
+   STOPPED UPDATING on 2025-10-02. Do not use it.
+   Files are NetCDF4, read here with xarray + h5netcdf.
+   -> data/processed/knmi_current.json
+
+2. Hourly history, from the climatology service. This is the training set for
+   the AI model, so it defaults to five years.
+   -> data/raw/knmi_hourly_<station>.json
+
+3. Daily history, for the dashboard chart.
+   -> data/processed/knmi_daily_history.json
+
+WHY PYTHON AND NOT THE BROWSER
+------------------------------
+The browser cannot call the KNMI API. A plain curl GET succeeds and even returns
+"Access-Control-Allow-Origin: *", which is misleading: the Authorization header
+makes the browser send a CORS preflight, and KNMI's OPTIONS response has no CORS
+headers, so it is blocked. The observations are NetCDF anyway.
+
+UNITS
+-----
+The climatology service reports in TENTHS: T=190 means 19.0 degC, FH=80 means
+8.0 m/s, RH=-1 means "less than 0.05 mm", not minus 0.1 mm. All converted here.
+
+USAGE
+-----
+    python analysis/knmi/fetch_knmi.py                 # current + 5 y history
+    python analysis/knmi/fetch_knmi.py --years 10
+    python analysis/knmi/fetch_knmi.py --current-only  # quick refresh
+"""
+from __future__ import annotations
+
+import argparse
+import datetime as dt
+import json
+import math
+import pathlib
+import sys
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
+from common.project import (  # noqa: E402
+    KNMI_ANONYMOUS_KEY, PROCESSED, RAW, SERVICES, STUDY_AREA,
+)
+
+OPEN_DATA = SERVICES["knmi_open_data"]
+DATASET = "10-minute-in-situ-meteorological-observations"
+VERSION = "1.0"
+HOURLY = "https://www.daggegevens.knmi.nl/klimatologie/uurgegevens"
+DAILY = SERVICES["knmi_daily"]
+
+#: NetCDF variable -> (label, unit). The 10-minute observation file has 97
+#: variables; these are the ones the dashboard and the model use.
+OBS_VARS = {
+    "ta": ("temperature", "degC"),
+    "ff": ("wind_speed", "m/s"),
+    "dd": ("wind_direction", "deg"),
+    "fx": ("wind_gust", "m/s"),
+    "rh": ("humidity", "%"),
+    "pp": ("pressure_msl", "hPa"),
+    "pg": ("precipitation_intensity", "mm/h"),
+    "ss": ("sunshine", "min"),
+}
+
+#: Hourly climatology fields -> (name, divisor). KNMI reports in tenths.
+HOURLY_FIELDS = {
+    "T":   ("temperature_C", 10.0),
+    "TD":  ("dewpoint_C", 10.0),
+    "FH":  ("wind_speed_ms", 10.0),     # hourly mean
+    "FF":  ("wind_speed_10min_ms", 10.0),
+    "FX":  ("wind_gust_ms", 10.0),
+    "DD":  ("wind_direction_deg", 1.0),
+    "U":   ("humidity_pct", 1.0),
+    "P":   ("pressure_hPa", 10.0),
+    "RH":  ("precipitation_mm", 10.0),  # -1 means "< 0.05 mm"
+    "Q":   ("global_radiation_Jcm2", 1.0),
+    "N":   ("cloud_cover_octants", 1.0),
+}
+
+
+def api_get(path: str, tries: int = 6) -> dict:
+    """
+    GET the Open Data API, retrying on 429.
+
+    The anonymous key is shared by everyone using it worldwide, so HTTP 429
+    "Too Many Requests" is routine rather than exceptional — it showed up within
+    a handful of calls during development. KNMI sends no Retry-After header, and
+    the limit clears in roughly 15-30 s, so back off and try again. If you hit it
+    constantly, register your own key at developer.dataplatform.knmi.nl.
+    """
+    last = None
+    for attempt in range(tries):
+        req = urllib.request.Request(f"{OPEN_DATA}{path}",
+                                     headers={"Authorization": KNMI_ANONYMOUS_KEY})
+        try:
+            with urllib.request.urlopen(req, timeout=120) as r:
+                return json.load(r)
+        except urllib.error.HTTPError as exc:
+            last = exc
+            if exc.code != 429:
+                raise
+            wait = 10 * (attempt + 1)
+            print(f"    rate limited (429), waiting {wait}s "
+                  f"[attempt {attempt + 1}/{tries}]")
+            time.sleep(wait)
+        except Exception as exc:
+            last = exc
+            time.sleep(4 * (attempt + 1))
+    raise RuntimeError(f"KNMI Open Data unreachable after {tries} tries: {last}")
+
+
+def haversine_km(lat1, lon1, lat2, lon2):
+    R = 6371.0
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    dp = math.radians(lat2 - lat1)
+    dl = math.radians(lon2 - lon1)
+    a = math.sin(dp / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dl / 2) ** 2
+    return 2 * R * math.asin(math.sqrt(a))
+
+
+# --------------------------------------------------------------- 1. current
+def fetch_current(prefer_station: int | None) -> dict | None:
+    try:
+        import xarray as xr
+    except ImportError:
+        print("  ! xarray missing — pip install -r requirements.txt")
+        return None
+
+    listing = api_get(f"/datasets/{DATASET}/versions/{VERSION}/files"
+                      "?maxKeys=1&orderBy=created&sorting=desc")
+    files = listing.get("files") or []
+    if not files:
+        print("  ! KNMI returned no observation files")
+        return None
+    fn = files[0]["filename"]
+    print(f"  newest observation file: {fn}")
+
+    url = api_get(f"/datasets/{DATASET}/versions/{VERSION}/files/{fn}/url") \
+        .get("temporaryDownloadUrl")
+    if not url:
+        print("  ! no temporary download URL returned")
+        return None
+
+    tmp = RAW / "_knmi_latest.nc"
+    with urllib.request.urlopen(url, timeout=180) as r:
+        tmp.write_bytes(r.read())
+
+    ds = xr.open_dataset(tmp, engine="h5netcdf")
+    ids = [str(s) for s in ds["station"].values]
+    lats = [float(v) for v in ds["lat"].values]
+    lons = [float(v) for v in ds["lon"].values]
+    names = [n.decode() if isinstance(n, bytes) else str(n)
+             for n in ds["stationname"].values]
+
+    # Prefer the configured station; otherwise take the nearest one that
+    # actually reports a temperature this interval.
+    idx = None
+    if prefer_station is not None:
+        wanted = f"{prefer_station:05d}"
+        for i, s in enumerate(ids):
+            if s.endswith(str(prefer_station)) or s == wanted:
+                idx = i
+                break
+    if idx is None:
+        order = sorted(range(len(ids)),
+                       key=lambda i: haversine_km(STUDY_AREA.lat, STUDY_AREA.lon,
+                                                  lats[i], lons[i]))
+        idx = order[0]
+
+    dist = haversine_km(STUDY_AREA.lat, STUDY_AREA.lon, lats[idx], lons[idx])
+    values, missing = {}, []
+    for var, (label, unit) in OBS_VARS.items():
+        if var not in ds:
+            missing.append(var)
+            continue
+        v = ds[var].isel(station=idx, time=0).values
+        try:
+            f = float(v)
+        except Exception:
+            f = float("nan")
+        values[label] = None if f != f else round(f, 2)   # f != f detects NaN
+
+    out = {
+        "fetched_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
+        "source": "KNMI Open Data, 10-minute in-situ meteorological observations",
+        "source_file": fn,
+        "observation_time": str(ds["time"].values[0]),
+        "station": ids[idx],
+        "station_name": names[idx],
+        "station_lat": round(lats[idx], 4),
+        "station_lon": round(lons[idx], 4),
+        "distance_km": round(dist, 1),
+        "units": {lbl: u for (lbl, u) in OBS_VARS.values()},
+        "values": values,
+    }
+    ds.close()
+    tmp.unlink(missing_ok=True)
+    if missing:
+        print(f"  (variables absent from this file: {', '.join(missing)})")
+    print(f"  station {out['station']} {out['station_name']} — "
+          f"{dist:.1f} km from the study area")
+    return out
+
+
+# ------------------------------------------------------- 2 & 3. climatology
+def post_json(url: str, data: str, timeout: int = 300):
+    req = urllib.request.Request(url, data=data.encode(),
+                                 headers={"Content-Type":
+                                          "application/x-www-form-urlencoded"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return json.load(r)
+
+
+def fetch_hourly(station: int, years: int) -> list[dict]:
+    """Hourly climatology, in yearly chunks so no single request is enormous."""
+    end = dt.date.today()
+    rows: list[dict] = []
+    for back in range(years, 0, -1):
+        y0 = dt.date(end.year - back, 1, 1)
+        y1 = min(dt.date(end.year - back, 12, 31), end)
+        payload = urllib.parse.urlencode({
+            "stns": station,
+            "start": y0.strftime("%Y%m%d") + "01",
+            "end": y1.strftime("%Y%m%d") + "24",
+            "fmt": "json",
+        })
+        try:
+            chunk = post_json(HOURLY, payload)
+        except Exception as exc:
+            print(f"    {y0.year}: failed ({type(exc).__name__}), skipped")
+            continue
+        for r in chunk:
+            row = {"time": f"{r['date'][:10]}T{int(r['hour']) - 1:02d}:00"}
+            for key, (name, div) in HOURLY_FIELDS.items():
+                v = r.get(key)
+                if v is None:
+                    row[name] = None
+                elif key == "RH" and v == -1:
+                    row[name] = 0.025          # KNMI's "< 0.05 mm" sentinel
+                else:
+                    row[name] = round(v / div, 3) if div != 1.0 else v
+            rows.append(row)
+        print(f"    {y0.year}: {len(chunk):,} hours (running total {len(rows):,})")
+        time.sleep(0.4)                        # be polite to a free service
+    return rows
+
+
+def fetch_daily(station: int, years: int) -> list[dict]:
+    end = dt.date.today()
+    start = dt.date(end.year - years, 1, 1)
+    payload = urllib.parse.urlencode({
+        "stns": station,
+        "vars": "TEMP:WIND:SUNR:PRCP",
+        "start": start.strftime("%Y%m%d"),
+        "end": end.strftime("%Y%m%d"),
+        "fmt": "json",
+    })
+    raw = post_json(DAILY, payload)
+    out = []
+    for r in raw:
+        out.append({
+            "date": r["date"][:10],
+            "T_mean_C": None if r.get("TG") is None else r["TG"] / 10,
+            "T_min_C": None if r.get("TN") is None else r["TN"] / 10,
+            "T_max_C": None if r.get("TX") is None else r["TX"] / 10,
+            "wind_mean_ms": None if r.get("FG") is None else r["FG"] / 10,
+            "wind_max_gust_ms": None if r.get("FHX") is None else r["FHX"] / 10,
+            "wind_dir_deg": r.get("DDVEC"),
+            "sunshine_h": None if r.get("SQ") is None else max(r["SQ"], 0) / 10,
+            "precipitation_mm": None if r.get("RH") is None else max(r["RH"], 0) / 10,
+        })
+    return out
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--station", type=int, default=STUDY_AREA.knmi_station)
+    ap.add_argument("--years", type=int, default=5,
+                    help="years of history to fetch for the training set")
+    ap.add_argument("--current-only", action="store_true")
+    args = ap.parse_args()
+
+    print(f"KNMI sensor data — station {args.station}, "
+          f"nearest to {STUDY_AREA.name}")
+
+    print("\n1. latest 10-minute observation")
+    cur = fetch_current(args.station)
+    if cur:
+        (PROCESSED / "knmi_current.json").write_text(json.dumps(cur, indent=2) + "\n")
+        print("  wrote data/processed/knmi_current.json")
+        for k, v in cur["values"].items():
+            if v is not None:
+                print(f"     {k:26} {v} {cur['units'].get(k,'')}")
+    if args.current_only:
+        return 0
+
+    print(f"\n2. hourly history, {args.years} years (training set)")
+    hourly = fetch_hourly(args.station, args.years)
+    if hourly:
+        path = RAW / f"knmi_hourly_{args.station}.json"
+        path.write_text(json.dumps({
+            "station": args.station,
+            "source": HOURLY,
+            "note": "KNMI reports in tenths; already converted here. "
+                    "RH=-1 ('< 0.05 mm') stored as 0.025 mm.",
+            "records": hourly,
+        }) + "\n")
+        print(f"  {len(hourly):,} hourly records -> data/raw/{path.name}")
+
+    print(f"\n3. daily history, {args.years} years (dashboard chart)")
+    daily = fetch_daily(args.station, args.years)
+    if daily:
+        (PROCESSED / "knmi_daily_history.json").write_text(json.dumps({
+            "station": args.station,
+            "source": DAILY,
+            "fetched_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
+            "records": daily,
+        }) + "\n")
+        print(f"  {len(daily):,} daily records -> data/processed/knmi_daily_history.json")
+        temps = [r["T_mean_C"] for r in daily if r["T_mean_C"] is not None]
+        if temps:
+            print(f"  mean daily temperature over the period: "
+                  f"{sum(temps) / len(temps):.1f} degC")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

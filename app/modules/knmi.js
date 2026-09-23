@@ -146,6 +146,40 @@ function chart(times, values, spec, nowIso) {
   </svg>`;
 }
 
+/** Two-line overlay chart (e.g. predicted vs actual, or a monthly mean band). */
+function chart2(labels, a, b, aName, bName, aCol, bCol, unit) {
+  const n = labels.length;
+  const vals = [...a, ...b].filter((v) => v !== null && v !== undefined);
+  if (vals.length < 2) return "";
+  const w = 280, h = 80, padL = 26, padB = 13, padT = 6;
+  let lo = Math.min(...vals), hi = Math.max(...vals);
+  if (hi - lo < 1e-6) hi = lo + 1;
+  const pad = (hi - lo) * 0.12; lo -= pad; hi += pad;
+  const X = (i) => padL + (i / Math.max(1, n - 1)) * (w - padL - 4);
+  const Y = (v) => padT + (1 - (v - lo) / (hi - lo)) * (h - padT - padB);
+  const path = (arr) => {
+    let d = "", pen = false;
+    arr.forEach((v, i) => {
+      if (v === null || v === undefined) { pen = false; return; }
+      d += `${pen ? "L" : "M"}${X(i).toFixed(1)},${Y(v).toFixed(1)}`;
+      pen = true;
+    });
+    return d;
+  };
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="88" role="img"
+      aria-label="${aName} and ${bName}">
+    <text x="0" y="${(padT + 6).toFixed(1)}" font-size="7.5" fill="#97a3b2">${hi.toFixed(1)}</text>
+    <text x="0" y="${(h - padB).toFixed(1)}" font-size="7.5" fill="#97a3b2">${lo.toFixed(1)}</text>
+    <line x1="${padL}" y1="${h - padB}" x2="${w}" y2="${h - padB}" stroke="#2c3541"/>
+    <path d="${path(a)}" fill="none" stroke="${aCol}" stroke-width="1.8" stroke-linejoin="round"/>
+    <path d="${path(b)}" fill="none" stroke="${bCol}" stroke-width="1.8" stroke-linejoin="round"/>
+  </svg>
+  <p class="muted" style="margin:1px 0 0">
+    <span style="color:${aCol}">&#9632;</span> ${aName}
+    <span style="color:${bCol};margin-left:8px">&#9632;</span> ${bName}
+    <span style="margin-left:8px">${unit}</span></p>`;
+}
+
 /* ========================================================================== */
 export async function setup(ctx) {
   const sa = ctx.config.studyArea;
@@ -169,6 +203,7 @@ export async function setup(ctx) {
       <div id="knmiChart"></div>
     </div>
     <div id="knmiObs"></div>
+    <div id="knmiHist"></div>
     <div id="knmiPred"></div>
     <p class="muted" id="knmiCredit"></p>`;
 
@@ -177,6 +212,7 @@ export async function setup(ctx) {
   const chartWrap = body.querySelector("#knmiChartWrap");
   const chartEl = body.querySelector("#knmiChart");
   const obsEl = body.querySelector("#knmiObs");
+  const histEl = body.querySelector("#knmiHist");
   const predEl = body.querySelector("#knmiPred");
   body.querySelector("#knmiCredit").textContent = om.attribution;
 
@@ -283,13 +319,20 @@ export async function setup(ctx) {
   const obs = await ctx.loadJson(ctx.config.dataSources.processed.knmiCurrent,
                                  { quiet: true });
   if (obs) {
-    const rows = Object.entries(obs.values || {});
+    const u = obs.units || {};
+    const rows = Object.entries(obs.values || {})
+      .filter(([, v]) => v !== null && v !== undefined);
     obsEl.innerHTML =
-      `<h4>KNMI station ${obs.station ?? sa.knmiStation}</h4>` +
+      `<h4>KNMI station sensors</h4>` +
       `<table class="kv"><tbody>` +
-      rows.map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join("") +
+      rows.map(([k, v]) =>
+        `<tr><td>${k.replace(/_/g, " ")}</td><td>${v} ${u[k] ?? ""}</td></tr>`).join("") +
       `</tbody></table>` +
-      (obs.fetched_at ? `<p class="muted">fetched ${obs.fetched_at}</p>` : "");
+      `<p class="muted">Measured at ${obs.station_name ?? obs.station} ` +
+      `(${obs.station}), ${obs.distance_km} km away · ` +
+      `observation ${String(obs.observation_time).slice(0, 16).replace("T", " ")}` +
+      `<br>These are instrument readings. The live panel above is KNMI's ` +
+      `forecast model — the two will not match exactly.</p>`;
   } else {
     ctx.placeholder(obsEl, {
       what: "KNMI station observations not fetched yet. These are the actual "
@@ -300,20 +343,76 @@ export async function setup(ctx) {
     });
   }
 
+  /* ---- historical series -------------------------------------------------- */
+  const hist = await ctx.loadJson(ctx.config.dataSources.processed.knmiHistory,
+                                  { quiet: true });
+  if (hist?.records?.length) {
+    // aggregate to monthly means; 2,000 daily points in a 280 px chart is mush
+    const byMonth = new Map();
+    for (const r of hist.records) {
+      if (r.T_mean_C === null) continue;
+      const key = r.date.slice(0, 7);
+      const m = byMonth.get(key) || { t: 0, w: 0, n: 0 };
+      m.t += r.T_mean_C;
+      m.w += r.wind_mean_ms ?? 0;
+      m.n += 1;
+      byMonth.set(key, m);
+    }
+    const keys = [...byMonth.keys()].sort();
+    const temps = keys.map((k) => +(byMonth.get(k).t / byMonth.get(k).n).toFixed(2));
+    const winds = keys.map((k) => +(byMonth.get(k).w / byMonth.get(k).n).toFixed(2));
+    const years = new Set(keys.map((k) => k.slice(0, 4))).size;
+    histEl.innerHTML =
+      `<h4>History</h4>` +
+      chart2(keys, temps, winds, "temp", "wind", "#eb6834", "#2a78d6", "°C / m·s⁻¹") +
+      `<p class="muted">Monthly means, ${keys.length} months over ${years} years ` +
+      `at station ${hist.station}. ${hist.records.length.toLocaleString("en-GB")} ` +
+      `daily records.</p>`;
+  } else {
+    ctx.placeholder(histEl, {
+      what: "Historical series not fetched yet.",
+      produces: "data/processed/knmi_daily_history.json",
+      owner: "analysis/knmi/fetch_knmi.py",
+    });
+  }
+
   /* ---- AI prediction ----------------------------------------------------- */
   const forecast = await ctx.loadJson(ctx.config.dataSources.processed.knmiForecast,
                                       { quiet: true });
   if (forecast) {
     const m = forecast.metrics || {};
+    const tRes = forecast.results?.temperature_C?.horizons || {};
+    const demo = forecast.demo_series;
+
+    // per-horizon comparison against the persistence baseline
+    const hRows = Object.entries(tRes).map(([hz, models]) => {
+      const best = models._best;
+      const b = models[best] || {};
+      const skill = b.skill_vs_persistence;
+      return `<tr><td>${hz}</td><td>${best}</td><td>${b.mae?.toFixed(2) ?? "—"}</td>` +
+             `<td><span class="delta ${skill > 0 ? "down" : "up"}">` +
+             `${skill == null ? "—" : (skill > 0 ? "+" : "") + (skill * 100).toFixed(0) + "%"}` +
+             `</span></td></tr>`;
+    }).join("");
+
     predEl.innerHTML =
-      `<h4>Model prediction</h4>` +
+      `<h4>AI prediction</h4>` +
       `<table class="kv"><tbody>` +
-      `<tr><td>model</td><td>${forecast.model ?? "—"}</td></tr>` +
-      `<tr><td>horizon</td><td>${forecast.horizon ?? "—"}</td></tr>` +
-      `<tr><td>MAE</td><td>${m.mae ?? "—"}</td></tr>` +
-      `<tr><td>RMSE</td><td>${m.rmse ?? "—"}</td></tr>` +
+      `<tr><td>best model</td><td>${m.model ?? "—"}</td></tr>` +
+      `<tr><td>predicting</td><td>${m.variable ?? "—"} at ${m.horizon ?? "—"}</td></tr>` +
+      `<tr><td>MAE</td><td>${m.mae ?? "—"} °C</td></tr>` +
+      `<tr><td>RMSE</td><td>${m.rmse ?? "—"} °C</td></tr>` +
       `<tr><td>R²</td><td>${m.r2 ?? "—"}</td></tr>` +
-      `</tbody></table>`;
+      `</tbody></table>` +
+      `<table class="kv"><thead><tr><th>horizon</th><th>model</th>` +
+      `<th>MAE</th><th>vs naive</th></tr></thead><tbody>${hRows}</tbody></table>` +
+      (demo ? chart2(demo.time, demo.actual, demo.predicted,
+                     "actual", "predicted", "#97a3b2", "#eb6834",
+                     `°C · ${demo.model} ${demo.horizon}`) : "") +
+      `<p class="muted">Temperature, ${forecast.method?.test_hours?.toLocaleString("en-GB")} ` +
+      `held-out hours. "vs naive" is the improvement over assuming nothing ` +
+      `changes. Chronological split — never random, or neighbouring hours leak ` +
+      `across it.</p>`;
   } else {
     ctx.placeholder(predEl, {
       what: "Predictive model not trained yet. Report MAE/RMSE against a "

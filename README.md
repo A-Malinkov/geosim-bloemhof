@@ -264,7 +264,14 @@ python analysis/morphology/density_height.py     # Spacematrix density       (~1
 python analysis/morphology/fetch_landuse.py      # 9,880 BAG units           (~5 s)
 python analysis/morphology/landuse_mix.py        # land-use mix indices      (~5 s)
 python analysis/morphology/make_figures.py       # report figures into docs/ (~40 s)
+
+python analysis/knmi/fetch_knmi.py               # sensors + 5 y history     (~2 min)
+python analysis/knmi/train_forecast.py           # train + score the models  (~6 min)
 ```
+
+> The LSTM needs PyTorch, which is **not** in `requirements.txt` (~780 MB).
+> `pip install --index-url https://download.pytorch.org/whl/cpu torch` if you
+> want it; without it the script runs the other four models and says so.
 
 Then reload the app: the **Vegetation** and **Urban morphology** panels fill in,
 and *Sky View Factor* appears under **Analysis** in the layer panel.
@@ -280,6 +287,8 @@ and *Sky View Factor* appears under **Analysis** in the layer panel.
 | Density (Spacematrix, Bloemhof) | **GSI 0.324 · FSI 1.024 · 3.16 storeys · OSR 0.66** |
 | Building height | **8.7 m** mean, σ 2.8 m, tallest 30.1 m |
 | Land-use mix (Bloemhof) | Shannon **0.268** of 1.0 · 81 % of floor space residential |
+| Weather forecast (temperature, +6 h) | MAE **1.28 °C**, 55 % better than assuming no change |
+| Weather forecast (wind, +6 h) | MAE **1.14 m/s** — but it under-predicts strong winds by 0.6 m/s |
 
 ### Figures (`docs/`)
 

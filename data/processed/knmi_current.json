@@ -1,18 +1,31 @@
 {
-  "_status": "not_computed_yet",
-  "_note": "Placeholder. The app treats _status=not_computed_yet as 'no data' and shows a placeholder panel. Overwrite this file with real output.",
-  "_written_by": "analysis/knmi/fetch_knmi.py",
-  "_schema": {
-    "fetched_at": "ISO-8601 UTC timestamp of the fetch",
-    "source_file": "name of the KNMI NetCDF file used",
-    "station": "KNMI station number, e.g. 344",
-    "values": {
-      "temperature_C": 0,
-      "wind_speed_ms": 0,
-      "wind_dir_deg": 0,
-      "humidity_pct": 0,
-      "precipitation_mm": 0,
-      "pressure_hPa": 0
-    }
+  "fetched_at": "2026-09-23T18:06:22+00:00",
+  "source": "KNMI Open Data, 10-minute in-situ meteorological observations",
+  "source_file": "KMDS__OPER_P___10M_OBS_L2_202609231800.nc",
+  "observation_time": "2026-09-23T18:00:00.000000000",
+  "station": "06344",
+  "station_name": "Rotterdam Airport",
+  "station_lat": 51.9606,
+  "station_lon": 4.4469,
+  "distance_km": 8.0,
+  "units": {
+    "temperature": "degC",
+    "wind_speed": "m/s",
+    "wind_direction": "deg",
+    "wind_gust": "m/s",
+    "humidity": "%",
+    "pressure_msl": "hPa",
+    "precipitation_intensity": "mm/h",
+    "sunshine": "min"
+  },
+  "values": {
+    "temperature": 17.8,
+    "wind_speed": 3.05,
+    "wind_direction": 251.8,
+    "wind_gust": 4.99,
+    "humidity": 77.0,
+    "pressure_msl": 1022.16,
+    "precipitation_intensity": 0.0,
+    "sunshine": 0.0
   }
 }

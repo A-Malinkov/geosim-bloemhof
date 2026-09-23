@@ -30,9 +30,24 @@ contextily~=1.6
 requests~=2.32
 owslib~=0.34
 
+# --- NetCDF (KNMI observation files are NetCDF4/HDF5) ---
+h5py~=3.16
+h5netcdf~=1.8
+
 # --- machine learning (weather prediction, RL land-use) ---
 scikit-learn~=1.7
 
 # --- notebooks ---
 jupyterlab~=4.4
 ipykernel~=6.30
+
+# ---------------------------------------------------------------------------
+# OPTIONAL — only for the LSTM in analysis/knmi/train_forecast.py.
+# PyTorch is ~780 MB, so it is deliberately NOT a core requirement: five of us
+# never touch the AI component and should not pay for it. The script runs all
+# the other models without it and says the LSTM was skipped.
+#
+#   pip install --index-url https://download.pytorch.org/whl/cpu torch
+#
+# (the CPU index matters — the default wheel pulls in CUDA and is several GB)
+# ---------------------------------------------------------------------------
