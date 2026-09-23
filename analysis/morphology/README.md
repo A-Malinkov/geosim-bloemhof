@@ -32,7 +32,7 @@ python analysis/morphology/make_figures.py      # all figures       ~40 s
 
 - [x] **3D vegetation** — 2,172 trees, 206 species, 15.1 trees/ha, 7.9 % canopy
       (upper bound). Rendered as batched 3D primitives by `app/modules/vegetation.js`.
-- [x] **Sky View Factor** — mean 0.687, median 0.717 at 1.75 m above ground on
+- [x] **Sky View Factor** — mean 0.685, median 0.716 at 1.75 m above ground on
       open ground within Bloemhof.
 - [x] **Building density** — GSI 0.324, FSI 1.024, L 3.16 storeys,
       OSR 0.66 over the 58.94 ha of Bloemhof inside the study area.
@@ -42,6 +42,10 @@ python analysis/morphology/make_figures.py      # all figures       ~40 s
 - [x] **Land-use mix** — Shannon 0.268 of a possible 1.0 for Bloemhof
       (0.347 across the study square); Simpson 0.249.
       81% of built floor space is residential.
+
+- [x] **Vegetation effect on SVF** — 0.70 in the open against 0.40 under a tree crown,
+      a drop of 0.30 (43 %). Computed in `make_figures.py`, stored in
+      `vegetation_summary.json`.
 
 **Component 4.3 is complete.**
 

@@ -528,10 +528,6 @@ def fig_abm(ca, rl):
     cmap = ListedColormap(cols)
     names = list(ca["scenarios"].keys())
 
-    def grid_of(png_dir, entry):
-        g = np.array(entry, dtype="int16")
-        return g
-
     panels = []
     for n in names:
         sc = ca["scenarios"][n]

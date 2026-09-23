@@ -48,66 +48,62 @@ export async function setup(ctx) {
   }
 
   /* ---- map frames ------------------------------------------------------- */
-  const cache = new Map();          // png -> ImageryLayer, once loaded
-  const pending = new Map();        // png -> in-flight load promise
-  let reqId = 0;                    // only the newest request may show itself
+  /* Every frame is a ~3 KB PNG and there are fewer than twenty of them, so all
+   * of them are loaded once when the layer is first switched on. Frame changes
+   * are then a synchronous `show` flag — no promises in the path the slider
+   * drives. An earlier version created layers lazily per frame and the async
+   * bookkeeping was subtly wrong: frames loaded and cached, but the visible
+   * layer never changed. Preloading is both simpler and correct. */
+  const layers = new Map();         // png -> ImageryLayer
+  let preloaded = null;             // the one-shot preload promise
+  let layerOn = false;
 
-  /**
-   * Show one frame, hiding the rest.
-   *
-   * Two things have to be handled or layers leak. Dragging the slider fires
-   * many calls at once, so: (1) concurrent requests for the SAME png must share
-   * one load, otherwise each creates its own layer and only the last reaches
-   * the cache — the orphans are then invisible to the hide loop and stay on
-   * screen forever; (2) a slow load that resolves after the user has moved on
-   * must not show itself, hence the request sequence.
-   */
-  async function showFrame(png, bbox) {
-    if (!png) return;
-    const mine = ++reqId;
-
-    let layer = cache.get(png);
-    if (!layer) {
-      let load = pending.get(png);
-      if (!load) {
-        const [w, s, e, n] = bbox;
-        load = Cesium.SingleTileImageryProvider.fromUrl(
-          `../data/processed/${png}`,
-          { rectangle: Cesium.Rectangle.fromDegrees(w, s, e, n) },
-        ).then((provider) => {
-          const l = viewer.imageryLayers.addImageryProvider(provider);
-          l.__png = png;
-          l.alpha = 0.8;
-          l.show = false;
-          cache.set(png, l);
-          pending.delete(png);
-          return l;
-        }).catch((err) => {
-          console.warn("[landuse] frame failed to load", png, err);
-          pending.delete(png);
-          return null;
-        });
-        pending.set(png, load);
-      }
-      layer = await load;
-      if (!layer) return;
+  function allFrames() {
+    const out = [];
+    for (const sc of Object.values(ca.scenarios)) {
+      for (const f of sc.frames) out.push(f);
     }
-    if (mine !== reqId) return;          // superseded while loading
-    for (const l of cache.values()) l.show = false;
-    layer.show = layerOn;
+    return out;
   }
 
-  let layerOn = false;
+  async function preload() {
+    if (preloaded) return preloaded;
+    preloaded = (async () => {
+      await Promise.all(allFrames().map(async (f) => {
+        if (layers.has(f.png)) return;
+        try {
+          const [w, s2, e, n] = f.bbox_wgs84;
+          const provider = await Cesium.SingleTileImageryProvider.fromUrl(
+            `../data/processed/${f.png}`,
+            { rectangle: Cesium.Rectangle.fromDegrees(w, s2, e, n) },
+          );
+          const l = viewer.imageryLayers.addImageryProvider(provider);
+          l.alpha = 0.8;
+          l.show = false;
+          layers.set(f.png, l);
+        } catch (err) {
+          console.warn("[landuse] frame failed to load", f.png, err);
+        }
+      }));
+    })();
+    return preloaded;
+  }
+
+  /** Show exactly one frame, or none. Synchronous once preloaded. */
+  function showFrame(png) {
+    for (const [name, l] of layers) l.show = layerOn && name === png;
+  }
+
   ctx.registerLayer({
     id: "landuseModel",
     label: "Land-use simulation",
     group: "Analysis",
     show: false,
-    onToggle: (v) => {
+    onToggle: async (v) => {
       layerOn = v;
-      reqId++;                           // invalidate anything still loading
-      for (const l of cache.values()) l.show = false;
-      if (v) render();
+      if (!v) { showFrame(null); return; }
+      await preload();
+      render();
     },
   });
 
@@ -161,7 +157,7 @@ export async function setup(ctx) {
     const i = Math.min(+slider.value, sc.frames.length - 1);
     const fr = sc.frames[i];
     outEl.textContent = fr.t;
-    showFrame(fr.png, fr.bbox_wgs84);
+    showFrame(fr.png);
     const s = sc.score;
     const sh = sc.trajectory[Math.min(fr.t, sc.trajectory.length - 1)].shares;
     info.innerHTML =

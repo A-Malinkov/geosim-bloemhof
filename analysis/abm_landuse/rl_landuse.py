@@ -64,12 +64,11 @@ import sys
 import numpy as np
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
-from common.project import PROCESSED, STUDY_AREA, bbox_rd  # noqa: E402
+from common.project import PROCESSED, STUDY_AREA  # noqa: E402
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from ca_landuse import (  # noqa: E402
-    ACTIVE, AMENITY, CLASSES, COLOURS, GREEN, RESID, RETAIL, INDUSTRY, VACANT,
-    WATER, ROAD, accessibility, amenity_access, export_grid_png, rasterise,
-    shannon_mix,
+    AMENITY, CLASSES, COLOURS, GREEN, RESID, RETAIL, VACANT, WATER,
+    accessibility, amenity_access, export_grid_png, rasterise, shannon_mix,
 )
 
 PLACEABLE = [RESID, RETAIL, AMENITY, GREEN]     # what the agent may build
@@ -126,7 +125,7 @@ def main() -> int:
     from scipy.ndimage import distance_transform_edt
 
     print(f"RL land-use allocation — {STUDY_AREA.name}")
-    grid0, transform, (nx, ny) = rasterise(args.cell)
+    grid0, transform, (nx, ny), road_frac = rasterise(args.cell)
     n_new = int(0.06 * grid0.size)
     print(f"  grid {nx} x {ny}, programme {n_new} cells "
           f"({n_new * args.cell**2 / 10_000:.1f} ha)")
@@ -146,7 +145,7 @@ def main() -> int:
         eps = args.eps_end + (args.eps_start - args.eps_end) * \
             math.exp(-3.0 * ep / max(1, args.episodes))
         g = grid0.copy()
-        acc = accessibility(g)
+        acc = accessibility(g, road_frac)
         prev_obj = base_obj
         # only undeveloped, non-fixed land may be built on
         free = (g == VACANT)

@@ -247,6 +247,27 @@ you run the scripts once to fill in the rest.
 
 ---
 
+## Project status
+
+Generated from the outputs in `data/processed/`, not maintained by hand.
+
+| # | Component | Status | Owner |
+|---|---|---|---|
+| 4.1 | 3D city model + proposed massing | existing buildings ✅ · **massing not started** | — |
+| 4.2 | Geospatial data layers | ✅ done | — |
+| 4.3 | Urban morphological indicators | ✅ done — SVF 0.685, GSI 0.324, FSI 1.024, mix 0.268 | Atanas |
+| 4.4 | KNMI sensors + AI prediction | ✅ done — live feed, sensors, 5 y history, model comparison | — |
+| 4.5 | Wind + noise simulation | ❌ not started | — |
+| 4.6 | CBS socio-demographics | ❌ not started | — |
+| 4.7 | Agent-based land-use model | ✅ done — CA + RL, prefers `scenario_b` | Atanas |
+| 4.8 | Road network optimization | ❌ not started | — |
+| 4.9 | Scenario comparison | ❌ not started | — |
+
+**4 of 9 complete.** The four unstarted components carry the heaviest rubric
+weight, and 4.9 depends on all of them writing outputs keyed
+`baseline` / `scenario_a` / `scenario_b` — which the module contract already
+does, so do not build anything that cannot be re-run per scenario.
+
 ## 7. What already works
 
 Components **2b (3D vegetation)** and **3 (all four morphology indicators)** are
@@ -293,7 +314,7 @@ and *Sky View Factor* appears under **Analysis** in the layer panel.
 | Land-use mix (Bloemhof) | Shannon **0.268** of 1.0 · 81 % of floor space residential |
 | Weather forecast (temperature, +6 h) | MAE **1.28 °C**, 55 % better than assuming no change |
 | Weather forecast (wind, +6 h) | MAE **1.14 m/s** — but it under-predicts strong winds by 0.6 m/s |
-| Land-use model | CA prefers **scenario_b** (mix 0.460); RL agent reaches 0.535 |
+| Land-use model | CA prefers **scenario_b** (mix 0.482); RL agent reaches 0.560 |
 
 ### Figures (`docs/`)
 

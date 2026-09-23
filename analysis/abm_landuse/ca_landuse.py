@@ -65,7 +65,7 @@ import sys
 import numpy as np
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
-from common.project import PROCESSED, RAW, STUDY_AREA, bbox_rd, to_wgs  # noqa: E402
+from common.project import PROCESSED, RAW, STUDY_AREA, bbox_rd  # noqa: E402
 
 # ---------------------------------------------------------------- the states
 WATER, ROAD, GREEN, RESID, RETAIL, AMENITY, INDUSTRY, VACANT = range(8)
@@ -124,13 +124,31 @@ def rasterise(cell_m: float):
                          fill=0, all_touched=False, dtype="uint8")
         grid[burn == 1] = state
 
+    road_frac = np.zeros((ny, nx), dtype="float32")
     if rd_path.exists():
         roads = gpd.read_file(rd_path).to_crs("EPSG:28992")
-        buf = roads.buffer(cell_m * 0.45)       # a street is about one cell wide
-        burn = rasterize([(g, 1) for g in buf if g and not g.is_empty],
-                         out_shape=(ny, nx), transform=transform,
+        # Buffering every centreline by half a cell put 41% of the study area
+        # under tarmac — 44 km of road at 22.5 m width is 99 ha, more than the
+        # square itself. Use realistic carriageway widths per OSM class instead,
+        # and measure the AREA FRACTION of each cell on a 5 m sub-grid rather
+        # than an all-or-nothing burn.
+        widths = {"primary": 14.0, "secondary": 11.0, "secondary_link": 11.0,
+                  "tertiary": 10.0, "residential": 8.0, "unclassified": 7.0,
+                  "living_street": 6.0, "service": 5.0}
+
+        def width_of(v):
+            t = str(v).strip("[]'\" ").split("'")[0].split(",")[0].strip()
+            return widths.get(t, 8.0)
+
+        sub = 5.0                                  # sub-grid cell size, metres
+        f = int(round(cell_m / sub))
+        sub_t = from_origin(xmin, ymax, sub, sub)
+        geoms = [(g.buffer(width_of(h) / 2.0), 1)
+                 for g, h in zip(roads.geometry, roads.get("highway", [None] * len(roads)))
+                 if g is not None and not g.is_empty]
+        fine = rasterize(geoms, out_shape=(ny * f, nx * f), transform=sub_t,
                          fill=0, all_touched=False, dtype="uint8")
-        grid[burn == 1] = ROAD
+        road_frac = fine.reshape(ny, f, nx, f).mean(axis=(1, 3)).astype("float32")
 
     # BAG units win over land cover: a building standing on mapped grass is a
     # building. Each cell takes the class holding the most floor area in it.
@@ -153,16 +171,25 @@ def rasterise(cell_m: float):
             st = bag_to_state.get(cat, VACANT)
             area[r, c, st] += p["area_per_category_m2"]
     built = area.sum(axis=2) > 0
+
+    # Explicit priority, because the previous order let BAG overwrite 67% of the
+    # road network: a cell with a building is a building cell, an unbuilt cell
+    # that is mostly carriageway is road, then land cover, then vacant.
+    #   1 water      physical, never developable
+    #   2 building   BAG says something stands here
+    #   3 road       >= half the cell is carriageway and nothing is built on it
+    #   4 green/vacant  already in `grid` from land cover
+    grid[(road_frac >= 0.5) & ~built] = ROAD
     grid[built] = area[built].argmax(axis=1).astype("int16")
-    # never let a building overwrite water
+
     water_mask = np.zeros((ny, nx), dtype=bool)
-    sub = lc[lc["cover"] == "water"]
-    if not sub.empty:
-        water_mask = rasterize([(g, 1) for g in sub.geometry if g and not g.is_empty],
+    wsub = lc[lc["cover"] == "water"]
+    if not wsub.empty:
+        water_mask = rasterize([(g, 1) for g in wsub.geometry if g and not g.is_empty],
                                out_shape=(ny, nx), transform=transform,
                                fill=0, dtype="uint8") == 1
     grid[water_mask] = WATER
-    return grid, transform, (nx, ny)
+    return grid, transform, (nx, ny), road_frac
 
 
 # -------------------------------------------------------------- CA machinery
@@ -188,20 +215,30 @@ def neighbourhood_stack(grid):
     return out
 
 
-def accessibility(grid):
-    """Distance decay from the road network — nothing is built far from a street."""
+def accessibility(grid, road_frac=None, threshold=0.2):
+    """
+    Distance decay from the road SURFACE — nothing is built far from a street.
+
+    Measured from the continuous carriageway fraction, not from cells whose
+    final state happens to be ROAD. At 25 m most street cells also contain a
+    building and are therefore labelled residential, so using the discrete state
+    would leave the accessibility field full of holes and misstate every
+    transition potential nearby. A cell counts as served if at least
+    `threshold` of it is carriageway.
+    """
     from scipy.ndimage import distance_transform_edt
 
-    if not (grid == ROAD).any():
+    served = (road_frac >= threshold) if road_frac is not None else (grid == ROAD)
+    if not served.any():
         return np.ones(grid.shape, dtype="float32")
-    d = distance_transform_edt(grid != ROAD).astype("float32")
+    d = distance_transform_edt(~served).astype("float32")
     return np.exp(-d / 6.0)               # ~150 m e-folding at 25 m cells
 
 
-def step(grid, demand, rng, suitability):
+def step(grid, demand, rng, suitability, road_frac=None):
     """One CA iteration: score every convertible cell, then allocate by demand."""
     nb = neighbourhood_stack(grid)
-    acc = accessibility(grid)
+    acc = accessibility(grid, road_frac)
     convertible = ~np.isin(grid, list(FIXED))
 
     pot = np.zeros((len(CLASSES), *grid.shape), dtype="float32")
@@ -327,7 +364,8 @@ def export_grid_png(grid, transform, crs, path):
 
 
 # ------------------------------------------------------------- validation
-def validate_regrow(grid0, suitability, cell_m, steps, frac, seed, rng_reps=5):
+def validate_regrow(grid0, suitability, cell_m, steps, frac, seed,
+                    road_frac=None, rng_reps=5):
     """
     Can the CA put back what we take away?
 
@@ -384,8 +422,12 @@ def main() -> int:
     args = ap.parse_args()
 
     print(f"Cellular automaton land use — {STUDY_AREA.name}")
-    grid0, transform, (nx, ny) = rasterise(args.cell)
+    grid0, transform, (nx, ny), road_frac = rasterise(args.cell)
     print(f"  grid {nx} x {ny} of {args.cell:.0f} m = {nx*ny:,} cells")
+    served = (road_frac >= 0.2)
+    print(f"  street-served cells: {served.sum():,} "
+          f"({100*served.mean():.0f}%) — carriageway covers "
+          f"{100*road_frac.mean():.0f}% of the area")
     s0 = shares(grid0)
     print("  initial state:")
     for k, v in sorted(s0.items(), key=lambda t: -t[1]):
@@ -457,7 +499,7 @@ def main() -> int:
             traj = [{"t": 0, "shares": s0}]
             keep_grids = [g.copy()]
             for t in range(1, args.steps + 1):
-                g = step(g, demand, rng, suitability)
+                g = step(g, demand, rng, suitability, road_frac)
                 traj.append({"t": t, "shares": shares(g)})
                 keep_grids.append(g.copy())
             sc = score(g, args.cell)
@@ -489,7 +531,6 @@ def main() -> int:
             bbox = export_grid_png(keep_grids[i], transform, "EPSG:28992",
                                    PROCESSED / fn)
             frames.append({"t": int(i), "png": fn, "bbox_wgs84": bbox})
-        out.setdefault("_frame_bbox", bbox)
         out["scenarios"][name] = {
             "frames": frames,
             "label": labels[name],
@@ -508,7 +549,7 @@ def main() -> int:
     out["validation"] = {}
     for frac in (0.1, 0.25, 0.5):
         v = validate_regrow(grid0, suitability, args.cell, args.steps,
-                            frac, args.seed)
+                            frac, args.seed, road_frac)
         out["validation"][f"erase_{int(frac*100)}pct"] = v
         print(f"     erased {int(frac*100):2d}% of developed cells -> "
               f"agreement {100*v['agreement_mean']:.1f}%  "
