@@ -1,8 +1,8 @@
 {
-  "fetched_at": "2026-09-23T18:06:22+00:00",
+  "fetched_at": "2026-09-23T18:49:21+00:00",
   "source": "KNMI Open Data, 10-minute in-situ meteorological observations",
-  "source_file": "KMDS__OPER_P___10M_OBS_L2_202609231800.nc",
-  "observation_time": "2026-09-23T18:00:00.000000000",
+  "source_file": "KMDS__OPER_P___10M_OBS_L2_202609231840.nc",
+  "observation_time": "2026-09-23T18:40:00.000000000",
   "station": "06344",
   "station_name": "Rotterdam Airport",
   "station_lat": 51.9606,
@@ -19,12 +19,12 @@
     "sunshine": "min"
   },
   "values": {
-    "temperature": 17.8,
-    "wind_speed": 3.05,
-    "wind_direction": 251.8,
-    "wind_gust": 4.99,
-    "humidity": 77.0,
-    "pressure_msl": 1022.16,
+    "temperature": 17.1,
+    "wind_speed": 3.25,
+    "wind_direction": 255.2,
+    "wind_gust": 4.97,
+    "humidity": 82.0,
+    "pressure_msl": 1022.25,
     "precipitation_intensity": 0.0,
     "sunshine": 0.0
   }

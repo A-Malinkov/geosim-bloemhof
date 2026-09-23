@@ -36,29 +36,52 @@ async function addSvfOverlay(ctx, svf) {
   const bb = svf?.bbox_wgs84;
   if (!bb) return null;
   const [west, south, east, north] = bb;
-  try {
-    const layer = viewer.imageryLayers.addImageryProvider(
-      new Cesium.SingleTileImageryProvider({
-        url: "../data/processed/svf_overlay.png",
-        rectangle: Cesium.Rectangle.fromDegrees(west, south, east, north),
-        tileWidth: 512,
-        tileHeight: 512,
-      }),
-    );
-    layer.show = false;
-    layer.alpha = 0.85;
-    ctx.registerLayer({
-      id: "svfOverlay",
-      label: "Sky View Factor (AHN)",
-      group: "Analysis",
-      show: false,
-      target: layer,
-    });
-    return layer;
-  } catch (err) {
-    console.warn("[indicators] SVF overlay failed", err);
-    return null;
+  /* The image is ~1.8 MB and the layer is off by default, so it is loaded the
+   * first time someone ticks the box rather than during startup — otherwise
+   * every panel in the dashboard waits on a download nobody asked for.
+   * The toggle is registered immediately so the layer list stays in a fixed
+   * order regardless of how long the image takes. */
+  let layer = null;
+  let loading = null;
+
+  async function ensureLoaded() {
+    if (layer) return layer;
+    if (!loading) {
+      // fromUrl reads the image's real dimensions. The synchronous constructor
+      // makes you supply tileWidth/tileHeight by hand, and they were wrong
+      // (512 against a 1400 px image) — asserting a size you have not checked
+      // is how an overlay silently ends up distorted.
+      loading = Cesium.SingleTileImageryProvider.fromUrl(
+        "../data/processed/svf_overlay.png",
+        { rectangle: Cesium.Rectangle.fromDegrees(west, south, east, north) },
+      ).then((provider) => {
+        layer = viewer.imageryLayers.addImageryProvider(provider);
+        layer.alpha = 0.85;
+        return layer;
+      }).catch((err) => {
+        console.warn("[indicators] SVF overlay failed to load", err);
+        ctx.note("SVF overlay: failed", "err");
+        return null;
+      });
+    }
+    return loading;
   }
+
+  ctx.registerLayer({
+    id: "svfOverlay",
+    label: "Sky View Factor (AHN)",
+    group: "Analysis",
+    show: false,
+    onToggle: async (visible) => {
+      if (!visible) {
+        if (layer) layer.show = false;
+        return;
+      }
+      const l = await ensureLoaded();
+      if (l) l.show = true;
+    },
+  });
+  return true;
 }
 
 /* ---------------------------------------------------------------------------
@@ -197,7 +220,7 @@ export async function setup(ctx) {
 
   if (svf?.open_ground) {
     const g = svf.open_ground;
-    await addSvfOverlay(ctx, svf);
+    addSvfOverlay(ctx, svf);
     svfBox.innerHTML =
       `<h4>Sky View Factor</h4>` +
       `<table class="kv"><tbody>` +

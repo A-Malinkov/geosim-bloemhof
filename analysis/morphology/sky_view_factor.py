@@ -206,6 +206,37 @@ def write_tif(path, arr, transform, crs):
     print(f"  wrote {path.name}")
 
 
+def reproject_to_wgs84(arr, transform, crs):
+    """
+    Warp an RD-gridded array to EPSG:4326.
+
+    Needed because the overlay is draped on a lon/lat RECTANGLE in Cesium, and
+    the RD square is not one: RD New is rotated slightly against WGS84, so the
+    square's four corners do not share two longitudes. Taking the SW and NE
+    corners as the rectangle misplaces the image by up to ~30 m — a third of a
+    block. Warping first makes the rectangle exact.
+
+    Returns (array, (west, south, east, north)).
+    """
+    from rasterio.warp import calculate_default_transform, reproject, Resampling
+
+    h, w = arr.shape
+    dst_crs = "EPSG:4326"
+    left, top = transform * (0, 0)
+    right, bottom = transform * (w, h)
+    dst_transform, dw, dh = calculate_default_transform(
+        crs, dst_crs, w, h, left=left, bottom=bottom, right=right, top=top)
+    dst = np.full((dh, dw), np.nan, dtype="float32")
+    reproject(source=arr, destination=dst,
+              src_transform=transform, src_crs=crs,
+              dst_transform=dst_transform, dst_crs=dst_crs,
+              src_nodata=np.nan, dst_nodata=np.nan,
+              resampling=Resampling.bilinear)
+    west, north = dst_transform * (0, 0)
+    east, south = dst_transform * (dw, dh)
+    return dst, (west, south, east, north)
+
+
 def write_overlay_png(path, arr, mask=None, max_px: int = 1400):
     """
     Colour-ramped PNG with transparency, for draping on the globe.
@@ -331,6 +362,8 @@ def main() -> int:
         except Exception as exc:
             print(f"  ! neighbourhood clip skipped ({exc})")
 
+    overlay_arr, overlay_bbox = reproject_to_wgs84(svf_rad_c, transform_c, crs)
+
     stats = {
         "study_area": STUDY_AREA.name,
         "method": "multi-directional horizon angle (Zaksek, Ostir & Kokalj 2011)",
@@ -348,7 +381,11 @@ def main() -> int:
             "ground": "AHN dtm_05m, gaps filled by nearest-neighbour dilation",
         },
         "bbox_rd": [round(v, 1) for v in bbox_rd()],
-        "bbox_wgs84": [round(v, 7) for v in bbox_wgs()],
+        # The bbox the PNG is actually drawn on, from the warp — NOT the RD
+        # square reprojected corner-to-corner, which is off by up to ~30 m
+        # because RD New is rotated against WGS84.
+        "bbox_wgs84": [round(v, 7) for v in overlay_bbox],
+        "bbox_wgs84_rd_corners": [round(v, 7) for v in bbox_wgs()],
         "all_cells": describe(svf_rad_c),
         "open_ground": describe(np.where(og_c, svf_rad_c, np.nan)),
         "open_ground_geometric": describe(np.where(og_c, svf_geo_c, np.nan)),
@@ -371,7 +408,12 @@ def main() -> int:
     print("  writing outputs …")
     write_tif(PROCESSED / "svf.tif", svf_rad_c, transform_c, crs)
     write_tif(PROCESSED / "svf_geometric.tif", svf_geo_c, transform_c, crs)
-    write_overlay_png(PROCESSED / "svf_overlay.png", svf_rad_c)
+
+    # The GeoTIFFs stay in RD. The browser overlay was warped to EPSG:4326 above,
+    # so the lon/lat rectangle Cesium drapes it on is genuinely where the data is.
+    write_overlay_png(PROCESSED / "svf_overlay.png", overlay_arr)
+    print(f"  overlay warped to EPSG:4326, bbox "
+          f"{[round(v, 6) for v in overlay_bbox]}")
 
     (PROCESSED / "svf_summary.json").write_text(json.dumps(stats, indent=2) + "\n")
     print(f"  wrote svf_summary.json")

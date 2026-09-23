@@ -127,8 +127,12 @@ export async function setup(ctx) {
       return;
     }
     const n = ds.entities.values.length;
+    // Cesium Property.getValue takes a JulianDate. A ConstantProperty tolerates
+    // an omitted one, but a time-varying property would return undefined, so
+    // pass the clock time rather than relying on that.
+    const now = viewer.clock.currentTime;
     const heights = ds.entities.values
-      .map((e) => e.polygon?.extrudedHeight?.getValue?.())
+      .map((e) => e.polygon?.extrudedHeight?.getValue?.(now))
       .filter((h) => h != null)
       .map((h) => h - ctx.config.napToEllipsoidM);
     const max = heights.length ? Math.max(...heights) : null;

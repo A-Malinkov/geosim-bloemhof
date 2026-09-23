@@ -322,6 +322,7 @@ Everything else is a wired-up skeleton waiting for its owner.
 | Dashboard panels all say "not computed yet" | normal until you run the analysis scripts |
 | `data/processed/*.json` 404s | you served from `app/` instead of the project root |
 | Buildings or trees float / sink ~43 m | height datum — see section 4, and Ctrl+click to probe |
+| A draped raster sits ~30 m off | you built a lon/lat rectangle from RD corners; warp the raster to EPSG:4326 first |
 | Terrain missing, everything flat | the Cesium ion token in `config.js` expired |
 | `pip install` fails building fiona/GDAL | you re-added `fiona`; use `pyogrio` |
 | Console shows a 404 for `config.local.js` | you skipped the token step — `cp app/config.local.example.js app/config.local.js` |

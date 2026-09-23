@@ -16,6 +16,7 @@ The app treats a stub as "no data" and shows a placeholder until you overwrite i
 - A full CFD solve is out of scope. A defensible alternative is a roughness/shelter model driven by the KNMI wind rose, or a simplified Lawson-criterion comparison between scenarios. **Say which you used and what it cannot tell you.**
 - Noise: a road-traffic propagation model over the road network from `analysis/roads/`, with building attenuation.
 - Output a regular grid plus `bbox_wgs84` so the app can drape it — see the stub in `data/processed/wind_baseline.json`.
+- **Warp the grid to EPSG:4326 before taking those bounds.** RD New is rotated slightly against WGS84, so the study square's four corners do not share two longitudes. Building a lon/lat rectangle from the SW and NE corners misplaces the overlay by about 30 m — a third of a block. This bit the Sky View Factor overlay; `reproject_to_wgs84()` in `analysis/morphology/sky_view_factor.py` is the fix, reuse it.
 - What matters for the report is baseline vs. design, not the absolute numbers.
 
 ## Getting started

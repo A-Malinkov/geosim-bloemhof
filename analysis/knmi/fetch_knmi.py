@@ -257,7 +257,22 @@ def fetch_hourly(station: int, years: int) -> list[dict]:
             rows.append(row)
         print(f"    {y0.year}: {len(chunk):,} hours (running total {len(rows):,})")
         time.sleep(0.4)                        # be polite to a free service
-    return rows
+
+    # The service IGNORES the hour part of start/end and returns the day AFTER
+    # the end date as well, so consecutive yearly chunks overlap by 24 hours.
+    # Verified: asking for 2021-12-31 hours 20..24 returns all of 31 Dec AND all
+    # of 1 Jan. Left in, those duplicates break the assumption that row i-1 is
+    # one hour before row i, which is exactly what the lag features rely on.
+    seen, deduped = set(), []
+    for r in sorted(rows, key=lambda r: r["time"]):
+        if r["time"] in seen:
+            continue
+        seen.add(r["time"])
+        deduped.append(r)
+    dropped = len(rows) - len(deduped)
+    if dropped:
+        print(f"    removed {dropped} duplicate hours from chunk overlaps")
+    return deduped
 
 
 def fetch_daily(station: int, years: int) -> list[dict]:

@@ -93,7 +93,12 @@ def build_features(times, cols):
     n = len(times)
     hours = times.astype("datetime64[h]").astype(int)
     hod = (hours % 24).astype("float64")
-    doy = (times.astype("datetime64[D]").astype(int) % 365).astype("float64")
+    # Real day-of-year, not days-since-epoch % 365: the latter drifts a day
+    # every leap year, so 1 January maps to 13 in 2021 but 14 in 2025 and the
+    # seasonal feature slowly desynchronises from the actual season.
+    days = times.astype("datetime64[D]")
+    year_start = times.astype("datetime64[Y]").astype("datetime64[D]")
+    doy = (days - year_start).astype("timedelta64[D]").astype("float64")
 
     feats, names = [], []
     for key in ("temperature_C", "wind_speed_ms", "humidity_pct",
@@ -339,9 +344,14 @@ def main() -> int:
 
                 if target == "temperature_C" and demo is None:
                     k = 24 * 14                      # a fortnight for the chart
-                    t_demo = times[split:][:k]
+                    # Label each point with the time it is ABOUT (t + h), not
+                    # the time the forecast was issued from. Plotting a +6 h
+                    # value against t shifts the whole series six hours left.
+                    t_demo = (times[split:] + np.timedelta64(h, "h"))[:k]
                     demo = {
                         "variable": target, "model": best, "horizon": f"+{h}h",
+                        "time_is": "the time each value refers to (t+h), not the "
+                                   "time the forecast was issued",
                         "time": [str(t)[:16] for t in t_demo],
                         "actual": [None if not np.isfinite(v) else round(float(v), 2)
                                    for v in yte[:k]],
