@@ -18,6 +18,10 @@ Change both if the site moves; nothing else hard-codes it.
 
 ## 1. Getting set up
 
+
+
+
+
 ### Get the project
 
 ```bash
