@@ -219,18 +219,50 @@ def fetch_current(prefer_station: int | None) -> dict | None:
 
 
 # ------------------------------------------------------- 2 & 3. climatology
-def post_json(url: str, data: str, timeout: int = 300):
-    req = urllib.request.Request(url, data=data.encode(),
-                                 headers={"Content-Type":
-                                          "application/x-www-form-urlencoded"})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        return json.load(r)
+def post_json(url: str, data: str, timeout: int = 300, tries: int = 4,
+              label: str = ""):
+    """
+    POST to the KNMI climatology service, retrying transient failures.
+
+    The service is intermittently slow and answers 502/503/504 under load — a
+    teammate hit a 504 on a request that completes in two seconds from here. It
+    recovers within seconds, so a single attempt is not enough and a traceback
+    is the wrong response to somebody else's busy server.
+
+    Retries 5xx and timeouts with growing backoff. A 4xx is our fault, not
+    theirs, so it is raised immediately.
+    """
+    last = None
+    for attempt in range(tries):
+        req = urllib.request.Request(url, data=data.encode(),
+                                     headers={"Content-Type":
+                                              "application/x-www-form-urlencoded"})
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                return json.load(r)
+        except urllib.error.HTTPError as exc:
+            last = exc
+            if exc.code < 500:
+                raise                      # a bad request will not fix itself
+            wait = min(5 * (attempt + 1), 15)
+            print(f"      {label}HTTP {exc.code} from KNMI, retrying in {wait}s "
+                  f"[{attempt + 1}/{tries}]")
+        except Exception as exc:           # timeouts, connection resets
+            last = exc
+            wait = min(5 * (attempt + 1), 15)
+            print(f"      {label}{type(exc).__name__}, retrying in {wait}s "
+                  f"[{attempt + 1}/{tries}]")
+        if attempt < tries - 1:
+            time.sleep(wait)
+    raise RuntimeError(f"KNMI climatology unreachable after {tries} tries: {last}")
 
 
 def fetch_hourly(station: int, years: int) -> list[dict]:
     """Hourly climatology, in yearly chunks so no single request is enormous."""
     end = dt.date.today()
     rows: list[dict] = []
+    missing: list[int] = []
+    consecutive_failures = 0
     for back in range(years, 0, -1):
         y0 = dt.date(end.year - back, 1, 1)
         y1 = min(dt.date(end.year - back, 12, 31), end)
@@ -241,9 +273,21 @@ def fetch_hourly(station: int, years: int) -> list[dict]:
             "fmt": "json",
         })
         try:
-            chunk = post_json(HOURLY, payload)
+            chunk = post_json(HOURLY, payload, label=f"{y0.year}: ")
+            consecutive_failures = 0
         except Exception as exc:
-            print(f"    {y0.year}: failed ({type(exc).__name__}), skipped")
+            print(f"    {y0.year}: UNAVAILABLE — {exc}")
+            missing.append(y0.year)
+            consecutive_failures += 1
+            if consecutive_failures >= 2:
+                # Retries are for a service that is flaky. Two chunks failing
+                # every retry means it is down, and grinding through the
+                # remaining years costs minutes to learn the same thing.
+                rest = [end.year - b for b in range(back - 1, 0, -1)]
+                missing.extend(rest)
+                print(f"    giving up on the remaining year(s): "
+                      f"{', '.join(map(str, rest)) or 'none'}")
+                break
             continue
         for r in chunk:
             row = {"time": f"{r['date'][:10]}T{int(r['hour']) - 1:02d}:00"}
@@ -273,7 +317,15 @@ def fetch_hourly(station: int, years: int) -> list[dict]:
     dropped = len(rows) - len(deduped)
     if dropped:
         print(f"    removed {dropped} duplicate hours from chunk overlaps")
-    return deduped
+    if missing:
+        # A gap here is not cosmetic: train_forecast.py builds lag features on
+        # the assumption that row i-1 is one hour before row i, and it would
+        # happily train on a record with whole years missing.
+        print(f"\n  !! {len(missing)} year(s) could not be fetched: "
+              f"{', '.join(map(str, missing))}")
+        print("     The training set is INCOMPLETE. Re-run when KNMI is "
+              "responding rather than training on this.")
+    return deduped, missing
 
 
 def fetch_daily(station: int, years: int) -> list[dict]:
@@ -286,7 +338,7 @@ def fetch_daily(station: int, years: int) -> list[dict]:
         "end": end.strftime("%Y%m%d"),
         "fmt": "json",
     })
-    raw = post_json(DAILY, payload)
+    raw = post_json(DAILY, payload, label="daily: ")
     out = []
     for r in raw:
         out.append({
@@ -327,7 +379,11 @@ def main() -> int:
         return 0
 
     print(f"\n2. hourly history, {args.years} years (training set)")
-    hourly = fetch_hourly(args.station, args.years)
+    try:
+        hourly, missing_years = fetch_hourly(args.station, args.years)
+    except Exception as exc:
+        print(f"  could not reach the KNMI climatology service: {exc}")
+        hourly, missing_years = [], list(range(args.years))
     if hourly:
         path = RAW / f"knmi_hourly_{args.station}.json"
         path.write_text(json.dumps({
@@ -340,7 +396,15 @@ def main() -> int:
         print(f"  {len(hourly):,} hourly records -> data/raw/{path.name}")
 
     print(f"\n3. daily history, {args.years} years (dashboard chart)")
-    daily = fetch_daily(args.station, args.years)
+    try:
+        daily = fetch_daily(args.station, args.years)
+    except Exception as exc:
+        print(f"  could not fetch the daily series: {exc}")
+        print("  The KNMI climatology service does this under load; it usually")
+        print("  clears within minutes. Everything already written above is")
+        print("  fine, and data/processed/knmi_daily_history.json keeps its")
+        print("  previous contents. Re-run when it recovers.")
+        daily = []
     if daily:
         (PROCESSED / "knmi_daily_history.json").write_text(json.dumps({
             "station": args.station,
@@ -353,6 +417,11 @@ def main() -> int:
         if temps:
             print(f"  mean daily temperature over the period: "
                   f"{sum(temps) / len(temps):.1f} degC")
+
+    if missing_years or not daily:
+        print("\n  Finished with gaps — see the messages above. The current "
+              "observation was written; the history was not complete.")
+        return 2
     return 0
 
 
