@@ -272,6 +272,29 @@ def main() -> int:
     except Exception as exc:
         print(f"  ! buurt aggregates skipped ({exc})")
 
+    # --------------------------------------------- label each cell by buurt
+    # The Spacematrix scatter is only worth drawing if the two buurten can be
+    # told apart on it: they occupy visibly different parts of the diagram, and
+    # a single undifferentiated cloud hides exactly the finding.
+    cell_buurt: dict[int, str] = {}
+    try:
+        import shapely.geometry as sg
+        from shapely.prepared import prep
+
+        polys = buurt_polygons()
+        prepped = [(name, prep(polys[code])) for code, name in STUDY_AREA.buurten]
+        for i in range(ncell):
+            if count[i] == 0:
+                continue
+            r, cc = divmod(i, nx)
+            pt = sg.Point(xmin + cc * c + c / 2, ymin + r * c + c / 2)
+            for name, pg in prepped:
+                if pg.contains(pt):
+                    cell_buurt[i] = name
+                    break
+    except Exception as exc:
+        print(f"  ! per-cell buurt labels skipped ({exc})")
+
     # ------------------------------------------------------------- summary
     valid = count >= args.min_buildings
     summary = {
@@ -309,9 +332,18 @@ def main() -> int:
         },
         "per_buurt": per_buurt,
         "combined": combined,
+        # One point per grid cell for the Spacematrix scatter in the app. The
+        # buurt label comes from whichever polygon contains the cell CENTRE, so
+        # a cell straddling the boundary is attributed to one side rather than
+        # counted twice; cells whose centre falls outside both (the bounding box
+        # is larger than the buurten) are labelled null and drawn in grey.
         "spacematrix": [
             {"gsi": round(float(gsi[i]), 4), "fsi": round(float(fsi[i]), 4),
-             "height_mean_m": None if not np.isfinite(h_mean[i]) else round(float(h_mean[i]), 2)}
+             "layers": None if not np.isfinite(L[i]) else round(float(L[i]), 2),
+             "osr": None if not np.isfinite(osr[i]) else round(float(osr[i]), 3),
+             "height_mean_m": None if not np.isfinite(h_mean[i]) else round(float(h_mean[i]), 2),
+             "height_std_m": None if not np.isfinite(h_std[i]) else round(float(h_std[i]), 2),
+             "buurt": cell_buurt.get(i)}
             for i in range(ncell) if valid[i]
         ],
     }

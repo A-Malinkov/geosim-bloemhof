@@ -67,6 +67,7 @@ def main() -> int:
     svf, veg = load("svf_summary.json"), load("vegetation_summary.json")
     den, lu = load("density_summary.json"), load("landuse_summary.json")
     ca, rl, fc = load("landuse_abm.json"), load("landuse_rl.json"), load("knmi_forecast.json")
+    ws = load("landuse_weight_sensitivity.json")
 
     MAIN = ROOT / "README.md"
     MORPH = ROOT / "analysis/morphology/README.md"
@@ -133,6 +134,35 @@ def main() -> int:
             ("RL mix headline", r"Land-use model \| CA prefers", f"{rl['score']['landuse_mix']:.3f}", [MAIN]),
             ("RL best objective", r"^Best [\d.]+ against", f"{rl['best_objective']:.3f}", [ABM]),
         ]
+    if ws:
+        b = 100 * ws["win_share"]["scenario_b"]
+        a = 100 * ws["win_share"]["scenario_a"]
+        checks += [
+            # anchored on the two-column weight-space row only: the same row
+            # label also opens the scenario results table, and matching both
+            # would let the value sit on either line and still pass
+            ("weight sweep: scenario_b share",
+             r"^\| scenario_b \*\*★\*\* \| \d+ % \|$", f"{b:.0f} %", [ABM]),
+            ("weight sweep: scenario_a share",
+             r"^\| scenario_a \| \d+ % \|$", f"{a:.0f} %", [ABM]),
+            ("weight sweep: n vectors", r"weight vectors on the normalised simplex",
+             f"{ws['parameters']['n_weight_vectors']:,}", [ABM]),
+            ("weight sweep: default margin", r"on a normalised scale, against",
+             f"{ws['default_margin']:.4f}", [ABM]),
+            ("weight sweep: nearest flip distance", r"away on the simplex",
+             f"{ws['nearest_flip']['simplex_distance']:.2f}", [ABM]),
+        ]
+    if den:
+        sm = den.get("spacematrix") or []
+        if sm and any("buurt" in q for q in sm):
+            import statistics as _st
+            gm = {n: _st.fmean([q["fsi"] for q in sm if q["buurt"] == n])
+                  for n in den["per_buurt"]}
+            checks += [
+                ("spacematrix point count", r"per-cell points in", f"{len(sm)}", [MORPH]),
+                ("grid FSI Bloemhof", r"^\| Bloemhof \|", f"{gm['Bloemhof']:.2f}", [MORPH]),
+                ("grid FSI Hillesluis", r"^\| Hillesluis \|", f"{gm['Hillesluis']:.2f}", [MORPH]),
+            ]
     if fc:
         t = fc["results"]["temperature_C"]["horizons"]
         w = fc["results"]["wind_speed_ms"]["horizons"]
@@ -192,6 +222,29 @@ def main() -> int:
             ("KNMI README: 'temperature hardest in calm conditions'",
              ct["calm (<3 m/s)"]["mae"] > ct["strong (>=8 m/s)"]["mae"]),
         ]
+    if ws:
+        claims += [
+            ("ABM README: 'baseline never wins under any positive weighting'",
+             ws["win_share"]["baseline"] == 0.0),
+            ("ABM README: 'scenario_b wins the majority of the weight space'",
+             ws["win_share"]["scenario_b"] > 0.5),
+            ("ABM README: 'the default weights are not on a knife edge'",
+             ws["nearest_flip"] is None
+             or ws["nearest_flip"]["simplex_distance"] > 0.05),
+            ("ABM README: 'the winner is weight-dependent, not unanimous'",
+             ws["win_share"]["scenario_b"] < 1.0),
+        ]
+    if den:
+        sm = den.get("spacematrix") or []
+        if sm and any("buurt" in q for q in sm):
+            import statistics as _st2
+            gm = {n: _st2.fmean([q["fsi"] for q in sm if q["buurt"] == n])
+                  for n in den["per_buurt"]}
+            pb = den["per_buurt"]
+            claims.append((
+                "morphology README: 'Hillesluis is looser by buurt, denser by cell'",
+                (pb["Hillesluis"]["fsi"] < pb["Bloemhof"]["fsi"])
+                and (gm["Hillesluis"] > gm["Bloemhof"])))
     if ca and rl:
         claims += [
             ("ABM README: 'scenario_b is preferred'", ca["preferred"] == "scenario_b"),

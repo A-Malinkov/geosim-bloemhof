@@ -1,0 +1,152 @@
+{
+  "method": "sensitivity of the CA scenario ranking to the objective weights",
+  "_note": "The CA is not re-run. Every replicate stores its three raw objective components, so the sweep re-scores the stored replicates and re-picks the best one, exactly as ca_landuse.py does. Verified against the published ranking before sweeping.",
+  "objective": "w_mix*landuse_mix + w_green*green_share + w_prox*max(0, 1 - mean_home_to_amenity_m/400)",
+  "default_weights": {
+    "w_mix": 1.6,
+    "w_green": 1.0,
+    "w_prox": 0.8
+  },
+  "default_weights_normalised": [
+    0.4706,
+    0.2941,
+    0.2353
+  ],
+  "parameters": {
+    "simplex_step": 0.01,
+    "n_weight_vectors": 4851,
+    "replicates_per_scenario": {
+      "baseline": 12,
+      "scenario_a": 12,
+      "scenario_b": 12
+    },
+    "zero_weights_excluded": true
+  },
+  "default_winner": "scenario_b",
+  "default_margin": 0.0059,
+  "win_share": {
+    "baseline": 0.0,
+    "scenario_a": 0.2876,
+    "scenario_b": 0.7124
+  },
+  "win_counts": {
+    "baseline": 0,
+    "scenario_a": 1395,
+    "scenario_b": 3456
+  },
+  "nearest_flip": {
+    "weights": [
+      0.51,
+      0.14,
+      0.35
+    ],
+    "winner": "scenario_a",
+    "simplex_distance": 0.1961
+  },
+  "mix_weight_slice": [
+    {
+      "w_mix": 0.1,
+      "winner": "scenario_b",
+      "margin": 0.0096,
+      "objectives": {
+        "baseline": 0.4144,
+        "scenario_a": 0.4489,
+        "scenario_b": 0.4585
+      }
+    },
+    {
+      "w_mix": 0.2,
+      "winner": "scenario_b",
+      "margin": 0.0086,
+      "objectives": {
+        "baseline": 0.4264,
+        "scenario_a": 0.4599,
+        "scenario_b": 0.4685
+      }
+    },
+    {
+      "w_mix": 0.3,
+      "winner": "scenario_b",
+      "margin": 0.0076,
+      "objectives": {
+        "baseline": 0.4384,
+        "scenario_a": 0.471,
+        "scenario_b": 0.4786
+      }
+    },
+    {
+      "w_mix": 0.4,
+      "winner": "scenario_b",
+      "margin": 0.0067,
+      "objectives": {
+        "baseline": 0.4504,
+        "scenario_a": 0.482,
+        "scenario_b": 0.4887
+      }
+    },
+    {
+      "w_mix": 0.5,
+      "winner": "scenario_b",
+      "margin": 0.0058,
+      "objectives": {
+        "baseline": 0.4624,
+        "scenario_a": 0.4931,
+        "scenario_b": 0.4989
+      }
+    },
+    {
+      "w_mix": 0.6,
+      "winner": "scenario_b",
+      "margin": 0.0049,
+      "objectives": {
+        "baseline": 0.4744,
+        "scenario_a": 0.5042,
+        "scenario_b": 0.509
+      }
+    },
+    {
+      "w_mix": 0.7,
+      "winner": "scenario_b",
+      "margin": 0.004,
+      "objectives": {
+        "baseline": 0.4864,
+        "scenario_a": 0.5152,
+        "scenario_b": 0.5192
+      }
+    },
+    {
+      "w_mix": 0.8,
+      "winner": "scenario_b",
+      "margin": 0.003,
+      "objectives": {
+        "baseline": 0.4984,
+        "scenario_a": 0.5263,
+        "scenario_b": 0.5293
+      }
+    },
+    {
+      "w_mix": 0.9,
+      "winner": "scenario_b",
+      "margin": 0.0024,
+      "objectives": {
+        "baseline": 0.5104,
+        "scenario_a": 0.5373,
+        "scenario_b": 0.5397
+      }
+    }
+  ],
+  "margin": {
+    "at_default": 0.0059,
+    "median_over_simplex": 0.0067,
+    "replicate_sd_at_default": {
+      "baseline": 0.0,
+      "scenario_a": 0.0035,
+      "scenario_b": 0.0027
+    }
+  },
+  "limitations": [
+    "Sweeps the scoring of the CA only. The RL agent optimises the objective directly, so re-scoring its result under other weights is not the same as retraining under them.",
+    "Explores the three terms we chose; it does not test whether they are the right three.",
+    "Zero weights are excluded: dropping a term is a different model."
+  ]
+}

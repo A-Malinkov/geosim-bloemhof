@@ -12,12 +12,14 @@ Component 4.7 · Owner: **Atanas Malinkov** · study area: Bloemhof + Hillesluis
 | `fetch_landcover.py` | OSM green, water and roads — the surface BAG cannot see | `data/raw/osm_landcover.geojson`, `osm_roads.geojson` |
 | `ca_landuse.py` | constrained cellular automaton, scenarios, validation | `data/processed/landuse_abm.json` + frame PNGs |
 | `rl_landuse.py` | Q-learning agent over the same objective | `data/processed/landuse_rl.json` |
+| `weight_sensitivity.py` | re-scores the stored replicates across the weight simplex | `data/processed/landuse_weight_sensitivity.json` |
 
 ```bash
 python analysis/morphology/fetch_landuse.py      # BAG units — needed first
 python analysis/abm_landuse/fetch_landcover.py   # ~30 s
 python analysis/abm_landuse/ca_landuse.py        # ~10 s
 python analysis/abm_landuse/rl_landuse.py        # ~40 s
+python analysis/abm_landuse/weight_sensitivity.py  # ~2 s, no model re-run
 ```
 
 ## Why two models
@@ -104,6 +106,46 @@ objective = 1.6 · land-use mix + 1.0 · green share
 **scenario_b wins.** Trading some housing for park and amenity beats
 maximising housing: it gains more on mix and green than it loses on walkability.
 
+### How much of that is the weights?
+
+Those three weights are ours, and the gap between the top two scenarios is
+0.0059 on a normalised scale, against a replicate spread of
+σ 0.0035 and 0.0027. So the ranking deserves a
+sensitivity check rather than a full stop.
+
+`weight_sensitivity.py` re-scores every stored replicate across
+4,851 weight vectors on the normalised simplex
+w_mix + w_green + w_prox = 1, re-picking the best replicate at each point exactly
+as `ca_landuse.py` does. The CA is not re-run: each replicate already stores its
+three raw components, so the sweep is exact and takes seconds.
+
+| scenario | share of the weight space it wins |
+|---|---|
+| scenario_b **★** | 71 % |
+| scenario_a | 29 % |
+| baseline | 0 % |
+
+**scenario_b's win is robust in direction but not overwhelming.** It takes
+71 % of the weight space, scenario_a takes the other 29 %, and
+baseline never wins under any positive weighting — that last part is
+the firm result. The nearest weights that flip the answer are
+0.51 · 0.14 · 0.35 (favouring scenario_a),
+0.20 away on the simplex, so the default is not sitting
+on a knife edge. Scenario_a wins when walkability is weighted heavily against
+green space, which is exactly the trade it makes.
+
+Three methods agree on the shares: a 0.02 lattice (72 / 28), a 0.01 lattice
+(71 / 29) and 200,000 uniform Dirichlet draws (71 / 29).
+
+The script reproduces the published objectives from the stored replicates before
+it sweeps, and exits 1 if it cannot. Injecting a wrong weight or a wrong distance
+normaliser was checked to make it fail.
+
+**What the sweep cannot do.** It sweeps the *scoring* of the CA. The RL agent
+optimises the objective directly, so re-scoring its result under other weights is
+not the same experiment as retraining under them, and it is excluded. It also
+explores the three terms we chose without asking whether they are the right three.
+
 ## The RL agent
 
 Q-learning, TD(0), **linear** function approximation, ε-greedy, 120 episodes.
@@ -138,9 +180,10 @@ and only running both models surfaces it.
 - The RL agent optimises the objective **directly**, while the CA follows fixed
   rules and is merely *scored* on it. RL scoring higher is expected by
   construction and is **not** evidence that RL models cities better.
-- The objective is a weighted sum of three terms we chose. Different weights
-  give a different winner; a sensitivity sweep is the obvious next step and is
-  not done.
+- The objective is a weighted sum of three terms we chose. The sweep above
+  shows the winner is weight-dependent: scenario_b takes 71 % of the weight
+  space and scenario_a the rest. Only "baseline never wins" holds regardless.
+  Whether those three terms are the right three is still untested.
 - The RL agent may only build on currently vacant land, so it cannot propose
   redevelopment. The CA can convert any non-fixed cell.
 - 25 m cells cannot represent a building. This allocates land use; turning that

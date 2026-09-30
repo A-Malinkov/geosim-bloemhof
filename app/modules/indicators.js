@@ -226,6 +226,156 @@ function histogramSvg(hist, mean) {
     `</svg>`;
 }
 
+/**
+ * The Spacematrix diagram (Berghauser Pont & Haupt 2010), drawn from the
+ * per-cell points in density_summary.json.
+ *
+ * GSI on x, FSI on y. Those two fix the other two indicators, so the diagram
+ * carries all four: L = FSI/GSI is a straight line through the origin, and
+ * OSR = (1-GSI)/FSI is a curve. Plotting it is the whole point of computing
+ * Spacematrix rather than a bare density figure — fabric types separate by
+ * WHERE they sit, not by any single number, and two cells with the same FSI
+ * can be a low sprawl or a tall point block depending on GSI.
+ *
+ * Points are coloured by buurt because that is the finding: a combined cloud
+ * hides that the two neighbourhoods occupy different regions.
+ *
+ * There is a static matplotlib version in docs/fig_spacematrix.png. This one is
+ * in the dashboard, and when the proposed massing exists it can be overplotted
+ * to show the new fabric moving relative to the existing two.
+ */
+function spacematrixSvg(points, perBuurt) {
+  if (!points?.length) return "";
+
+  const W = 268, H = 200, PL = 30, PB = 22, PT = 6, PR = 6;
+  const iw = W - PL - PR, ih = H - PT - PB;
+
+  // Fixed axis maxima rather than data-driven ones: the scales must not move
+  // when a scenario is added, or the "fabric moved" comparison is meaningless.
+  const GMAX = 0.9, FMAX = 4.0;
+  const px = (g) => PL + Math.min(g / GMAX, 1) * iw;
+  const py = (f) => PT + ih - Math.min(f / FMAX, 1) * ih;
+
+  const parts = [];
+
+  // --- OSR isolines (curves): FSI = (1 - GSI) / OSR ------------------------
+  for (const osr of [0.2, 0.5, 1.0, 2.0]) {
+    const pts = [];
+    for (let i = 0; i <= 40; i++) {
+      const g = (i / 40) * GMAX;
+      const f = (1 - g) / osr;
+      if (f > FMAX || f < 0) continue;
+      pts.push(`${px(g).toFixed(1)},${py(f).toFixed(1)}`);
+    }
+    if (pts.length < 2) continue;
+    parts.push(`<polyline points="${pts.join(" ")}" fill="none" stroke="#3a4655" ` +
+               `stroke-width="0.7" stroke-dasharray="1 2"/>`);
+    const [lx, ly] = pts[0].split(",");
+    parts.push(`<text x="${(+lx + 2).toFixed(1)}" y="${(+ly - 2).toFixed(1)}" ` +
+               `fill="#5d6b7d" font-size="7">OSR ${osr}</text>`);
+  }
+
+  // --- L isolines (straight): FSI = L * GSI --------------------------------
+  for (const L of [1, 2, 3, 4, 6]) {
+    const gEnd = Math.min(GMAX, FMAX / L);
+    parts.push(`<line x1="${px(0)}" y1="${py(0)}" x2="${px(gEnd).toFixed(1)}" ` +
+               `y2="${py(L * gEnd).toFixed(1)}" stroke="#2f3a47" stroke-width="0.7"/>`);
+    parts.push(`<text x="${(px(gEnd) - 1).toFixed(1)}" y="${(py(L * gEnd) + (L >= 4 ? 8 : -2)).toFixed(1)}" ` +
+               `fill="#5d6b7d" font-size="7" text-anchor="end">L ${L}</text>`);
+  }
+
+  // --- the cells ----------------------------------------------------------
+  const COL = { Bloemhof: "#4dd0e1", Hillesluis: "#ff8a3d" };
+  for (const pt of points) {
+    if (pt.gsi == null || pt.fsi == null) continue;
+    const c = COL[pt.buurt] || "#5b6675";
+    // Cells outside both buurten are context, not findings: drawn smaller and
+    // dimmer so they cannot be mistaken for part of the neighbourhood.
+    const r = pt.buurt ? 2.4 : 1.6;
+    parts.push(`<circle cx="${px(pt.gsi).toFixed(1)}" cy="${py(pt.fsi).toFixed(1)}" ` +
+               `r="${r}" fill="${c}" opacity="${pt.buurt ? 0.6 : 0.3}"/>`);
+  }
+
+  // --- the buurt aggregates, as crosses -----------------------------------
+  for (const [name, b] of Object.entries(perBuurt || {})) {
+    if (b?.gsi == null || b?.fsi == null) continue;
+    const c = COL[name] || "#e7ecf2";
+    const X = px(b.gsi), Y = py(b.fsi);
+    parts.push(`<line x1="${(X - 5).toFixed(1)}" y1="${Y.toFixed(1)}" x2="${(X + 5).toFixed(1)}" ` +
+               `y2="${Y.toFixed(1)}" stroke="${c}" stroke-width="1.6"/>` +
+               `<line x1="${X.toFixed(1)}" y1="${(Y - 5).toFixed(1)}" x2="${X.toFixed(1)}" ` +
+               `y2="${(Y + 5).toFixed(1)}" stroke="${c}" stroke-width="1.6"/>`);
+  }
+
+  // --- axes ---------------------------------------------------------------
+  parts.push(`<line x1="${PL}" y1="${PT + ih}" x2="${PL + iw}" y2="${PT + ih}" ` +
+             `stroke="#46525f" stroke-width="1"/>`);
+  parts.push(`<line x1="${PL}" y1="${PT}" x2="${PL}" y2="${PT + ih}" ` +
+             `stroke="#46525f" stroke-width="1"/>`);
+  for (const g of [0, 0.3, 0.6, 0.9]) {
+    parts.push(`<text x="${px(g).toFixed(1)}" y="${H - PB + 10}" fill="#97a3b2" ` +
+               `font-size="8" text-anchor="middle">${g}</text>`);
+  }
+  for (const f of [0, 1, 2, 3, 4]) {
+    parts.push(`<text x="${PL - 4}" y="${(py(f) + 3).toFixed(1)}" fill="#97a3b2" ` +
+               `font-size="8" text-anchor="end">${f}</text>`);
+  }
+  parts.push(`<text x="${(PL + iw / 2).toFixed(0)}" y="${H - 1}" fill="#97a3b2" ` +
+             `font-size="8" text-anchor="middle">GSI (coverage)</text>`);
+  parts.push(`<text x="9" y="${(PT + ih / 2).toFixed(0)}" fill="#97a3b2" font-size="8" ` +
+             `text-anchor="middle" transform="rotate(-90 9 ${(PT + ih / 2).toFixed(0)})">FSI</text>`);
+
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="190" role="img" ` +
+    `aria-label="Spacematrix: GSI against FSI, one point per 100 m grid cell">` +
+    parts.join("") + `</svg>` +
+    `<p class="muted" style="margin:2px 0 0">` +
+    `<span style="color:${COL.Bloemhof}">●</span> Bloemhof ` +
+    `<span style="color:${COL.Hillesluis}">●</span> Hillesluis ` +
+    `<span style="color:#5b6675">●</span> outside both · crosses are the buurt ` +
+    `aggregates. Thin lines are storeys (L), dashed are open space ratio (OSR).</p>`;
+}
+
+/**
+ * Spacematrix is scale-sensitive by construction, and here the two aggregation
+ * units disagree about which buurt is denser. That is worth saying out loud
+ * rather than leaving a reader to trip over it.
+ *
+ * The buurt FSI divides floor area by ALL the buurt's land, including open and
+ * industrial tracts. The grid mean averages only cells holding at least three
+ * buildings, so it describes the built fabric and ignores the gaps. Hillesluis
+ * has more of those gaps, so it reads as the looser buurt at buurt scale and
+ * the denser one at cell scale.
+ *
+ * The sentence is generated from the data and only appears if the reversal is
+ * actually present, so it cannot outlive the numbers that motivated it.
+ */
+function scaleEffectNote(dens) {
+  const pts = dens.spacematrix || [];
+  const names = Object.keys(dens.per_buurt || {});
+  if (names.length !== 2 || !pts.length) return "";
+
+  const gridMean = {};
+  for (const n of names) {
+    const v = pts.filter((q) => q.buurt === n && q.fsi != null).map((q) => q.fsi);
+    if (!v.length) return "";
+    gridMean[n] = v.reduce((a, c) => a + c, 0) / v.length;
+  }
+  const [a, b] = names;
+  const buurtOrder = Math.sign(dens.per_buurt[a].fsi - dens.per_buurt[b].fsi);
+  const gridOrder = Math.sign(gridMean[a] - gridMean[b]);
+  if (buurtOrder === 0 || gridOrder === 0 || buurtOrder === gridOrder) return "";
+
+  const looser = buurtOrder < 0 ? a : b;   // lower FSI over the whole buurt
+  return `<p class="muted"><strong>The two scales disagree.</strong> ` +
+    `${looser} has the lower FSI over the whole buurt ` +
+    `(${dens.per_buurt[looser].fsi.toFixed(3)} against ` +
+    `${dens.per_buurt[looser === a ? b : a].fsi.toFixed(3)}) but the higher mean ` +
+    `over built cells (${gridMean[looser].toFixed(2)} against ` +
+    `${gridMean[looser === a ? b : a].toFixed(2)}). The buurt figure divides by all ` +
+    `its land, gaps included; the grid mean only averages cells with at least ` +
+    `${dens.parameters.min_buildings_per_cell} buildings. Quote the unit with the number.</p>`;
+}
+
 export async function setup(ctx) {
   const body = ctx.registerPanel({
     id: "indicators",
@@ -294,10 +444,12 @@ export async function setup(ctx) {
       perBuurtTable(dens.per_buurt, [
         ["gsi", "GSI", 3], ["fsi", "FSI", 3], ["layers", "storeys", 2],
       ]) +
+      spacematrixSvg(dens.spacematrix, dens.per_buurt) +
       `<p class="muted">Spacematrix over ${b.land_area_ha} ha, ` +
       `${b.n_buildings.toLocaleString("en-GB")} buildings. Grid mean FSI ` +
       `${g.fsi.mean.toFixed(2)} across ${g.n_cells_used} cells of ` +
-      `${dens.parameters.cell_size_m} m. Toggle the grid under <em>Analysis</em>.</p>`;
+      `${dens.parameters.cell_size_m} m. Toggle the grid under <em>Analysis</em>.</p>` +
+      scaleEffectNote(dens);
   } else {
     ctx.placeholder(densBox, {
       what: "Building density and height variation not computed yet.",
