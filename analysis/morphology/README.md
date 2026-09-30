@@ -133,6 +133,39 @@ OSR = (1 - GSI) / FSI                 open space per m² of floor space
 - **Spacematrix is scale-sensitive.** An FSI at 100 m cells is not comparable
   with one at 50 m. Quote the cell size.
 
+### The diagram, and why it is worth plotting
+
+GSI and FSI fix the other two indicators, so a GSI–FSI scatter carries all four:
+L is a straight line through the origin, OSR is a curve. Fabric types separate by
+*where* they sit, which no single number shows. `make_figures.py` writes the static
+`docs/fig_spacematrix.png`; `app/modules/indicators.js` draws the same diagram in
+the dashboard from the 200 per-cell points in `density_summary.json`, coloured
+by buurt, so the proposed massing can later be overplotted to show the new fabric
+move relative to the existing two.
+
+Each point now carries a `buurt` label, assigned by whichever polygon contains the
+cell **centre** — 81 Bloemhof,
+68 Hillesluis,
+51 outside both (the bounding box is larger
+than the buurten). A cell on the boundary goes to one side rather than being counted
+twice.
+
+### The two scales disagree, and that is the finding
+
+| | FSI over the whole buurt | mean FSI over built cells |
+|---|---|---|
+| Bloemhof | 1.003 | 0.97 |
+| Hillesluis | 0.922 | 1.24 |
+
+Hillesluis reads as the **looser** buurt at buurt scale and the **denser** one at
+cell scale. Both are correct. The buurt figure divides floor area by all of its
+land, gaps included, and Hillesluis has more gaps; the grid mean averages only
+cells holding at least 3 buildings, so it
+describes built fabric and ignores the gaps. This is the modifiable areal unit
+problem arriving in a number we publish, which is why the cell size travels with
+every figure. The app states the reversal in the panel, generated from the data so
+it disappears if a re-run removes it.
+
 ## Land-use mix — method
 
 Shannon entropy (normalised) and Simpson diversity over BAG `gebruiksdoel`,

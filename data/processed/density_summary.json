@@ -145,1002 +145,1802 @@
     {
       "gsi": 0.2691,
       "fsi": 1.0183,
-      "height_mean_m": 12.75
+      "layers": 3.78,
+      "osr": 0.718,
+      "height_mean_m": 12.75,
+      "height_std_m": 2.57,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.1537,
       "fsi": 0.5794,
-      "height_mean_m": 11.76
+      "layers": 3.77,
+      "osr": 1.461,
+      "height_mean_m": 11.76,
+      "height_std_m": 1.81,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.4267,
       "fsi": 2.4753,
-      "height_mean_m": 10.54
+      "layers": 5.8,
+      "osr": 0.232,
+      "height_mean_m": 10.54,
+      "height_std_m": 5.02,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.4735,
       "fsi": 1.3868,
-      "height_mean_m": 9.05
+      "layers": 2.93,
+      "osr": 0.38,
+      "height_mean_m": 9.05,
+      "height_std_m": 1.65,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.4361,
       "fsi": 1.2137,
-      "height_mean_m": 8.96
+      "layers": 2.78,
+      "osr": 0.465,
+      "height_mean_m": 8.96,
+      "height_std_m": 2.52,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.2999,
       "fsi": 0.7526,
-      "height_mean_m": 9.37
+      "layers": 2.51,
+      "osr": 0.93,
+      "height_mean_m": 9.37,
+      "height_std_m": 2.92,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.3334,
       "fsi": 0.8394,
-      "height_mean_m": 8.77
+      "layers": 2.52,
+      "osr": 0.794,
+      "height_mean_m": 8.77,
+      "height_std_m": 2.82,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.348,
       "fsi": 0.9485,
-      "height_mean_m": 8.78
+      "layers": 2.73,
+      "osr": 0.687,
+      "height_mean_m": 8.78,
+      "height_std_m": 2.44,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.2667,
       "fsi": 0.6262,
-      "height_mean_m": 7.25
+      "layers": 2.35,
+      "osr": 1.171,
+      "height_mean_m": 7.25,
+      "height_std_m": 2.06,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.2428,
       "fsi": 0.9879,
-      "height_mean_m": 11.53
+      "layers": 4.07,
+      "osr": 0.766,
+      "height_mean_m": 11.53,
+      "height_std_m": 4.32,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.338,
       "fsi": 1.3219,
-      "height_mean_m": 10.29
+      "layers": 3.91,
+      "osr": 0.501,
+      "height_mean_m": 10.29,
+      "height_std_m": 3.03,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.3245,
       "fsi": 1.3817,
-      "height_mean_m": 6.92
+      "layers": 4.26,
+      "osr": 0.489,
+      "height_mean_m": 6.92,
+      "height_std_m": 2.0,
+      "buurt": null
     },
     {
       "gsi": 0.3076,
       "fsi": 1.0908,
-      "height_mean_m": 9.26
+      "layers": 3.55,
+      "osr": 0.635,
+      "height_mean_m": 9.26,
+      "height_std_m": 3.24,
+      "buurt": null
     },
     {
       "gsi": 0.1456,
       "fsi": 0.492,
-      "height_mean_m": 10.25
+      "layers": 3.38,
+      "osr": 1.737,
+      "height_mean_m": 10.25,
+      "height_std_m": 2.62,
+      "buurt": null
     },
     {
       "gsi": 0.1359,
       "fsi": 0.367,
-      "height_mean_m": 7.6
+      "layers": 2.7,
+      "osr": 2.354,
+      "height_mean_m": 7.6,
+      "height_std_m": 1.31,
+      "buurt": null
     },
     {
       "gsi": 0.3396,
       "fsi": 0.9979,
-      "height_mean_m": 10.27
+      "layers": 2.94,
+      "osr": 0.662,
+      "height_mean_m": 10.27,
+      "height_std_m": null,
+      "buurt": null
     },
     {
       "gsi": 0.2074,
       "fsi": 0.7626,
-      "height_mean_m": 9.24
+      "layers": 3.68,
+      "osr": 1.039,
+      "height_mean_m": 9.24,
+      "height_std_m": 3.1,
+      "buurt": null
     },
     {
       "gsi": 0.3005,
       "fsi": 1.0271,
-      "height_mean_m": 11.33
+      "layers": 3.42,
+      "osr": 0.681,
+      "height_mean_m": 11.33,
+      "height_std_m": 2.96,
+      "buurt": null
     },
     {
       "gsi": 0.3863,
       "fsi": 1.4033,
-      "height_mean_m": 9.85
+      "layers": 3.63,
+      "osr": 0.437,
+      "height_mean_m": 9.85,
+      "height_std_m": 2.52,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.3287,
       "fsi": 0.9038,
-      "height_mean_m": 8.61
+      "layers": 2.75,
+      "osr": 0.743,
+      "height_mean_m": 8.61,
+      "height_std_m": 1.74,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.2348,
       "fsi": 0.7619,
-      "height_mean_m": 10.35
+      "layers": 3.25,
+      "osr": 1.004,
+      "height_mean_m": 10.35,
+      "height_std_m": 3.07,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.3134,
       "fsi": 0.9702,
-      "height_mean_m": 9.28
+      "layers": 3.1,
+      "osr": 0.708,
+      "height_mean_m": 9.28,
+      "height_std_m": 2.05,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.3706,
       "fsi": 0.9037,
-      "height_mean_m": 6.53
+      "layers": 2.44,
+      "osr": 0.697,
+      "height_mean_m": 6.53,
+      "height_std_m": 0.43,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.3075,
       "fsi": 0.6782,
-      "height_mean_m": 6.39
+      "layers": 2.21,
+      "osr": 1.021,
+      "height_mean_m": 6.39,
+      "height_std_m": 0.41,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.3726,
       "fsi": 0.9425,
-      "height_mean_m": 6.62
+      "layers": 2.53,
+      "osr": 0.666,
+      "height_mean_m": 6.62,
+      "height_std_m": 0.94,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.3767,
       "fsi": 0.849,
-      "height_mean_m": 6.36
+      "layers": 2.25,
+      "osr": 0.734,
+      "height_mean_m": 6.36,
+      "height_std_m": 0.84,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.349,
       "fsi": 0.6578,
-      "height_mean_m": 6.04
+      "layers": 1.88,
+      "osr": 0.99,
+      "height_mean_m": 6.04,
+      "height_std_m": 0.07,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.4078,
       "fsi": 1.4968,
-      "height_mean_m": 8.89
+      "layers": 3.67,
+      "osr": 0.396,
+      "height_mean_m": 8.89,
+      "height_std_m": 3.36,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.3227,
       "fsi": 1.2292,
-      "height_mean_m": 11.84
+      "layers": 3.81,
+      "osr": 0.551,
+      "height_mean_m": 11.84,
+      "height_std_m": 3.36,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.3793,
       "fsi": 1.4837,
-      "height_mean_m": 11.61
+      "layers": 3.91,
+      "osr": 0.418,
+      "height_mean_m": 11.61,
+      "height_std_m": 2.13,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.3369,
       "fsi": 1.059,
-      "height_mean_m": 11.26
+      "layers": 3.14,
+      "osr": 0.626,
+      "height_mean_m": 11.26,
+      "height_std_m": 1.48,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.2467,
       "fsi": 0.9502,
-      "height_mean_m": 9.76
+      "layers": 3.85,
+      "osr": 0.793,
+      "height_mean_m": 9.76,
+      "height_std_m": 2.22,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.3164,
       "fsi": 0.8876,
-      "height_mean_m": 9.91
+      "layers": 2.81,
+      "osr": 0.77,
+      "height_mean_m": 9.91,
+      "height_std_m": 1.95,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.2778,
       "fsi": 0.7662,
-      "height_mean_m": 9.39
+      "layers": 2.76,
+      "osr": 0.943,
+      "height_mean_m": 9.39,
+      "height_std_m": 0.08,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.0438,
       "fsi": 0.0598,
-      "height_mean_m": 5.81
+      "layers": 1.37,
+      "osr": 15.977,
+      "height_mean_m": 5.81,
+      "height_std_m": null,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.3356,
       "fsi": 1.1691,
-      "height_mean_m": 9.69
+      "layers": 3.48,
+      "osr": 0.568,
+      "height_mean_m": 9.69,
+      "height_std_m": 2.92,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.3574,
       "fsi": 0.8767,
-      "height_mean_m": 7.03
+      "layers": 2.45,
+      "osr": 0.733,
+      "height_mean_m": 7.03,
+      "height_std_m": 0.91,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.3949,
       "fsi": 0.7391,
-      "height_mean_m": 6.27
+      "layers": 1.87,
+      "osr": 0.819,
+      "height_mean_m": 6.27,
+      "height_std_m": 0.06,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.2443,
       "fsi": 0.5629,
-      "height_mean_m": 6.74
+      "layers": 2.3,
+      "osr": 1.343,
+      "height_mean_m": 6.74,
+      "height_std_m": 1.15,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.2717,
       "fsi": 0.7128,
-      "height_mean_m": 7.32
+      "layers": 2.62,
+      "osr": 1.022,
+      "height_mean_m": 7.32,
+      "height_std_m": 1.6,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.3774,
       "fsi": 0.7741,
-      "height_mean_m": 6.09
+      "layers": 2.05,
+      "osr": 0.804,
+      "height_mean_m": 6.09,
+      "height_std_m": 0.08,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.3101,
       "fsi": 0.6368,
-      "height_mean_m": 6.52
+      "layers": 2.05,
+      "osr": 1.083,
+      "height_mean_m": 6.52,
+      "height_std_m": 0.66,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.2959,
       "fsi": 0.5596,
-      "height_mean_m": 6.1
+      "layers": 1.89,
+      "osr": 1.258,
+      "height_mean_m": 6.1,
+      "height_std_m": 0.11,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.3362,
       "fsi": 0.6464,
-      "height_mean_m": 6.13
+      "layers": 1.92,
+      "osr": 1.027,
+      "height_mean_m": 6.13,
+      "height_std_m": 0.18,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.3294,
       "fsi": 0.7585,
-      "height_mean_m": 7.65
+      "layers": 2.3,
+      "osr": 0.884,
+      "height_mean_m": 7.65,
+      "height_std_m": 2.9,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.4282,
       "fsi": 1.777,
-      "height_mean_m": 12.01
+      "layers": 4.15,
+      "osr": 0.322,
+      "height_mean_m": 12.01,
+      "height_std_m": 2.96,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.4072,
       "fsi": 1.1665,
-      "height_mean_m": 8.87
+      "layers": 2.86,
+      "osr": 0.508,
+      "height_mean_m": 8.87,
+      "height_std_m": 1.44,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.26,
       "fsi": 0.7663,
-      "height_mean_m": 9.44
+      "layers": 2.95,
+      "osr": 0.966,
+      "height_mean_m": 9.44,
+      "height_std_m": 0.43,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.3824,
       "fsi": 1.319,
-      "height_mean_m": 11.43
+      "layers": 3.45,
+      "osr": 0.468,
+      "height_mean_m": 11.43,
+      "height_std_m": 1.8,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.3306,
       "fsi": 0.9351,
-      "height_mean_m": 10.02
+      "layers": 2.83,
+      "osr": 0.716,
+      "height_mean_m": 10.02,
+      "height_std_m": 1.2,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.2502,
       "fsi": 0.7097,
-      "height_mean_m": 9.31
+      "layers": 2.84,
+      "osr": 1.057,
+      "height_mean_m": 9.31,
+      "height_std_m": 0.14,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.2848,
       "fsi": 1.2025,
-      "height_mean_m": 12.23
+      "layers": 4.22,
+      "osr": 0.595,
+      "height_mean_m": 12.23,
+      "height_std_m": 3.29,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.4615,
       "fsi": 0.9734,
-      "height_mean_m": 6.16
+      "layers": 2.11,
+      "osr": 0.553,
+      "height_mean_m": 6.16,
+      "height_std_m": 0.36,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.3436,
       "fsi": 0.6447,
-      "height_mean_m": 6.52
+      "layers": 1.88,
+      "osr": 1.018,
+      "height_mean_m": 6.52,
+      "height_std_m": 0.78,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.2721,
       "fsi": 0.5334,
-      "height_mean_m": 6.14
+      "layers": 1.96,
+      "osr": 1.365,
+      "height_mean_m": 6.14,
+      "height_std_m": 0.77,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.2247,
       "fsi": 0.5538,
-      "height_mean_m": 6.6
+      "layers": 2.46,
+      "osr": 1.4,
+      "height_mean_m": 6.6,
+      "height_std_m": 0.99,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.1773,
       "fsi": 0.3782,
-      "height_mean_m": 6.35
+      "layers": 2.13,
+      "osr": 2.175,
+      "height_mean_m": 6.35,
+      "height_std_m": 0.33,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.4802,
       "fsi": 1.0114,
-      "height_mean_m": 6.34
+      "layers": 2.11,
+      "osr": 0.514,
+      "height_mean_m": 6.34,
+      "height_std_m": 0.96,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.3284,
       "fsi": 0.6773,
-      "height_mean_m": 6.16
+      "layers": 2.06,
+      "osr": 0.992,
+      "height_mean_m": 6.16,
+      "height_std_m": 0.5,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.3962,
       "fsi": 0.777,
-      "height_mean_m": 6.14
+      "layers": 1.96,
+      "osr": 0.777,
+      "height_mean_m": 6.14,
+      "height_std_m": 0.29,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.3132,
       "fsi": 0.6217,
-      "height_mean_m": 6.18
+      "layers": 1.99,
+      "osr": 1.105,
+      "height_mean_m": 6.18,
+      "height_std_m": 0.06,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.529,
       "fsi": 2.246,
-      "height_mean_m": 13.1
+      "layers": 4.25,
+      "osr": 0.21,
+      "height_mean_m": 13.1,
+      "height_std_m": 3.26,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.2633,
       "fsi": 0.9055,
-      "height_mean_m": 10.18
+      "layers": 3.44,
+      "osr": 0.814,
+      "height_mean_m": 10.18,
+      "height_std_m": 1.53,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.2039,
       "fsi": 0.5426,
-      "height_mean_m": 9.22
+      "layers": 2.66,
+      "osr": 1.467,
+      "height_mean_m": 9.22,
+      "height_std_m": 1.16,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.3974,
       "fsi": 1.2263,
-      "height_mean_m": 10.09
+      "layers": 3.09,
+      "osr": 0.491,
+      "height_mean_m": 10.09,
+      "height_std_m": 1.81,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.3181,
       "fsi": 0.886,
-      "height_mean_m": 9.23
+      "layers": 2.79,
+      "osr": 0.77,
+      "height_mean_m": 9.23,
+      "height_std_m": 0.49,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.3733,
       "fsi": 1.0458,
-      "height_mean_m": 9.38
+      "layers": 2.8,
+      "osr": 0.599,
+      "height_mean_m": 9.38,
+      "height_std_m": 0.45,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.1381,
       "fsi": 0.2839,
-      "height_mean_m": 11.94
+      "layers": 2.06,
+      "osr": 3.036,
+      "height_mean_m": 11.94,
+      "height_std_m": 0.96,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.3718,
       "fsi": 1.4491,
-      "height_mean_m": 14.96
+      "layers": 3.9,
+      "osr": 0.434,
+      "height_mean_m": 14.96,
+      "height_std_m": 1.28,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.3242,
       "fsi": 1.1704,
-      "height_mean_m": 11.28
+      "layers": 3.61,
+      "osr": 0.577,
+      "height_mean_m": 11.28,
+      "height_std_m": 2.46,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.3365,
       "fsi": 0.7311,
-      "height_mean_m": 6.53
+      "layers": 2.17,
+      "osr": 0.908,
+      "height_mean_m": 6.53,
+      "height_std_m": 1.04,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.2642,
       "fsi": 0.5169,
-      "height_mean_m": 6.18
+      "layers": 1.96,
+      "osr": 1.424,
+      "height_mean_m": 6.18,
+      "height_std_m": 0.36,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.0647,
       "fsi": 0.1157,
-      "height_mean_m": 6.35
+      "layers": 1.79,
+      "osr": 8.081,
+      "height_mean_m": 6.35,
+      "height_std_m": 0.14,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.3094,
       "fsi": 1.1684,
-      "height_mean_m": 10.55
+      "layers": 3.78,
+      "osr": 0.591,
+      "height_mean_m": 10.55,
+      "height_std_m": 1.73,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.2223,
       "fsi": 0.705,
-      "height_mean_m": 9.65
+      "layers": 3.17,
+      "osr": 1.103,
+      "height_mean_m": 9.65,
+      "height_std_m": 2.52,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.5022,
       "fsi": 1.0333,
-      "height_mean_m": 6.34
+      "layers": 2.06,
+      "osr": 0.482,
+      "height_mean_m": 6.34,
+      "height_std_m": 1.02,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.2486,
       "fsi": 0.4827,
-      "height_mean_m": 6.18
+      "layers": 1.94,
+      "osr": 1.557,
+      "height_mean_m": 6.18,
+      "height_std_m": 0.11,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.3508,
       "fsi": 0.782,
-      "height_mean_m": 6.88
+      "layers": 2.23,
+      "osr": 0.83,
+      "height_mean_m": 6.88,
+      "height_std_m": 1.68,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.1832,
       "fsi": 0.5722,
-      "height_mean_m": 10.19
+      "layers": 3.12,
+      "osr": 1.427,
+      "height_mean_m": 10.19,
+      "height_std_m": 2.83,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.3906,
       "fsi": 1.7537,
-      "height_mean_m": 13.3
+      "layers": 4.49,
+      "osr": 0.348,
+      "height_mean_m": 13.3,
+      "height_std_m": 2.64,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.4192,
       "fsi": 1.2941,
-      "height_mean_m": 9.29
+      "layers": 3.09,
+      "osr": 0.449,
+      "height_mean_m": 9.29,
+      "height_std_m": 1.43,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.332,
       "fsi": 1.021,
-      "height_mean_m": 9.8
+      "layers": 3.07,
+      "osr": 0.654,
+      "height_mean_m": 9.8,
+      "height_std_m": 1.56,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.3477,
       "fsi": 0.9729,
-      "height_mean_m": 9.4
+      "layers": 2.8,
+      "osr": 0.671,
+      "height_mean_m": 9.4,
+      "height_std_m": 0.08,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.3684,
       "fsi": 1.1135,
-      "height_mean_m": 10.38
+      "layers": 3.02,
+      "osr": 0.567,
+      "height_mean_m": 10.38,
+      "height_std_m": 1.41,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.0027,
       "fsi": 0.0027,
-      "height_mean_m": null
+      "layers": 1.0,
+      "osr": 373.813,
+      "height_mean_m": null,
+      "height_std_m": null,
+      "buurt": null
     },
     {
       "gsi": 0.0013,
       "fsi": 0.0013,
-      "height_mean_m": null
+      "layers": 1.0,
+      "osr": 796.448,
+      "height_mean_m": null,
+      "height_std_m": null,
+      "buurt": null
     },
     {
       "gsi": 0.292,
       "fsi": 1.1871,
-      "height_mean_m": 14.57
+      "layers": 4.07,
+      "osr": 0.596,
+      "height_mean_m": 14.57,
+      "height_std_m": 1.48,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.3796,
       "fsi": 1.451,
-      "height_mean_m": 12.68
+      "layers": 3.82,
+      "osr": 0.428,
+      "height_mean_m": 12.68,
+      "height_std_m": 0.24,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.4126,
       "fsi": 1.5407,
-      "height_mean_m": 10.98
+      "layers": 3.73,
+      "osr": 0.381,
+      "height_mean_m": 10.98,
+      "height_std_m": 2.12,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.13,
       "fsi": 0.3244,
-      "height_mean_m": 7.59
+      "layers": 2.5,
+      "osr": 2.682,
+      "height_mean_m": 7.59,
+      "height_std_m": 1.63,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.816,
       "fsi": 2.4342,
-      "height_mean_m": 9.25
+      "layers": 2.98,
+      "osr": 0.076,
+      "height_mean_m": 9.25,
+      "height_std_m": 0.38,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.3533,
       "fsi": 1.0197,
-      "height_mean_m": 8.72
+      "layers": 2.89,
+      "osr": 0.634,
+      "height_mean_m": 8.72,
+      "height_std_m": 0.84,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.1508,
       "fsi": 0.4562,
-      "height_mean_m": 8.55
+      "layers": 3.03,
+      "osr": 1.861,
+      "height_mean_m": 8.55,
+      "height_std_m": 1.59,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.1123,
       "fsi": 0.3259,
-      "height_mean_m": 9.65
+      "layers": 2.9,
+      "osr": 2.724,
+      "height_mean_m": 9.65,
+      "height_std_m": 1.86,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.3711,
       "fsi": 1.1238,
-      "height_mean_m": 8.73
+      "layers": 3.03,
+      "osr": 0.56,
+      "height_mean_m": 8.73,
+      "height_std_m": 3.26,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.2332,
       "fsi": 0.8579,
-      "height_mean_m": 10.93
+      "layers": 3.68,
+      "osr": 0.894,
+      "height_mean_m": 10.93,
+      "height_std_m": 1.95,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.447,
       "fsi": 1.9999,
-      "height_mean_m": 13.82
+      "layers": 4.47,
+      "osr": 0.277,
+      "height_mean_m": 13.82,
+      "height_std_m": 1.74,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.4338,
       "fsi": 1.8096,
-      "height_mean_m": 13.03
+      "layers": 4.17,
+      "osr": 0.313,
+      "height_mean_m": 13.03,
+      "height_std_m": 2.29,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.3773,
       "fsi": 0.9915,
-      "height_mean_m": 8.1
+      "layers": 2.63,
+      "osr": 0.628,
+      "height_mean_m": 8.1,
+      "height_std_m": 1.67,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.3075,
       "fsi": 0.9022,
-      "height_mean_m": 9.02
+      "layers": 2.93,
+      "osr": 0.768,
+      "height_mean_m": 9.02,
+      "height_std_m": 1.08,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.3686,
       "fsi": 1.2195,
-      "height_mean_m": 10.59
+      "layers": 3.31,
+      "osr": 0.518,
+      "height_mean_m": 10.59,
+      "height_std_m": 1.58,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.1531,
       "fsi": 0.5368,
-      "height_mean_m": 11.89
+      "layers": 3.51,
+      "osr": 1.578,
+      "height_mean_m": 11.89,
+      "height_std_m": 1.57,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.2823,
       "fsi": 1.5523,
-      "height_mean_m": 15.97
+      "layers": 5.5,
+      "osr": 0.462,
+      "height_mean_m": 15.97,
+      "height_std_m": 4.39,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.2668,
       "fsi": 1.0132,
-      "height_mean_m": 11.2
+      "layers": 3.8,
+      "osr": 0.724,
+      "height_mean_m": 11.2,
+      "height_std_m": 1.84,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.4919,
       "fsi": 2.5905,
-      "height_mean_m": 12.29
+      "layers": 5.27,
+      "osr": 0.196,
+      "height_mean_m": 12.29,
+      "height_std_m": 4.4,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.31,
       "fsi": 1.06,
-      "height_mean_m": 10.13
+      "layers": 3.42,
+      "osr": 0.651,
+      "height_mean_m": 10.13,
+      "height_std_m": 2.03,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.3513,
       "fsi": 0.9772,
-      "height_mean_m": 8.59
+      "layers": 2.78,
+      "osr": 0.664,
+      "height_mean_m": 8.59,
+      "height_std_m": 0.92,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.3269,
       "fsi": 0.8155,
-      "height_mean_m": 8.24
+      "layers": 2.5,
+      "osr": 0.825,
+      "height_mean_m": 8.24,
+      "height_std_m": 1.27,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.3383,
       "fsi": 0.9509,
-      "height_mean_m": 8.48
+      "layers": 2.81,
+      "osr": 0.696,
+      "height_mean_m": 8.48,
+      "height_std_m": 0.92,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.2436,
       "fsi": 0.9277,
-      "height_mean_m": 11.63
+      "layers": 3.81,
+      "osr": 0.815,
+      "height_mean_m": 11.63,
+      "height_std_m": 2.39,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.2374,
       "fsi": 1.1221,
-      "height_mean_m": 12.92
+      "layers": 4.73,
+      "osr": 0.68,
+      "height_mean_m": 12.92,
+      "height_std_m": 3.19,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.3485,
       "fsi": 1.3187,
-      "height_mean_m": 12.11
+      "layers": 3.78,
+      "osr": 0.494,
+      "height_mean_m": 12.11,
+      "height_std_m": 2.09,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.2793,
       "fsi": 1.2922,
-      "height_mean_m": 14.57
+      "layers": 4.63,
+      "osr": 0.558,
+      "height_mean_m": 14.57,
+      "height_std_m": 0.76,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.296,
       "fsi": 1.1219,
-      "height_mean_m": 10.34
+      "layers": 3.79,
+      "osr": 0.628,
+      "height_mean_m": 10.34,
+      "height_std_m": 1.98,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.4184,
       "fsi": 1.4145,
-      "height_mean_m": 9.96
+      "layers": 3.38,
+      "osr": 0.411,
+      "height_mean_m": 9.96,
+      "height_std_m": 1.36,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.316,
       "fsi": 0.9768,
-      "height_mean_m": 10.45
+      "layers": 3.09,
+      "osr": 0.7,
+      "height_mean_m": 10.45,
+      "height_std_m": 1.7,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.0884,
       "fsi": 0.3781,
-      "height_mean_m": 13.98
+      "layers": 4.28,
+      "osr": 2.411,
+      "height_mean_m": 13.98,
+      "height_std_m": 1.61,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.056,
       "fsi": 0.2767,
-      "height_mean_m": 16.12
+      "layers": 4.94,
+      "osr": 3.411,
+      "height_mean_m": 16.12,
+      "height_std_m": 0.09,
+      "buurt": null
     },
     {
       "gsi": 0.2102,
       "fsi": 0.9572,
-      "height_mean_m": 14.47
+      "layers": 4.55,
+      "osr": 0.825,
+      "height_mean_m": 14.47,
+      "height_std_m": 2.15,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.4934,
       "fsi": 1.8038,
-      "height_mean_m": 7.39
+      "layers": 3.66,
+      "osr": 0.281,
+      "height_mean_m": 7.39,
+      "height_std_m": 2.17,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.4535,
       "fsi": 1.7434,
-      "height_mean_m": 12.5
+      "layers": 3.84,
+      "osr": 0.313,
+      "height_mean_m": 12.5,
+      "height_std_m": 1.26,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.3092,
       "fsi": 1.1283,
-      "height_mean_m": 8.94
+      "layers": 3.65,
+      "osr": 0.612,
+      "height_mean_m": 8.94,
+      "height_std_m": 1.55,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.3677,
       "fsi": 1.0042,
-      "height_mean_m": 8.6
+      "layers": 2.73,
+      "osr": 0.63,
+      "height_mean_m": 8.6,
+      "height_std_m": 1.16,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.3791,
       "fsi": 1.0521,
-      "height_mean_m": 9.12
+      "layers": 2.78,
+      "osr": 0.59,
+      "height_mean_m": 9.12,
+      "height_std_m": 1.12,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.1754,
       "fsi": 0.6663,
-      "height_mean_m": 12.07
+      "layers": 3.8,
+      "osr": 1.238,
+      "height_mean_m": 12.07,
+      "height_std_m": 1.85,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.5723,
       "fsi": 2.7689,
-      "height_mean_m": 13.03
+      "layers": 4.84,
+      "osr": 0.154,
+      "height_mean_m": 13.03,
+      "height_std_m": 1.14,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.3778,
       "fsi": 1.4448,
-      "height_mean_m": 12.84
+      "layers": 3.82,
+      "osr": 0.431,
+      "height_mean_m": 12.84,
+      "height_std_m": 1.46,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.2949,
       "fsi": 1.2568,
-      "height_mean_m": 13.99
+      "layers": 4.26,
+      "osr": 0.561,
+      "height_mean_m": 13.99,
+      "height_std_m": 0.7,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.7434,
       "fsi": 2.561,
-      "height_mean_m": 13.0
+      "layers": 3.44,
+      "osr": 0.1,
+      "height_mean_m": 13.0,
+      "height_std_m": 2.91,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.5578,
       "fsi": 2.6441,
-      "height_mean_m": 11.96
+      "layers": 4.74,
+      "osr": 0.167,
+      "height_mean_m": 11.96,
+      "height_std_m": 1.65,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.3716,
       "fsi": 1.355,
-      "height_mean_m": 10.74
+      "layers": 3.65,
+      "osr": 0.464,
+      "height_mean_m": 10.74,
+      "height_std_m": 1.49,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.3122,
       "fsi": 1.1343,
-      "height_mean_m": 11.76
+      "layers": 3.63,
+      "osr": 0.606,
+      "height_mean_m": 11.76,
+      "height_std_m": 1.41,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.2437,
       "fsi": 1.0977,
-      "height_mean_m": 15.09
+      "layers": 4.5,
+      "osr": 0.689,
+      "height_mean_m": 15.09,
+      "height_std_m": 1.91,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.3537,
       "fsi": 1.5778,
-      "height_mean_m": 13.92
+      "layers": 4.46,
+      "osr": 0.41,
+      "height_mean_m": 13.92,
+      "height_std_m": 1.89,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.3297,
       "fsi": 1.1644,
-      "height_mean_m": 12.98
+      "layers": 3.53,
+      "osr": 0.576,
+      "height_mean_m": 12.98,
+      "height_std_m": 1.59,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.2271,
       "fsi": 0.6807,
-      "height_mean_m": 8.96
+      "layers": 3.0,
+      "osr": 1.135,
+      "height_mean_m": 8.96,
+      "height_std_m": 0.6,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.2355,
       "fsi": 0.9201,
-      "height_mean_m": 10.69
+      "layers": 3.91,
+      "osr": 0.831,
+      "height_mean_m": 10.69,
+      "height_std_m": 2.49,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.0433,
       "fsi": 0.1231,
-      "height_mean_m": 9.23
+      "layers": 2.84,
+      "osr": 7.773,
+      "height_mean_m": 9.23,
+      "height_std_m": 1.64,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.4227,
       "fsi": 1.5956,
-      "height_mean_m": 12.2
+      "layers": 3.77,
+      "osr": 0.362,
+      "height_mean_m": 12.2,
+      "height_std_m": 1.23,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.1755,
       "fsi": 0.6637,
-      "height_mean_m": 13.67
+      "layers": 3.78,
+      "osr": 1.242,
+      "height_mean_m": 13.67,
+      "height_std_m": 0.71,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.4199,
       "fsi": 1.8133,
-      "height_mean_m": 12.53
+      "layers": 4.32,
+      "osr": 0.32,
+      "height_mean_m": 12.53,
+      "height_std_m": 1.94,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.3602,
       "fsi": 1.5619,
-      "height_mean_m": 13.38
+      "layers": 4.34,
+      "osr": 0.41,
+      "height_mean_m": 13.38,
+      "height_std_m": 0.78,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.1633,
       "fsi": 0.9108,
-      "height_mean_m": 15.69
+      "layers": 5.58,
+      "osr": 0.919,
+      "height_mean_m": 15.69,
+      "height_std_m": 1.1,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.4003,
       "fsi": 1.7256,
-      "height_mean_m": 11.47
+      "layers": 4.31,
+      "osr": 0.348,
+      "height_mean_m": 11.47,
+      "height_std_m": 2.65,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.3047,
       "fsi": 1.1343,
-      "height_mean_m": 11.04
+      "layers": 3.72,
+      "osr": 0.613,
+      "height_mean_m": 11.04,
+      "height_std_m": 1.83,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.2037,
       "fsi": 0.9543,
-      "height_mean_m": 11.74
+      "layers": 4.68,
+      "osr": 0.834,
+      "height_mean_m": 11.74,
+      "height_std_m": 1.55,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.091,
       "fsi": 0.3953,
-      "height_mean_m": 13.71
+      "layers": 4.34,
+      "osr": 2.3,
+      "height_mean_m": 13.71,
+      "height_std_m": 0.46,
+      "buurt": null
     },
     {
       "gsi": 0.2267,
       "fsi": 0.9171,
-      "height_mean_m": 13.48
+      "layers": 4.05,
+      "osr": 0.843,
+      "height_mean_m": 13.48,
+      "height_std_m": 1.4,
+      "buurt": null
     },
     {
       "gsi": 0.2994,
       "fsi": 1.3249,
-      "height_mean_m": 13.09
+      "layers": 4.42,
+      "osr": 0.529,
+      "height_mean_m": 13.09,
+      "height_std_m": 0.79,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.2423,
       "fsi": 0.83,
-      "height_mean_m": 11.89
+      "layers": 3.43,
+      "osr": 0.913,
+      "height_mean_m": 11.89,
+      "height_std_m": 2.89,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.0561,
       "fsi": 0.2243,
-      "height_mean_m": 11.52
+      "layers": 4.0,
+      "osr": 4.209,
+      "height_mean_m": 11.52,
+      "height_std_m": 0.07,
+      "buurt": "Bloemhof"
     },
     {
       "gsi": 0.6459,
       "fsi": 3.6766,
-      "height_mean_m": 12.71
+      "layers": 5.69,
+      "osr": 0.096,
+      "height_mean_m": 12.71,
+      "height_std_m": 5.35,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.2481,
       "fsi": 0.9289,
-      "height_mean_m": 11.91
+      "layers": 3.74,
+      "osr": 0.809,
+      "height_mean_m": 11.91,
+      "height_std_m": 1.81,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.2379,
       "fsi": 1.096,
-      "height_mean_m": 10.0
+      "layers": 4.61,
+      "osr": 0.695,
+      "height_mean_m": 10.0,
+      "height_std_m": 4.48,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.3025,
       "fsi": 1.1478,
-      "height_mean_m": 9.63
+      "layers": 3.79,
+      "osr": 0.608,
+      "height_mean_m": 9.63,
+      "height_std_m": 1.78,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.4113,
       "fsi": 2.0751,
-      "height_mean_m": 12.58
+      "layers": 5.04,
+      "osr": 0.284,
+      "height_mean_m": 12.58,
+      "height_std_m": 3.06,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.4177,
       "fsi": 2.1247,
-      "height_mean_m": 15.22
+      "layers": 5.09,
+      "osr": 0.274,
+      "height_mean_m": 15.22,
+      "height_std_m": 1.1,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.4062,
       "fsi": 1.7146,
-      "height_mean_m": 12.65
+      "layers": 4.22,
+      "osr": 0.346,
+      "height_mean_m": 12.65,
+      "height_std_m": 1.82,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.1896,
       "fsi": 0.7438,
-      "height_mean_m": 11.39
+      "layers": 3.92,
+      "osr": 1.09,
+      "height_mean_m": 11.39,
+      "height_std_m": 2.7,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.4731,
       "fsi": 2.5261,
-      "height_mean_m": 15.97
+      "layers": 5.34,
+      "osr": 0.209,
+      "height_mean_m": 15.97,
+      "height_std_m": 5.06,
+      "buurt": null
     },
     {
       "gsi": 0.3998,
       "fsi": 1.5718,
-      "height_mean_m": 13.47
+      "layers": 3.93,
+      "osr": 0.382,
+      "height_mean_m": 13.47,
+      "height_std_m": 1.89,
+      "buurt": null
     },
     {
       "gsi": 0.225,
       "fsi": 0.8562,
-      "height_mean_m": 13.63
+      "layers": 3.8,
+      "osr": 0.905,
+      "height_mean_m": 13.63,
+      "height_std_m": 2.72,
+      "buurt": null
     },
     {
       "gsi": 0.2404,
       "fsi": 0.4678,
-      "height_mean_m": 9.21
+      "layers": 1.95,
+      "osr": 1.624,
+      "height_mean_m": 9.21,
+      "height_std_m": 3.37,
+      "buurt": null
     },
     {
       "gsi": 0.4358,
       "fsi": 1.669,
-      "height_mean_m": 8.8
+      "layers": 3.83,
+      "osr": 0.338,
+      "height_mean_m": 8.8,
+      "height_std_m": 3.79,
+      "buurt": null
     },
     {
       "gsi": 0.4185,
       "fsi": 1.5887,
-      "height_mean_m": 13.03
+      "layers": 3.8,
+      "osr": 0.366,
+      "height_mean_m": 13.03,
+      "height_std_m": 1.25,
+      "buurt": null
     },
     {
       "gsi": 0.363,
       "fsi": 1.2671,
-      "height_mean_m": 12.17
+      "layers": 3.49,
+      "osr": 0.503,
+      "height_mean_m": 12.17,
+      "height_std_m": 1.61,
+      "buurt": null
     },
     {
       "gsi": 0.0668,
       "fsi": 0.305,
-      "height_mean_m": 13.44
+      "layers": 4.57,
+      "osr": 3.059,
+      "height_mean_m": 13.44,
+      "height_std_m": 0.48,
+      "buurt": null
     },
     {
       "gsi": 0.0894,
       "fsi": 0.4319,
-      "height_mean_m": 14.15
+      "layers": 4.83,
+      "osr": 2.108,
+      "height_mean_m": 14.15,
+      "height_std_m": 0.58,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.3732,
       "fsi": 1.5953,
-      "height_mean_m": 13.56
+      "layers": 4.27,
+      "osr": 0.393,
+      "height_mean_m": 13.56,
+      "height_std_m": 2.49,
+      "buurt": "Hillesluis"
     },
     {
       "gsi": 0.4837,
       "fsi": 2.0603,
-      "height_mean_m": 12.78
+      "layers": 4.26,
+      "osr": 0.251,
+      "height_mean_m": 12.78,
+      "height_std_m": 2.14,
+      "buurt": null
     },
     {
       "gsi": 0.32,
       "fsi": 1.4298,
-      "height_mean_m": 14.31
+      "layers": 4.47,
+      "osr": 0.476,
+      "height_mean_m": 14.31,
+      "height_std_m": 1.98,
+      "buurt": null
     },
     {
       "gsi": 0.1403,
       "fsi": 0.4104,
-      "height_mean_m": 15.99
+      "layers": 2.93,
+      "osr": 2.095,
+      "height_mean_m": 15.99,
+      "height_std_m": 8.06,
+      "buurt": null
     },
     {
       "gsi": 0.2751,
       "fsi": 1.4025,
-      "height_mean_m": 16.07
+      "layers": 5.1,
+      "osr": 0.517,
+      "height_mean_m": 16.07,
+      "height_std_m": 5.7,
+      "buurt": null
     },
     {
       "gsi": 0.1784,
       "fsi": 0.6048,
-      "height_mean_m": 12.08
+      "layers": 3.39,
+      "osr": 1.358,
+      "height_mean_m": 12.08,
+      "height_std_m": 1.63,
+      "buurt": null
     },
     {
       "gsi": 0.0194,
       "fsi": 0.083,
-      "height_mean_m": 13.21
+      "layers": 4.28,
+      "osr": 11.813,
+      "height_mean_m": 13.21,
+      "height_std_m": 1.21,
+      "buurt": null
     },
     {
       "gsi": 0.2505,
       "fsi": 2.3988,
-      "height_mean_m": 11.06
+      "layers": 9.58,
+      "osr": 0.312,
+      "height_mean_m": 11.06,
+      "height_std_m": 6.88,
+      "buurt": null
     },
     {
       "gsi": 0.5726,
       "fsi": 2.9099,
-      "height_mean_m": 14.33
+      "layers": 5.08,
+      "osr": 0.147,
+      "height_mean_m": 14.33,
+      "height_std_m": 2.8,
+      "buurt": null
     },
     {
       "gsi": 0.4236,
       "fsi": 1.5855,
-      "height_mean_m": 10.75
+      "layers": 3.74,
+      "osr": 0.364,
+      "height_mean_m": 10.75,
+      "height_std_m": 2.48,
+      "buurt": null
     },
     {
       "gsi": 0.1668,
       "fsi": 0.6232,
-      "height_mean_m": 11.22
+      "layers": 3.74,
+      "osr": 1.337,
+      "height_mean_m": 11.22,
+      "height_std_m": 2.42,
+      "buurt": null
     },
     {
       "gsi": 0.1661,
       "fsi": 0.6952,
-      "height_mean_m": 12.33
+      "layers": 4.18,
+      "osr": 1.199,
+      "height_mean_m": 12.33,
+      "height_std_m": 1.28,
+      "buurt": null
     },
     {
       "gsi": 0.1219,
       "fsi": 0.2655,
-      "height_mean_m": 9.44
+      "layers": 2.18,
+      "osr": 3.308,
+      "height_mean_m": 9.44,
+      "height_std_m": 0.08,
+      "buurt": null
     },
     {
       "gsi": 0.2837,
       "fsi": 1.2196,
-      "height_mean_m": 13.52
+      "layers": 4.3,
+      "osr": 0.587,
+      "height_mean_m": 13.52,
+      "height_std_m": 2.25,
+      "buurt": null
     },
     {
       "gsi": 0.3541,
       "fsi": 1.1981,
-      "height_mean_m": 9.98
+      "layers": 3.38,
+      "osr": 0.539,
+      "height_mean_m": 9.98,
+      "height_std_m": 2.5,
+      "buurt": null
     },
     {
       "gsi": 0.4252,
       "fsi": 1.6614,
-      "height_mean_m": 10.09
+      "layers": 3.91,
+      "osr": 0.346,
+      "height_mean_m": 10.09,
+      "height_std_m": 2.12,
+      "buurt": null
     },
     {
       "gsi": 0.285,
       "fsi": 1.2404,
-      "height_mean_m": 14.82
+      "layers": 4.35,
+      "osr": 0.576,
+      "height_mean_m": 14.82,
+      "height_std_m": 7.82,
+      "buurt": null
     },
     {
       "gsi": 0.3953,
       "fsi": 1.6475,
-      "height_mean_m": 12.17
+      "layers": 4.17,
+      "osr": 0.367,
+      "height_mean_m": 12.17,
+      "height_std_m": 1.55,
+      "buurt": null
     },
     {
       "gsi": 0.2636,
       "fsi": 1.1545,
-      "height_mean_m": 13.82
+      "layers": 4.38,
+      "osr": 0.638,
+      "height_mean_m": 13.82,
+      "height_std_m": 1.68,
+      "buurt": null
     },
     {
       "gsi": 0.0982,
       "fsi": 0.2815,
-      "height_mean_m": 9.44
+      "layers": 2.87,
+      "osr": 3.203,
+      "height_mean_m": 9.44,
+      "height_std_m": 0.27,
+      "buurt": null
     },
     {
       "gsi": 0.4041,
       "fsi": 1.2896,
-      "height_mean_m": 10.97
+      "layers": 3.19,
+      "osr": 0.462,
+      "height_mean_m": 10.97,
+      "height_std_m": 3.72,
+      "buurt": null
     },
     {
       "gsi": 0.4244,
       "fsi": 1.3066,
-      "height_mean_m": 9.77
+      "layers": 3.08,
+      "osr": 0.441,
+      "height_mean_m": 9.77,
+      "height_std_m": 0.8,
+      "buurt": null
     },
     {
       "gsi": 0.0637,
       "fsi": 0.0637,
-      "height_mean_m": null
+      "layers": 1.0,
+      "osr": 14.697,
+      "height_mean_m": null,
+      "height_std_m": null,
+      "buurt": null
     },
     {
       "gsi": 0.2521,
       "fsi": 0.9739,
-      "height_mean_m": 13.51
+      "layers": 3.86,
+      "osr": 0.768,
+      "height_mean_m": 13.51,
+      "height_std_m": 2.38,
+      "buurt": null
     },
     {
       "gsi": 0.3195,
       "fsi": 1.1689,
-      "height_mean_m": 8.95
+      "layers": 3.66,
+      "osr": 0.582,
+      "height_mean_m": 8.95,
+      "height_std_m": 1.39,
+      "buurt": null
     },
     {
       "gsi": 0.2834,
       "fsi": 0.7939,
-      "height_mean_m": 8.61
+      "layers": 2.8,
+      "osr": 0.903,
+      "height_mean_m": 8.61,
+      "height_std_m": 1.57,
+      "buurt": null
     },
     {
       "gsi": 0.0783,
       "fsi": 0.1671,
-      "height_mean_m": 6.68
+      "layers": 2.13,
+      "osr": 5.517,
+      "height_mean_m": 6.68,
+      "height_std_m": 1.35,
+      "buurt": null
     },
     {
       "gsi": 0.1594,
       "fsi": 0.6441,
-      "height_mean_m": 12.07
+      "layers": 4.04,
+      "osr": 1.305,
+      "height_mean_m": 12.07,
+      "height_std_m": 2.31,
+      "buurt": null
     },
     {
       "gsi": 0.1504,
       "fsi": 0.6317,
-      "height_mean_m": 13.34
+      "layers": 4.2,
+      "osr": 1.345,
+      "height_mean_m": 13.34,
+      "height_std_m": 3.35,
+      "buurt": null
     },
     {
       "gsi": 0.0584,
       "fsi": 0.4227,
-      "height_mean_m": 16.67
+      "layers": 7.24,
+      "osr": 2.228,
+      "height_mean_m": 16.67,
+      "height_std_m": 4.56,
+      "buurt": null
     },
     {
       "gsi": 0.4273,
       "fsi": 1.2543,
-      "height_mean_m": 9.41
+      "layers": 2.94,
+      "osr": 0.457,
+      "height_mean_m": 9.41,
+      "height_std_m": 0.09,
+      "buurt": null
     },
     {
       "gsi": 0.1126,
       "fsi": 0.3346,
-      "height_mean_m": 9.47
+      "layers": 2.97,
+      "osr": 2.652,
+      "height_mean_m": 9.47,
+      "height_std_m": 0.05,
+      "buurt": null
     }
   ]
 }

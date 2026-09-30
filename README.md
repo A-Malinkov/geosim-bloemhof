@@ -308,6 +308,7 @@ python analysis/knmi/train_forecast.py           # train + score the models  (~6
 python analysis/abm_landuse/fetch_landcover.py   # OSM green/water/roads     (~30 s)
 python analysis/abm_landuse/ca_landuse.py        # cellular automaton        (~5 s)
 python analysis/abm_landuse/rl_landuse.py        # RL agent                  (~40 s)
+python analysis/abm_landuse/weight_sensitivity.py # objective-weight sweep    (~2 s)
 ```
 
 > The LSTM needs PyTorch, which is **not** in `requirements.txt` (~780 MB).

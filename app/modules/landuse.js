@@ -35,6 +35,8 @@ export async function setup(ctx) {
 
   const ca = await ctx.loadJson(ctx.config.dataSources.processed.landuse,
                                 { quiet: true });
+  const ws = await ctx.loadJson("../data/processed/landuse_weight_sensitivity.json",
+                                { quiet: true });
   const rl = await ctx.loadJson("../data/processed/landuse_rl.json",
                                 { quiet: true });
 
@@ -132,6 +134,8 @@ export async function setup(ctx) {
              `<td>${r.landuse_mix.toFixed(3)}</td></tr>`;
     }).join("")}</tbody></table>
 
+    <div id="luSens"></div>
+
     <h4>Watch it evolve</h4>
     <div class="seg" id="luScen">
       ${names.map((n, i) =>
@@ -187,6 +191,51 @@ export async function setup(ctx) {
     .map(([k, x]) => `<tr><td>${k.replace("erase_", "erased ").replace("pct", " %")}</td>` +
                      `<td>${(x.agreement_mean * 100).toFixed(1)} %</td>` +
                      `<td>${x.kappa_mean.toFixed(3)}</td></tr>`).join("");
+
+  /* ---- how much of the ranking is our choice of weights? ----------------
+   * The ranking above is a single number per scenario and reads as a verdict.
+   * It is a verdict under three weights we picked, and the gap between the top
+   * two is small. weight_sensitivity.py sweeps the normalised weight simplex
+   * and reports how much of it each scenario wins, which is the honest version
+   * of the same claim. Without this the panel overstates its own result. */
+  const sens = body.querySelector("#luSens");
+  if (ws?.win_share) {
+    const shares = Object.entries(ws.win_share)
+      .filter(([, v]) => v > 0)
+      .sort((a, b) => b[1] - a[1]);
+    const w = ws.default_weights;
+    const bars = shares.map(([k, v]) =>
+      `<tr><td>${k}</td><td>${(100 * v).toFixed(0)} %` +
+      `<span style="display:inline-block;height:6px;vertical-align:middle;` +
+      `margin-left:5px;width:${(v * 70).toFixed(0)}px;background:` +
+      `${k === ws.default_winner ? "var(--accent)" : "#5b6675"}"></span></td></tr>`).join("");
+    const never = Object.entries(ws.win_share).filter(([, v]) => v === 0).map(([k]) => k);
+    sens.innerHTML =
+      `<h4>Is that ranking robust?</h4>` +
+      `<table class="kv"><thead><tr><th>wins across the weight space</th><th></th></tr></thead>` +
+      `<tbody>${bars}</tbody></table>` +
+      `<p class="muted">The objective weights ` +
+      `(${w.w_mix} · ${w.w_green} · ${w.w_prox} for mix, green and walkability) ` +
+      `are ours, so the ranking is re-scored across ` +
+      `${ws.parameters.n_weight_vectors.toLocaleString("en-GB")} weight vectors on the ` +
+      `normalised simplex. <strong>${ws.default_winner}</strong> wins at our weights, ` +
+      `by ${ws.default_margin.toFixed(4)}, and across ` +
+      `${(100 * ws.win_share[ws.default_winner]).toFixed(0)} % of the space` +
+      (never.length ? `; ${never.join(" and ")} never wins` : "") + `. ` +
+      (ws.nearest_flip
+        ? `The nearest weights that change the answer are ` +
+          `${ws.nearest_flip.weights.join(" · ")} (favouring ` +
+          `${ws.nearest_flip.winner}). `
+        : `No weighting on the lattice changes the answer. `) +
+      `Note the margin against the spread between replicates of one scenario ` +
+      `(${Object.entries(ws.margin.replicate_sd_at_default)
+             .filter(([, x]) => x > 0)
+             .map(([k, x]) => `${k} σ ${x.toFixed(4)}`).join(", ")}): the ` +
+      `preference is a preference, not a large difference.</p>`;
+  } else if (sens) {
+    sens.innerHTML = `<p class="muted">Weight sensitivity not computed — ` +
+      `<code>analysis/abm_landuse/weight_sensitivity.py</code></p>`;
+  }
 
   body.querySelector("#luRl").innerHTML =
     (vrows ? `<h4>Validation</h4>` +
