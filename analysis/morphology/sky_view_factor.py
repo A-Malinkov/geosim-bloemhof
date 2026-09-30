@@ -71,7 +71,8 @@ from rasterio.enums import Resampling
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 from common.project import (  # noqa: E402
-    PROCESSED, RAW, STUDY_AREA, bbox_rd, bbox_wgs, fetch_buurt,
+    PROCESSED, RAW, STUDY_AREA, bbox_rd, bbox_wgs, buurt_polygons,
+    buurt_properties, study_area_polygon,
 )
 
 AHN_NODATA = 3.4028234663852886e38
@@ -341,26 +342,36 @@ def main() -> int:
     svf_rad_c, svf_geo_c, og_c = svf_rad[sl], svf_geo[sl], open_ground[sl]
     transform_c = transform * transform.translation(pad_px, pad_px)
 
-    # ---- statistics inside the actual CBS neighbourhood --------------------
-    # The study-area square also covers the Maashaven and neighbouring buurten,
-    # and open water has SVF ~1.0, which drags the mean up. Reporting the
-    # neighbourhood separately keeps the headline number honest.
-    buurt_mask = None
-    buurt_props = {}
+    # ---- statistics per buurt and overall ----------------------------------
+    # The raster covers the bounding box of both buurten, which also takes in the
+    # Maashaven and slivers of neighbouring buurten. Open water has SVF ~1.0 and
+    # would drag the mean up, so every headline figure is clipped to real buurt
+    # land and each buurt is reported separately.
+    masks, buurt_stats = {}, {}
     if not args.no_clip_buurt:
         try:
             from rasterio.features import geometry_mask
-            geom, buurt_props = fetch_buurt()
-            buurt_mask = ~geometry_mask([geom], out_shape=svf_rad_c.shape,
-                                        transform=transform_c, invert=False)
-            cover = buurt_mask.mean()
-            print(f"  {buurt_props.get('buurtnaam')}: covers "
-                  f"{100 * cover:.1f}% of the study-area raster")
-            if cover < 0.02:
-                print("  ! the study area barely overlaps the buurt; "
-                      "check the centre point in config.js")
+            polys, props = buurt_polygons(), buurt_properties()
+            for code, name in STUDY_AREA.buurten:
+                m = ~geometry_mask([polys[code]], out_shape=svf_rad_c.shape,
+                                   transform=transform_c, invert=False)
+                masks[name] = m
+                print(f"  {name:12} covers {100 * m.mean():5.1f}% of the raster")
+            m_all = ~geometry_mask([study_area_polygon()], out_shape=svf_rad_c.shape,
+                                   transform=transform_c, invert=False)
+            masks[STUDY_AREA.name] = m_all
+            for name, m in masks.items():
+                code = next((c for c, n in STUDY_AREA.buurten if n == name), None)
+                buurt_stats[name] = {
+                    "code": code,
+                    "inhabitants": (props.get(code, {}) or {}).get("aantalInwoners"),
+                    "raster_coverage_fraction": round(float(m.mean()), 4),
+                    "open_ground": describe(np.where(og_c & m, svf_rad_c, np.nan)),
+                    "open_ground_geometric": describe(
+                        np.where(og_c & m, svf_geo_c, np.nan)),
+                }
         except Exception as exc:
-            print(f"  ! neighbourhood clip skipped ({exc})")
+            print(f"  ! buurt clipping skipped ({exc})")
 
     overlay_arr, overlay_bbox = reproject_to_wgs84(svf_rad_c, transform_c, crs)
 
@@ -389,15 +400,9 @@ def main() -> int:
         "all_cells": describe(svf_rad_c),
         "open_ground": describe(np.where(og_c, svf_rad_c, np.nan)),
         "open_ground_geometric": describe(np.where(og_c, svf_geo_c, np.nan)),
-        "buurt": ({
-            "code": STUDY_AREA.cbs_buurt,
-            "name": buurt_props.get("buurtnaam"),
-            "inhabitants": buurt_props.get("aantalInwoners"),
-            "area_ha": buurt_props.get("oppervlakteTotaalInHa"),
-            "raster_coverage_fraction": round(float(buurt_mask.mean()), 4),
-            "open_ground": describe(
-                np.where(og_c & buurt_mask, svf_rad_c, np.nan)),
-        } if buurt_mask is not None else None),
+        "per_buurt": {k: v for k, v in buurt_stats.items()
+                      if k != STUDY_AREA.name},
+        "combined": buurt_stats.get(STUDY_AREA.name),
         "histogram": {
             "bin_edges": [round(x, 3) for x in np.linspace(0, 1, 41).tolist()],
             "counts": np.histogram(svf_rad_c[og_c & np.isfinite(svf_rad_c)],
@@ -426,7 +431,8 @@ def main() -> int:
         mi = {}
     mi.pop("_status", None)
     mi.setdefault("baseline", {})
-    headline = (stats.get("buurt") or {}).get("open_ground") or stats["open_ground"]
+    headline = ((stats.get("combined") or {}).get("open_ground")
+                or stats["open_ground"])
     mi["baseline"]["svf_mean"] = headline["mean"]
     mi["baseline"]["svf_median"] = headline["median"]
     mi["_svf_source"] = "analysis/morphology/sky_view_factor.py"
@@ -439,11 +445,11 @@ def main() -> int:
     print(f"  SVF at pedestrian level, open ground:")
     print(f"     study-area square : mean {og['mean']:.3f}  median {og['median']:.3f}  "
           f"p05 {og['p05']:.3f}  p95 {og['p95']:.3f}  ({og['n_pixels']:,} cells)")
-    b = stats.get("buurt")
-    if b and b.get("open_ground"):
-        bg = b["open_ground"]
-        print(f"     {b['name']:<17} : mean {bg['mean']:.3f}  median {bg['median']:.3f}  "
-              f"p05 {bg['p05']:.3f}  p95 {bg['p95']:.3f}  ({bg['n_pixels']:,} cells)")
+    for name, b in buurt_stats.items():
+        bg = b.get("open_ground") or {}
+        if bg:
+            print(f"     {name:<17} : mean {bg['mean']:.3f}  median {bg['median']:.3f}  "
+                  f"p05 {bg['p05']:.3f}  p95 {bg['p95']:.3f}  ({bg['n_pixels']:,} cells)")
     return 0
 
 

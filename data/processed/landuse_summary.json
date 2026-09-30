@@ -1,5 +1,5 @@
 {
-  "study_area": "Bloemhof",
+  "study_area": "Bloemhof & Hillesluis",
   "method": "normalised Shannon entropy and Simpson diversity over BAG gebruiksdoel, weighted by usable floor area",
   "source": "BAG verblijfsobjecten via PDOK WFS",
   "parameters": {
@@ -23,163 +23,318 @@
   },
   "caveat": "BAG covers addressable units only. Parks, water, streets and squares are invisible to it, so this is a mix of BUILT FLOOR SPACE, not of land cover. Pair with GSI from density_height.py.",
   "overall": {
-    "shannon_area": 0.3469,
-    "shannon_count": 0.1217,
-    "simpson_area": 0.3325,
-    "simpson_count": 0.1002,
+    "shannon_area": 0.4245,
+    "shannon_count": 0.1776,
+    "simpson_area": 0.4129,
+    "simpson_count": 0.1529,
     "n_categories_in_scheme": 11,
     "n_categories_present": 11,
     "dominant": "residential",
-    "dominant_share": 0.8131
+    "dominant_share": 0.7601
   },
   "composition": [
     {
       "category": "residential",
-      "floor_area_m2": 749198.0,
-      "share": 0.8131,
-      "units": 9375
-    },
-    {
-      "category": "assembly",
-      "floor_area_m2": 51464.5,
-      "share": 0.0559,
-      "units": 84
+      "floor_area_m2": 1310540.5,
+      "share": 0.7601,
+      "units": 15769
     },
     {
       "category": "retail",
-      "floor_area_m2": 31889.0,
-      "share": 0.0346,
-      "units": 200
+      "floor_area_m2": 89692.5,
+      "share": 0.052,
+      "units": 490
     },
     {
-      "category": "education",
-      "floor_area_m2": 28358.0,
-      "share": 0.0308,
-      "units": 21
+      "category": "assembly",
+      "floor_area_m2": 79563.5,
+      "share": 0.0461,
+      "units": 197
     },
     {
       "category": "industry",
-      "floor_area_m2": 25909.5,
-      "share": 0.0281,
-      "units": 119
+      "floor_area_m2": 72590.0,
+      "share": 0.0421,
+      "units": 278
+    },
+    {
+      "category": "education",
+      "floor_area_m2": 70038.5,
+      "share": 0.0406,
+      "units": 85
     },
     {
       "category": "other",
-      "floor_area_m2": 14360.0,
-      "share": 0.0156,
-      "units": 13
+      "floor_area_m2": 49957.5,
+      "share": 0.029,
+      "units": 79
     },
     {
       "category": "office",
-      "floor_area_m2": 8055.5,
-      "share": 0.0087,
-      "units": 25
+      "floor_area_m2": 20600.0,
+      "share": 0.0119,
+      "units": 44
     },
     {
       "category": "healthcare",
-      "floor_area_m2": 4542.0,
-      "share": 0.0049,
-      "units": 14
+      "floor_area_m2": 14484.0,
+      "share": 0.0084,
+      "units": 140
     },
     {
       "category": "sport",
-      "floor_area_m2": 4451.0,
-      "share": 0.0048,
-      "units": 6
+      "floor_area_m2": 8799.0,
+      "share": 0.0051,
+      "units": 13
     },
     {
       "category": "accommodation",
-      "floor_area_m2": 3084.0,
-      "share": 0.0033,
-      "units": 29
+      "floor_area_m2": 4476.0,
+      "share": 0.0026,
+      "units": 51
     },
     {
       "category": "detention",
-      "floor_area_m2": 115.5,
-      "share": 0.0001,
+      "floor_area_m2": 3354.5,
+      "share": 0.0019,
       "units": 1
     }
   ],
   "grid": {
-    "n_cells": 120,
-    "n_cells_used": 117,
+    "n_cells": 237,
+    "n_cells_used": 209,
     "shannon": {
-      "mean": 0.1675,
-      "std": 0.149,
+      "mean": 0.1855,
+      "std": 0.163,
       "min": 0.0,
-      "median": 0.1376,
-      "max": 0.6272
+      "median": 0.1559,
+      "max": 0.6078
     }
   },
-  "buurt": {
-    "name": "Bloemhof",
-    "code": "BU05991081",
-    "coverage_fraction": 0.7476,
-    "n_units": 4870,
-    "floor_area_m2": 433306.0,
-    "shannon_area": 0.2676,
-    "shannon_count": 0.1205,
-    "simpson_area": 0.2494,
+  "per_buurt": {
+    "Bloemhof": {
+      "name": "Bloemhof",
+      "code": "BU05991081",
+      "land_area_ha": 78.84,
+      "inhabitants": 13740,
+      "n_units": 6759,
+      "floor_area_m2": 586710.0,
+      "shannon_area": 0.2674,
+      "shannon_count": 0.1437,
+      "simpson_area": 0.2514,
+      "dominant": "residential",
+      "dominant_share": 0.8629,
+      "composition": [
+        {
+          "category": "residential",
+          "floor_area_m2": 506279.5,
+          "share": 0.8629,
+          "units": 6331
+        },
+        {
+          "category": "retail",
+          "floor_area_m2": 26762.0,
+          "share": 0.0456,
+          "units": 169
+        },
+        {
+          "category": "education",
+          "floor_area_m2": 18225.5,
+          "share": 0.0311,
+          "units": 55
+        },
+        {
+          "category": "assembly",
+          "floor_area_m2": 14759.0,
+          "share": 0.0252,
+          "units": 55
+        },
+        {
+          "category": "industry",
+          "floor_area_m2": 7414.0,
+          "share": 0.0126,
+          "units": 82
+        },
+        {
+          "category": "other",
+          "floor_area_m2": 5718.0,
+          "share": 0.0097,
+          "units": 7
+        },
+        {
+          "category": "sport",
+          "floor_area_m2": 2850.0,
+          "share": 0.0049,
+          "units": 5
+        },
+        {
+          "category": "accommodation",
+          "floor_area_m2": 2480.0,
+          "share": 0.0042,
+          "units": 34
+        },
+        {
+          "category": "healthcare",
+          "floor_area_m2": 1643.5,
+          "share": 0.0028,
+          "units": 10
+        },
+        {
+          "category": "office",
+          "floor_area_m2": 578.5,
+          "share": 0.001,
+          "units": 11
+        }
+      ]
+    },
+    "Hillesluis": {
+      "name": "Hillesluis",
+      "code": "BU05991082",
+      "land_area_ha": 90.26,
+      "inhabitants": 12185,
+      "n_units": 5663,
+      "floor_area_m2": 588662.0,
+      "shannon_area": 0.4223,
+      "shannon_count": 0.175,
+      "simpson_area": 0.4323,
+      "dominant": "residential",
+      "dominant_share": 0.7443,
+      "composition": [
+        {
+          "category": "residential",
+          "floor_area_m2": 438152.5,
+          "share": 0.7443,
+          "units": 5191
+        },
+        {
+          "category": "retail",
+          "floor_area_m2": 46941.0,
+          "share": 0.0797,
+          "units": 210
+        },
+        {
+          "category": "education",
+          "floor_area_m2": 36618.0,
+          "share": 0.0622,
+          "units": 19
+        },
+        {
+          "category": "assembly",
+          "floor_area_m2": 24713.0,
+          "share": 0.042,
+          "units": 82
+        },
+        {
+          "category": "other",
+          "floor_area_m2": 21462.0,
+          "share": 0.0365,
+          "units": 35
+        },
+        {
+          "category": "industry",
+          "floor_area_m2": 8844.5,
+          "share": 0.015,
+          "units": 88
+        },
+        {
+          "category": "healthcare",
+          "floor_area_m2": 5669.0,
+          "share": 0.0096,
+          "units": 20
+        },
+        {
+          "category": "office",
+          "floor_area_m2": 4426.0,
+          "share": 0.0075,
+          "units": 11
+        },
+        {
+          "category": "sport",
+          "floor_area_m2": 1263.0,
+          "share": 0.0021,
+          "units": 4
+        },
+        {
+          "category": "accommodation",
+          "floor_area_m2": 573.0,
+          "share": 0.001,
+          "units": 3
+        }
+      ]
+    }
+  },
+  "combined": {
+    "name": "Bloemhof & Hillesluis",
+    "code": null,
+    "land_area_ha": 169.1,
+    "inhabitants": null,
+    "n_units": 12422,
+    "floor_area_m2": 1175372.0,
+    "shannon_area": 0.3515,
+    "shannon_count": 0.1596,
+    "simpson_area": 0.3463,
+    "dominant": "residential",
+    "dominant_share": 0.8035,
     "composition": [
       {
         "category": "residential",
-        "floor_area_m2": 374524.0,
-        "share": 0.8643,
-        "units": 4616
+        "floor_area_m2": 944432.0,
+        "share": 0.8035,
+        "units": 11522
       },
       {
         "category": "retail",
-        "floor_area_m2": 15323.0,
-        "share": 0.0354,
-        "units": 100
+        "floor_area_m2": 73703.0,
+        "share": 0.0627,
+        "units": 379
       },
       {
         "category": "education",
-        "floor_area_m2": 14552.0,
-        "share": 0.0336,
-        "units": 12
+        "floor_area_m2": 54843.5,
+        "share": 0.0467,
+        "units": 74
       },
       {
         "category": "assembly",
-        "floor_area_m2": 11933.0,
-        "share": 0.0275,
-        "units": 41
-      },
-      {
-        "category": "industry",
-        "floor_area_m2": 6258.0,
-        "share": 0.0144,
-        "units": 68
+        "floor_area_m2": 39472.0,
+        "share": 0.0336,
+        "units": 137
       },
       {
         "category": "other",
-        "floor_area_m2": 5412.0,
-        "share": 0.0125,
-        "units": 5
+        "floor_area_m2": 27180.0,
+        "share": 0.0231,
+        "units": 42
       },
       {
-        "category": "sport",
-        "floor_area_m2": 2568.0,
-        "share": 0.0059,
-        "units": 4
-      },
-      {
-        "category": "accommodation",
-        "floor_area_m2": 1367.0,
-        "share": 0.0032,
-        "units": 14
+        "category": "industry",
+        "floor_area_m2": 16258.5,
+        "share": 0.0138,
+        "units": 170
       },
       {
         "category": "healthcare",
-        "floor_area_m2": 934.0,
-        "share": 0.0022,
-        "units": 4
+        "floor_area_m2": 7312.5,
+        "share": 0.0062,
+        "units": 30
       },
       {
         "category": "office",
-        "floor_area_m2": 435.0,
-        "share": 0.001,
-        "units": 6
+        "floor_area_m2": 5004.5,
+        "share": 0.0043,
+        "units": 22
+      },
+      {
+        "category": "sport",
+        "floor_area_m2": 4113.0,
+        "share": 0.0035,
+        "units": 9
+      },
+      {
+        "category": "accommodation",
+        "floor_area_m2": 3053.0,
+        "share": 0.0026,
+        "units": 37
       }
     ]
   }

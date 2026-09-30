@@ -65,7 +65,8 @@ import numpy as np
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 from common.project import (  # noqa: E402
-    PROCESSED, RAW, STUDY_AREA, bbox_rd, fetch_buurt, to_wgs,
+    PROCESSED, RAW, STUDY_AREA, bbox_rd, buurt_polygons, buurt_properties,
+    study_area_polygon, to_wgs,
 )
 
 MIN_FOOTPRINT_M2 = 40.0     # below this it is an outbuilding, not a building
@@ -219,54 +220,57 @@ def main() -> int:
     }) + "\n")
     print(f"  wrote density_grid.geojson ({len(cells)} cells)")
 
-    # -------------------------------------------------- aggregate over Bloemhof
-    buurt_stats, buurt_props = None, {}
+    # ------------------------------------------- aggregate per buurt and overall
+    # The study area is two whole buurten, so each is reported separately and
+    # together. The bounding box is derived from their union, so unlike the old
+    # 600 m square there is no partial-coverage correction to make: every
+    # building in a buurt is inside the data we fetched.
+    per_buurt, combined = {}, None
     try:
         import shapely.geometry as sg
         from shapely.prepared import prep
-        geom, buurt_props = fetch_buurt()
 
-        # The denominator MUST be the part of the buurt we actually surveyed.
-        # The study square covers only ~75% of Bloemhof, so dividing the
-        # buildings we found by the buurt's full area would understate density
-        # by about a third. Intersect first, then use that area.
-        survey = geom.intersection(sg.box(*bbox_rd()))
-        coverage = survey.area / geom.area if geom.area else 0.0
-        pgeom = prep(survey)
-        inside = np.array([pgeom.contains(sg.Point(px, py)) for px, py in zip(x, y)])
-        land = survey.area
-        if coverage < 0.999:
-            print(f"  note: the study square covers {100 * coverage:.1f}% of "
-                  f"{buurt_props.get('buurtnaam')}; density is computed over that "
-                  f"part only ({land / 10_000:.1f} ha of "
-                  f"{geom.area / 10_000:.1f} ha)")
-        if inside.sum() > 0:
+        polys, props = buurt_polygons(), buurt_properties()
+
+        def stats_for(geom, label, code=None):
+            pg = prep(geom)
+            inside = np.array([pg.contains(sg.Point(px, py)) for px, py in zip(x, y)])
+            land = geom.area
+            if inside.sum() == 0 or land <= 0:
+                return None
             bp = inside & principal & np.isfinite(height)
-            buurt_stats = {
-                "name": buurt_props.get("buurtnaam"),
-                "code": STUDY_AREA.cbs_buurt,
-                "buurt_area_ha": round(float(geom.area) / 10_000, 2),
-                "surveyed_area_ha": round(float(land) / 10_000, 2),
-                "coverage_fraction": round(float(coverage), 4),
-                "_denominator_note": "GSI and FSI use the surveyed area (buurt "
-                                     "clipped to the study square), not the full "
-                                     "buurt, so they are not diluted by the part "
-                                     "outside the study area.",
-                "land_area_m2": round(float(land), 1),
-                "land_area_ha": round(float(land) / 10_000, 2),
+            g_ = float(area[inside].sum() / land)
+            f_ = float(gfa[inside].sum() / land)
+            out = {
+                "name": label,
+                "code": code,
+                "land_area_ha": round(land / 10_000, 2),
+                "inhabitants": (props.get(code, {}) or {}).get("aantalInwoners"),
                 "n_buildings": int(inside.sum()),
                 "n_principal": int(bp.sum()),
-                "gsi": round(float(area[inside].sum() / land), 4),
-                "fsi": round(float(gfa[inside].sum() / land), 4),
+                "gsi": round(g_, 4),
+                "fsi": round(f_, 4),
+                "layers": round(f_ / g_, 2) if g_ else None,
+                "osr": round((1 - g_) / f_, 3) if f_ else None,
                 "height_m": describe(height[bp]),
             }
-            g_, f_ = buurt_stats["gsi"], buurt_stats["fsi"]
-            buurt_stats["layers"] = round(f_ / g_, 2) if g_ else None
-            buurt_stats["osr"] = round((1 - g_) / f_, 3) if f_ else None
-            print(f"  {buurt_stats['name']}: {buurt_stats['n_buildings']:,} buildings "
-                  f"on {buurt_stats['land_area_ha']} ha surveyed")
+            return out
+
+        for code, name in STUDY_AREA.buurten:
+            st = stats_for(polys[code], name, code)
+            if st:
+                per_buurt[name] = st
+                print(f"  {name:12} {st['n_buildings']:5,} buildings on "
+                      f"{st['land_area_ha']:6.1f} ha   GSI {st['gsi']:.3f}  "
+                      f"FSI {st['fsi']:.3f}  {st['layers']:.2f} storeys")
+
+        combined = stats_for(study_area_polygon(), STUDY_AREA.name)
+        if combined:
+            print(f"  {'combined':12} {combined['n_buildings']:5,} buildings on "
+                  f"{combined['land_area_ha']:6.1f} ha   GSI {combined['gsi']:.3f}  "
+                  f"FSI {combined['fsi']:.3f}  {combined['layers']:.2f} storeys")
     except Exception as exc:
-        print(f"  ! buurt aggregate skipped ({exc})")
+        print(f"  ! buurt aggregates skipped ({exc})")
 
     # ------------------------------------------------------------- summary
     valid = count >= args.min_buildings
@@ -303,7 +307,8 @@ def main() -> int:
             "height_mean_m": describe(h_mean[valid]),
             "height_std_m": describe(h_std[valid]),
         },
-        "buurt": buurt_stats,
+        "per_buurt": per_buurt,
+        "combined": combined,
         "spacematrix": [
             {"gsi": round(float(gsi[i]), 4), "fsi": round(float(fsi[i]), 4),
              "height_mean_m": None if not np.isfinite(h_mean[i]) else round(float(h_mean[i]), 2)}
@@ -321,7 +326,7 @@ def main() -> int:
         mi = {}
     mi.pop("_status", None)
     mi.setdefault("baseline", {})
-    head = buurt_stats or {}
+    head = combined or {}
     mi["baseline"]["fsi"] = head.get("fsi", summary["grid"]["fsi"].get("mean"))
     mi["baseline"]["gsi"] = head.get("gsi", summary["grid"]["gsi"].get("mean"))
     mi["baseline"]["layers"] = head.get("layers")
@@ -334,10 +339,9 @@ def main() -> int:
     print("  merged fsi / gsi / height into morphology_indicators.json")
 
     print()
-    if buurt_stats:
-        b = buurt_stats
-        print(f"  {b['name']} over the {b['surveyed_area_ha']} ha surveyed "
-              f"({100 * b['coverage_fraction']:.0f}% of the buurt):")
+    if combined:
+        b = combined
+        print(f"  {b['name']} over {b['land_area_ha']} ha:")
         print(f"     GSI {b['gsi']:.3f}   FSI {b['fsi']:.3f}   "
               f"L {b['layers']:.2f} storeys   OSR {b['osr']:.2f}")
         h = b["height_m"]

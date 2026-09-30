@@ -4,10 +4,15 @@ An interactive CesiumJS web app backed by Python geospatial analysis. We design 
 residential complex in **Bloemhof** (wijk Feijenoord, Rotterdam-Zuid) and justify
 it with geospatial analysis and simulation.
 
-Study area centre: **51.895119 N, 4.494925 E** (RD New 93583, 434444), 600 m radius.
-It is defined in exactly two places — [`app/config.js`](app/config.js) for the app
-and [`analysis/common/project.py`](analysis/common/project.py) for the analyses.
-Change both if the site moves; nothing else hard-codes it.
+**Study area: two buurten — Bloemhof and Hillesluis**, adjacent in
+Rotterdam-Zuid. 169 ha and about 26,000 people between them. Everything is
+*analysed* over both; the design scenarios occupy only a small site inside them.
+
+The boundaries come from the CBS wijkenbuurten service, not from hand-typed
+coordinates. They are defined in exactly two places —
+[`app/config.js`](app/config.js) for the app and
+[`analysis/common/project.py`](analysis/common/project.py) for the analyses.
+Change the buurt codes there if the area moves; nothing else hard-codes it.
 
 ---
 
@@ -263,9 +268,9 @@ numbers here still match `data/processed/`.
 
 | # | Component | Status | Owner |
 |---|---|---|---|
-| 4.1 | 3D city model + proposed massing | existing buildings ✅ · **massing not started** | — |
+| 4.1 | 3D city model + proposed massing | existing buildings ✅ · **massing not started** (site not chosen) | — |
 | 4.2 | Geospatial data layers | ✅ done | — |
-| 4.3 | Urban morphological indicators | ✅ done — SVF 0.685, GSI 0.324, FSI 1.024, mix 0.268 | Atanas |
+| 4.3 | Urban morphological indicators | ✅ done — SVF 0.726, GSI 0.284, FSI 0.960, mix 0.351, both buurten | Atanas |
 | 4.4 | KNMI sensors + AI prediction | ✅ done — live feed, sensors, 5 y history, model comparison | — |
 | 4.5 | Wind + noise simulation | ❌ not started | — |
 | 4.6 | CBS socio-demographics | ❌ not started | — |
@@ -287,7 +292,8 @@ scratch:
 ```bash
 source ~/.venvs/geosim-rotterdam/bin/activate
 
-python analysis/morphology/fetch_ahn.py          # AHN DSM + DTM + nDSM      (~1 min)
+python analysis/common/project.py                # buurt boundaries          (~5 s)
+python analysis/morphology/fetch_ahn.py          # AHN DSM + DTM, tiled      (~30 s)
 python analysis/morphology/fetch_trees.py        # 2,172 trees, 206 species  (~30 s)
 python analysis/morphology/fetch_buildings.py    # 5,804 buildings from 3DBAG(~1 min)
 python analysis/morphology/sky_view_factor.py    # SVF raster + statistics   (~40 s)
@@ -313,18 +319,31 @@ and *Sky View Factor* appears under **Analysis** in the layer panel.
 
 ### Headline numbers
 
+Every figure is clipped to the buurt polygons, so numerator and denominator
+share one boundary.
+
+| indicator | Bloemhof | Hillesluis | both |
+|---|---|---|---|
+| Sky View Factor, pedestrian level | 0.696 | 0.748 | **0.726** |
+| GSI · FSI · storeys | 0.33 · 1.00 · 3.0 | 0.24 · 0.92 · 3.8 | **0.284 · 0.960 · 3.38** |
+| Mean building height | 8.5 m | 11.2 m | **9.5 m** (σ 3.1) |
+| Land-use mix, Shannon | 0.267 | 0.422 | **0.351** |
+| Trees · per hectare | 1,204 · 15.3 | 1,598 · 17.7 | **2,802 · 16.6** |
+| Canopy cover | 6.6 % | 9.0 % | **7.9 %** |
+
+**The two are not the same place.** Hillesluis is less built-up but taller
+(GSI 0.24 vs 0.33, 3.8 vs 3.0 storeys), noticeably more mixed
+(Shannon 0.42 vs 0.27), greener and more open. Bloemhof is the denser,
+more enclosed, more mono-functional of the two.
+
+Other results:
+
 | | |
 |---|---|
-| Sky View Factor, Bloemhof, pedestrian level, open ground | **0.685** mean, 0.716 median, p05 0.35 |
-| Trees in the study area | **2,172**, 206 species, 15.1 / ha |
-| Canopy cover | 7.9 % (upper bound — overlapping crowns counted twice) |
-| SVF under a tree crown vs 15 m from any tree | **0.40 vs 0.70** — trees remove 43 % of visible sky |
-| Density (Spacematrix, Bloemhof) | **GSI 0.324 · FSI 1.024 · 3.16 storeys · OSR 0.66** |
-| Building height | **8.7 m** mean, σ 2.8 m, tallest 30.1 m |
-| Land-use mix (Bloemhof) | Shannon **0.268** of 1.0 · 81 % of floor space residential |
-| Weather forecast (temperature, +6 h) | MAE **1.29 °C**, 54 % better than assuming no change |
-| Weather forecast (wind, +6 h) | MAE **1.13 m/s** — but it under-predicts strong winds by 0.5 m/s |
-| Land-use model | CA prefers **scenario_b** (mix 0.482); RL agent reaches 0.560 |
+| SVF under a tree crown vs 15 m from any tree | **0.46 vs 0.79** — trees remove 42 % of visible sky |
+| Weather forecast (temperature, +6 h) | MAE 1.29 °C, 54 % better than assuming no change |
+| Weather forecast (wind, +6 h) | MAE 1.13 m/s — but it under-predicts strong winds by 0.5 m/s |
+| Land-use model | CA prefers **scenario_b** (mix 0.550); RL agent reaches 0.632 |
 
 ### Figures (`docs/`)
 

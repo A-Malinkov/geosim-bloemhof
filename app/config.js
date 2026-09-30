@@ -23,34 +23,56 @@ export const CONFIG = {
   },
 
   /* ------------------------------------------------------------ Study area */
-  /* CHANGE THE STUDY AREA HERE AND NOWHERE ELSE.
-   * Resolved from the coordinates supplied by the team
-   * (51°53'42.43"N 4°29'41.73"E) via the PDOK Locatieserver reverse geocoder. */
+  /* TWO BUURTEN, not a point with a radius.
+   *
+   * Bloemhof (BU05991081) and Hillesluis (BU05991082) are adjacent buurten in
+   * Rotterdam-Zuid. Everything is ANALYSED over both, about 169 ha and 26,000
+   * inhabitants. The design scenarios occupy only a small site inside them, set
+   * separately in `designSite` below.
+   *
+   * The boundaries themselves live in data/processed/study_area.geojson, written
+   * by `python analysis/common/project.py`, which derives everything from the
+   * CBS wijkenbuurten service. Change the buurt codes there and in
+   * analysis/common/project.py; do not hand-edit coordinates here.
+   */
   studyArea: {
-    name: "Bloemhof",
+    name: "Bloemhof & Hillesluis",
     wijk: "Feijenoord",
     municipality: "Rotterdam",
 
-    // WGS84 centre point — the one value to change if the site moves.
-    lon: 4.494925,
-    lat: 51.895119,
+    buurten: [
+      { code: "BU05991081", name: "Bloemhof" },
+      { code: "BU05991082", name: "Hillesluis" },
+    ],
 
-    // Same point in Amersfoort / RD New (EPSG:28992), for the Python analyses.
-    rdX: 93583.28,
-    rdY: 434443.82,
+    // Centre of the combined extent, for the opening camera.
+    lon: 4.507635,
+    lat: 51.896283,
 
-    // Analysis extent: half-width of the square around the centre, in metres.
-    radiusM: 600,
+    // WGS84 bounds of both buurten together: [west, south, east, north].
+    bbox: [4.493657, 51.8895625, 4.5216124, 51.9030038],
 
-    // Statistical keys for the CBS module.
-    cbsBuurtCode: "BU05991081",   // Bloemhof
-    cbsGemeenteCode: "GM0599",    // Rotterdam
+    // Boundaries for the map, in WGS84.
+    boundaries: "../data/processed/study_area.geojson",
 
-    // Nearest KNMI synoptic station: 344 = Rotterdam (Rotterdam The Hague Airport).
+    cbsGemeenteCode: "GM0599",
+
+    // Nearest KNMI synoptic station: 344 = Rotterdam The Hague Airport.
     knmiStation: 344,
 
-    // Opening camera position.
-    camera: { heightM: 900, headingDeg: 20, pitchDeg: -35 },
+    // Opening camera. Higher than before: the area is now ~1.9 x 1.5 km.
+    camera: { heightM: 1500, headingDeg: 10, pitchDeg: -45 },
+  },
+
+  /* Where the design scenarios go. The brief is that scenarios occupy only a
+   * small part of the study area, so this is a separate, smaller footprint.
+   * PLACEHOLDER — set it once the team picks a site. Nothing in the analysis
+   * depends on it; only components 4.1 and 4.9 do. */
+  designSite: {
+    status: "placeholder — the team has not chosen the site yet",
+    lon: 4.507635,
+    lat: 51.896283,
+    radiusM: 150,
   },
 
   /* ==========================================================================

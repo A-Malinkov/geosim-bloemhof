@@ -1,94 +1,131 @@
 {
-  "study_area": "Bloemhof",
+  "study_area": "Bloemhof & Hillesluis",
   "source": "Gemeente Rotterdam tree register, layer SB_Infra/Bomen/0",
-  "n_trees": 2172,
-  "trees_per_hectare": 15.08,
-  "area_m2": 1440000,
+  "_extent_note": "n_trees counts every tree in the query bounding box, which is larger than the buurten. Density and canopy cover live in `per_buurt` and `combined`, where the numerator and denominator share one polygon.",
+  "per_buurt": {
+    "Bloemhof": {
+      "name": "Bloemhof",
+      "code": "BU05991081",
+      "area_ha": 78.84,
+      "n_trees": 1204,
+      "trees_per_hectare": 15.27,
+      "canopy_cover_fraction": 0.0656,
+      "height_mean_m": 10.12,
+      "crown_mean_m": 5.95,
+      "n_species": 134
+    },
+    "Hillesluis": {
+      "name": "Hillesluis",
+      "code": "BU05991082",
+      "area_ha": 90.26,
+      "n_trees": 1598,
+      "trees_per_hectare": 17.7,
+      "canopy_cover_fraction": 0.09,
+      "height_mean_m": 10.66,
+      "crown_mean_m": 6.6,
+      "n_species": 163
+    }
+  },
+  "combined": {
+    "name": "Bloemhof & Hillesluis",
+    "code": null,
+    "area_ha": 169.1,
+    "n_trees": 2802,
+    "trees_per_hectare": 16.57,
+    "canopy_cover_fraction": 0.0786,
+    "height_mean_m": 10.43,
+    "crown_mean_m": 6.32,
+    "n_species": 216
+  },
+  "n_trees": 4460,
+  "n_trees_in_buurten": 2802,
+  "trees_per_hectare": 16.57,
+  "area_m2": 1690970.2784737176,
   "canopy": {
-    "total_m2": 113858.6,
-    "cover_fraction": 0.0791,
-    "_note": "crowns modelled as circles of diameter KROONOMVANG; overlapping crowns are counted twice, so this is an upper bound"
+    "cover_fraction": 0.0786,
+    "total_m2_bounding_box": 206467.9,
+    "_note": "cover_fraction is measured inside the buurten. Crowns are modelled as circles of diameter KROONOMVANG and overlaps are counted twice, so it is an upper bound. total_m2_bounding_box covers the larger query box and must not be divided by the buurt area."
   },
   "height_m": {
-    "mean": 10.7,
+    "mean": 10.25,
     "median": 10.5,
-    "std": 5.58,
+    "std": 5.36,
     "max": 26.5,
-    "unknown_class": 15
+    "unknown_class": 62
   },
   "crown_m": {
-    "mean": 6.56,
+    "mean": 6.22,
     "median": 5.0,
     "max": 22.0
   },
   "top_species": [
     {
       "species": "Platanus \u00d7 hispanica",
-      "n": 346,
-      "share": 0.1593
-    },
-    {
-      "species": "Pyrus calleryana 'Chanticleer'",
-      "n": 99,
-      "share": 0.0456
-    },
-    {
-      "species": "Ulmus 'Columella'",
-      "n": 84,
-      "share": 0.0387
-    },
-    {
-      "species": "Robinia pseudoacacia 'Bessoniana'",
-      "n": 80,
-      "share": 0.0368
+      "n": 765,
+      "share": 0.1715
     },
     {
       "species": "Acer saccharinum 'Pyramidale'",
-      "n": 74,
-      "share": 0.0341
+      "n": 164,
+      "share": 0.0368
     },
     {
-      "species": "Tilia \u00d7 europaea",
-      "n": 69,
-      "share": 0.0318
+      "species": "Pyrus calleryana 'Chanticleer'",
+      "n": 151,
+      "share": 0.0339
     },
     {
-      "species": "Alnus \u00d7 spaethii 'Spaeth'",
-      "n": 55,
-      "share": 0.0253
+      "species": "Tilia \u00d7 europaea 'Koningslinde'",
+      "n": 148,
+      "share": 0.0332
     },
     {
-      "species": "Acer campestre 'Elsrijk'",
-      "n": 45,
-      "share": 0.0207
-    },
-    {
-      "species": "Ulmus 'New Horizon'",
-      "n": 41,
-      "share": 0.0189
-    },
-    {
-      "species": "Robinia pseudoacacia 'Appalachia'",
-      "n": 40,
-      "share": 0.0184
+      "species": "Robinia pseudoacacia 'Bessoniana'",
+      "n": 139,
+      "share": 0.0312
     },
     {
       "species": "Styphnolobium japonicum",
-      "n": 36,
-      "share": 0.0166
+      "n": 122,
+      "share": 0.0274
     },
     {
-      "species": "Liquidambar styraciflua",
-      "n": 35,
-      "share": 0.0161
+      "species": "Prunus avium 'Plena'",
+      "n": 91,
+      "share": 0.0204
+    },
+    {
+      "species": "Acer campestre 'Elsrijk'",
+      "n": 90,
+      "share": 0.0202
+    },
+    {
+      "species": "Robinia pseudoacacia",
+      "n": 88,
+      "share": 0.0197
+    },
+    {
+      "species": "Alnus \u00d7 spaethii 'Spaeth'",
+      "n": 84,
+      "share": 0.0188
+    },
+    {
+      "species": "Tilia tomentosa 'Brabant'",
+      "n": 82,
+      "share": 0.0184
+    },
+    {
+      "species": "Tilia \u00d7 europaea 'Euchlora'",
+      "n": 79,
+      "share": 0.0177
     }
   ],
-  "n_species": 206,
+  "n_species": 266,
   "svf_canopy_effect": {
-    "svf_open": 0.7011,
-    "svf_under_canopy": 0.3993,
-    "difference": 0.3018,
-    "n_open_cells": 1097299,
-    "n_canopy_cells": 103534
+    "svf_open": 0.7864,
+    "svf_under_canopy": 0.4556,
+    "difference": 0.3308,
+    "n_open_cells": 2965572,
+    "n_canopy_cells": 206498
   }
 }

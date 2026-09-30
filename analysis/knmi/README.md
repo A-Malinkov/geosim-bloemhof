@@ -47,6 +47,13 @@ Rotterdam Airport (06344), 8.0 km from the study area.
 - The anonymous API key is shared globally, so **HTTP 429 is routine**. KNMI
   sends no `Retry-After`; the limit clears in 15–30 s. `fetch_knmi.py` backs off
   and retries. Register your own key at developer.dataplatform.knmi.nl if it bites.
+- The climatology service answers **502/503/504 under load**. A request that
+  completes in two seconds from one machine can time out from another; a
+  teammate hit a 504 on exactly that. `fetch_knmi.py` retries with backoff,
+  stops after two consecutive dead chunks rather than grinding through the rest,
+  leaves existing good files untouched, and **exits 2** when the history is
+  incomplete. Do not train on a partial record: `train_forecast.py` builds lag
+  features assuming row *i−1* is one hour before row *i*.
 - The climatology service **ignores the hour part of `start`/`end`** and returns
   the day *after* your end date. Yearly chunks therefore overlap by 24 hours.
   Left in, those duplicates break the assumption that row *i−1* is one hour

@@ -64,7 +64,8 @@ import numpy as np
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 from common.project import (  # noqa: E402
-    PROCESSED, RAW, STUDY_AREA, bbox_rd, fetch_buurt, to_wgs,
+    PROCESSED, RAW, STUDY_AREA, bbox_rd, buurt_polygons, buurt_properties,
+    study_area_polygon, to_wgs,
 )
 
 #: The full BAG vocabulary. N = 11 regardless of what occurs locally.
@@ -203,43 +204,62 @@ def main() -> int:
     print(f"  wrote landuse_grid.geojson ({len(cells)} cells, "
           f"{len(spacem)} with >= {args.min_units} units)")
 
-    # ------------------------------------------------------- buurt aggregate
-    buurt = None
+    # ------------------------------------------- aggregate per buurt and overall
+    # Both buurten are reported separately and together. The bounding box is the
+    # union of their polygons, so every unit in a buurt is inside the data.
+    per_buurt, combined = {}, None
     try:
         import shapely.geometry as sg
         from shapely.prepared import prep
-        geom, props_b = fetch_buurt()
-        survey = geom.intersection(sg.box(*bbox_rd()))
-        pg = prep(survey)
-        inside = np.array([pg.contains(sg.Point(px, py)) for px, py in zip(x, y)])
-        ba, bc = Counter(), Counter()
-        for keep, cs, a in zip(inside, cats, area):
-            if not keep:
-                continue
-            for cat in cs:
-                ba[cat] += a
-                bc[cat] += 1
-        if ba:
+
+        polys, props = buurt_polygons(), buurt_properties()
+
+        def stats_for(geom, label, code=None):
+            pg = prep(geom)
+            inside = np.array([pg.contains(sg.Point(px, py)) for px, py in zip(x, y)])
+            ba, bc = Counter(), Counter()
+            for keep, cs, a in zip(inside, cats, area):
+                if not keep:
+                    continue
+                for cat in cs:
+                    ba[cat] += a
+                    bc[cat] += 1
+            if not ba:
+                return None
             tot = sum(ba.values())
-            buurt = {
-                "name": props_b.get("buurtnaam"),
-                "code": STUDY_AREA.cbs_buurt,
-                "coverage_fraction": round(survey.area / geom.area, 4),
+            return {
+                "name": label,
+                "code": code,
+                "land_area_ha": round(geom.area / 10_000, 2),
+                "inhabitants": (props.get(code, {}) or {}).get("aantalInwoners"),
                 "n_units": int(sum(bc.values())),
                 "floor_area_m2": round(tot, 1),
                 "shannon_area": round(shannon(ba), 4),
                 "shannon_count": round(shannon(bc), 4),
                 "simpson_area": round(simpson(ba), 4),
+                "dominant": ba.most_common(1)[0][0],
+                "dominant_share": round(ba.most_common(1)[0][1] / tot, 4),
                 "composition": [
                     {"category": k, "floor_area_m2": round(v, 1),
                      "share": round(v / tot, 4), "units": bc[k]}
                     for k, v in ba.most_common()
                 ],
             }
-            print(f"  {buurt['name']}: {buurt['n_units']:,} units, "
-                  f"Shannon {buurt['shannon_area']:.3f}")
+
+        for code, name in STUDY_AREA.buurten:
+            st = stats_for(polys[code], name, code)
+            if st:
+                per_buurt[name] = st
+                print(f"  {name:12} {st['n_units']:6,} units   "
+                      f"Shannon {st['shannon_area']:.3f}   Simpson {st['simpson_area']:.3f}   "
+                      f"{100*st['dominant_share']:.0f}% {st['dominant']}")
+        combined = stats_for(study_area_polygon(), STUDY_AREA.name)
+        if combined:
+            print(f"  {'combined':12} {combined['n_units']:6,} units   "
+                  f"Shannon {combined['shannon_area']:.3f}   "
+                  f"Simpson {combined['simpson_area']:.3f}")
     except Exception as exc:
-        print(f"  ! buurt aggregate skipped ({exc})")
+        print(f"  ! buurt aggregates skipped ({exc})")
 
     arr = np.array(spacem) if spacem else np.array([0.0])
     summary = {
@@ -275,7 +295,8 @@ def main() -> int:
                 "max": round(float(arr.max()), 4),
             },
         },
-        "buurt": buurt,
+        "per_buurt": per_buurt,
+        "combined": combined,
     }
     (PROCESSED / "landuse_summary.json").write_text(json.dumps(summary, indent=2) + "\n")
     print("  wrote landuse_summary.json")
@@ -287,7 +308,7 @@ def main() -> int:
         mi = {}
     mi.pop("_status", None)
     mi.setdefault("baseline", {})
-    head = buurt or overall
+    head = combined or overall
     mi["baseline"]["landuse_mix"] = head.get("shannon_area", overall["shannon_area"])
     mi["baseline"]["landuse_simpson"] = head.get("simpson_area", overall["simpson_area"])
     mi["_landuse_source"] = "analysis/morphology/landuse_mix.py"

@@ -85,6 +85,56 @@ async function addSvfOverlay(ctx, svf) {
 }
 
 /* ---------------------------------------------------------------------------
+ * Direct-sun / shadow overlay.
+ * shadows.py writes an RGBA PNG of direct-sun hours plus the bbox it covers,
+ * already warped to EPSG:4326, so it drapes straight onto the globe. Loaded
+ * lazily on first toggle, exactly like the SVF overlay above.
+ * ------------------------------------------------------------------------ */
+async function addShadowOverlay(ctx, shadow) {
+  const { Cesium, viewer } = ctx;
+  const bb = shadow?.bbox_wgs84;
+  if (!bb) return null;
+  const [west, south, east, north] = bb;
+  let layer = null;
+  let loading = null;
+
+  async function ensureLoaded() {
+    if (layer) return layer;
+    if (!loading) {
+      loading = Cesium.SingleTileImageryProvider.fromUrl(
+        "../data/processed/shadow_overlay.png",
+        { rectangle: Cesium.Rectangle.fromDegrees(west, south, east, north) },
+      ).then((provider) => {
+        layer = viewer.imageryLayers.addImageryProvider(provider);
+        layer.alpha = 0.85;
+        return layer;
+      }).catch((err) => {
+        console.warn("[indicators] shadow overlay failed to load", err);
+        ctx.note("Sun-hours overlay: failed", "err");
+        return null;
+      });
+    }
+    return loading;
+  }
+
+  ctx.registerLayer({
+    id: "shadowOverlay",
+    label: "Direct sun hours (AHN)",
+    group: "Analysis",
+    show: false,
+    onToggle: async (visible) => {
+      if (!visible) {
+        if (layer) layer.show = false;
+        return;
+      }
+      const l = await ensureLoaded();
+      if (l) l.show = true;
+    },
+  });
+  return true;
+}
+
+/* ---------------------------------------------------------------------------
  * Density grid overlay: one polygon per 100 m cell, shaded by FSI.
  * Written by analysis/morphology/density_height.py.
  * ------------------------------------------------------------------------ */
@@ -184,6 +234,27 @@ async function addLanduseGrid(ctx) {
   return ds;
 }
 
+/**
+ * A compact per-buurt comparison table.
+ *
+ * The study area is two buurten and the brief is to analyse both, so a single
+ * combined figure hides the finding: they have noticeably different fabric.
+ */
+function perBuurtTable(perBuurt, cols) {
+  const names = Object.keys(perBuurt || {});
+  if (names.length < 2) return "";
+  return `<table class="kv"><thead><tr><th>by buurt</th>` +
+    cols.map(([, label]) => `<th>${label}</th>`).join("") +
+    `</tr></thead><tbody>` +
+    names.map((n) => {
+      const b = perBuurt[n];
+      return `<tr><td>${n}</td>` +
+        cols.map(([k, , dp]) =>
+          `<td>${b[k] == null ? "—" : Number(b[k]).toFixed(dp)}</td>`).join("") +
+        `</tr>`;
+    }).join("") + `</tbody></table>`;
+}
+
 /** Small inline histogram, drawn as an SVG bar chart. */
 function histogramSvg(hist, mean) {
   if (!hist?.counts?.length) return "";
@@ -219,7 +290,9 @@ export async function setup(ctx) {
   body.appendChild(svfBox);
 
   if (svf?.open_ground) {
-    const g = svf.open_ground;
+    // The clipped figure: the raster covers the bounding box, which takes in
+    // the Maashaven where SVF is ~1.0 and would flatter the neighbourhood.
+    const g = svf.combined?.open_ground || svf.open_ground;
     addSvfOverlay(ctx, svf);
     svfBox.innerHTML =
       `<h4>Sky View Factor</h4>` +
@@ -229,11 +302,16 @@ export async function setup(ctx) {
       `<tr><td>p05 – p95</td><td>${g.p05.toFixed(2)} – ${g.p95.toFixed(2)}</td></tr>` +
       `</tbody></table>` +
       histogramSvg(svf.histogram, g.mean) +
+      perBuurtTable(
+        Object.fromEntries(Object.entries(svf.per_buurt || {}).map(
+          ([n, v]) => [n, { svf: v.open_ground?.mean }])),
+        [["svf", "SVF", 3]]) +
       `<p class="muted">At ${svf.parameters.observer_height_m} m above ground on open ` +
       `ground only (streets, gardens, squares). ${svf.parameters.n_directions} directions, ` +
       `${svf.parameters.search_radius_m} m radius, ${svf.parameters.cell_size_m} m cells. ` +
       `Cosine-weighted; the plain solid-angle value is ` +
-      `${svf.open_ground_geometric?.mean?.toFixed(3) ?? "—"}. ` +
+      `${(svf.combined?.open_ground_geometric?.mean
+          ?? svf.open_ground_geometric?.mean)?.toFixed(3) ?? "—"}. ` +
       `Toggle the map overlay under <em>Analysis</em>.</p>`;
   } else {
     ctx.placeholder(svfBox, {
@@ -243,15 +321,133 @@ export async function setup(ctx) {
     });
   }
 
+  /* ---- direct sun / shadow ---------------------------------------------- */
+  const shadow = await ctx.loadJson("../data/processed/shadow_summary.json",
+                                    { quiet: true });
+  const shadowBox = document.createElement("div");
+  body.appendChild(shadowBox);
+
+  if (shadow?.open_ground_sunlit_hours) {
+    const g = shadow.combined?.open_ground_sunlit_hours
+      || shadow.open_ground_sunlit_hours;
+    addShadowOverlay(ctx, shadow);
+    shadowBox.innerHTML =
+      `<h4>Direct sun</h4>` +
+      `<table class="kv"><tbody>` +
+      `<tr><td>mean sun</td><td>${g.mean.toFixed(1)} h</td></tr>` +
+      `<tr><td>median</td><td>${g.median.toFixed(1)} h</td></tr>` +
+      `<tr><td>p05 – p95</td><td>${g.p05.toFixed(1)} – ${g.p95.toFixed(1)} h</td></tr>` +
+      `</tbody></table>` +
+      perBuurtTable(
+        Object.fromEntries(Object.entries(shadow.per_buurt || {}).map(
+          ([n, v]) => [n, { sun: v.open_ground_sunlit_hours?.mean }])),
+        [["sun", "sun h", 1]]) +
+      `<p class="muted">Hours of direct sun on open ground on ${shadow.date}, ` +
+      `of ${shadow.daylight_hours.toFixed(1)} h of daylight. Ray-cast from the ` +
+      `AHN surface every ${shadow.parameters.step_minutes} min; clear-sky, so an ` +
+      `upper bound. Toggle the map overlay under <em>Analysis</em>.</p>`;
+  } else {
+    ctx.placeholder(shadowBox, {
+      what: "Shadow / direct-sun analysis not computed yet.",
+      produces: "data/processed/shadow_summary.json",
+      owner: "analysis/morphology/shadows.py",
+    });
+  }
+
+  /* ---- time-of-day sun scrubber ----------------------------------------- */
+  /* A live sun scrubber: turn on the scene shadow map and move the clock, so
+   * the 3DBAG buildings cast real shadows as you drag. Given its OWN dashboard
+   * card near the top (order 6) rather than buried among the indicators, so it
+   * is easy to find. This is the instantaneous companion to the direct-sun map,
+   * which is the whole-day total. */
+  {
+    const { Cesium, viewer } = ctx;
+    const scene = viewer.scene;
+    scene.shadowMap.enabled = true;
+    scene.shadowMap.softShadows = true;
+    scene.shadowMap.size = 2048;
+    scene.shadowMap.maximumDistance = 5000;
+    scene.globe.enableLighting = true;
+    viewer.clock.shouldAnimate = false;
+
+    // Reference days for solar access: the equinox is the neutral average-sun
+    // day and the planning standard; the solstices bracket best and worst case.
+    // shadows.py defaults to the equinox, so match it here, and start on the
+    // analysis day if it ran on one of these.
+    const DAYS = [
+      { label: "Equinox", date: "2026-03-20" },
+      { label: "Summer",  date: "2026-06-21" },
+      { label: "Winter",  date: "2026-12-21" },
+    ];
+    let dateStr = DAYS.find((d) => d.date === shadow?.date)?.date || "2026-03-20";
+    const pad = (n) => String(n).padStart(2, "0");
+    // NL is UTC+2 in summer, +1 in winter — from the month, only wrong within
+    // the DST changeover, which none of the reference days fall in.
+    const nlOffset = (d) =>
+      Number(d.slice(5, 7)) >= 4 && Number(d.slice(5, 7)) <= 10 ? "+02:00" : "+01:00";
+
+    const sunBody = ctx.registerPanel({
+      id: "sun",
+      title: "Sun & shadows",
+      subtitle: "drag to move the sun — buildings cast live shadows",
+      order: 6,
+    });
+    sunBody.innerHTML =
+      `<div class="seg" id="sunDay">` +
+      DAYS.map((d) =>
+        `<button data-date="${d.date}"${d.date === dateStr ? ' class="on"' : ""}>` +
+        `${d.label}</button>`).join("") +
+      `</div>` +
+      `<label class="slider">` +
+      `<span>local time <output id="sunOut">12:00</output> · ` +
+      `<span id="sunDate">${dateStr}</span></span>` +
+      `<input type="range" id="sunTime" min="240" max="1320" step="10" value="720">` +
+      `</label>` +
+      `<label class="lrow"><input type="checkbox" id="sunShadows" checked>` +
+      `<span>Cast shadows</span></label>` +
+      `<p class="muted">One instant on the chosen reference day. The whole-day ` +
+      `direct-sun total is under <em>Urban morphology</em>, the map overlay ` +
+      `under <em>Analysis</em>.</p>`;
+
+    const slider = sunBody.querySelector("#sunTime");
+    const out = sunBody.querySelector("#sunOut");
+    const dateEl = sunBody.querySelector("#sunDate");
+    const setTime = (minutes) => {
+      const hh = Math.floor(minutes / 60);
+      const mm = minutes % 60;
+      out.textContent = `${pad(hh)}:${pad(mm)}`;
+      viewer.clock.currentTime = Cesium.JulianDate.fromIso8601(
+        `${dateStr}T${pad(hh)}:${pad(mm)}:00${nlOffset(dateStr)}`);
+      viewer.scene.requestRender?.();
+    };
+    slider.addEventListener("input", (e) => setTime(Number(e.target.value)));
+
+    const dayBtns = [...sunBody.querySelectorAll("#sunDay button")];
+    dayBtns.forEach((b) => b.addEventListener("click", () => {
+      dayBtns.forEach((x) => x.classList.remove("on"));
+      b.classList.add("on");
+      dateStr = b.dataset.date;
+      dateEl.textContent = dateStr;
+      setTime(Number(slider.value));
+    }));
+
+    sunBody.querySelector("#sunShadows").addEventListener("change", (e) => {
+      scene.shadowMap.enabled = e.target.checked;
+      viewer.scene.requestRender?.();
+    });
+
+    setTime(720);
+  }
+
   /* ---- density and height variation ------------------------------------- */
   const dens = await ctx.loadJson("../data/processed/density_summary.json",
                                   { quiet: true });
   const densBox = document.createElement("div");
   body.appendChild(densBox);
 
-  if (dens?.buurt) {
+  if (dens?.combined) {
     await addDensityGrid(ctx);
-    const b = dens.buurt;
+    const b = dens.combined;
     const g = dens.grid;
     densBox.innerHTML =
       `<h4>Density &amp; height</h4>` +
@@ -263,8 +459,10 @@ export async function setup(ctx) {
       `<tr><td>height</td><td>${b.height_m.mean.toFixed(1)} m ± ${b.height_m.std.toFixed(1)}</td></tr>` +
       `<tr><td>tallest</td><td>${b.height_m.max.toFixed(1)} m</td></tr>` +
       `</tbody></table>` +
-      `<p class="muted">Spacematrix over ${b.surveyed_area_ha} ha ` +
-      `(${Math.round(b.coverage_fraction * 100)}% of ${b.name}), ` +
+      perBuurtTable(dens.per_buurt, [
+        ["gsi", "GSI", 3], ["fsi", "FSI", 3], ["layers", "storeys", 2],
+      ]) +
+      `<p class="muted">Spacematrix over ${b.land_area_ha} ha, ` +
       `${b.n_buildings.toLocaleString("en-GB")} buildings. Grid mean FSI ` +
       `${g.fsi.mean.toFixed(2)} across ${g.n_cells_used} cells of ` +
       `${dens.parameters.cell_size_m} m. Toggle the grid under <em>Analysis</em>.</p>`;
@@ -285,7 +483,7 @@ export async function setup(ctx) {
   if (lu?.overall) {
     await addLanduseGrid(ctx);
     const o = lu.overall;
-    const b = lu.buurt || {};
+    const b = lu.combined || {};
     const comp = (b.composition || lu.composition || []).slice(0, 6);
     const head = b.shannon_area ?? o.shannon_area;
     luBox.innerHTML =
@@ -300,6 +498,9 @@ export async function setup(ctx) {
       comp.map((x) =>
         `<tr><td>${x.category}</td><td>${(x.share * 100).toFixed(1)} %</td></tr>`).join("") +
       `</tbody></table>` +
+      perBuurtTable(lu.per_buurt, [
+        ["shannon_area", "Shannon", 3], ["simpson_area", "Simpson", 3],
+      ]) +
       `<p class="muted">Normalised Shannon entropy over ` +
       `${lu.parameters.n_categories_in_scheme} BAG use classes, weighted by ` +
       `usable floor area. 0 = one use only, 1 = an even mix. ` +

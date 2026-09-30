@@ -24,7 +24,7 @@ export async function setup(ctx) {
   const body = ctx.registerPanel({
     id: "cbs",
     title: "CBS demographics",
-    subtitle: `${sa.name} (${sa.cbsBuurtCode}) · table ${ctx.config.dataSources.cbsTable}`,
+    subtitle: `${sa.buurten.map((b) => b.name).join(' + ')} · table ${ctx.config.dataSources.cbsTable}`,
     order: 20,
   });
 

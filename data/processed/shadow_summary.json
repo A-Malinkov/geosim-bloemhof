@@ -1,0 +1,25 @@
+{
+  "_status": "not_computed_yet",
+  "_owner": "analysis/morphology/shadows.py",
+  "_note": "Run: python analysis/morphology/fetch_ahn.py && python analysis/morphology/shadows.py",
+  "_schema": {
+    "study_area": "string",
+    "scenario": "baseline | scenario_a | scenario_b",
+    "date": "YYYY-MM-DD simulated",
+    "daylight_hours": "number — hours of daylight sampled",
+    "bbox_wgs84": "[west, south, east, north] the overlay PNG is drawn on",
+    "open_ground_sunlit_hours": {
+      "mean": "number", "median": "number",
+      "p05": "number", "p95": "number", "n_pixels": "int"
+    },
+    "combined": "same shape as open_ground_sunlit_hours, clipped to both buurten",
+    "per_buurt": {
+      "<buurt name>": { "open_ground_sunlit_hours": "{mean, median, p05, p95, ...}" }
+    },
+    "histogram": { "bin_edges": "number[]", "counts": "int[]" },
+    "parameters": {
+      "cell_size_m": "number", "search_radius_m": "number",
+      "step_minutes": "int", "latitude": "number", "longitude": "number"
+    }
+  }
+}

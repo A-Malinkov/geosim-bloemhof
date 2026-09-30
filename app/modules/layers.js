@@ -27,11 +27,7 @@ function applyHeightOffset(tileset, metres, Cesium) {
   if (!metres) return;
   const c = Cesium.Cartographic.fromCartesian(tileset.boundingSphere.center);
   const from = Cesium.Cartesian3.fromRadians(c.longitude, c.latitude, c.height);
-  const to = Cesium.Cartesian3.fromRadians(
-    c.longitude,
-    c.latitude,
-    c.height + metres,
-  );
+  const to   = Cesium.Cartesian3.fromRadians(c.longitude, c.latitude, c.height + metres);
   const delta = Cesium.Cartesian3.subtract(to, from, new Cesium.Cartesian3());
   tileset.modelMatrix = Cesium.Matrix4.fromTranslation(delta);
 }
@@ -52,7 +48,7 @@ async function addTileset(ctx, { key, label, group, show, styleFn = null }) {
       skipLevelOfDetail: true,
     });
 
-    tileset.__name = key; // handy when poking around in the console
+    tileset.__name = key;            // handy when poking around in the console
     tileset.__heightOffsetM = spec.heightOffsetM ?? 0;
     applyHeightOffset(tileset, spec.heightOffsetM, Cesium);
     if (styleFn) styleFn(tileset, Cesium);
@@ -61,12 +57,10 @@ async function addTileset(ctx, { key, label, group, show, styleFn = null }) {
     ctx.registerLayer({ id: key, label, group, show, target: tileset });
 
     if (config.debug) {
-      const c = Cesium.Cartographic.fromCartesian(
-        tileset.boundingSphere.center,
-      );
+      const c = Cesium.Cartographic.fromCartesian(tileset.boundingSphere.center);
       console.log(
         `[layers] ${key}: bounding-sphere centre at ${c.height.toFixed(1)} m ellipsoid ` +
-          `after a ${spec.heightOffsetM ?? 0} m offset`,
+        `after a ${spec.heightOffsetM ?? 0} m offset`,
       );
     }
     ctx.note(`${label}: loaded`, "ok");
@@ -75,12 +69,7 @@ async function addTileset(ctx, { key, label, group, show, styleFn = null }) {
     console.error(`[layers] "${label}" failed to load from ${spec.url}`, err);
     ctx.note(`${label}: FAILED`, "err");
     // Still register a (dead) toggle so the panel shows what was attempted.
-    ctx.registerLayer({
-      id: key,
-      label: `${label} (failed)`,
-      group,
-      show: false,
-    });
+    ctx.registerLayer({ id: key, label: `${label} (failed)`, group, show: false });
     return null;
   }
 }
@@ -98,9 +87,8 @@ export async function setup(ctx) {
    *   2. the matrix set is a standard WebMercatorQuad, so WebMercatorTilingScheme. */
   let aerial = null;
   try {
-    const labels = Array.from(
-      { length: L.pdokAerial.maximumLevel + 1 },
-      (_, i) => String(i).padStart(2, "0"),
+    const labels = Array.from({ length: L.pdokAerial.maximumLevel + 1 }, (_, i) =>
+      String(i).padStart(2, "0"),
     );
     const provider = new Cesium.WebMapTileServiceImageryProvider({
       url: `${L.pdokAerial.url}/${L.pdokAerial.layer}/{TileMatrixSet}/{TileMatrix}/{TileCol}/{TileRow}.jpeg`,
@@ -130,19 +118,14 @@ export async function setup(ctx) {
   /* OpenStreetMap, as a fallback/orientation basemap. Off by default. */
   try {
     const osm = viewer.imageryLayers.addImageryProvider(
-      new Cesium.OpenStreetMapImageryProvider({
-        url: "https://tile.openstreetmap.org/",
-      }),
+      new Cesium.OpenStreetMapImageryProvider({ url: "https://tile.openstreetmap.org/" }),
     );
     osm.show = false;
     // draw underneath the aerial photo
     viewer.imageryLayers.lower(osm);
     ctx.registerLayer({
-      id: "osm",
-      label: "OpenStreetMap (fallback)",
-      group: "Imagery",
-      show: false,
-      target: osm,
+      id: "osm", label: "OpenStreetMap (fallback)", group: "Imagery",
+      show: false, target: osm,
     });
   } catch (err) {
     console.warn("[layers] OSM basemap unavailable", err);
@@ -162,11 +145,8 @@ export async function setup(ctx) {
     ahn.show = false;
     ahn.alpha = 0.7;
     ctx.registerLayer({
-      id: "ahn",
-      label: `AHN height (${L.ahnWms.layers})`,
-      group: "Imagery",
-      show: false,
-      target: ahn,
+      id: "ahn", label: `AHN height (${L.ahnWms.layers})`, group: "Imagery",
+      show: false, target: ahn,
     });
   } catch (err) {
     console.warn("[layers] AHN WMS unavailable", err);
@@ -213,56 +193,68 @@ export async function setup(ctx) {
     show: false,
   });
 
-  /* ------------------------------------------------------------ study area outline */
+  /* ---------------------------------------------------- study area boundaries */
+  /* The real buurt polygons, written by analysis/common/project.py. Drawing a
+   * circle round a centre point was fine when the study area WAS a circle; it
+   * is now two adjacent buurten with a ragged shared edge, and a circle would
+   * misrepresent what is actually being analysed. */
   const sa = config.studyArea;
-  const r = sa.radiusM;
-  /* Cesium cannot draw an entity outline that is clamped to terrain, so the
-   * fill and the ring are two entities: a clamped ellipse with outline off,
-   * plus a ground polyline. Doing it any other way logs two warnings and
-   * silently drops the ring. */
-  const ring = [];
-  for (let i = 0; i <= 128; i++) {
-    const t = (i / 128) * 2 * Math.PI;
-    // metres -> degrees, with the cos(lat) correction on longitude
-    ring.push(
-      sa.lon +
-        (r * Math.cos(t)) / (111320 * Math.cos(Cesium.Math.toRadians(sa.lat))),
-    );
-    ring.push(sa.lat + (r * Math.sin(t)) / 110540);
+  try {
+    const ds = await Cesium.GeoJsonDataSource.load(sa.boundaries, {
+      clampToGround: true,
+      fill: Cesium.Color.CYAN.withAlpha(0.06),
+    });
+    /* Cesium cannot outline a polygon that is clamped to terrain — it warns and
+     * silently drops the stroke. Draw each boundary as a ground polyline
+     * instead, which is the supported way to get a visible edge. */
+    const rings = [];
+    for (const ent of ds.entities.values) {
+      const hier = ent.polygon?.hierarchy?.getValue?.(Cesium.JulianDate.now());
+      if (!hier) continue;
+      for (const part of [hier, ...(hier.holes || [])]) {
+        if (part?.positions?.length) rings.push(part.positions);
+      }
+      ent.polygon.outline = false;
+    }
+    for (const positions of rings) {
+      ds.entities.add({
+        polyline: {
+          positions: [...positions, positions[0]],
+          width: 3,
+          material: Cesium.Color.CYAN.withAlpha(0.9),
+          clampToGround: true,
+        },
+      });
+    }
+    for (const ent of ds.entities.values) {
+      const p = ent.properties;
+      const nm = p?.name?.getValue?.() ?? "";
+      ent.name = `${nm} (buurt)`;
+      ent.description =
+        `<table>` +
+        `<tr><td>buurt</td><td>${nm}</td></tr>` +
+        `<tr><td>code</td><td>${p?.buurtcode?.getValue?.() ?? "—"}</td></tr>` +
+        `<tr><td>area</td><td>${p?.area_ha?.getValue?.() ?? "—"} ha</td></tr>` +
+        `<tr><td>inhabitants</td><td>${
+          (p?.inhabitants?.getValue?.() ?? 0).toLocaleString("en-GB")}</td></tr>` +
+        `</table>`;
+    }
+    await viewer.dataSources.add(ds);
+    ctx.registerLayer({
+      id: "studyArea",
+      label: `Study area — ${sa.buurten.map((b) => b.name).join(" + ")}`,
+      group: "Reference",
+      show: true,
+      target: ds,
+    });
+  } catch (err) {
+    console.warn("[layers] study-area boundaries failed to load", err);
+    ctx.note("Study area boundaries: FAILED", "err");
   }
 
-  const areaFill = viewer.entities.add({
-    name: `Study area — ${sa.name}`,
-    position: Cesium.Cartesian3.fromDegrees(sa.lon, sa.lat),
-    ellipse: {
-      semiMajorAxis: r,
-      semiMinorAxis: r,
-      height: 0,
-      heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-      material: Cesium.Color.CYAN.withAlpha(0.06),
-      outline: false,
-    },
-  });
-  const areaRing = viewer.entities.add({
-    name: `Study area boundary — ${sa.name}`,
-    polyline: {
-      positions: Cesium.Cartesian3.fromDegreesArray(ring),
-      width: 2,
-      material: Cesium.Color.CYAN.withAlpha(0.85),
-      clampToGround: true,
-    },
-  });
-  ctx.registerLayer({
-    id: "studyArea",
-    label: `Study area (${r} m radius)`,
-    group: "Reference",
-    show: true,
-    onToggle: (v) => {
-      areaFill.show = v;
-      areaRing.show = v;
-    },
-  });
-
   /* ---------------------------------------------------------------- credits */
-  ctx.note("Data: PDOK · 3DBAG (TU Delft) · Rotterdam 3D · AHN", "info");
+  ctx.note(
+    "Data: PDOK · 3DBAG (TU Delft) · Rotterdam 3D · AHN",
+    "info",
+  );
 }
