@@ -21,6 +21,7 @@ numerator and denominator always share one boundary.
 | `sky_view_factor.py` | SVF by the multi-directional horizon-angle method | `data/processed/svf*.tif`, `svf_overlay.png`, `svf_summary.json` |
 | `density_height.py` | Spacematrix density (GSI, FSI, L, OSR) and height variation | `data/processed/density_grid.geojson`, `density_summary.json` |
 | `landuse_mix.py` | Shannon and Simpson land-use mix indices | `data/processed/landuse_grid.geojson`, `landuse_summary.json` |
+| `shadows.py` | direct-sun hours over one clear day, ray-cast from the AHN DSM | `data/processed/shadow_hours.tif` (gitignored), `shadow_overlay.png`, `shadow_summary.json` |
 | `make_figures.py` | every report figure | `docs/fig_*.png` |
 
 ```bash
@@ -32,6 +33,7 @@ python analysis/morphology/fetch_landuse.py     # ~10 s
 python analysis/morphology/sky_view_factor.py   # ~6 min
 python analysis/morphology/density_height.py    # ~1 min
 python analysis/morphology/landuse_mix.py       # ~1 min
+python analysis/morphology/shadows.py           # ~30 s, equinox; --date 2026-06-21 for summer
 python analysis/morphology/make_figures.py      # ~1 min
 ```
 
@@ -181,6 +183,33 @@ Shannon entropy (normalised) and Simpson diversity over BAG `gebruiksdoel`,
   to it, so this is a mix of *built floor space*. Pair it with GSI for the
   built/unbuilt split. CBS Bestand Bodemgebruik was tried and rejected: newest
   edition 2017, and it resolves the area into a handful of polygons.
+
+## Direct sun and shadows
+
+Added by Stefan. Two parts that answer different questions:
+
+- **`shadows.py` — how many hours of direct sun a place gets over a whole day.**
+  It casts the sun across one clear day (equinox by default, every 30 min) over
+  the AHN surface model and counts, per 1 m cell, the hours it is sunlit.
+  Reported on open ground only, per buurt and combined, like the SVF.
+- **The "Sun & shadows" card in the app — one instant.** Pick a reference day,
+  drag the time, and the 3DBAG buildings cast live shadows in Cesium. Switch on
+  *Plain white ground* under Imagery to see them without the photo's own shadows.
+
+Both were checked: the sun position in Cesium, in `shadows.py` and in an
+independent calculation agree to 0.1°, and a synthetic 40 m tower casts its
+shadow in the right direction (within 1°) and to the right length in both.
+
+**Not yet published.** `shadow_summary.json` is still a stub, so the dashboard
+shows a placeholder until someone runs `shadows.py` (30 s). A test run gave, on
+open ground at the equinox: Bloemhof 4.4 h, Hillesluis 5.8 h of 12.0 h daylight,
+consistent with Bloemhof's lower SVF.
+
+Limits, as the script states: a clear-sky upper bound, not measured sunshine;
+tree crowns block as if solid; obstructions beyond `--radius` (300 m) are
+ignored. In the live view, fine stripes can appear on roofs when zoomed far
+out: Cesium's shadow map has limited detail over a large view. Close up the
+shadows are clean.
 
 ## For the scenario comparison
 

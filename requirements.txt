@@ -24,6 +24,7 @@ networkx~=3.5
 
 # --- plotting ---
 matplotlib~=3.10
+pillow~=12.3            # PIL, imported directly for the overlay PNGs (was only arriving via matplotlib)
 contextily~=1.6
 
 # --- web / APIs (KNMI, CBS, PDOK) ---

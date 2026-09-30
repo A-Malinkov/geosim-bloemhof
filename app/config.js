@@ -64,16 +64,13 @@ export const CONFIG = {
     camera: { heightM: 1500, headingDeg: 10, pitchDeg: -45 },
   },
 
-  /* Where the design scenarios go. The brief is that scenarios occupy only a
-   * small part of the study area, so this is a separate, smaller footprint.
-   * PLACEHOLDER — set it once the team picks a site. Nothing in the analysis
-   * depends on it; only components 4.1 and 4.9 do. */
   /**
-   * Where the design scenarios go: a wedge in south-west Bloemhof between
-   * Lange Hilleweg and Strevelsweg, chosen 2026-09-30. The polygon itself lives
+   * Where the design scenarios go: the blocks in south-west Bloemhof between
+   * Lange Hilleweg, Sandelingstraat, Dortsmondstraat/Dubbelstraat and
+   * Strevelsweg, including those streets; chosen 2026-09-30. The polygon lives
    * in DESIGN_SITE in analysis/common/project.py and is exported to the GeoJSON
    * below by `python analysis/common/project.py` — do not hand-edit coordinates
-   * here. Traced from a freehand sketch, so good to ~5-10 m.
+   * here.
    */
   designSite: {
     name: "Design site — south-west Bloemhof",

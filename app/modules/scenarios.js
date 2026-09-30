@@ -16,7 +16,12 @@
  *    Draw the footprints in QGIS, or generate them in analysis/scenarios/.
  *      -> data/processed/design_massing.geojson
  *    Features must carry:  { "scenario": "scenario_a", "height_m": 21,
- *                            "base_height_m": 0, "use": "residential" }
+ *                            "use": "residential" }
+ *    and may carry `base_height_m`. Both are metres ABOVE NAP, not above the
+ *    ground: height_m is the roof, base_height_m the underside. Leave the base
+ *    out and it defaults to the site's ground level (-0.95 m NAP, measured from
+ *    AHN and stored with the site). Ground here is below NAP 0, so a base of 0
+ *    would leave every building floating about 1 m above the street.
  *
  * B. Proper 3D models: export from Blender/Rhino as glTF, upload to Cesium ion
  *    as 3D Tiles, and load by asset id. Put the id in config.js when you do.
@@ -64,6 +69,13 @@ export async function setup(ctx) {
   }
 
   const lift = config.napToEllipsoidM;
+  // default base = the design site's measured ground level (see DESIGN_SITE in
+  // analysis/common/project.py); 0 only if the site file is unavailable
+  const siteGeo = config.designSite?.boundary
+    ? await ctx.loadJson(config.designSite.boundary, { quiet: true }) : null;
+  const groundNap = siteGeo?.features?.[0]?.properties?.ground_nap_m;
+  if (groundNap == null) console.warn("[scenarios] site ground level unknown; massing base defaults to NAP 0");
+  const defaultBase = groundNap ?? 0;
 
   for (const [name, features] of byScenario) {
     const collection = new Cesium.CustomDataSource(`massing-${name}`);
@@ -89,7 +101,7 @@ export async function setup(ctx) {
               Cesium.Cartesian3.fromDegreesArray(ring.flatMap(([x, y]) => [x, y])),
             ),
             // NAP -> ellipsoid, so our massing sits with the 3DBAG buildings.
-            height:          (p.base_height_m ?? 0) + lift,
+            height:          (p.base_height_m ?? defaultBase) + lift,
             extrudedHeight:  (p.height_m ?? 12) + lift,
             material:        colour.withAlpha(0.85),
             outline:         true,

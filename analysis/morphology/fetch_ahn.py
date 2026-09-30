@@ -12,8 +12,8 @@ the Sky View Factor and the height-variation indicators actually need.
 
 Usage
 -----
-    python analysis/morphology/fetch_ahn.py               # both, 600 m radius
-    python analysis/morphology/fetch_ahn.py --radius 800
+    python analysis/morphology/fetch_ahn.py               # DSM + DTM over the study area, 150 m padding
+    python analysis/morphology/fetch_ahn.py --pad 300     # more context beyond the buurt edges
     python analysis/morphology/fetch_ahn.py --which dsm
 
 Writes into data/raw/:

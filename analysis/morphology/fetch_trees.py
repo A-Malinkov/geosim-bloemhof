@@ -242,7 +242,7 @@ def main() -> int:
         "crs": {"type": "name", "properties": {"name": "urn:ogc:def:crs:EPSG::28992"}},
         "features": raw_features,
     }) + "\n")
-    print(f"  wrote data/raw/rotterdam_trees_rd.geojson")
+    print("  wrote data/raw/rotterdam_trees_rd.geojson")
 
     (PROCESSED / "trees.geojson").write_text(json.dumps({
         "type": "FeatureCollection",
@@ -252,7 +252,7 @@ def main() -> int:
                  "offset before placing these in Cesium.",
         "features": app_features,
     }) + "\n")
-    print(f"  wrote data/processed/trees.geojson")
+    print("  wrote data/processed/trees.geojson")
 
     heights = np.array(heights)
     crowns = np.array(crowns)
@@ -337,7 +337,7 @@ def main() -> int:
         "n_species": len(species),
     }
     (PROCESSED / "vegetation_summary.json").write_text(json.dumps(summary, indent=2) + "\n")
-    print(f"  wrote data/processed/vegetation_summary.json")
+    print("  wrote data/processed/vegetation_summary.json")
 
     print()
     print(f"  {summary['n_trees']:,} trees fetched over the bounding box")

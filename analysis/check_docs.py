@@ -41,7 +41,6 @@ from __future__ import annotations
 import argparse
 import json
 import pathlib
-import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 P = ROOT / "data" / "processed"

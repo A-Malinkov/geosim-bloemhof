@@ -363,11 +363,11 @@ Other results:
 
 Everything else is a wired-up skeleton waiting for its owner.
 
-> **Note on the study area.** The centre point sits near Bloemhof's north-west
-> corner, so the 600 m square covers only about 62 % of the buurt and also takes
-> in part of Afrikaanderwijk and the Maashaven. It barely moves the SVF number,
-> but land-use mix and the CBS figures will care. To centre on Bloemhof instead,
-> set `rdX: 94037, rdY: 434318` in `config.js` and `project.py`.
+> **Note on the study area.** It is the two whole buurten, Bloemhof and
+> Hillesluis, taken from the CBS boundaries — not a square round a point, which
+> an earlier version used. Statistics are clipped to the buurt polygons; the data
+> is fetched over a padded box so that buildings just outside still count as
+> obstructions. The design scenarios occupy only the smaller design site inside.
 
 ---
 

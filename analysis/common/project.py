@@ -26,7 +26,7 @@ from __future__ import annotations
 
 import json
 import pathlib
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 
 import pyproj
 
@@ -88,6 +88,10 @@ DESIGN_SITE = {
     "chosen": "2026-09-30",
     "source": "team sketch, snapped to street blocks; edge streets included "
               "out to the facades opposite; crosses no building",
+    #: Ground level inside the site, median of the AHN DTM (0.5 m) over the
+    #: polygon: p05 -1.18, p95 -0.64. This is the default BASE for massing.
+    #: It is NOT 0: a building placed at NAP 0 would float about 1 m.
+    "ground_nap_m": -0.95,
     "ring_rd": [
         (93616.8, 433795.9), (93690.6, 433797.7), (93696.1, 433798.0), (93696.1, 433799.3),
         (93713.8, 433800.0), (93713.7, 433800.5), (93764.6, 433802.1), (93767.9, 433802.3),
@@ -376,6 +380,7 @@ def export_design_site_geojson() -> pathlib.Path:
         "chosen": DESIGN_SITE["chosen"],
         "source": DESIGN_SITE["source"],
         "area_ha": round(site.area / 10_000, 2),
+        "ground_nap_m": DESIGN_SITE["ground_nap_m"],
         "n_buildings": None,
     }
     raw = RAW / "buildings_3dbag.geojson"

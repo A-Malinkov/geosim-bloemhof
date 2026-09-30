@@ -32,7 +32,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import rasterio
 from matplotlib.colors import LinearSegmentedColormap, to_rgba
-from matplotlib.ticker import FuncFormatter
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 from common.project import DOCS, PROCESSED, RAW, STUDY_AREA  # noqa: E402

@@ -36,7 +36,7 @@ it had to.
 USAGE
 -----
     python analysis/morphology/fetch_buildings.py
-    python analysis/morphology/fetch_buildings.py --radius 800
+    python analysis/morphology/fetch_buildings.py --pad 300
 
 OUTPUT
 ------

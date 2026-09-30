@@ -421,7 +421,7 @@ def main() -> int:
           f"{[round(v, 6) for v in overlay_bbox]}")
 
     (PROCESSED / "svf_summary.json").write_text(json.dumps(stats, indent=2) + "\n")
-    print(f"  wrote svf_summary.json")
+    print("  wrote svf_summary.json")
 
     # merge the headline number into the shared morphology indicators file
     mi_path = PROCESSED / "morphology_indicators.json"
@@ -442,7 +442,7 @@ def main() -> int:
 
     og = stats["open_ground"]
     print()
-    print(f"  SVF at pedestrian level, open ground:")
+    print("  SVF at pedestrian level, open ground:")
     print(f"     study-area square : mean {og['mean']:.3f}  median {og['median']:.3f}  "
           f"p05 {og['p05']:.3f}  p95 {og['p95']:.3f}  ({og['n_pixels']:,} cells)")
     for name, b in buurt_stats.items():

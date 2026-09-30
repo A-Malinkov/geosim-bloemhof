@@ -567,7 +567,7 @@ def main() -> int:
     out["preferred"] = ranking[0][0]
 
     (PROCESSED / "landuse_abm.json").write_text(json.dumps(out) + "\n")
-    print(f"\n  wrote data/processed/landuse_abm.json")
+    print("\n  wrote data/processed/landuse_abm.json")
     print(f"  preferred configuration: {out['preferred']}")
     for r in out["ranking"]:
         print(f"     {r['scenario']:12} objective {r['objective_best']:.3f}  "

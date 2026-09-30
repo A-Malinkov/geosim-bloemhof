@@ -391,7 +391,7 @@ def main() -> int:
                       "model": results[t0]["horizons"][h0]["_best"]}
 
     (PROCESSED / "knmi_forecast.json").write_text(json.dumps(out, indent=2) + "\n")
-    print(f"\n  wrote data/processed/knmi_forecast.json")
+    print("\n  wrote data/processed/knmi_forecast.json")
     return 0
 
 

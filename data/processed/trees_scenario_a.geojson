@@ -1,0 +1,7 @@
+{
+  "type": "FeatureCollection",
+  "_status": "not_computed_yet",
+  "_written_by": "analysis/scenarios/ (new planting for this scenario)",
+  "_note": "Placeholder so a scenario switch does not 404. The app treats _status=not_computed_yet as 'no data' and keeps the existing trees. Overwrite with the full tree set for this scenario, in the same shape as trees.geojson (Point features with height_m, crown_m, trunk_height_m, ground_nap_m).",
+  "features": []
+}

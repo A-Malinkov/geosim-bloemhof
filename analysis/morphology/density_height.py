@@ -278,8 +278,6 @@ def main() -> int:
     # a single undifferentiated cloud hides exactly the finding.
     cell_buurt: dict[int, str] = {}
     try:
-        import shapely.geometry as sg
-        from shapely.prepared import prep
 
         polys = buurt_polygons()
         prepped = [(name, prep(polys[code])) for code, name in STUDY_AREA.buurten]

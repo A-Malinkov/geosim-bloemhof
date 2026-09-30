@@ -90,9 +90,13 @@ function buildPrimitives(ctx, features) {
     translucent: false,
     closed: true,
   });
+  // Cesium primitives cast NO shadow unless asked (ShadowMode.DISABLED is the
+  // default), so without this the trees stood in full sun under the sun slider
+  // while every building around them cast a shadow.
+  const shadows = Cesium.ShadowMode.ENABLED;
   return [
-    new Cesium.Primitive({ geometryInstances: trunks, appearance, asynchronous: true }),
-    new Cesium.Primitive({ geometryInstances: crowns, appearance, asynchronous: true }),
+    new Cesium.Primitive({ geometryInstances: trunks, appearance, asynchronous: true, shadows }),
+    new Cesium.Primitive({ geometryInstances: crowns, appearance, asynchronous: true, shadows }),
   ];
 }
 
