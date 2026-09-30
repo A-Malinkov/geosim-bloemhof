@@ -128,18 +128,29 @@ async function boot_() {
 
   /* ---- camera over the study area --------------------------------------- */
   const sa = CONFIG.studyArea;
-  viewer.camera.setView({
-    destination: Cesium.Cartesian3.fromDegrees(
-      sa.lon,
-      sa.lat - 0.006,           // pull back south so the site sits mid-screen
-      sa.camera.heightM,
-    ),
-    orientation: {
-      heading: Cesium.Math.toRadians(sa.camera.headingDeg),
-      pitch:   Cesium.Math.toRadians(sa.camera.pitchDeg),
-      roll:    0,
-    },
-  });
+  /* Frame the whole extent rather than guessing an offset from a centre point:
+   * the study area is two buurten, about 1.9 x 1.5 km, and a fixed nudge that
+   * suited a 600 m square puts half of it off screen. */
+  {
+    const [w, s, e, n] = sa.bbox;
+    const midLat = (s + n) / 2;
+    const pitch = Cesium.Math.toRadians(sa.camera.pitchDeg);
+    /* How far back the camera must sit is geometry, not a guess: at pitch p and
+     * height h it is looking h / tan(|p|) metres ahead of itself, so that is the
+     * offset needed to put the study area in the middle of the frame. An earlier
+     * fixed fraction of the bbox height framed the river instead. */
+    const backM = sa.camera.heightM / Math.tan(Math.abs(pitch));
+    const backDeg = backM / 110540;            // metres -> degrees of latitude
+    viewer.camera.setView({
+      destination: Cesium.Cartesian3.fromDegrees(
+        (w + e) / 2, midLat - backDeg, sa.camera.heightM),
+      orientation: {
+        heading: Cesium.Math.toRadians(sa.camera.headingDeg),
+        pitch,
+        roll: 0,
+      },
+    });
+  }
 
   /* ======================================================================
    * ctx — the only API modules should rely on.

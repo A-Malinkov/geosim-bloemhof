@@ -105,11 +105,12 @@ def get(url: str, tries: int = 4) -> dict:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--radius", type=int, default=STUDY_AREA.radius_m)
+    ap.add_argument("--pad", type=int, default=0,
+                    help="extra context beyond the study-area edge, in metres")
     args = ap.parse_args()
 
-    xmin, ymin, xmax, ymax = bbox_rd(args.radius)
-    print(f"BAG verblijfsobjecten — {STUDY_AREA.name}, radius {args.radius} m")
+    xmin, ymin, xmax, ymax = bbox_rd(args.pad)
+    print(f"BAG verblijfsobjecten — {STUDY_AREA.name}")
 
     feats, start, t0 = [], 0, time.time()
     dropped_status, dropped_area, unknown = 0, 0, collections.Counter()

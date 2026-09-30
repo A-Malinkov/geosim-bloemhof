@@ -1,6 +1,6 @@
 # analysis/abm_landuse — agent-based land-use modelling
 
-Component 4.7 · Owner: **Atanas Malinkov** · feeds `app/modules/landuse.js`
+Component 4.7 · Owner: **Atanas Malinkov** · study area: Bloemhof + Hillesluis · feeds `app/modules/landuse.js`
 
 > Numbers here are generated from `data/processed/landuse_abm.json` and
 > `landuse_rl.json`. If you re-run the models, re-check this file.
@@ -35,7 +35,7 @@ is worth arguing about — and they do disagree (below).
 Constrained CA after **White, Engelen & Uljee (1997)**, *The use of constrained
 cellular automata for high-resolution modelling of urban dynamics*.
 
-Grid: 48 × 48 cells of 25 m. States: water, road, green, residential, retail, amenity, industry, vacant.
+Grid: 76 × 59 cells of 25 m. States: water, road, green, residential, retail, amenity, industry, vacant.
 Water and road never convert.
 
 ```
@@ -77,24 +77,24 @@ back.
 
 | erased | agreement | Cohen's κ |
 |---|---|---|
-| 10 % | 85.7 % | **0.657** |
-| 25 % | 73.0 % | 0.425 |
-| 50 % | 59.1 % | 0.201 |
+| 10 % | 86.3 % | **0.715** |
+| 25 % | 73.1 % | 0.492 |
+| 50 % | 57.7 % | 0.253 |
 
 κ discounts the agreement you would get by guessing the commonest class. The
 curve degrades as a neighbourhood-driven model should: with context intact it
 reconstructs well; strip half the city and it cannot know where things were.
-κ ≈ 0.66 at 10 % is in the range land-use CA papers report.
+κ ≈ 0.71 at 10 % is in the range land-use CA papers report.
 
 ## Scenario results
 
-Programme: 138 cells (8.6 ha), 12 stochastic replicates each.
+Programme: 269 cells (16.8 ha), 12 stochastic replicates each.
 
 | scenario | objective | land-use mix | green | home → amenity |
 |---|---|---|---|---|
-| baseline | 1.391 | 0.440 | 6.4 % | 89 m |
-| scenario_a | 1.503 | 0.473 | 6.4 % | 59 m |
-| scenario_b **★** | 1.533 | 0.482 | 9.4 % | 66 m |
+| baseline | 1.560 | 0.522 | 8.5 % | 80 m |
+| scenario_a | 1.665 | 0.548 | 8.5 % | 48 m |
+| scenario_b **★** | 1.686 | 0.550 | 11.5 % | 54 m |
 
 ```
 objective = 1.6 · land-use mix + 1.0 · green share
@@ -114,14 +114,14 @@ Linear rather than deep **on purpose** — the value here is that the weights ca
 be read and argued with. A DQN would score similarly and explain nothing. A
 torch DQN is the obvious extension.
 
-Learns: 1.612 over the first 10 % of episodes → 1.669 over the last 10 %.
-Best 1.678 against 1.391 today; its plan reaches mix 0.560 and
-46 m to the nearest amenity.
+Learns: 1.738 over the first 10 % of episodes → 1.811 over the last 10 %.
+Best 1.818 against 1.560 today; its plan reaches mix 0.632 and
+42 m to the nearest amenity.
 
 ### The interesting disagreement
 
 The agent learned that **retail should avoid other retail**
-(-0.5) while being drawn to housing (+0.7). Our CA assumes the opposite —
+(-0.5) while being drawn to housing (+0.4). Our CA assumes the opposite —
 its matrix gives retail→retail **+0.8**, i.e. shops cluster.
 
 Both are defensible and the disagreement is informative. The objective rewards

@@ -388,16 +388,44 @@ def fig_spacematrix(dens):
     sc = ax.scatter(g, f, c=h, cmap=SEQ, vmin=4, vmax=22, s=26,
                     linewidths=0.4, edgecolors=SURFACE, zorder=3)
 
-    b = dens.get("buurt")
-    if b:
-        ax.scatter([b["gsi"]], [b["fsi"]], marker="*", s=420, color=SERIES_2,
-                   edgecolors=SURFACE, linewidths=1.2, zorder=4)
-        ax.annotate(f"{b['name']} overall\nGSI {b['gsi']:.2f} · FSI {b['fsi']:.2f} "
-                    f"· {b['layers']:.1f} storeys",
-                    xy=(b["gsi"], b["fsi"]), xytext=(-12, -34),
-                    textcoords="offset points", fontsize=8.5, color=INK,
-                    fontweight="bold", zorder=5, ha="right",
-                    path_effects=[pe.withStroke(linewidth=3.5, foreground=SURFACE)])
+    # Mark each buurt, and the two together. Two adjacent buurten with different
+    # fabric is the point of the plot: a single combined star would hide that one
+    # is low and packed while the other is taller and more open.
+    #
+    # The labels go in a corner block, not beside the stars. Annotating each
+    # point put text straight through the data cloud and the three captions
+    # overlapped each other.
+    marks = list((dens.get("per_buurt") or {}).values())
+    comb = dens.get("combined")
+    entries = [(b, False) for b in marks if b] + ([(comb, True)] if comb else [])
+    for b, is_comb in entries:
+        ax.scatter([b["gsi"]], [b["fsi"]], marker="*",
+                   s=460 if is_comb else 320,
+                   color=SERIES_2 if is_comb else INK,
+                   edgecolors=SURFACE, linewidths=1.2, zorder=5)
+
+    if entries:
+        # One text line per entry, drawn separately so each star glyph carries
+        # the colour of the marker it refers to. Two identical black stars with
+        # a shared caption leaves the reader guessing which is which.
+        # An explicit patch, not a text bbox: a bbox sized to placeholder
+        # whitespace ends up far narrower than the lines drawn over it.
+        import matplotlib.patches as mpatch
+        h = 0.042 * len(entries) + 0.030
+        ax.add_patch(mpatch.FancyBboxPatch(
+            (0.012, 0.988 - h), 0.80, h,
+            boxstyle="round,pad=0.006", transform=ax.transAxes,
+            facecolor=SURFACE, edgecolor=GRID, linewidth=0.8, zorder=4))
+        for i, (b, is_comb) in enumerate(entries):
+            y = 0.972 - i * 0.042
+            col = SERIES_2 if is_comb else INK
+            ax.text(0.028, y, "\u2605", transform=ax.transAxes, va="top",
+                    ha="left", fontsize=11, color=col, zorder=6)
+            ax.text(0.058, y, f"{b['name']}:  GSI {b['gsi']:.2f}   "
+                              f"FSI {b['fsi']:.2f}   {b['layers']:.1f} storeys",
+                    transform=ax.transAxes, va="top", ha="left", fontsize=8.5,
+                    color=INK, zorder=6,
+                    fontweight="bold" if is_comb else "normal")
 
     ax.set_xlim(0, xmax); ax.set_ylim(0, ymax)
     ax.set_xlabel("GSI — ground space index (built footprint / land area)")
@@ -505,7 +533,7 @@ def fig_landuse(lu, grid_geo):
     cb.ax.tick_params(colors=MUTED, length=0, labelsize=7.5)
 
     o = lu["overall"]
-    b = lu.get("buurt") or {}
+    b = lu.get("combined") or {}
     fig.suptitle(f"Land-use mix — {STUDY_AREA.name}, Rotterdam",
                  x=0.012, ha="left", fontsize=11, fontweight="bold", color=INK)
     fig.text(0.012, 0.912,

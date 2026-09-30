@@ -192,49 +192,64 @@ export async function setup(ctx) {
     show: false,
   });
 
-  /* ------------------------------------------------------------ study area outline */
+  /* ---------------------------------------------------- study area boundaries */
+  /* The real buurt polygons, written by analysis/common/project.py. Drawing a
+   * circle round a centre point was fine when the study area WAS a circle; it
+   * is now two adjacent buurten with a ragged shared edge, and a circle would
+   * misrepresent what is actually being analysed. */
   const sa = config.studyArea;
-  const r  = sa.radiusM;
-  /* Cesium cannot draw an entity outline that is clamped to terrain, so the
-   * fill and the ring are two entities: a clamped ellipse with outline off,
-   * plus a ground polyline. Doing it any other way logs two warnings and
-   * silently drops the ring. */
-  const ring = [];
-  for (let i = 0; i <= 128; i++) {
-    const t = (i / 128) * 2 * Math.PI;
-    // metres -> degrees, with the cos(lat) correction on longitude
-    ring.push(sa.lon + (r * Math.cos(t)) / (111320 * Math.cos(Cesium.Math.toRadians(sa.lat))));
-    ring.push(sa.lat + (r * Math.sin(t)) / 110540);
-  }
-
-  const areaFill = viewer.entities.add({
-    name: `Study area — ${sa.name}`,
-    position: Cesium.Cartesian3.fromDegrees(sa.lon, sa.lat),
-    ellipse: {
-      semiMajorAxis: r,
-      semiMinorAxis: r,
-      height: 0,
-      heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-      material: Cesium.Color.CYAN.withAlpha(0.06),
-      outline: false,
-    },
-  });
-  const areaRing = viewer.entities.add({
-    name: `Study area boundary — ${sa.name}`,
-    polyline: {
-      positions: Cesium.Cartesian3.fromDegreesArray(ring),
-      width: 2,
-      material: Cesium.Color.CYAN.withAlpha(0.85),
+  try {
+    const ds = await Cesium.GeoJsonDataSource.load(sa.boundaries, {
       clampToGround: true,
-    },
-  });
-  ctx.registerLayer({
-    id: "studyArea",
-    label: `Study area (${r} m radius)`,
-    group: "Reference",
-    show: true,
-    onToggle: (v) => { areaFill.show = v; areaRing.show = v; },
-  });
+      fill: Cesium.Color.CYAN.withAlpha(0.06),
+    });
+    /* Cesium cannot outline a polygon that is clamped to terrain — it warns and
+     * silently drops the stroke. Draw each boundary as a ground polyline
+     * instead, which is the supported way to get a visible edge. */
+    const rings = [];
+    for (const ent of ds.entities.values) {
+      const hier = ent.polygon?.hierarchy?.getValue?.(Cesium.JulianDate.now());
+      if (!hier) continue;
+      for (const part of [hier, ...(hier.holes || [])]) {
+        if (part?.positions?.length) rings.push(part.positions);
+      }
+      ent.polygon.outline = false;
+    }
+    for (const positions of rings) {
+      ds.entities.add({
+        polyline: {
+          positions: [...positions, positions[0]],
+          width: 3,
+          material: Cesium.Color.CYAN.withAlpha(0.9),
+          clampToGround: true,
+        },
+      });
+    }
+    for (const ent of ds.entities.values) {
+      const p = ent.properties;
+      const nm = p?.name?.getValue?.() ?? "";
+      ent.name = `${nm} (buurt)`;
+      ent.description =
+        `<table>` +
+        `<tr><td>buurt</td><td>${nm}</td></tr>` +
+        `<tr><td>code</td><td>${p?.buurtcode?.getValue?.() ?? "—"}</td></tr>` +
+        `<tr><td>area</td><td>${p?.area_ha?.getValue?.() ?? "—"} ha</td></tr>` +
+        `<tr><td>inhabitants</td><td>${
+          (p?.inhabitants?.getValue?.() ?? 0).toLocaleString("en-GB")}</td></tr>` +
+        `</table>`;
+    }
+    await viewer.dataSources.add(ds);
+    ctx.registerLayer({
+      id: "studyArea",
+      label: `Study area — ${sa.buurten.map((b) => b.name).join(" + ")}`,
+      group: "Reference",
+      show: true,
+      target: ds,
+    });
+  } catch (err) {
+    console.warn("[layers] study-area boundaries failed to load", err);
+    ctx.note("Study area boundaries: FAILED", "err");
+  }
 
   /* ---------------------------------------------------------------- credits */
   ctx.note(

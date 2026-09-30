@@ -55,7 +55,7 @@ import urllib.request
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 from common.project import (  # noqa: E402
-    KNMI_ANONYMOUS_KEY, PROCESSED, RAW, SERVICES, STUDY_AREA,
+    KNMI_ANONYMOUS_KEY, PROCESSED, RAW, SERVICES, STUDY_AREA, centre_wgs,
 )
 
 OPEN_DATA = SERVICES["knmi_open_data"]
@@ -177,12 +177,13 @@ def fetch_current(prefer_station: int | None) -> dict | None:
                 idx = i
                 break
     if idx is None:
+        clon, clat = centre_wgs()
         order = sorted(range(len(ids)),
-                       key=lambda i: haversine_km(STUDY_AREA.lat, STUDY_AREA.lon,
-                                                  lats[i], lons[i]))
+                       key=lambda i: haversine_km(clat, clon, lats[i], lons[i]))
         idx = order[0]
 
-    dist = haversine_km(STUDY_AREA.lat, STUDY_AREA.lon, lats[idx], lons[idx])
+    clon, clat = centre_wgs()
+    dist = haversine_km(clat, clon, lats[idx], lons[idx])
     values, missing = {}, []
     for var, (label, unit) in OBS_VARS.items():
         if var not in ds:

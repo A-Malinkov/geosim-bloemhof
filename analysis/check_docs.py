@@ -82,40 +82,42 @@ def main() -> int:
     checks: list[tuple[str, str, str, list[pathlib.Path]]] = []
 
     if svf:
-        g = svf["buurt"]["open_ground"]
+        g = svf["combined"]["open_ground"]
         checks += [
-            ("SVF mean", r"Sky View Factor.*pedestrian level", f"{g['mean']:.3f}", [MAIN]),
-            ("SVF mean", r"\*\*Sky View Factor\*\* — mean", f"{g['mean']:.3f}", [MORPH]),
+            ("SVF combined", r"Sky View Factor, pedestrian level", f"{g['mean']:.3f}", [MAIN]),
+            ("SVF combined", r"\*\*Sky View Factor\*\* \|", f"{g['mean']:.3f}", [MORPH]),
             ("SVF in the status table", r"\| 4\.3 \|", f"{g['mean']:.3f}", [MAIN]),
         ]
     if veg:
         e = veg.get("svf_canopy_effect") or {}
-        checks += [("trees", r"Trees in the study area", f"{veg['n_trees']:,}", [MAIN]),
-                   ("trees", r"\*\*3D vegetation\*\* —", f"{veg['n_trees']:,}", [MORPH])]
+        checks += [("trees combined", r"Trees · per hectare", f"{veg['combined']['n_trees']:,}", [MAIN]),
+                   ("trees combined", r"\*\*trees\*\* \|", f"{veg['combined']['n_trees']:,}", [MORPH])]
         if e:
             checks += [
-                ("canopy effect", r"under a tree crown vs", f"{e['svf_open']:.2f}", [MAIN]),
-                ("canopy effect", r"under a tree crown vs", f"{e['svf_under_canopy']:.2f}", [MAIN]),
+                ("canopy open", r"under a tree crown vs", f"{e['svf_open']:.2f}", [MAIN]),
+                ("canopy under", r"under a tree crown vs", f"{e['svf_under_canopy']:.2f}", [MAIN]),
             ]
     if den:
-        b = den["buurt"]
+        b = den["combined"]
         checks += [
-            ("GSI/FSI headline", r"Density \(Spacematrix", f"{b['gsi']:.3f}", [MAIN]),
-            ("GSI/FSI headline", r"Density \(Spacematrix", f"{b['fsi']:.3f}", [MAIN]),
+            ("GSI combined", r"GSI · FSI · storeys", f"{b['gsi']:.3f}", [MAIN]),
+            ("FSI combined", r"GSI · FSI · storeys", f"{b['fsi']:.3f}", [MAIN]),
             ("GSI in status table", r"\| 4\.3 \|", f"{b['gsi']:.3f}", [MAIN]),
             ("FSI in status table", r"\| 4\.3 \|", f"{b['fsi']:.3f}", [MAIN]),
-            ("GSI row", r"^\| GSI \|", f"{b['gsi']:.3f}", [MORPH]),
-            ("FSI row", r"^\| FSI \|", f"{b['fsi']:.3f}", [MORPH]),
-            ("storey height", r"median is \*\*", f"{den['parameters']['storey_height_m']:.2f}", [MORPH]),
+            ("GSI row", r"\*\*GSI\*\* ground space index", f"{b['gsi']:.3f}", [MORPH]),
+            ("FSI row", r"\*\*FSI\*\* floor space index", f"{b['fsi']:.3f}", [MORPH]),
+            ("storey height", r"measured, not assumed", f"{den['parameters']['storey_height_m']:.2f}", [MORPH]),
         ]
     if lu:
-        b = lu["buurt"]
+        b = lu["combined"]
         checks += [
-            ("land-use headline", r"Land-use mix \(Bloemhof\)", f"{b['shannon_area']:.3f}", [MAIN]),
+            ("land-use combined", r"Land-use mix, Shannon", f"{b['shannon_area']:.3f}", [MAIN]),
             ("mix in status table", r"\| 4\.3 \|", f"{b['shannon_area']:.3f}", [MAIN]),
-            ("Shannon row", r"Shannon, floor-area weighted", f"{b['shannon_area']:.3f}", [MORPH]),
-            ("Shannon count row", r"Shannon, unit-count weighted", f"{b['shannon_count']:.3f}", [MORPH]),
-            ("Simpson row", r"^\| Simpson \|", f"{b['simpson_area']:.3f}", [MORPH]),
+            ("Bloemhof SVF", r"^\| Sky View Factor, pedestrian level",
+             f"{svf['per_buurt']['Bloemhof']['open_ground']['mean']:.3f}", [MAIN]),
+            ("Hillesluis SVF", r"^\| Sky View Factor, pedestrian level",
+             f"{svf['per_buurt']['Hillesluis']['open_ground']['mean']:.3f}", [MAIN]),
+            ("Shannon row", r"\*\*land-use mix\*\* Shannon", f"{b['shannon_area']:.3f}", [MORPH]),
         ]
     if ca:
         pref = ca["preferred"]
@@ -129,7 +131,7 @@ def main() -> int:
     if rl:
         checks += [
             ("RL mix headline", r"Land-use model \| CA prefers", f"{rl['score']['landuse_mix']:.3f}", [MAIN]),
-            ("RL best objective", r"Best .* against", f"{rl['best_objective']:.3f}", [ABM]),
+            ("RL best objective", r"^Best [\d.]+ against", f"{rl['best_objective']:.3f}", [ABM]),
         ]
     if fc:
         t = fc["results"]["temperature_C"]["horizons"]

@@ -49,7 +49,8 @@ import requests
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 from common.project import (  # noqa: E402
-    PROCESSED, RAW, STUDY_AREA, bbox_rd, to_wgs,
+    PROCESSED, RAW, STUDY_AREA, bbox_rd, buurt_polygons,
+    study_area_polygon, to_wgs,
 )
 
 SERVICE = ("https://diensten.rotterdam.nl/arcgis/rest/services"
@@ -151,12 +152,12 @@ def main() -> int:
     import argparse
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--radius", type=int, default=STUDY_AREA.radius_m,
-                    help="half-width of the square around the study centre, in metres")
+    ap.add_argument("--pad", type=int, default=0,
+                    help="extra context beyond the study-area edge, in metres")
     args = ap.parse_args()
 
-    bbox = bbox_rd(args.radius)
-    print(f"Rotterdam tree register — {STUDY_AREA.name}, {args.radius} m radius")
+    bbox = bbox_rd(args.pad)
+    print(f"Rotterdam tree register — {STUDY_AREA.name}")
     try:
         feats = fetch_all(bbox)
     except requests.HTTPError as exc:
@@ -255,20 +256,68 @@ def main() -> int:
 
     heights = np.array(heights)
     crowns = np.array(crowns)
-    area_m2 = (2 * STUDY_AREA.radius_m) ** 2
+
+    # Density and canopy cover must use the SAME extent for numerator and
+    # denominator. The register is queried over the bounding box, which is
+    # larger than the buurten, so counting every tree fetched against the buurt
+    # area overstates density by about two thirds. Clip to the polygons.
+    import shapely.geometry as sg
+    from shapely.prepared import prep
+    polys = buurt_polygons()
+    xs_rd = np.array([f["geometry"]["coordinates"][0] for f in raw_features])
+    ys_rd = np.array([f["geometry"]["coordinates"][1] for f in raw_features])
+    species_of = [f["properties"]["species"] for f in raw_features]
+
+    def clip_stats(geom, label, code=None):
+        pg = prep(geom)
+        m = np.array([pg.contains(sg.Point(a, b)) for a, b in zip(xs_rd, ys_rd)])
+        if not m.any():
+            return None
+        c = crowns[m]
+        canopy = float(np.sum(math.pi * (c / 2.0) ** 2))
+        return {
+            "name": label, "code": code,
+            "area_ha": round(geom.area / 10_000, 2),
+            "n_trees": int(m.sum()),
+            "trees_per_hectare": round(float(m.sum() / (geom.area / 10_000)), 2),
+            "canopy_cover_fraction": round(canopy / geom.area, 4),
+            "height_mean_m": round(float(heights[m].mean()), 2),
+            "crown_mean_m": round(float(c.mean()), 2),
+            "n_species": len({species_of[i] for i in np.flatnonzero(m)}),
+        }
+
+    per_buurt = {}
+    for code, name in STUDY_AREA.buurten:
+        st = clip_stats(polys[code], name, code)
+        if st:
+            per_buurt[name] = st
+    combined = clip_stats(study_area_polygon(), STUDY_AREA.name)
+
+    area_m2 = study_area_polygon().area
     canopy_m2 = float(np.sum(math.pi * (crowns / 2.0) ** 2))
 
     summary = {
         "study_area": STUDY_AREA.name,
         "source": "Gemeente Rotterdam tree register, layer SB_Infra/Bomen/0",
+        "_extent_note": "n_trees counts every tree in the query bounding box, "
+                        "which is larger than the buurten. Density and canopy "
+                        "cover live in `per_buurt` and `combined`, where the "
+                        "numerator and denominator share one polygon.",
+        "per_buurt": per_buurt,
+        "combined": combined,
         "n_trees": len(app_features),
-        "trees_per_hectare": round(len(app_features) / (area_m2 / 10_000), 2),
+        "n_trees_in_buurten": (combined or {}).get("n_trees"),
+        "trees_per_hectare": (combined or {}).get("trees_per_hectare"),
         "area_m2": area_m2,
         "canopy": {
-            "total_m2": round(canopy_m2, 1),
-            "cover_fraction": round(canopy_m2 / area_m2, 4),
-            "_note": "crowns modelled as circles of diameter KROONOMVANG; "
-                     "overlapping crowns are counted twice, so this is an upper bound",
+            # the clipped figure, so numerator and denominator share a polygon
+            "cover_fraction": (combined or {}).get("canopy_cover_fraction"),
+            "total_m2_bounding_box": round(canopy_m2, 1),
+            "_note": "cover_fraction is measured inside the buurten. Crowns are "
+                     "modelled as circles of diameter KROONOMVANG and overlaps "
+                     "are counted twice, so it is an upper bound. "
+                     "total_m2_bounding_box covers the larger query box and must "
+                     "not be divided by the buurt area.",
         },
         "height_m": {
             "mean": round(float(heights.mean()), 2),
@@ -291,8 +340,15 @@ def main() -> int:
     print(f"  wrote data/processed/vegetation_summary.json")
 
     print()
-    print(f"  {summary['n_trees']:,} trees  "
-          f"({summary['trees_per_hectare']} per hectare, {summary['n_species']} species)")
+    print(f"  {summary['n_trees']:,} trees fetched over the bounding box")
+    for name, st in per_buurt.items():
+        print(f"     {name:12} {st['n_trees']:5,} trees  {st['trees_per_hectare']:5.1f}/ha  "
+              f"canopy {100*st['canopy_cover_fraction']:4.1f}%  {st['n_species']} species")
+    if combined:
+        print(f"     {'combined':12} {combined['n_trees']:5,} trees  "
+              f"{combined['trees_per_hectare']:5.1f}/ha  "
+              f"canopy {100*combined['canopy_cover_fraction']:4.1f}%  "
+              f"{combined['n_species']} species")
     print(f"  mean height {summary['height_m']['mean']} m, "
           f"mean crown {summary['crown_m']['mean']} m")
     print(f"  canopy cover {100 * summary['canopy']['cover_fraction']:.1f}% (upper bound)")

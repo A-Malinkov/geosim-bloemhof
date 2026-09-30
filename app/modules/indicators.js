@@ -184,6 +184,27 @@ async function addLanduseGrid(ctx) {
   return ds;
 }
 
+/**
+ * A compact per-buurt comparison table.
+ *
+ * The study area is two buurten and the brief is to analyse both, so a single
+ * combined figure hides the finding: they have noticeably different fabric.
+ */
+function perBuurtTable(perBuurt, cols) {
+  const names = Object.keys(perBuurt || {});
+  if (names.length < 2) return "";
+  return `<table class="kv"><thead><tr><th>by buurt</th>` +
+    cols.map(([, label]) => `<th>${label}</th>`).join("") +
+    `</tr></thead><tbody>` +
+    names.map((n) => {
+      const b = perBuurt[n];
+      return `<tr><td>${n}</td>` +
+        cols.map(([k, , dp]) =>
+          `<td>${b[k] == null ? "—" : Number(b[k]).toFixed(dp)}</td>`).join("") +
+        `</tr>`;
+    }).join("") + `</tbody></table>`;
+}
+
 /** Small inline histogram, drawn as an SVG bar chart. */
 function histogramSvg(hist, mean) {
   if (!hist?.counts?.length) return "";
@@ -219,7 +240,9 @@ export async function setup(ctx) {
   body.appendChild(svfBox);
 
   if (svf?.open_ground) {
-    const g = svf.open_ground;
+    // The clipped figure: the raster covers the bounding box, which takes in
+    // the Maashaven where SVF is ~1.0 and would flatter the neighbourhood.
+    const g = svf.combined?.open_ground || svf.open_ground;
     addSvfOverlay(ctx, svf);
     svfBox.innerHTML =
       `<h4>Sky View Factor</h4>` +
@@ -229,11 +252,16 @@ export async function setup(ctx) {
       `<tr><td>p05 – p95</td><td>${g.p05.toFixed(2)} – ${g.p95.toFixed(2)}</td></tr>` +
       `</tbody></table>` +
       histogramSvg(svf.histogram, g.mean) +
+      perBuurtTable(
+        Object.fromEntries(Object.entries(svf.per_buurt || {}).map(
+          ([n, v]) => [n, { svf: v.open_ground?.mean }])),
+        [["svf", "SVF", 3]]) +
       `<p class="muted">At ${svf.parameters.observer_height_m} m above ground on open ` +
       `ground only (streets, gardens, squares). ${svf.parameters.n_directions} directions, ` +
       `${svf.parameters.search_radius_m} m radius, ${svf.parameters.cell_size_m} m cells. ` +
       `Cosine-weighted; the plain solid-angle value is ` +
-      `${svf.open_ground_geometric?.mean?.toFixed(3) ?? "—"}. ` +
+      `${(svf.combined?.open_ground_geometric?.mean
+          ?? svf.open_ground_geometric?.mean)?.toFixed(3) ?? "—"}. ` +
       `Toggle the map overlay under <em>Analysis</em>.</p>`;
   } else {
     ctx.placeholder(svfBox, {
@@ -249,9 +277,9 @@ export async function setup(ctx) {
   const densBox = document.createElement("div");
   body.appendChild(densBox);
 
-  if (dens?.buurt) {
+  if (dens?.combined) {
     await addDensityGrid(ctx);
-    const b = dens.buurt;
+    const b = dens.combined;
     const g = dens.grid;
     densBox.innerHTML =
       `<h4>Density &amp; height</h4>` +
@@ -263,8 +291,10 @@ export async function setup(ctx) {
       `<tr><td>height</td><td>${b.height_m.mean.toFixed(1)} m ± ${b.height_m.std.toFixed(1)}</td></tr>` +
       `<tr><td>tallest</td><td>${b.height_m.max.toFixed(1)} m</td></tr>` +
       `</tbody></table>` +
-      `<p class="muted">Spacematrix over ${b.surveyed_area_ha} ha ` +
-      `(${Math.round(b.coverage_fraction * 100)}% of ${b.name}), ` +
+      perBuurtTable(dens.per_buurt, [
+        ["gsi", "GSI", 3], ["fsi", "FSI", 3], ["layers", "storeys", 2],
+      ]) +
+      `<p class="muted">Spacematrix over ${b.land_area_ha} ha, ` +
       `${b.n_buildings.toLocaleString("en-GB")} buildings. Grid mean FSI ` +
       `${g.fsi.mean.toFixed(2)} across ${g.n_cells_used} cells of ` +
       `${dens.parameters.cell_size_m} m. Toggle the grid under <em>Analysis</em>.</p>`;
@@ -285,7 +315,7 @@ export async function setup(ctx) {
   if (lu?.overall) {
     await addLanduseGrid(ctx);
     const o = lu.overall;
-    const b = lu.buurt || {};
+    const b = lu.combined || {};
     const comp = (b.composition || lu.composition || []).slice(0, 6);
     const head = b.shannon_area ?? o.shannon_area;
     luBox.innerHTML =
@@ -300,6 +330,9 @@ export async function setup(ctx) {
       comp.map((x) =>
         `<tr><td>${x.category}</td><td>${(x.share * 100).toFixed(1)} %</td></tr>`).join("") +
       `</tbody></table>` +
+      perBuurtTable(lu.per_buurt, [
+        ["shannon_area", "Shannon", 3], ["simpson_area", "Simpson", 3],
+      ]) +
       `<p class="muted">Normalised Shannon entropy over ` +
       `${lu.parameters.n_categories_in_scheme} BAG use classes, weighted by ` +
       `usable floor area. 0 = one use only, 1 = an even mix. ` +

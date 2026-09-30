@@ -17,16 +17,16 @@
     ]
   },
   "baseline": {
-    "svf_mean": 0.6849,
-    "svf_median": 0.716,
-    "fsi": 1.0236,
-    "gsi": 0.3244,
-    "layers": 3.16,
-    "osr": 0.66,
-    "height_mean_m": 8.694,
-    "height_std_m": 2.845,
-    "landuse_mix": 0.2677,
-    "landuse_simpson": 0.2494
+    "svf_mean": 0.7256,
+    "svf_median": 0.7528,
+    "fsi": 0.9597,
+    "gsi": 0.2842,
+    "layers": 3.38,
+    "osr": 0.746,
+    "height_mean_m": 9.541,
+    "height_std_m": 3.076,
+    "landuse_mix": 0.3515,
+    "landuse_simpson": 0.3463
   },
   "_svf_source": "analysis/morphology/sky_view_factor.py",
   "_density_source": "analysis/morphology/density_height.py",
