@@ -35,7 +35,7 @@
   "composition": [
     {
       "category": "residential",
-      "floor_area_m2": 749108.0,
+      "floor_area_m2": 749198.0,
       "share": 0.8131,
       "units": 9375
     },
@@ -116,14 +116,14 @@
     "code": "BU05991081",
     "coverage_fraction": 0.7476,
     "n_units": 4870,
-    "floor_area_m2": 433216.0,
-    "shannon_area": 0.2677,
+    "floor_area_m2": 433306.0,
+    "shannon_area": 0.2676,
     "shannon_count": 0.1205,
     "simpson_area": 0.2494,
     "composition": [
       {
         "category": "residential",
-        "floor_area_m2": 374434.0,
+        "floor_area_m2": 374524.0,
         "share": 0.8643,
         "units": 4616
       },

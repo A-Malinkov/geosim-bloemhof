@@ -25,7 +25,7 @@
     "osr": 0.66,
     "height_mean_m": 8.694,
     "height_std_m": 2.845,
-    "landuse_mix": 0.2677,
+    "landuse_mix": 0.2676,
     "landuse_simpson": 0.2494
   },
   "_svf_source": "analysis/morphology/sky_view_factor.py",
