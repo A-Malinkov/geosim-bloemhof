@@ -59,13 +59,48 @@ class StudyArea:
 STUDY_AREA = StudyArea()
 
 #: Where the design scenarios go. The brief is that scenarios occupy only a
-#: small part of the study area, so this is a separate, smaller footprint.
-#: PLACEHOLDER — set it to the real site once the team picks one. Nothing in the
-#: analysis depends on it; only components 4.1 and 4.9 do.
+#: small part of the study area, so this is a separate, smaller footprint:
+#: everything is ANALYSED over both buurten, but baseline / scenario_a /
+#: scenario_b only differ inside this polygon.
+#:
+#: Chosen by the team on 2026-09-30: the blocks in south-west Bloemhof between
+#: Lange Hilleweg (north-west), Sandelingstraat (north-east), Dortsmondstraat and
+#: Dubbelstraat (south-east) and Strevelsweg (south), INCLUDING those edge streets.
+#:
+#: How the outline was made, so it can be redone:
+#:   1. the team's freehand sketch on an app screenshot was georeferenced with a
+#:      perspective fit on six Bloemhof boundary corners (residuals 0.4-4 m);
+#:   2. the street blocks it covers were taken from the OSM street network
+#:      (faces between centrelines, most >80 % inside the sketch);
+#:   3. each edge street was added out to just short of the facades opposite,
+#:      measured per edge from 3DBAG LoD0 footprints (Strevelsweg ~14-20 m,
+#:      side streets ~7-15 m). Lange Hilleweg stops at the tree row of its
+#:      central green strip (9 m): the strip itself is not in the site;
+#:   4. the south-east corner runs down a party wall between two houses on
+#:      Strevelsweg rather than through a house.
+#: Checked: the outline crosses no building (0 m of 1,728 m inside a footprint).
+#: About 9 % of it lies south of the buurt boundary, because that boundary runs
+#: down the middle of Strevelsweg and the site takes in the whole street.
+#:
+#: Vertices are RD New (EPSG:28992), counter-clockwise, not closed.
 DESIGN_SITE = {
-    "_status": "placeholder — the team has not chosen the site yet",
-    "centre_rd": (94403.0, 434360.0),   # the seam between the two buurten
-    "radius_m": 150,
+    "name": "Design site — south-west Bloemhof",
+    "chosen": "2026-09-30",
+    "source": "team sketch, snapped to street blocks; edge streets included "
+              "out to the facades opposite; crosses no building",
+    "ring_rd": [
+        (93616.8, 433795.9), (93690.6, 433797.7), (93696.1, 433798.0), (93696.1, 433799.3),
+        (93713.8, 433800.0), (93713.7, 433800.5), (93764.6, 433802.1), (93767.9, 433802.3),
+        (93767.8, 433802.8), (93933.6, 433808.0), (93933.5, 433812.1), (93989.9, 433814.1),
+        (93986.5, 433874.6), (94005.1, 433875.5), (94017.9, 433879.4), (94017.8, 433885.5),
+        (94068.9, 433931.5), (94123.9, 433976.9), (94136.6, 433976.9), (94168.8, 433939.6),
+        (94211.3, 433976.9), (94222.4, 433976.9), (94236.6, 433988.9), (94237.5, 433989.1),
+        (94241.0, 433992.0), (94242.1, 433990.7), (94261.1, 434001.4), (94258.9, 434004.0),
+        (94260.0, 434005.0), (94248.4, 434025.5), (94245.3, 434022.8), (94243.6, 434024.7),
+        (94240.1, 434022.7), (94202.3, 434064.9), (94112.4, 434168.2), (94088.1, 434196.6),
+        (94088.5, 434196.9), (94086.3, 434199.5), (94087.4, 434200.4), (94077.8, 434211.5),
+        (93802.4, 433972.2), (93797.1, 433968.2), (93645.8, 433837.0), (93615.4, 433835.9),
+    ],
 }
 
 # ------------------------------------------------------------------ CRS bits
@@ -320,6 +355,56 @@ def export_study_area_geojson() -> pathlib.Path:
     return path
 
 
+def design_site_polygon():
+    """The scenario site as a shapely Polygon in RD New."""
+    from shapely.geometry import Polygon
+    return Polygon(DESIGN_SITE["ring_rd"])
+
+
+def export_design_site_geojson() -> pathlib.Path:
+    """
+    Write the design site to data/processed/ in WGS84 for the Cesium app.
+
+    Vertex by vertex, for the same reason as the buurt boundaries. The building
+    count comes from the 3DBAG points fetched for the morphology indicators, so
+    it is only written when that file exists; the polygon never depends on it.
+    """
+    site = design_site_polygon()
+    ring = [list(to_wgs(x, y)) for x, y in site.exterior.coords]
+    props = {
+        "name": DESIGN_SITE["name"],
+        "chosen": DESIGN_SITE["chosen"],
+        "source": DESIGN_SITE["source"],
+        "area_ha": round(site.area / 10_000, 2),
+        "n_buildings": None,
+    }
+    raw = RAW / "buildings_3dbag.geojson"
+    if raw.exists():
+        from shapely.geometry import shape
+        from shapely.prepared import prep
+        ps = prep(site)
+        feats = json.loads(raw.read_text()).get("features", [])
+        props["n_buildings"] = sum(
+            1 for f in feats if f.get("geometry") and ps.contains(shape(f["geometry"])))
+    c = site.centroid
+    path = PROCESSED / "design_site.geojson"
+    path.write_text(json.dumps({
+        "type": "FeatureCollection",
+        "_source": "analysis/common/project.py (DESIGN_SITE)",
+        "_note": "The small site the design scenarios occupy. Everything is "
+                 "analysed over both buurten; baseline / scenario_a / scenario_b "
+                 "differ only inside this polygon.",
+        "centre_wgs84": [round(v, 7) for v in to_wgs(c.x, c.y)],
+        "features": [{
+            "type": "Feature",
+            "geometry": {"type": "Polygon",
+                         "coordinates": [[[round(a, 7), round(b, 7)] for a, b in ring]]},
+            "properties": props,
+        }],
+    }) + "\n")
+    return path
+
+
 def summary() -> str:
     props = buurt_properties()
     lines = [f"Study area: {STUDY_AREA.name}, {STUDY_AREA.municipality}"]
@@ -343,3 +428,4 @@ def summary() -> str:
 if __name__ == "__main__":
     print(summary())
     print(f"\nwrote {export_study_area_geojson().relative_to(ROOT)}")
+    print(f"wrote {export_design_site_geojson().relative_to(ROOT)}")

@@ -268,7 +268,7 @@ numbers here still match `data/processed/`.
 
 | # | Component | Status | Owner |
 |---|---|---|---|
-| 4.1 | 3D city model + proposed massing | existing buildings ✅ · **massing not started** (site not chosen) | — |
+| 4.1 | 3D city model + proposed massing | existing buildings ✅ · design site chosen ✅ · **massing not started** | — |
 | 4.2 | Geospatial data layers | ✅ done | — |
 | 4.3 | Urban morphological indicators | ✅ done — SVF 0.726, GSI 0.284, FSI 0.960, mix 0.351, both buurten | Atanas |
 | 4.4 | KNMI sensors + AI prediction | ✅ done — live feed, sensors, 5 y history, model comparison | — |

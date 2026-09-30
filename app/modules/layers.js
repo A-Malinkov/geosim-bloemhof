@@ -152,6 +152,33 @@ export async function setup(ctx) {
     console.warn("[layers] AHN WMS unavailable", err);
   }
 
+  /* Plain white ground. The aerial photo carries its own shadows, baked in when
+   * it was flown around midday, and they clash with the live shadows from the
+   * sun slider; on flat white the cast shadows are the only shadows there are.
+   * Added here, after the base imagery and before any analysis overlay (those
+   * are added later, on first toggle), so it covers the photo but never hides
+   * an SVF or land-use overlay drawn on top. A 1 px image stretched over the
+   * globe; the data URL means no request and nothing that can fail to load. */
+  try {
+    const c = document.createElement("canvas");
+    c.width = c.height = 1;
+    const g = c.getContext("2d");
+    g.fillStyle = "#ffffff";
+    g.fillRect(0, 0, 1, 1);
+    const white = viewer.imageryLayers.addImageryProvider(
+      await Cesium.SingleTileImageryProvider.fromUrl(c.toDataURL("image/png"), {
+        rectangle: Cesium.Rectangle.MAX_VALUE,
+      }),
+    );
+    white.show = false;
+    ctx.registerLayer({
+      id: "whiteGround", label: "Plain white ground (for shadows)", group: "Imagery",
+      show: false, target: white,
+    });
+  } catch (err) {
+    console.warn("[layers] white ground layer unavailable", err);
+  }
+
   /* ------------------------------------------------------- existing buildings */
   await addTileset(ctx, {
     key: "bag3d",
@@ -250,6 +277,56 @@ export async function setup(ctx) {
   } catch (err) {
     console.warn("[layers] study-area boundaries failed to load", err);
     ctx.note("Study area boundaries: FAILED", "err");
+  }
+
+  /* ------------------------------------------------------------- design site */
+  /* The small area the scenarios change, as its own toggle so it can be shown
+   * without the buurt outlines or vice versa. Drawn like the study area: a faint
+   * fill plus a ground polyline, because Cesium drops the outline of a
+   * terrain-clamped polygon. Lime rather than cyan so the two never read as one
+   * boundary. */
+  const site = config.designSite;
+  if (site?.boundary) {
+    try {
+      const ds = await Cesium.GeoJsonDataSource.load(site.boundary, {
+        clampToGround: true,
+        fill: Cesium.Color.LIME.withAlpha(0.18),
+      });
+      for (const ent of [...ds.entities.values]) {
+        const hier = ent.polygon?.hierarchy?.getValue?.(Cesium.JulianDate.now());
+        if (!hier?.positions?.length) continue;
+        ent.polygon.outline = false;
+        ds.entities.add({
+          polyline: {
+            positions: [...hier.positions, hier.positions[0]],
+            width: 4,
+            material: Cesium.Color.LIME,
+            clampToGround: true,
+          },
+        });
+        const p = ent.properties;
+        const n = p?.n_buildings?.getValue?.();
+        ent.name = p?.name?.getValue?.() ?? site.name;
+        ent.description =
+          `<table>` +
+          `<tr><td>area</td><td>${p?.area_ha?.getValue?.() ?? "—"} ha</td></tr>` +
+          `<tr><td>buildings (BAG)</td><td>${n == null ? "—" : n.toLocaleString("en-GB")}</td></tr>` +
+          `<tr><td>chosen</td><td>${p?.chosen?.getValue?.() ?? "—"}</td></tr>` +
+          `<tr><td>source</td><td>${p?.source?.getValue?.() ?? "—"}</td></tr>` +
+          `</table>`;
+      }
+      await viewer.dataSources.add(ds);
+      ctx.registerLayer({
+        id: "designSite",
+        label: "Design site (scenario area)",
+        group: "Reference",
+        show: true,
+        target: ds,
+      });
+    } catch (err) {
+      console.warn("[layers] design site failed to load", err);
+      ctx.note("Design site: FAILED", "err");
+    }
   }
 
   /* ---------------------------------------------------------------- credits */

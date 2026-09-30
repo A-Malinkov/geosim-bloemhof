@@ -68,11 +68,16 @@ export const CONFIG = {
    * small part of the study area, so this is a separate, smaller footprint.
    * PLACEHOLDER — set it once the team picks a site. Nothing in the analysis
    * depends on it; only components 4.1 and 4.9 do. */
+  /**
+   * Where the design scenarios go: a wedge in south-west Bloemhof between
+   * Lange Hilleweg and Strevelsweg, chosen 2026-09-30. The polygon itself lives
+   * in DESIGN_SITE in analysis/common/project.py and is exported to the GeoJSON
+   * below by `python analysis/common/project.py` — do not hand-edit coordinates
+   * here. Traced from a freehand sketch, so good to ~5-10 m.
+   */
   designSite: {
-    status: "placeholder — the team has not chosen the site yet",
-    lon: 4.507635,
-    lat: 51.896283,
-    radiusM: 150,
+    name: "Design site — south-west Bloemhof",
+    boundary: "../data/processed/design_site.geojson",
   },
 
   /* ==========================================================================
