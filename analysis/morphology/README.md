@@ -192,9 +192,11 @@ Added by Stefan. Two parts that answer different questions:
   It casts the sun across one clear day (equinox by default, every 30 min) over
   the AHN surface model and counts, per 1 m cell, the hours it is sunlit.
   Reported on open ground only, per buurt and combined, like the SVF.
-- **The "Sun & shadows" card in the app — one instant.** Pick a reference day,
-  drag the time, and the 3DBAG buildings cast live shadows in Cesium. Switch on
-  *Plain white ground* under Imagery to see them without the photo's own shadows.
+- **The "Sun & shadows" card in the app — one instant.** It opens on *Live*:
+  the sun as it stands right now in Rotterdam, clear-sky, for orientation only.
+  Pick a reference day (equinox, summer or winter solstice) or drag the time, and
+  the 3DBAG buildings cast live shadows in Cesium. Switch on *Plain white ground*
+  under Imagery to see them without the photo's own shadows.
 
 Both were checked: the sun position in Cesium, in `shadows.py` and in an
 independent calculation agree to 0.1°, and a synthetic 40 m tower casts its

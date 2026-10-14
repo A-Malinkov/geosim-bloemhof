@@ -509,9 +509,14 @@ export async function setup(ctx) {
    * the 3DBAG buildings cast real shadows as you drag. Given its OWN dashboard
    * card near the top (order 6) rather than buried among the indicators, so it
    * is easy to find. This is the instantaneous companion to the direct-sun map,
-   * which is the whole-day total. */
+   * which is the whole-day total.
+   *
+   * It opens on LIVE: the sun as it stands right now in Rotterdam, clear-sky.
+   * That is for orientation only — the analysis day is the equinox, which is
+   * what shadows.py computes, and the reference days are one click away. */
   {
-    const { Cesium, viewer } = ctx;
+    const { Cesium, viewer, config } = ctx;
+    const { Cartesian3 } = Cesium;
     const scene = viewer.scene;
     scene.shadowMap.enabled = true;
     scene.shadowMap.softShadows = true;
@@ -522,46 +527,99 @@ export async function setup(ctx) {
 
     // Reference days for solar access: the equinox is the neutral average-sun
     // day and the planning standard; the solstices bracket best and worst case.
-    // shadows.py defaults to the equinox, so match it here, and start on the
-    // analysis day if it ran on one of these.
+    // shadows.py defaults to the equinox.
     const DAYS = [
       { label: "Equinox", date: "2026-03-20" },
       { label: "Summer",  date: "2026-06-21" },
       { label: "Winter",  date: "2026-12-21" },
     ];
-    let dateStr = DAYS.find((d) => d.date === shadow?.date)?.date || "2026-03-20";
     const pad = (n) => String(n).padStart(2, "0");
-    // NL is UTC+2 in summer, +1 in winter — from the month, only wrong within
-    // the DST changeover, which none of the reference days fall in.
-    const nlOffset = (d) =>
-      Number(d.slice(5, 7)) >= 4 && Number(d.slice(5, 7)) <= 10 ? "+02:00" : "+01:00";
 
+    // Rotterdam wall-clock parts of an instant, and the UTC offset of a date.
+    // Both go through Europe/Amsterdam, so DST is right on any date. The
+    // offset is taken at 12:00 UTC, after the changeover hour (01:00 UTC), and
+    // the slider starts at 04:00, so the changeover day is right too.
+    const nlFmt = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Europe/Amsterdam", year: "numeric", month: "2-digit",
+      day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+    });
+    const nlParts = (date) => Object.fromEntries(
+      nlFmt.formatToParts(date).map((x) => [x.type, x.value]));
+    const offFmt = new Intl.DateTimeFormat("en-US", {
+      timeZone: "Europe/Amsterdam", timeZoneName: "shortOffset",
+    });
+    const nlOffset = (d) => {
+      const z = offFmt.formatToParts(new Date(`${d}T12:00:00Z`))
+        .find((x) => x.type === "timeZoneName").value;          // "GMT+2"
+      return `+${pad(Number(z.replace("GMT", "")))}:00`;
+    };
+    const today = () => {
+      const p = nlParts(new Date());
+      return `${p.year}-${p.month}-${p.day}`;
+    };
+
+    // Sun altitude over the study area, from the same solar ephemeris and
+    // frame Cesium uses to light the scene, so "the sun is down" agrees with
+    // what is drawn. -0.833° is the conventional sunrise/sunset altitude
+    // (refraction plus the sun's radius), which is what published times use.
+    const site = Cartesian3.fromDegrees(config.studyArea.lon, config.studyArea.lat);
+    const up = Cesium.Ellipsoid.WGS84.geodeticSurfaceNormal(site, new Cartesian3());
+    const SUNRISE_ALT = -0.833;
+    const sunAltDeg = (t) => {
+      const inertial = Cesium.Simon1994PlanetaryPositions
+        .computeSunPositionInEarthInertialFrame(t);
+      const fixed = Cesium.Matrix3.multiplyByVector(
+        Cesium.Transforms.computeTemeToPseudoFixedMatrix(t), inertial, new Cartesian3());
+      const dir = Cartesian3.normalize(
+        Cartesian3.subtract(fixed, site, new Cartesian3()), new Cartesian3());
+      return Cesium.Math.toDegrees(Math.asin(Cartesian3.dot(dir, up)));
+    };
+    // Next sunrise after t, to 5 minutes; null if none within a day.
+    const nextSunrise = (t) => {
+      for (let m = 5; m <= 24 * 60; m += 5) {
+        const s = Cesium.JulianDate.addMinutes(t, m, new Cesium.JulianDate());
+        if (sunAltDeg(s) >= SUNRISE_ALT) return Cesium.JulianDate.toDate(s);
+      }
+      return null;
+    };
+
+    const NOTE_LIVE =
+      `Live: this moment in Rotterdam, clear-sky. The analysis uses the ` +
+      `equinox — the whole-day direct-sun total is under <em>Urban ` +
+      `morphology</em>, the map overlay under <em>Analysis</em>.`;
+    const NOTE_FIXED =
+      `One instant on the chosen day. The whole-day direct-sun total is under ` +
+      `<em>Urban morphology</em>, the map overlay under <em>Analysis</em>.`;
+
+    let dateStr = today();
     const sunBody = ctx.registerPanel({
       id: "sun",
       title: "Sun & shadows",
-      subtitle: "drag to move the sun — buildings cast live shadows",
+      subtitle: "Live for right now in Rotterdam, or drag to move the sun",
       order: 6,
     });
     sunBody.innerHTML =
       `<div class="seg" id="sunDay">` +
-      DAYS.map((d) =>
-        `<button data-date="${d.date}"${d.date === dateStr ? ' class="on"' : ""}>` +
-        `${d.label}</button>`).join("") +
+      DAYS.map((d) => `<button data-date="${d.date}">${d.label}</button>`).join("") +
+      `<button data-live class="on" title="Follow the current time in Rotterdam">Live</button>` +
       `</div>` +
       `<label class="slider">` +
       `<span>local time <output id="sunOut">12:00</output> · ` +
       `<span id="sunDate">${dateStr}</span></span>` +
       `<input type="range" id="sunTime" min="240" max="1320" step="10" value="720">` +
       `</label>` +
+      `<p class="muted" id="sunNight" hidden></p>` +
       `<label class="lrow"><input type="checkbox" id="sunShadows" checked>` +
       `<span>Cast shadows</span></label>` +
-      `<p class="muted">One instant on the chosen reference day. The whole-day ` +
-      `direct-sun total is under <em>Urban morphology</em>, the map overlay ` +
-      `under <em>Analysis</em>.</p>`;
+      `<p class="muted" id="sunNote">${NOTE_LIVE}</p>`;
 
     const slider = sunBody.querySelector("#sunTime");
     const out = sunBody.querySelector("#sunOut");
     const dateEl = sunBody.querySelector("#sunDate");
+    const nightEl = sunBody.querySelector("#sunNight");
+    const noteEl = sunBody.querySelector("#sunNote");
+    const dayBtns = [...sunBody.querySelectorAll("#sunDay button")];
+
     const setTime = (minutes) => {
       const hh = Math.floor(minutes / 60);
       const mm = minutes % 60;
@@ -570,12 +628,66 @@ export async function setup(ctx) {
         `${dateStr}T${pad(hh)}:${pad(mm)}:00${nlOffset(dateStr)}`);
       viewer.scene.requestRender?.();
     };
-    slider.addEventListener("input", (e) => setTime(Number(e.target.value)));
 
-    const dayBtns = [...sunBody.querySelectorAll("#sunDay button")];
+    /* LIVE: the Cesium clock follows the system clock (SYSTEM_CLOCK step), so
+     * the sun and shadows match this moment and keep moving. The slider
+     * covers 04:00–22:00, so at night it sits at an end while the readout
+     * shows the real time and a note says when the sun comes up. */
+    let liveTimer = null;
+    const showLive = () => {
+      const p = nlParts(new Date());
+      out.textContent = `${p.hour}:${p.minute}`;
+      dateEl.textContent = `${p.year}-${p.month}-${p.day} (live)`;
+      slider.value = Number(p.hour) * 60 + Number(p.minute);
+      const now = Cesium.JulianDate.now();
+      const down = sunAltDeg(now) < SUNRISE_ALT;
+      nightEl.hidden = !down;
+      if (down) {
+        const rise = nextSunrise(now);
+        const r = rise && nlParts(rise);
+        nightEl.textContent = r
+          ? `Sun is down — rises at ${r.hour}:${r.minute}.`
+          : "Sun is down.";
+      }
+    };
+    const stopLive = () => {
+      if (!liveTimer) return;
+      clearInterval(liveTimer);
+      liveTimer = null;
+      viewer.clock.clockStep = Cesium.ClockStep.SYSTEM_CLOCK_MULTIPLIER;
+      viewer.clock.shouldAnimate = false;
+      nightEl.hidden = true;
+      noteEl.innerHTML = NOTE_FIXED;
+    };
+    const startLive = () => {
+      viewer.clock.clockStep = Cesium.ClockStep.SYSTEM_CLOCK;
+      viewer.clock.currentTime = Cesium.JulianDate.now();
+      viewer.clock.shouldAnimate = true;
+      noteEl.innerHTML = NOTE_LIVE;
+      showLive();
+      liveTimer = setInterval(showLive, 15000);
+    };
+
+    // Dragging out of Live stays on today rather than jumping to a reference
+    // day: "what about later today?" is the question being asked.
+    slider.addEventListener("input", (e) => {
+      if (liveTimer) {
+        stopLive();
+        dayBtns.forEach((x) => x.classList.remove("on"));
+        dateStr = today();
+        dateEl.textContent = dateStr;
+      }
+      setTime(Number(e.target.value));
+    });
+
     dayBtns.forEach((b) => b.addEventListener("click", () => {
       dayBtns.forEach((x) => x.classList.remove("on"));
       b.classList.add("on");
+      if (b.hasAttribute("data-live")) {
+        if (!liveTimer) startLive();
+        return;
+      }
+      stopLive();
       dateStr = b.dataset.date;
       dateEl.textContent = dateStr;
       setTime(Number(slider.value));
@@ -586,7 +698,7 @@ export async function setup(ctx) {
       viewer.scene.requestRender?.();
     });
 
-    setTime(720);
+    startLive();
   }
 
   /* ---- density and height variation ------------------------------------- */
