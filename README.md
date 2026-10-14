@@ -307,7 +307,7 @@ python analysis/knmi/train_forecast.py           # train + score the models  (~6
 
 python analysis/abm_landuse/fetch_landcover.py   # OSM green/water/roads     (~30 s)
 python analysis/abm_landuse/ca_landuse.py        # cellular automaton        (~5 s)
-python analysis/abm_landuse/rl_landuse.py        # RL agent                  (~40 s)
+python analysis/abm_landuse/rl_landuse.py --episodes 120  # RL agent, design site  (~90 s)
 python analysis/abm_landuse/weight_sensitivity.py # objective-weight sweep    (~2 s)
 ```
 
@@ -344,7 +344,7 @@ Other results:
 | SVF under a tree crown vs 15 m from any tree | **0.46 vs 0.79** — trees remove 42 % of visible sky |
 | Weather forecast (temperature, +6 h) | MAE 1.29 °C, 54 % better than assuming no change |
 | Weather forecast (wind, +6 h) | MAE 1.13 m/s — but it under-predicts strong winds by 0.5 m/s |
-| Land-use model | CA prefers **scenario_b** (mix 0.550); RL agent reaches 0.632 |
+| Land-use model | CA prefers **scenario_b** (mix 0.550); RL agent re-planning the design site reaches mix 0.780, but keeps only 27 of its 155 residential cells |
 
 ### Figures (`docs/`)
 
@@ -359,7 +359,8 @@ Other results:
 | `fig_spacematrix.png` | GSI–FSI scatter with storey and OSR isolines — what kind of density this is |
 | `fig_density_maps.png` | FSI and within-cell height variation across the study area |
 | `fig_landuse_mix.png` | what the floor space is used for, and where the mix is |
-| `fig_landuse_abm.png` | land-use configurations from the CA and the RL agent, plus the learning curve |
+| `fig_landuse_abm.png` | the CA's land-use scenarios over the study area, design site outlined |
+| `fig_landuse_rl_site.png` | the design site today vs the RL agent's plan, what changed, and the learning curve |
 
 Everything else is a wired-up skeleton waiting for its owner.
 

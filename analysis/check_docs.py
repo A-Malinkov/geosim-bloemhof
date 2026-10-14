@@ -132,6 +132,11 @@ def main() -> int:
         checks += [
             ("RL mix headline", r"Land-use model \| CA prefers", f"{rl['score']['landuse_mix']:.3f}", [MAIN]),
             ("RL best objective", r"^Best [\d.]+ against", f"{rl['best_objective']:.3f}", [ABM]),
+            ("RL homes kept", r"Land-use model \| CA prefers", f"only {rl['score']['residential_cells']} of", [MAIN]),
+            ("RL homes today", r"Land-use model \| CA prefers", f"of its {rl['baseline_score']['residential_cells']} residential", [MAIN]),
+            ("RL homes in the ABM README", r"^\*\*It gets there by demolishing",
+             f"{rl['baseline_score']['residential_cells']} residential cells become "
+             f"{rl['score']['residential_cells']}", [ABM]),
         ]
     if ws:
         b = 100 * ws["win_share"]["scenario_b"]
@@ -249,8 +254,10 @@ def main() -> int:
             ("ABM README: 'scenario_b is preferred'", ca["preferred"] == "scenario_b"),
             ("ABM README: 'the RL agent learns'",
              rl["objective_last_decile_mean"] > rl["objective_first_decile_mean"]),
-            ("ABM README: 'retail learns to avoid other retail'",
-             rl["learned_weights"]["retail"]["retail"] < 0),
+            ("ABM README: 'retail avoids retail most of all'",
+             min(rl["learned_weights"]["retail"].items(), key=lambda kv: kv[1])[0] == "retail"),
+            ("ABM README: 'the agent demolishes housing'",
+             rl["score"]["residential_cells"] < rl["baseline_score"]["residential_cells"]),
         ]
     broken = [c for c, ok in claims if not ok]
 

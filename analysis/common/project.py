@@ -78,9 +78,16 @@ STUDY_AREA = StudyArea()
 #:      central green strip (9 m): the strip itself is not in the site;
 #:   4. the south-east corner runs down a party wall between two houses on
 #:      Strevelsweg rather than through a house.
-#: Checked: the outline crosses no building (0 m of 1,728 m inside a footprint).
-#: About 9 % of it lies south of the buurt boundary, because that boundary runs
-#: down the middle of Strevelsweg and the site takes in the whole street.
+#: Extended 2026-10-14 at the team's request (marked-up app screenshot): the
+#: strip of two terraced rows between Strevelsweg and the block of large
+#: buildings and trees, east to the footpath at x 94158 (the gap between both
+#: rows, 94154.0-94161.8), with Strevelsweg out to the facades opposite. That
+#: block itself stays outside; the new north edge runs along the street in front
+#: of it and passes south of a 2.5 m2 bin store. +1.13 ha, +72 buildings.
+#: Checked: the outline crosses no building (0 m of 2,004 m inside a footprint;
+#: closest facade 0.8 m). Part of it lies south of the buurt boundary, because
+#: that boundary runs down the middle of Strevelsweg and the site takes in the
+#: whole street.
 #:
 #: Vertices are RD New (EPSG:28992), counter-clockwise, not closed.
 DESIGN_SITE = {
@@ -89,14 +96,14 @@ DESIGN_SITE = {
     "source": "team sketch, snapped to street blocks; edge streets included "
               "out to the facades opposite; crosses no building",
     #: Ground level inside the site, median of the AHN DTM (0.5 m) over the
-    #: polygon: p05 -1.18, p95 -0.64. This is the default BASE for massing.
+    #: polygon: p05 -1.17, p95 -0.62. This is the default BASE for massing.
     #: It is NOT 0: a building placed at NAP 0 would float about 1 m.
-    "ground_nap_m": -0.95,
+    "ground_nap_m": -0.93,
     "ring_rd": [
         (93616.8, 433795.9), (93690.6, 433797.7), (93696.1, 433798.0), (93696.1, 433799.3),
         (93713.8, 433800.0), (93713.7, 433800.5), (93764.6, 433802.1), (93767.9, 433802.3),
         (93767.8, 433802.8), (93933.6, 433808.0), (93933.5, 433812.1), (93989.9, 433814.1),
-        (93986.5, 433874.6), (94005.1, 433875.5), (94017.9, 433879.4), (94017.8, 433885.5),
+        (94158.0, 433815.5), (94158.0, 433881.0), (94045.0, 433883.0), (94017.8, 433885.5),
         (94068.9, 433931.5), (94123.9, 433976.9), (94136.6, 433976.9), (94168.8, 433939.6),
         (94211.3, 433976.9), (94222.4, 433976.9), (94236.6, 433988.9), (94237.5, 433989.1),
         (94241.0, 433992.0), (94242.1, 433990.7), (94261.1, 434001.4), (94258.9, 434004.0),

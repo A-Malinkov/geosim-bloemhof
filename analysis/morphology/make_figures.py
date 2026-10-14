@@ -547,73 +547,176 @@ def fig_landuse(lu, grid_geo):
 
 
 # ========================================================= 10. land-use ABM
-def fig_abm(ca, rl):
-    """Final configurations from the CA, the RL plan, and the learning curve."""
-    import matplotlib.patches as mpatches
-    from matplotlib.colors import ListedColormap
+LU_LEGEND = ("residential", "retail", "amenity", "green", "industry")
 
+
+def lu_cmap(ca):
+    from matplotlib.colors import ListedColormap
     classes = ca["classes"]
     cols = [tuple(c / 255 for c in ca["colours"][k]) for k in classes]
-    cmap = ListedColormap(cols)
+    return classes, cols, ListedColormap(cols)
+
+
+def outline_site(ax, mask, color=INK, lw=1.2):
+    """Trace the design-site cells, so the outline follows the 25 m grid.
+
+    Padded by one empty cell, so the outline closes where the site runs off
+    the model grid instead of being left open there.
+    """
+    a = np.pad(np.asarray(mask, dtype=float), 1)
+    ny, nx = a.shape
+    xlim, ylim = ax.get_xlim(), ax.get_ylim()
+    ax.contour(np.arange(nx) - 1, np.arange(ny) - 1, a, levels=[0.5],
+               colors=[color], linewidths=lw)
+    ax.set_xlim(xlim); ax.set_ylim(ylim)
+
+
+def fig_abm(ca, rl):
+    """The CA scenarios over the whole study area, design site outlined."""
+    import matplotlib.patches as mpatches
+
+    classes, cols, cmap = lu_cmap(ca)
     names = list(ca["scenarios"].keys())
+    site = rl.get("site_mask") if rl else None
 
-    panels = []
-    for n in names:
+    fig = plt.figure(figsize=(7.4, 3.2))
+    gs = fig.add_gridspec(1, len(names), wspace=0.06, top=0.78, bottom=0.10,
+                          left=0.01, right=0.99)
+    for i, n in enumerate(names):
         sc = ca["scenarios"][n]
-        panels.append((n, np.array(sc["steps"][-1]["grid"], dtype="int16"),
-                       sc["score"]["landuse_mix"]))
-    if rl:
-        panels.append(("RL agent", np.array(rl["best_grid"], dtype="int16"),
-                       rl["score"]["landuse_mix"]))
-
-    ncol = len(panels)
-    fig = plt.figure(figsize=(7.4, 5.0))
-    gs = fig.add_gridspec(2, ncol, height_ratios=[2.5, 1.0], hspace=0.30,
-                          wspace=0.06, top=0.84, bottom=0.10, left=0.07, right=0.99)
-
-    for i, (name, g, mix) in enumerate(panels):
         ax = fig.add_subplot(gs[0, i])
-        ax.imshow(g, cmap=cmap, vmin=0, vmax=len(classes) - 1,
-                  interpolation="nearest")
+        ax.imshow(np.array(sc["steps"][-1]["grid"], dtype="int16"), cmap=cmap,
+                  vmin=0, vmax=len(classes) - 1, interpolation="nearest")
+        if site:
+            outline_site(ax, site)
         ax.set_xticks([]); ax.set_yticks([])
         for sp in ax.spines.values():
             sp.set_visible(False)
-        star = " *" if name == ca.get("preferred") else ""
-        ax.set_title(f"{name}{star}\nmix {mix:.3f}", fontsize=8.5, color=INK, pad=4)
+        star = " *" if n == ca.get("preferred") else ""
+        ax.set_title(f"{n}{star}\nmix {sc['score']['landuse_mix']:.3f} · "
+                     f"objective {sc['objective_best']:.3f}",
+                     fontsize=8.5, color=INK, pad=4)
 
-    ax2 = fig.add_subplot(gs[1, :])
-    tidy(ax2, ygrid=True)
-    if rl and rl.get("learning_curve"):
-        c = np.array(rl["learning_curve"])
-        ax2.plot(c, color=SERIES_1, lw=0.9, alpha=0.45)
-        k = max(1, len(c) // 20)
-        smooth = np.convolve(c, np.ones(k) / k, mode="valid")
-        ax2.plot(np.arange(len(smooth)) + k // 2, smooth, color=SERIES_2, lw=2)
-        base = rl["baseline_objective"]
-        ax2.axhline(base, color=MUTED, lw=1)
-        ax2.text(len(c) * 0.01, base, " current situation", fontsize=7.5,
-                 color=INK_2, va="bottom")
-        lo = min(base, float(c.min())) - 0.03
-        hi = float(c.max()) + 0.06          # headroom so the legend clears the line
-        ax2.set_ylim(lo, hi)
-        ax2.set_xlim(0, len(c) - 1)
-        ax2.set_xlabel("RL training episode")
-        ax2.set_ylabel("objective")
     handles = [mpatches.Patch(color=cols[classes.index(k)], label=k)
-               for k in ("residential", "retail", "amenity", "green", "industry")]
-    ax2.legend(handles=handles, frameon=False, fontsize=7.5, ncol=5,
-               loc="upper center", bbox_to_anchor=(0.5, 1.30), handlelength=1.1)
-    for t in ax2.get_legend().get_texts():
+               for k in LU_LEGEND]
+    if site:
+        handles.append(mpatches.Patch(facecolor="none", edgecolor=INK,
+                                      label="design site"))
+    leg = fig.legend(handles=handles, frameon=False, fontsize=7.5,
+                     ncol=len(handles), loc="lower center",
+                     bbox_to_anchor=(0.5, 0.0), handlelength=1.1)
+    for t in leg.get_texts():
         t.set_color(INK_2)
 
-    fig.suptitle("Land-use configurations from the agent-based models",
-                 x=0.012, y=0.975, ha="left", fontsize=11, fontweight="bold",
+    fig.suptitle("Land-use scenarios from the cellular automaton",
+                 x=0.012, y=1.0, ha="left", fontsize=11, fontweight="bold",
                  color=INK)
     fig.text(0.012, 0.915,
-             "25 m cells · CA rules are assumed, the RL agent learns them · "
-             "* = preferred by the objective",
+             "Bloemhof + Hillesluis, 25 m cells · rules are assumed, "
+             "best of the replicates shown · * = preferred by the objective",
              fontsize=8.5, color=INK_2, ha="left")
     save(fig, "fig_landuse_abm.png")
+
+
+def fig_rl_site(ca, rl):
+    """The design site today against the RL agent's plan, and how it learned."""
+    import matplotlib.patches as mpatches
+
+    classes, cols, cmap = lu_cmap(ca)
+    site = np.array(rl["site_mask"], dtype=bool)
+    today = np.array(rl["today_grid"], dtype="int16")
+    plan = np.array(rl["best_grid"], dtype="int16")
+
+    rows, cols_ = np.where(site)
+    m = 3                                  # cells of context around the site
+    r0, r1 = max(0, rows.min() - m), min(site.shape[0], rows.max() + m + 1)
+    c0, c1 = max(0, cols_.min() - m), min(site.shape[1], cols_.max() + m + 1)
+    crop = (slice(r0, r1), slice(c0, c1))
+
+    fig = plt.figure(figsize=(7.4, 5.6))
+    gs = fig.add_gridspec(2, 2, height_ratios=[1.15, 1.0], hspace=0.38,
+                          wspace=0.28, top=0.83, bottom=0.15, left=0.08,
+                          right=0.98)
+
+    base, best = rl["baseline_score"], rl["score"]
+    for i, (title, g, sc) in enumerate((
+            ("Design site today", today, base),
+            ("RL agent's plan", plan, best))):
+        ax = fig.add_subplot(gs[0, i])
+        ax.imshow(g[crop], cmap=cmap, vmin=0, vmax=len(classes) - 1,
+                  interpolation="nearest")
+        # context outside the site is drawn, but washed out: it is fixed
+        veil = np.where(site[crop], 0.0, 0.6)
+        ax.imshow(np.dstack([np.full(veil.shape, c) for c in
+                             to_rgba(SURFACE)[:3]] + [veil]),
+                  interpolation="nearest")
+        outline_site(ax, site[crop])
+        ax.set_xticks([]); ax.set_yticks([])
+        for sp in ax.spines.values():
+            sp.set_visible(False)
+        d = sc["mean_distance_to_amenity_m"]
+        ax.set_title(f"{title}\nmix {sc['landuse_mix']:.3f} · green "
+                     f"{100 * sc['green_share']:.0f} % · "
+                     f"{'–' if d is None else f'{d:.0f} m'} to amenity",
+                     fontsize=8.5, color=INK, pad=4)
+
+    # what the site is made of, today vs plan
+    ax = fig.add_subplot(gs[1, 0])
+    tidy(ax, xgrid=True)
+    keys = [k for k in LU_LEGEND + ("vacant",)
+            if (today[site] == classes.index(k)).any()
+            or (plan[site] == classes.index(k)).any()]
+    y = np.arange(len(keys))
+    n_today = [int((today[site] == classes.index(k)).sum()) for k in keys]
+    n_plan = [int((plan[site] == classes.index(k)).sum()) for k in keys]
+    h = 0.38
+    ax.barh(y - h / 2, n_today, h, color=MUTED, label="today")
+    ax.barh(y + h / 2, n_plan, h, color=[cols[classes.index(k)] for k in keys],
+            label="RL plan")
+    for yi, a, b in zip(y, n_today, n_plan):
+        ax.text(max(a, b) + 2, yi, f"{a} → {b}", va="center", fontsize=7.5,
+                color=INK_2)
+    ax.set_yticks(y, keys)
+    ax.invert_yaxis()
+    ax.set_xlim(0, max(n_today + n_plan) * 1.35)
+    ax.set_xlabel("cells in the design site")
+    ax.set_title("Grey today, coloured the plan", loc="left", fontsize=8.5,
+                 fontweight="normal", color=INK_2)
+
+    # learning curve — today's objective is far below, so it is stated, not drawn
+    ax2 = fig.add_subplot(gs[1, 1])
+    tidy(ax2, ygrid=True)
+    c = np.array(rl["learning_curve"])
+    ax2.plot(c, color=SERIES_1, lw=0.9, alpha=0.45)
+    k = max(1, len(c) // 20)
+    smooth = np.convolve(c, np.ones(k) / k, mode="valid")
+    ax2.plot(np.arange(len(smooth)) + k // 2, smooth, color=SERIES_2, lw=2)
+    ax2.set_xlim(0, len(c) - 1)
+    ax2.set_xlabel("RL training episode")
+    ax2.set_ylabel("objective over the site")
+    ax2.set_title(f"Best {rl['best_objective']:.3f}; the site today scores "
+                  f"{rl['baseline_objective']:.3f}", loc="left", fontsize=8.5,
+                  fontweight="normal", color=INK_2)
+
+    handles = [mpatches.Patch(color=cols[classes.index(k)], label=k)
+               for k in LU_LEGEND]
+    leg = fig.legend(handles=handles, frameon=False, fontsize=7.5,
+                     ncol=len(handles), loc="lower center",
+                     bbox_to_anchor=(0.5, 0.0), handlelength=1.1)
+    for t in leg.get_texts():
+        t.set_color(INK_2)
+
+    fig.suptitle("The RL agent re-plans the design site",
+                 x=0.012, y=0.995, ha="left", fontsize=11, fontweight="bold",
+                 color=INK)
+    fig.text(0.012, 0.950,
+             f"{rl['parameters']['programme_cells']}"
+             " cells cleared and re-allocated · surroundings fixed and washed out "
+             "· scored over the site only, not comparable with the CA\n"
+             "The model grid ends at the buurt boundary, so the site's strip "
+             "south of Strevelsweg is cut off at the bottom edge",
+             fontsize=8.5, color=INK_2, ha="left", va="top")
+    save(fig, "fig_landuse_rl_site.png")
 
 
 # ==================================================================== main
@@ -676,6 +779,8 @@ def main() -> int:
             rl_path = PROCESSED / "landuse_rl.json"
             rl = json.loads(rl_path.read_text()) if rl_path.exists() else None
             fig_abm(abm, rl)
+            if rl and rl.get("site_mask"):
+                fig_rl_site(abm, rl)
     else:
         print("  (skipping ABM figure — run ca_landuse.py first)")
 

@@ -319,7 +319,12 @@ def main() -> int:
     ap.add_argument("--scenario", default="baseline",
                     choices=["baseline", "scenario_a", "scenario_b"])
     ap.add_argument("--refresh", action="store_true", help="re-fetch OSM and 3DBAG")
+    ap.add_argument("--figure-only", action="store_true",
+                    help="redraw docs/fig_noise_<scenario>.png from the stored JSON "
+                         "(e.g. after the design site changed), without NoiseModelling")
     args = ap.parse_args()
+    if args.figure_only:
+        return redraw_figure(args.scenario)
 
     import geopandas as gpd
     from shapely.geometry import box
@@ -408,6 +413,34 @@ def main() -> int:
     # with 50-85 receivers within 25 m fell in no contour polygon), so the
     # contours are not exported.
     figure(grid, transform, bld, site, fence, args.scenario, summ)
+    return 0
+
+
+def redraw_figure(scenario: str) -> int:
+    """Warp the stored WGS84 grid back to a GRID_M RD grid and redraw the figure."""
+    import json
+    from rasterio.crs import CRS
+    from rasterio.transform import from_bounds, from_origin
+    from rasterio.warp import Resampling, reproject
+
+    d = json.loads((PROCESSED / f"noise_{scenario}.json").read_text())
+    src = np.array([[np.nan if v is None else v for v in row] for row in d["values"]],
+                   dtype="float32")
+    w, s_, e, n = d["bbox_wgs84"]
+    x0, y0, x1, y1 = d["bbox_rd"]
+    dst = np.full((int(round((y1 - y0) / GRID_M)), int(round((x1 - x0) / GRID_M))),
+                  np.nan, dtype="float32")
+    transform = from_origin(x0, y1, GRID_M, GRID_M)
+    reproject(src, dst, src_transform=from_bounds(w, s_, e, n, src.shape[1], src.shape[0]),
+              src_crs=CRS.from_epsg(4326), dst_transform=transform,
+              dst_crs=CRS.from_epsg(28992), resampling=Resampling.nearest,
+              src_nodata=np.nan, dst_nodata=np.nan)
+    import geopandas as gpd
+    site = design_site_polygon()
+    fence = site.buffer(FENCE_BUFFER_M)
+    bld = gpd.read_file(CACHE / "footprints_3dbag.geojson").set_crs(
+        "EPSG:28992", allow_override=True)
+    figure(dst, transform, bld, site, fence, scenario, d["summary"])
     return 0
 
 

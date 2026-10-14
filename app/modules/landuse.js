@@ -244,7 +244,7 @@ export async function setup(ctx) {
       `<p class="muted">Erase a share of developed cells, restore the original ` +
       `demand, and see how much of the real map the CA rebuilds. κ discounts ` +
       `chance agreement.</p>` : "") +
-    (rl ? `<h4>RL agent</h4>` +
+    (rl ? `<h4>RL agent — design site only</h4>` +
       `<table class="kv"><tbody>` +
       `<tr><td>algorithm</td><td>${rl.algorithm}</td></tr>` +
       `<tr><td>episodes</td><td>${rl.parameters.episodes}</td></tr>` +
@@ -256,7 +256,14 @@ export async function setup(ctx) {
       `<span class="muted">vs ${rl.baseline_objective.toFixed(3)} today</span></td></tr>` +
       `<tr><td>its land-use mix</td><td>${rl.score.landuse_mix.toFixed(3)}</td></tr>` +
       `<tr><td>home → amenity</td><td>${rl.score.mean_distance_to_amenity_m} m</td></tr>` +
+      (rl.baseline_score ?
+        `<tr><td>residential cells</td><td>${rl.score.residential_cells} ` +
+        `<span class="muted">vs ${rl.baseline_score.residential_cells} today</span></td></tr>` : "") +
       `</tbody></table>` +
+      (rl.scope === "design_site" ?
+        `<p class="muted">The agent re-plans every cell of the design site and is ` +
+        `scored over the site alone, so its numbers are not comparable with the ` +
+        `CA's above.</p>` : "") +
       `<p class="muted">The RL agent optimises this objective directly, while the ` +
       `CA follows fixed rules and is merely scored on it — so a higher number is ` +
       `expected and is <em>not</em> evidence that RL models cities better.</p>`

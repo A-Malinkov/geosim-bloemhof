@@ -29,7 +29,7 @@ Checked on every cell of the rasters, not taken from file names:
 - **overall** (`CityRisk`) = combined banded at 5.25 / 7.5 / 9.75 (100 % match);
 - **hazard** = water + elevation, banded (100 % match).
 
-Design site, open ground: 72 % in overall classes 3–4 (Bloemhof 46 %,
+Design site, open ground: 66 % in overall classes 3–4 (Bloemhof 46 %,
 Hillesluis 22 %). The water along Lange Hilleweg that drives the site's
 water-proximity score is real: OSM has a 772 m water body there.
 

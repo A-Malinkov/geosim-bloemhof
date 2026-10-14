@@ -11,14 +11,14 @@ Component 4.7 · Owner: **Atanas Malinkov** · study area: Bloemhof + Hillesluis
 |---|---|---|
 | `fetch_landcover.py` | OSM green, water and roads — the surface BAG cannot see | `data/raw/osm_landcover.geojson`, `osm_roads.geojson` |
 | `ca_landuse.py` | constrained cellular automaton, scenarios, validation | `data/processed/landuse_abm.json` + frame PNGs |
-| `rl_landuse.py` | Q-learning agent over the same objective | `data/processed/landuse_rl.json` |
+| `rl_landuse.py` | Q-learning agent that re-plans the design site, scored on the same formula | `data/processed/landuse_rl.json` |
 | `weight_sensitivity.py` | re-scores the stored replicates across the weight simplex | `data/processed/landuse_weight_sensitivity.json` |
 
 ```bash
 python analysis/morphology/fetch_landuse.py      # BAG units — needed first
 python analysis/abm_landuse/fetch_landcover.py   # ~30 s
 python analysis/abm_landuse/ca_landuse.py        # ~10 s
-python analysis/abm_landuse/rl_landuse.py        # ~40 s
+python analysis/abm_landuse/rl_landuse.py --episodes 120   # ~90 s
 python analysis/abm_landuse/weight_sensitivity.py  # ~2 s, no model re-run
 ```
 
@@ -149,22 +149,47 @@ explores the three terms we chose without asking whether they are the right thre
 ## The RL agent
 
 Q-learning, TD(0), **linear** function approximation, ε-greedy, 120 episodes.
-Each episode it places the same programme one cell at a time; reward is the
-change in the objective.
+
+**It works on the design site only**, not the whole study area. Every cell of the
+site that is not road or water (179 of 180) is cleared, and each episode the
+agent re-plans all of them one cell at a time; reward is the change in the
+objective. The rest of Bloemhof and Hillesluis is fixed context: it feeds the
+agent's neighbourhood features, and a shop just outside the site still counts
+for walkability, but the agent cannot change it and is not scored on it.
+
+The objective is the CA's formula, **computed over the site's cells**: mix and
+green share of the site, and the mean distance from homes in the site to the
+nearest shop or amenity anywhere. Because the CA is scored over both buurten,
+**the two models' numbers are not comparable**, and the figures keep them apart
+(`fig_landuse_abm.png` for the CA, `fig_landuse_rl_site.png` for the agent).
 
 Linear rather than deep **on purpose** — the value here is that the weights can
 be read and argued with. A DQN would score similarly and explain nothing. A
 torch DQN is the obvious extension.
 
-Learns: 1.738 over the first 10 % of episodes → 1.811 over the last 10 %.
-Best 1.818 against 1.560 today; its plan reaches mix 0.632 and
-42 m to the nearest amenity.
+Learns: 2.364 over the first 10 % of episodes → 2.473 over the last 10 %.
+Best 2.480 against 0.890 for the site today; its plan reaches mix 0.780,
+48 % green and 26 m to the nearest amenity (today 0.164, 2 % and 94 m).
+
+**It gets there by demolishing housing: 155 residential cells become 27.** Nothing
+in the objective values homes, and both the mix and the green term reward
+replacing them, so this is the objective working as written, not a bug. It is the
+clearest finding of the site run: a "mixed, green, walkable" score alone would
+plan a residential complex with almost no residents. A housing floor (a minimum
+number of residential cells) is the obvious next constraint and is not in yet.
 
 ### The interesting disagreement
 
-The agent learned that **retail should avoid other retail**
-(-0.5) while being drawn to housing (+0.4). Our CA assumes the opposite —
-its matrix gives retail→retail **+0.8**, i.e. shops cluster.
+The agent learned that **retail should avoid other retail**: −18.0, its
+strongest aversion. Our CA assumes the opposite — its matrix gives
+retail→retail **+0.8**, i.e. shops cluster.
+
+Read the weights within a row, not on their own. Every class carries about +45 on
+*vacant* neighbours and a negative weight on everything else, because on a
+cleared site the vacant count mainly tells the agent how early in the episode it
+is. What separates the classes is which neighbour each avoids most, and each
+avoids its own kind: retail→retail −18.0, amenity→amenity −20.1. That is the mix
+term asking for uses to be spread out.
 
 Both are defensible and the disagreement is informative. The objective rewards
 *walkability* — mean distance from homes to the nearest shop — which is minimised
@@ -184,8 +209,12 @@ and only running both models surfaces it.
   shows the winner is weight-dependent: scenario_b takes 71 % of the weight
   space and scenario_a the rest. Only "baseline never wins" holds regardless.
   Whether those three terms are the right three is still untested.
-- The RL agent may only build on currently vacant land, so it cannot propose
-  redevelopment. The CA can convert any non-fixed cell.
+- The RL agent re-plans the design site with **no housing requirement**, and
+  loses 83 % of the site's residential cells doing so (above).
+- The land-use grid ends at the buurt bounding box, which cuts off the site's
+  strip south of Strevelsweg: 11.25 of its 12.38 ha are modelled.
+- The RL run is one seed. The CA's scenarios are spread over replicates; the
+  agent's best plan is not.
 - 25 m cells cannot represent a building. This allocates land use; turning that
   into massing is `analysis/scenarios/`.
 - OSM land cover is not authoritative the way BAG is, though for "is this a

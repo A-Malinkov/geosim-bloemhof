@@ -37,3 +37,6 @@ Thumbs.db
 *~
 *.swp
 .idea/
+
+# Word export of the massing brief, shared directly, not versioned
+docs/Bloemhof_Massing_Brief.docx

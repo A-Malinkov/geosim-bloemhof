@@ -12,9 +12,9 @@ The app treats a stub as "no data" and shows a placeholder until you overwrite i
 ## Notes
 
 - Minimum: **two design scenarios plus the current situation.**
-- **The massing goes inside the design site**: `DESIGN_SITE` in `analysis/common/project.py` (`design_site_polygon()` gives a shapely polygon in RD New), exported to `data/processed/design_site.geojson` and shown as the "Design site" layer. 11.25 ha between Lange Hilleweg, Sandelingstraat, Dortsmondstraat/Dubbelstraat and Strevelsweg.
+- **The massing goes inside the design site**: `DESIGN_SITE` in `analysis/common/project.py` (`design_site_polygon()` gives a shapely polygon in RD New), exported to `data/processed/design_site.geojson` and shown as the "Design site" layer. 12.38 ha between Lange Hilleweg, Sandelingstraat, Dortsmondstraat/Dubbelstraat and Strevelsweg.
 - Simplest route: a GeoJSON of footprints in EPSG:4326, each with `scenario`, `height_m` and `use`, optionally `base_height_m`. `scenarios.js` extrudes them and applies the +43.62 m datum shift.
-- **Both heights are metres above NAP, not above the ground.** `height_m` is the roof. Ground on the site is **−0.95 m NAP**, so a 21 m tall block has `height_m: 20.05`. Leave `base_height_m` out and it defaults to that ground level; do **not** set it to 0, or the building floats about 1 m above the street.
+- **Both heights are metres above NAP, not above the ground.** `height_m` is the roof. Ground on the site is **−0.93 m NAP**, so a 21 m tall block has `height_m: 20.07`. Leave `base_height_m` out and it defaults to that ground level; do **not** set it to 0, or the building floats about 1 m above the street.
 - Richer route: model in Blender/Rhino, export glTF, upload to Cesium ion as 3D Tiles, put the asset id in `config.js`.
 - To make the other components respond to your scenarios, write per-scenario outputs with matching keys (`baseline`, `scenario_a`, `scenario_b`). Every module already listens for the switch.
 - For SVF and wind per scenario, burn the massing into a copy of the AHN DSM and re-run the morphology and wind scripts.

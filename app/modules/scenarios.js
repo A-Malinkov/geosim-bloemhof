@@ -19,7 +19,7 @@
  *                            "use": "residential" }
  *    and may carry `base_height_m`. Both are metres ABOVE NAP, not above the
  *    ground: height_m is the roof, base_height_m the underside. Leave the base
- *    out and it defaults to the site's ground level (-0.95 m NAP, measured from
+ *    out and it defaults to the site's ground level (-0.93 m NAP, measured from
  *    AHN and stored with the site). Ground here is below NAP 0, so a base of 0
  *    would leave every building floating about 1 m above the street.
  *

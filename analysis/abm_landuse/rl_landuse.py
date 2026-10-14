@@ -20,19 +20,23 @@ They answer different questions, and running both is the point.
 
 THE FORMULATION
 ---------------
-Episodic MDP. Each episode the agent places a fixed development programme, one
-cell at a time:
+Episodic MDP over the DESIGN SITE only (DESIGN_SITE in common/project.py).
+Every non-fixed cell inside the site is cleared, and each episode the agent
+re-plans the whole site, one cell at a time. The rest of the study area stays
+as it is: it is context, not something the agent may change or is scored on.
 
     state   the grid so far
     action  (cell, class) — develop this cell as that use
     reward  the change in the planning objective caused by that placement,
             plus a terminal bonus for the final objective
 
-    objective = 1.6 * land-use mix (Shannon)
-              + 1.0 * green share
+    objective = 1.6 * land-use mix (Shannon)        over the site's cells
+              + 1.0 * green share                  over the site's cells
               + 0.8 * walkability (1 - mean home-to-amenity distance / 400 m)
+                      for homes inside the site; amenities outside count too
 
-    the same objective the CA is scored on, so the two are comparable.
+    the same formula the CA is scored on, but over the site, not both buurten,
+    so the two values are NOT directly comparable.
 
 Q(s, a) is linear in features of the candidate cell: how many neighbours of each
 class it has, how reachable it is, whether it is currently vacant, and how close
@@ -64,11 +68,11 @@ import sys
 import numpy as np
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
-from common.project import PROCESSED, STUDY_AREA  # noqa: E402
+from common.project import PROCESSED, STUDY_AREA, design_site_polygon  # noqa: E402
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from ca_landuse import (  # noqa: E402
-    AMENITY, CLASSES, COLOURS, GREEN, RESID, RETAIL, VACANT, WATER,
-    accessibility, amenity_access, export_grid_png, rasterise, shannon_mix,
+    AMENITY, CLASSES, COLOURS, FIXED, GREEN, RESID, RETAIL, VACANT, WATER,
+    accessibility, export_grid_png, rasterise, shannon_mix,
 )
 
 PLACEABLE = [RESID, RETAIL, AMENITY, GREEN]     # what the agent may build
@@ -76,12 +80,34 @@ FEATURES = ([f"nb_{c}" for c in CLASSES] +
             ["access", "is_vacant", "is_green", "dist_water", "bias"])
 
 
-def objective(grid, cell_m):
-    mix = shannon_mix(grid)
-    green = float((grid == GREEN).sum()) / grid.size
-    d = amenity_access(grid, cell_m)
+def site_terms(grid, cell_m, site):
+    """Mix, green share and mean home-to-amenity distance over the `site` cells.
+
+    Distances are measured over the whole grid, so a shop across the site edge
+    still serves a home inside it. Distance is None when the site has no homes.
+    """
+    from scipy.ndimage import distance_transform_edt
+    cells = grid[site]
+    target = np.isin(grid, [AMENITY, RETAIL])
+    homes = site & (grid == RESID)
+    d = None
+    if target.any() and homes.any():
+        d = float((distance_transform_edt(~target) * cell_m)[homes].mean())
+    return shannon_mix(cells), float((cells == GREEN).sum()) / cells.size, d
+
+
+def objective(grid, cell_m, site):
+    mix, green, d = site_terms(grid, cell_m, site)
     walk = max(0.0, 1 - (d if d is not None else 400.0) / 400.0)
     return 1.6 * mix + 1.0 * green + 0.8 * walk
+
+
+def site_score(grid, cell_m, site):
+    mix, green, d = site_terms(grid, cell_m, site)
+    return {"landuse_mix": round(mix, 4),
+            "green_share": round(green, 4),
+            "residential_cells": int((grid[site] == RESID).sum()),
+            "mean_distance_to_amenity_m": None if d is None else round(d, 1)}
 
 
 def neighbour_counts(grid, radius=4, decay=2.0):
@@ -125,17 +151,26 @@ def main() -> int:
     from scipy.ndimage import distance_transform_edt
 
     print(f"RL land-use allocation — {STUDY_AREA.name}")
-    grid0, transform, (nx, ny), road_frac = rasterise(args.cell)
-    n_new = int(0.06 * grid0.size)
-    print(f"  grid {nx} x {ny}, programme {n_new} cells "
-          f"({n_new * args.cell**2 / 10_000:.1f} ha)")
+    from rasterio.features import rasterize as burn
+    grid_now, transform, (nx, ny), road_frac = rasterise(args.cell)
+    site = burn([(design_site_polygon(), 1)], out_shape=grid_now.shape,
+                transform=transform).astype(bool)
+    # the whole site is redeveloped: every cell that is not road or water is
+    # cleared, and the agent decides what each one becomes
+    grid0 = grid_now.copy()
+    grid0[site & ~np.isin(grid_now, list(FIXED))] = VACANT
+    n_new = int((site & (grid0 == VACANT)).sum())
+    print(f"  grid {nx} x {ny}; design site {int(site.sum())} cells, "
+          f"{n_new} to re-plan ({n_new * args.cell**2 / 10_000:.1f} ha)")
     print(f"  {args.episodes} episodes, {len(PLACEABLE)} placeable classes, "
           f"{args.candidates} candidates per decision")
 
     dw = distance_transform_edt(grid0 != WATER).astype("float32")
     dist_water = np.clip(dw / 20.0, 0, 1)
-    base_obj = objective(grid0, args.cell)
-    print(f"  objective of the current situation: {base_obj:.4f}")
+    base_obj = objective(grid_now, args.cell, site)
+    base_score = site_score(grid_now, args.cell, site)
+    cleared_obj = objective(grid0, args.cell, site)
+    print(f"  objective of the site today: {base_obj:.4f}")
 
     rng = np.random.default_rng(args.seed)
     W = np.zeros((len(PLACEABLE), len(FEATURES)), dtype="float64")
@@ -146,9 +181,9 @@ def main() -> int:
             math.exp(-3.0 * ep / max(1, args.episodes))
         g = grid0.copy()
         acc = accessibility(g, road_frac)
-        prev_obj = base_obj
-        # only undeveloped, non-fixed land may be built on
-        free = (g == VACANT)
+        prev_obj = cleared_obj
+        # only the cleared cells inside the design site may be built on
+        free = site & (g == VACANT)
 
         for _ in range(n_new):
             idx = np.flatnonzero(free.ravel())
@@ -172,7 +207,7 @@ def main() -> int:
             g[r_, c_] = klass
             free[r_, c_] = False
 
-            new_obj = objective(g, args.cell)
+            new_obj = objective(g, args.cell, site)
             reward = (new_obj - prev_obj) * 100.0     # scale: deltas are tiny
             prev_obj = new_obj
 
@@ -189,7 +224,7 @@ def main() -> int:
             W[ai] += args.alpha * (target - float(W[ai] @ phi)) * phi
             np.clip(W, -50, 50, out=W)
 
-        final = objective(g, args.cell)
+        final = objective(g, args.cell, site)
         curve.append(round(final, 4))
         if final > best_obj:
             best_obj, best_grid = final, g.copy()
@@ -198,11 +233,8 @@ def main() -> int:
                   f"objective {final:.4f}  best {best_obj:.4f}")
 
     g = best_grid
-    d = amenity_access(g, args.cell)
-    score = {"landuse_mix": round(shannon_mix(g), 4),
-             "green_share": round(float((g == GREEN).sum()) / g.size, 4),
-             "residential_cells": int((g == RESID).sum()),
-             "mean_distance_to_amenity_m": d}
+    score = site_score(g, args.cell, site)
+    d = score["mean_distance_to_amenity_m"]
 
     # what did it learn? average weight per neighbour class, per placeable class
     learned = {}
@@ -226,9 +258,16 @@ def main() -> int:
                        "eps_end": args.eps_end,
                        "candidates_per_decision": args.candidates,
                        "programme_cells": n_new},
-        "objective": "1.6*landuse_mix + 1.0*green_share + "
+        "scope": "design_site",
+        "scope_note": "The agent re-plans every non-road, non-water cell of "
+                      "the design site; the rest of the study area is fixed "
+                      "context. All scores are over the site's cells only, so "
+                      "they are not comparable with the CA's study-area scores.",
+        "site_cells": int(site.sum()),
+        "objective": "over the design site: 1.6*landuse_mix + 1.0*green_share + "
                      "0.8*max(0, 1 - mean_home_to_amenity_m/400)",
         "baseline_objective": round(base_obj, 4),
+        "baseline_score": base_score,
         "learning_curve": curve,
         "objective_first_decile_mean": round(first, 4),
         "objective_last_decile_mean": round(last, 4),
@@ -245,14 +284,18 @@ def main() -> int:
         "bbox_wgs84": export_grid_png(g, transform, "EPSG:28992",
                                       PROCESSED / "landuse_rl_best.png"),
         "best_grid": g.tolist(),
+        "today_grid": grid_now.tolist(),
+        "site_mask": site.astype(int).tolist(),
     }
     (PROCESSED / "landuse_rl.json").write_text(json.dumps(out) + "\n")
 
     print(f"\n  learning: {first:.4f} (first 10% of episodes) -> "
           f"{last:.4f} (last 10%)   {'LEARNED' if last > first else 'NO IMPROVEMENT'}")
-    print(f"  best objective {best_obj:.4f} vs {base_obj:.4f} for the current situation")
+    print(f"  best objective {best_obj:.4f} vs {base_obj:.4f} for the site today")
     print(f"  best plan -> mix {score['landuse_mix']:.3f}, "
-          f"green {100*score['green_share']:.1f}%, amenity {d} m")
+          f"green {100*score['green_share']:.1f}%, amenity {d} m, "
+          f"{score['residential_cells']} residential cells "
+          f"(today {base_score['residential_cells']})")
     print("\n  what the agent learned (weight on each neighbour class):")
     for k, w in learned.items():
         top = sorted(((v, m) for m, v in w.items()), reverse=True)[:3]

@@ -210,8 +210,8 @@ not overwrite it:
 
 | Day | Daylight | Bloemhof | Hillesluis | Design site (median, share < 2 h) |
 |---|---|---|---|---|
-| 21 Dec | 7.5 h | 0.65 h | 1.90 h | 0.0 h, 86 % |
-| 20 Mar | 12.0 h | 4.44 h | 5.81 h | 4.5 h, 17 % |
+| 21 Dec | 7.5 h | 0.65 h | 1.90 h | 0.0 h, 87 % |
+| 20 Mar | 12.0 h | 4.44 h | 5.81 h | 4.5 h, 20 % |
 | 21 Jun | 16.5 h | 8.35 h | 9.84 h | 9.0 h, 1 % |
 
 Buurt columns are means. Bloemhof is shadier than Hillesluis, consistent with its
@@ -244,12 +244,12 @@ Baseline (from `canyon_hw_baseline.json`):
 | Bloemhof | 0.42 | 8.0 m | 19.9 m | 67 % |
 | Hillesluis | 0.45 | 12.1 m | 29.1 m | 56 % |
 | both | 0.43 | 9.8 m | 22.4 m | 61 % |
-| design site | 0.40 | 7.1 m | 20.6 m | 75 % |
+| design site | 0.41 | 7.3 m | 22.9 m | 76 % |
 
 The two buurten land on almost the same H/W by opposite routes: Bloemhof has
 low walls on narrow streets, Hillesluis taller walls on wider ones. On the
 design site the interior side streets are mostly ≈ 11 m wide with 6–8 m walls
-(H/W 0.4–0.6, length-weighted median 0.54), while Lange Hilleweg along its
+(H/W 0.4–0.6, length-weighted median 0.51), while Lange Hilleweg along its
 north-west edge is a 56 m avenue with ~8 m walls, H/W 0.14.
 
 **One filter had to change.** Street walls exclude sheds (< 15 m² or < 3 m).
