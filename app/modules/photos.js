@@ -230,6 +230,61 @@ function fmtDate(iso) {
     : d.toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" });
 }
 
+/* PNG/HEIC EXIF and HEIC decoding need libraries the browser lacks. They are
+ * imported lazily (only when such a file is added) so JPEG upload and normal
+ * startup stay dependency-free and offline-capable. */
+const EXIFR_URL = "https://esm.sh/exifr@7.1.3";
+const HEIC2ANY_URL = "https://esm.sh/heic2any@0.0.4";
+let _exifr, _heic2any;
+const loadExifr = () => (_exifr ||= import(EXIFR_URL).then((m) => m.default || m));
+const loadHeic2any = () =>
+  (_heic2any ||= import(HEIC2ANY_URL).then((m) => m.default || m));
+
+function fileKind(file) {
+  const t = (file.type || "").toLowerCase();
+  const n = (file.name || "").toLowerCase();
+  if (t === "image/jpeg" || /\.jpe?g$/.test(n)) return "jpeg";
+  if (t === "image/png" || /\.png$/.test(n)) return "png";
+  if (t === "image/heic" || t === "image/heif" || /\.hei[cf]$/.test(n))
+    return "heic";
+  return "other";
+}
+
+// EXIF via exifr — used for PNG/HEIC and as a fallback for JPEG.
+async function exifrGps(file) {
+  let d;
+  try {
+    const exifr = await loadExifr();
+    d = await exifr.parse(file);
+  } catch {
+    return null;
+  }
+  if (!d || typeof d.latitude !== "number" || typeof d.longitude !== "number")
+    return null;
+  let taken = null;
+  const dt = d.DateTimeOriginal || d.CreateDate;
+  if (dt instanceof Date && !isNaN(dt)) {
+    const p = (n) => String(n).padStart(2, "0");
+    taken =
+      `${dt.getFullYear()}-${p(dt.getMonth() + 1)}-${p(dt.getDate())}T` +
+      `${p(dt.getHours())}:${p(dt.getMinutes())}:${p(dt.getSeconds())}`;
+  }
+  return {
+    lat: d.latitude,
+    lon: d.longitude,
+    alt: typeof d.GPSAltitude === "number" ? d.GPSAltitude : null,
+    taken,
+  };
+}
+
+// The browser cannot display HEIC, so convert it to a JPEG we can show and save.
+async function convertHeic(file) {
+  const heic2any = await loadHeic2any();
+  let out = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.9 });
+  if (Array.isArray(out)) out = out[0];
+  return { blob: out, name: sanitizeName(file.name).replace(/\.hei[cf]$/i, "") + ".jpg" };
+}
+
 const THUMB_PX = 128;
 const TRANSPARENT_PX =
   "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
@@ -437,13 +492,13 @@ export async function setup(ctx) {
   body.innerHTML =
     `<div class="seg"><button id="ph-add">Add photos…</button>` +
     `<button id="ph-retry" hidden>Save</button></div>` +
-    `<input id="ph-input" type="file" accept="image/jpeg,image/jpg" multiple hidden />` +
+    `<input id="ph-input" type="file" accept="image/jpeg,image/png,image/heic,image/heif,.jpg,.jpeg,.png,.heic,.heif" multiple hidden />` +
     `<p id="ph-stat" class="muted" style="margin:0 0 8px">No photos yet.</p>` +
     `<div id="ph-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px"></div>` +
     (canWrite
       ? `<p class="muted" style="margin-top:9px;font-size:11px">Added photos are cached ` +
         `in the app until you click <b>Save</b>, which writes them into the media folder ` +
-        `<code>app/assets/photos/</code> you pick once, then commit. Geotagged JPEGs only.</p>` +
+        `<code>app/assets/photos/</code> you pick once, then commit. Geotagged JPEG, PNG or HEIC.</p>` +
         `<button id="ph-folder" style="background:none;border:none;color:var(--accent);` +
         `cursor:pointer;font:inherit;font-size:11px;padding:0;text-decoration:underline">` +
         `change save folder</button>`
@@ -652,12 +707,35 @@ export async function setup(ctx) {
   async function ingestFiles(fileList) {
     const fresh = [];
     let noGps = 0;
+    let skipped = 0;
+    const total = fileList.length;
+    let idx = 0;
     for (const file of fileList) {
+      idx++;
+      const kind = fileKind(file);
+      if (kind === "other") {
+        skipped++;
+        continue;
+      }
+      const tag = total > 1 ? ` (${idx}/${total})` : "";
+      statEl.textContent =
+        (kind === "heic" ? `Converting ${file.name}…` : `Reading ${file.name}…`) + tag;
       let gps = null;
+      let displayBlob = file;
+      let outName = sanitizeName(file.name);
       try {
-        gps = readExifGps(await readFileBuffer(file));
-      } catch {
-        gps = null;
+        if (kind === "jpeg") {
+          gps = readExifGps(await readFileBuffer(file)) || (await exifrGps(file));
+        } else if (kind === "png") {
+          gps = await exifrGps(file);
+        } else if (kind === "heic") {
+          const conv = await convertHeic(file); // to a displayable/savable JPEG
+          displayBlob = conv.blob;
+          outName = conv.name;
+          gps = await exifrGps(file); // GPS read from the original HEIC
+        }
+      } catch (err) {
+        console.warn("[photos] could not read", file.name, err);
       }
       if (!gps) {
         noGps++;
@@ -665,15 +743,15 @@ export async function setup(ctx) {
       }
 
       const r = {
-        file: sanitizeName(file.name),
+        file: outName,
         lat: gps.lat,
         lon: gps.lon,
         alt: gps.alt,
         taken: gps.taken,
         caption: file.name.replace(/\.[^.]+$/, ""),
-        imgUrl: URL.createObjectURL(file),
+        imgUrl: URL.createObjectURL(displayBlob),
         saved: false,
-        blob: file,
+        blob: displayBlob,
       };
       addEntity(r);
       records.push(r);
@@ -686,6 +764,11 @@ export async function setup(ctx) {
       viewer.flyTo(ds).catch(() => {});
     }
     if (noGps) ctx.note(`Photos: ${noGps} had no GPS tag — skipped`, "warn");
+    if (skipped)
+      ctx.note(
+        `Photos: ${skipped} unsupported file${skipped === 1 ? "" : "s"} — skipped`,
+        "warn",
+      );
     return fresh;
   }
 
@@ -697,7 +780,13 @@ export async function setup(ctx) {
 
     // Upload only caches the photo in the app; the Save button writes it to the
     // media folder. Nothing touches disk here.
-    const fresh = await ingestFiles(files);
+    addBtn.disabled = true;
+    let fresh;
+    try {
+      fresh = await ingestFiles(files);
+    } finally {
+      addBtn.disabled = false;
+    }
     if (fresh.length) {
       ctx.note(
         canWrite

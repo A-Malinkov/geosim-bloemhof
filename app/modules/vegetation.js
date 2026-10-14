@@ -161,19 +161,49 @@ export async function setup(ctx) {
       : "") +
     `<p class="muted">Crown area is an upper bound: overlapping crowns count twice.</p>`;
 
-  /* ---- click a tree to inspect it --------------------------------------- */
-  const handler = new ctx.Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+  /* ---- click anything to show what is selected -------------------------- */
+  // A single floater, top-centre so it clears the bottom-left status chips.
+  const selChip = document.createElement("div");
+  selChip.hidden = true;
+  selChip.style.cssText =
+    "position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:12;" +
+    "max-width:60%;padding:4px 10px;border-radius:12px;font-size:11px;" +
+    "background:#1b2129ee;border:1px solid #2c3541;color:#e7ecf2;" +
+    "backdrop-filter:blur(8px);pointer-events:none;white-space:nowrap;" +
+    "overflow:hidden;text-overflow:ellipsis";
+  viewer.container.appendChild(selChip);
+
+  const C = ctx.Cesium;
+  function describe(picked) {
+    if (!picked) return null;
+    const id = picked.id;
+    if (id && (id.kind === "tree" || id.kind === "tree-trunk"))
+      return (
+        `${id.species_nl || id.species} · ${id.height_class || id.height_m + " m"}` +
+        `${id.street ? " · " + id.street : ""}`
+      );
+    if (id && id.__photo) return id.__photo.caption || "Photo";
+    if (id && id.name) return id.name; // named entities (design site, buurten, …)
+    if (C.Cesium3DTileFeature && picked instanceof C.Cesium3DTileFeature) {
+      for (const key of ["name", "identificatie", "gml_id", "fid"]) {
+        const ids = picked.getPropertyIds ? picked.getPropertyIds() : [];
+        if (ids.includes(key)) return `Building ${picked.getProperty(key)}`;
+      }
+      return "Building";
+    }
+    return null;
+  }
+
+  const handler = new C.ScreenSpaceEventHandler(viewer.scene.canvas);
   handler.setInputAction((click) => {
-    const picked = viewer.scene.pick(click.position);
-    const id = picked?.id;
-    if (!id || (id.kind !== "tree" && id.kind !== "tree-trunk")) return;
-    console.log("[vegetation] tree:", id);
-    ctx.note(
-      `${id.species_nl || id.species} · ${id.height_class || id.height_m + " m"}` +
-      `${id.street ? " · " + id.street : ""}`,
-      "info",
-    );
-  }, ctx.Cesium.ScreenSpaceEventType.LEFT_CLICK);
+    const label = describe(viewer.scene.pick(click.position));
+    if (!label) {
+      selChip.hidden = true;
+      return;
+    }
+    selChip.textContent = `Selected: ${label}`;
+    selChip.hidden = false;
+  }, C.ScreenSpaceEventType.LEFT_CLICK);
 
   ctx.note(`Vegetation: ${geo.features.length} trees`, "ok");
 
