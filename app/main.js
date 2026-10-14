@@ -27,30 +27,32 @@ async function mergeLocalConfig() {
   }
 }
 
-import { setup as setupLayers }     from "./modules/layers.js";
+import { setup as setupLayers } from "./modules/layers.js";
 import { setup as setupVegetation } from "./modules/vegetation.js";
 import { setup as setupIndicators } from "./modules/indicators.js";
-import { setup as setupKnmi }       from "./modules/knmi.js";
-import { setup as setupCbs }        from "./modules/cbs.js";
-import { setup as setupWindNoise }  from "./modules/wind_noise.js";
-import { setup as setupLanduse }    from "./modules/landuse.js";
-import { setup as setupRoads }      from "./modules/roads.js";
-import { setup as setupScenarios }  from "./modules/scenarios.js";
+import { setup as setupKnmi } from "./modules/knmi.js";
+import { setup as setupCbs } from "./modules/cbs.js";
+import { setup as setupWindNoise } from "./modules/wind_noise.js";
+import { setup as setupLanduse } from "./modules/landuse.js";
+import { setup as setupRoads } from "./modules/roads.js";
+import { setup as setupScenarios } from "./modules/scenarios.js";
+import { setup as setupPhotos } from "./modules/photos.js";
 
 /* Load order only affects panel order when two panels share the same `order`. */
 const MODULES = [
-  ["layers",     setupLayers],
+  ["layers", setupLayers],
   ["vegetation", setupVegetation],
-  ["scenarios",  setupScenarios],
+  ["scenarios", setupScenarios],
   ["indicators", setupIndicators],
-  ["knmi",       setupKnmi],
-  ["cbs",        setupCbs],
+  ["knmi", setupKnmi],
+  ["cbs", setupCbs],
   ["wind_noise", setupWindNoise],
-  ["landuse",    setupLanduse],
-  ["roads",      setupRoads],
+  ["landuse", setupLanduse],
+  ["roads", setupRoads],
+  ["photos", setupPhotos],
 ];
 
-const boot   = document.getElementById("boot");
+const boot = document.getElementById("boot");
 const statusEl = document.getElementById("status");
 
 function fatal(msg, err) {
@@ -65,14 +67,19 @@ const notes = [];
 function note(text, kind = "info") {
   notes.push({ text, kind });
   statusEl.innerHTML = notes
-    .map((n) => `<span class="status__item status__item--${n.kind}">${n.text}</span>`)
+    .map(
+      (n) =>
+        `<span class="status__item status__item--${n.kind}">${n.text}</span>`,
+    )
     .join("");
 }
 
 /* ========================================================================== */
 async function boot_() {
   if (!window.Cesium) {
-    return fatal("CesiumJS did not load from the CDN. Check your internet connection.");
+    return fatal(
+      "CesiumJS did not load from the CDN. Check your internet connection.",
+    );
   }
 
   /* ---- ion token -------------------------------------------------------- */
@@ -84,8 +91,8 @@ async function boot_() {
     note("No ion token — see app/config.local.example.js", "warn");
     console.warn(
       "[config] No Cesium ion token. Copy app/config.local.example.js to " +
-      "app/config.local.js and paste your token from https://ion.cesium.com/tokens. " +
-      "Everything except Cesium World Terrain works without it.",
+        "app/config.local.js and paste your token from https://ion.cesium.com/tokens. " +
+        "Everything except Cesium World Terrain works without it.",
     );
   }
 
@@ -140,10 +147,13 @@ async function boot_() {
      * offset needed to put the study area in the middle of the frame. An earlier
      * fixed fraction of the bbox height framed the river instead. */
     const backM = sa.camera.heightM / Math.tan(Math.abs(pitch));
-    const backDeg = backM / 110540;            // metres -> degrees of latitude
+    const backDeg = backM / 110540; // metres -> degrees of latitude
     viewer.camera.setView({
       destination: Cesium.Cartesian3.fromDegrees(
-        (w + e) / 2, midLat - backDeg, sa.camera.heightM),
+        (w + e) / 2,
+        midLat - backDeg,
+        sa.camera.heightM,
+      ),
       orientation: {
         heading: Cesium.Math.toRadians(sa.camera.headingDeg),
         pitch,
@@ -156,10 +166,10 @@ async function boot_() {
    * ctx — the only API modules should rely on.
    * ==================================================================== */
   const layerPanelBody = document.getElementById("layerPanelBody");
-  const dashboardBody  = document.getElementById("dashboardBody");
+  const dashboardBody = document.getElementById("dashboardBody");
   const scenarioSelect = document.getElementById("scenarioSelect");
-  const scenarioHooks  = [];
-  let   currentScenario = CONFIG.scenarios[0].id;
+  const scenarioHooks = [];
+  let currentScenario = CONFIG.scenarios[0].id;
 
   layerPanelBody.innerHTML = "";
 
@@ -184,7 +194,14 @@ async function boot_() {
     /* Add a checkbox to the left-hand layer panel.
      * Pass EITHER `target` (anything with a .show property: an ImageryLayer,
      * a Cesium3DTileset, a DataSource, an Entity) OR an `onToggle(visible)`. */
-    registerLayer({ id, label, group = "Other", show = true, target = null, onToggle = null }) {
+    registerLayer({
+      id,
+      label,
+      group = "Other",
+      show = true,
+      target = null,
+      onToggle = null,
+    }) {
       const row = document.createElement("label");
       row.className = "lrow";
       row.innerHTML =
@@ -197,13 +214,21 @@ async function boot_() {
         if (onToggle) onToggle(visible);
       };
       apply(show);
-      row.querySelector("input").addEventListener("change", (e) => apply(e.target.checked));
+      row
+        .querySelector("input")
+        .addEventListener("change", (e) => apply(e.target.checked));
       return { setVisible: apply };
     },
 
     /* Add a panel to the right-hand dashboard. Returns the empty <div> body,
      * which is yours to fill however you like. */
-    registerPanel({ id, title, order = 100, collapsed = false, subtitle = "" }) {
+    registerPanel({
+      id,
+      title,
+      order = 100,
+      collapsed = false,
+      subtitle = "",
+    }) {
       const card = document.createElement("section");
       card.className = "card";
       card.dataset.order = String(order);
@@ -216,7 +241,7 @@ async function boot_() {
         `<div class="card__body" id="panel-${id}"${collapsed ? " hidden" : ""}></div>`;
 
       const body = card.querySelector(".card__body");
-      const btn  = card.querySelector(".card__toggle");
+      const btn = card.querySelector(".card__toggle");
       btn.addEventListener("click", () => {
         body.hidden = !body.hidden;
         btn.textContent = body.hidden ? "+" : "–";
@@ -247,7 +272,8 @@ async function boot_() {
         if (json && json._status === "not_computed_yet") return null;
         return json;
       } catch (err) {
-        if (!quiet) console.warn(`[data] not available yet: ${path} (${err.message})`);
+        if (!quiet)
+          console.warn(`[data] not available yet: ${path} (${err.message})`);
         return null;
       }
     },
@@ -257,8 +283,12 @@ async function boot_() {
       bodyEl.innerHTML =
         `<div class="ph">` +
         `<p class="ph__what">${what}</p>` +
-        (produces ? `<p class="ph__file">expects <code>${produces}</code></p>` : "") +
-        (owner ? `<p class="ph__owner">module: <code>${owner}</code></p>` : "") +
+        (produces
+          ? `<p class="ph__file">expects <code>${produces}</code></p>`
+          : "") +
+        (owner
+          ? `<p class="ph__owner">module: <code>${owner}</code></p>`
+          : "") +
         `</div>`;
     },
 
@@ -273,7 +303,11 @@ async function boot_() {
   scenarioSelect.addEventListener("change", (e) => {
     currentScenario = e.target.value;
     scenarioHooks.forEach((fn) => {
-      try { fn(currentScenario); } catch (err) { console.error("scenario hook failed", err); }
+      try {
+        fn(currentScenario);
+      } catch (err) {
+        console.error("scenario hook failed", err);
+      }
     });
   });
 
@@ -288,11 +322,16 @@ async function boot_() {
       console.error(`[module:${name}] setup() failed:`, err);
     }
   }
-  if (failed.length) note(`Modules failed: ${failed.join(", ")} (see console)`, "err");
+  if (failed.length)
+    note(`Modules failed: ${failed.join(", ")} (see console)`, "err");
 
   // fire the scenario hooks once so modules can render their initial state
   scenarioHooks.forEach((fn) => {
-    try { fn(currentScenario); } catch (err) { console.error("scenario hook failed", err); }
+    try {
+      fn(currentScenario);
+    } catch (err) {
+      console.error("scenario hook failed", err);
+    }
   });
 
   if (!dashboardBody.children.length) {
@@ -313,23 +352,29 @@ async function boot_() {
    * 3D Tiles surface is under the cursor. If a tileset is ~43.6 m out, this is
    * how you see it. */
   const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
-  handler.setInputAction((click) => {
-    const c = viewer.scene.pickPosition(click.position);
-    const ray = viewer.camera.getPickRay(click.position);
-    const globeHit = ray ? viewer.scene.globe.pick(ray, viewer.scene) : undefined;
-    const fmt = (p) => {
-      if (!p) return "n/a";
-      const g = Cesium.Cartographic.fromCartesian(p);
-      return `${g.height.toFixed(2)} m ellipsoid  (= ${(g.height - CONFIG.napToEllipsoidM).toFixed(2)} m NAP)`;
-    };
-    console.log(
-      `[probe] surface under cursor: ${fmt(c)}\n` +
-      `[probe] terrain at same pixel: ${fmt(globeHit)}\n` +
-      `[probe] NAP->ellipsoid in use: ${CONFIG.napToEllipsoidM} m`,
-    );
-  }, Cesium.ScreenSpaceEventType.LEFT_CLICK, Cesium.KeyboardEventModifier.CTRL);
+  handler.setInputAction(
+    (click) => {
+      const c = viewer.scene.pickPosition(click.position);
+      const ray = viewer.camera.getPickRay(click.position);
+      const globeHit = ray
+        ? viewer.scene.globe.pick(ray, viewer.scene)
+        : undefined;
+      const fmt = (p) => {
+        if (!p) return "n/a";
+        const g = Cesium.Cartographic.fromCartesian(p);
+        return `${g.height.toFixed(2)} m ellipsoid  (= ${(g.height - CONFIG.napToEllipsoidM).toFixed(2)} m NAP)`;
+      };
+      console.log(
+        `[probe] surface under cursor: ${fmt(c)}\n` +
+          `[probe] terrain at same pixel: ${fmt(globeHit)}\n` +
+          `[probe] NAP->ellipsoid in use: ${CONFIG.napToEllipsoidM} m`,
+      );
+    },
+    Cesium.ScreenSpaceEventType.LEFT_CLICK,
+    Cesium.KeyboardEventModifier.CTRL,
+  );
 
-  window.__geosim = { viewer, ctx, CONFIG };   // handy in the browser console
+  window.__geosim = { viewer, ctx, CONFIG }; // handy in the browser console
   console.log(
     `%cGeosimulation — ${sa.name} (${sa.wijk}), ${sa.municipality}`,
     "font-weight:bold",
