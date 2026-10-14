@@ -618,6 +618,61 @@ def fig_abm(ca, rl):
     save(fig, "fig_landuse_abm.png")
 
 
+def fig_rl_comparison(runs):
+    """Linear Q-learning vs the convolutional DQN, against a random policy.
+
+    `runs` maps a scenario label to (linear_json, dqn_json); the random-policy
+    baseline is stored in the DQN output and applies to both agents, since
+    the problem is the same.
+    """
+    fig = plt.figure(figsize=(7.4, 5.4))
+    gs = fig.add_gridspec(2, len(runs), height_ratios=[1.0, 1.0], hspace=0.55,
+                          wspace=0.3, top=0.86, bottom=0.10, left=0.09, right=0.98)
+    for j, (label, (lin, dqn)) in enumerate(runs.items()):
+        ax = fig.add_subplot(gs[0, j])
+        tidy(ax, xgrid=True)
+        rnd = dqn["random_policy"]
+        rows = [("random policy, mean", rnd["mean"], MUTED),
+                ("random policy, best of %d" % rnd["episodes"], rnd["best"], MUTED),
+                ("linear Q, end of training", lin["objective_last_decile_mean"], SERIES_1),
+                ("linear Q, best episode", lin["best_objective"], SERIES_1),
+                ("DQN, end of training", dqn["objective_last_decile_mean"], SERIES_2),
+                ("DQN, best episode", dqn["best_objective"], SERIES_2),
+                ("DQN, greedy policy", dqn["greedy_objective"], SERIES_2)]
+        y = np.arange(len(rows))
+        vals = [v for _, v, _ in rows]
+        lo, hi = min(vals), max(vals)
+        pad = (hi - lo) * 0.25 + 1e-3
+        ax.barh(y, [v - (lo - pad) for v in vals], left=lo - pad,
+                color=[c for *_, c in rows], height=0.6)
+        for yi, v in zip(y, vals):
+            ax.text(v + pad * 0.05, yi, f"{v:.3f}", va="center", fontsize=7.5, color=INK_2)
+        ax.set_yticks(y, [r[0] for r in rows] if j == 0 else [""] * len(rows))
+        ax.invert_yaxis()
+        ax.set_xlim(lo - pad, hi + pad)
+        ax.set_title(label, loc="left", fontsize=9, color=INK)
+        ax.set_xlabel("objective over the site")
+
+        ax2 = fig.add_subplot(gs[1, j])
+        tidy(ax2, ygrid=True)
+        for run, col, name in ((lin, SERIES_1, "linear Q"), (dqn, SERIES_2, "DQN")):
+            c = np.array(run["learning_curve"])
+            k = max(1, len(c) // 20)
+            sm = np.convolve(c, np.ones(k) / k, mode="valid")
+            ax2.plot(np.arange(len(sm)) + k // 2, sm, color=col, lw=1.8, label=name)
+        ax2.axhline(rnd["mean"], color=MUTED, lw=1, ls="--", label="random mean")
+        ax2.set_xlabel("training episode")
+        if j == 0:
+            ax2.set_ylabel("objective (smoothed)")
+            ax2.legend(frameon=False, fontsize=7.5)
+    fig.suptitle("Linear Q-learning vs a convolutional DQN, same problem",
+                 x=0.012, y=0.995, ha="left", fontsize=11, fontweight="bold", color=INK)
+    fig.text(0.012, 0.945, "Both agents re-plan the design site on the same objective; "
+             "the random policy is the baseline to beat", fontsize=8.5, color=INK_2,
+             ha="left", va="top")
+    save(fig, "fig_landuse_rl_comparison.png")
+
+
 def fig_rl_keep_housing(ca, rl):
     """The same agent with today's number of residential cells kept."""
     n = rl["baseline_score"]["residential_cells"]
@@ -794,6 +849,12 @@ def main() -> int:
             keep_path = PROCESSED / "landuse_rl_keep_housing.json"
             if keep_path.exists():
                 fig_rl_keep_housing(abm, json.loads(keep_path.read_text()))
+            names = {"No housing rule": ("landuse_rl.json", "landuse_rl_dqn.json"),
+                     "Today's housing kept": ("landuse_rl_keep_housing.json",
+                                              "landuse_rl_dqn_keep_housing.json")}
+            if all((PROCESSED / f).exists() for pair in names.values() for f in pair):
+                fig_rl_comparison({k: tuple(json.loads((PROCESSED / f).read_text())
+                                            for f in pair) for k, pair in names.items()})
     else:
         print("  (skipping ABM figure — run ca_landuse.py first)")
 

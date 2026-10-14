@@ -10,7 +10,11 @@
  *
  *   RL agent             analysis/abm_landuse/rl_landuse.py   -> landuse_rl.json
  *       Rules are LEARNED — the agent is given only the objective. Its weights
- *       can be read off and compared with the CA's matrix.
+ *       can be read off and compared with the CA's matrix. A second example
+ *       keeps today's housing (--keep-housing -> landuse_rl_keep_housing.json),
+ *       and a convolutional DQN (rl_dqn.py -> landuse_rl_dqn*.json) is run on
+ *       the same problem for comparison. The "Optimiser plan (RL)" layer shows
+ *       the linear agent's plan for either rule; the DQN appears as numbers only.
  *
  * MAP RENDERING
  * -------------
@@ -39,6 +43,12 @@ export async function setup(ctx) {
                                 { quiet: true });
   const rl = await ctx.loadJson("../data/processed/landuse_rl.json",
                                 { quiet: true });
+  const rlKeep = await ctx.loadJson("../data/processed/landuse_rl_keep_housing.json",
+                                    { quiet: true });
+  const dqn = await ctx.loadJson("../data/processed/landuse_rl_dqn.json",
+                                 { quiet: true });
+  const dqnKeep = await ctx.loadJson("../data/processed/landuse_rl_dqn_keep_housing.json",
+                                     { quiet: true });
 
   if (!ca?.scenarios) {
     ctx.placeholder(body, {
@@ -108,6 +118,46 @@ export async function setup(ctx) {
       render();
     },
   });
+
+  /* ---- optimiser plan layer ---------------------------------------------
+   * One layer for the RL plans; the panel's switch picks which rule. Each plan
+   * is one PNG already warped to EPSG:4326 by export_grid_png(). */
+  const plans = {};
+  if (rl?.png && rl?.bbox_wgs84) plans.free = rl;
+  if (rlKeep?.png && rlKeep?.bbox_wgs84) plans.keep = rlKeep;
+  const planLayers = {};
+  let planOn = false;
+  let planKey = "free";
+
+  async function showPlan() {
+    for (const [k, l] of Object.entries(planLayers)) l.show = planOn && k === planKey;
+    const run = plans[planKey];
+    if (!planOn || !run || planLayers[planKey]) { viewer.scene.requestRender(); return; }
+    try {
+      const [w, s2, e, n] = run.bbox_wgs84;
+      const provider = await Cesium.SingleTileImageryProvider.fromUrl(
+        `../data/processed/${run.png}`,
+        { rectangle: Cesium.Rectangle.fromDegrees(w, s2, e, n) });
+      const l = viewer.imageryLayers.addImageryProvider(provider);
+      l.alpha = 0.8;
+      planLayers[planKey] = l;
+      l.show = planOn;
+    } catch (err) {
+      console.warn("[landuse] optimiser plan failed to load", run.png, err);
+      ctx.note("Optimiser plan: failed to load", "err");
+    }
+    viewer.scene.requestRender();
+  }
+
+  if (Object.keys(plans).length) {
+    ctx.registerLayer({
+      id: "landuseRlPlan",
+      label: "Optimiser plan (RL)",
+      group: "Analysis",
+      show: false,
+      onToggle: async (v) => { planOn = v; await showPlan(); },
+    });
+  }
 
   /* ---- panel ------------------------------------------------------------ */
   const names = Object.keys(ca.scenarios);
@@ -266,9 +316,58 @@ export async function setup(ctx) {
         `CA's above.</p>` : "") +
       `<p class="muted">The RL agent optimises this objective directly, while the ` +
       `CA follows fixed rules and is merely scored on it — so a higher number is ` +
-      `expected and is <em>not</em> evidence that RL models cities better.</p>`
+      `expected and is <em>not</em> evidence that RL models cities better.</p>` +
+      planSwitch() + comparisonTable()
       : `<p class="muted">RL agent not run yet — ` +
         `<code>analysis/abm_landuse/rl_landuse.py</code></p>`);
+
+  function planSwitch() {
+    if (!plans.free || !plans.keep) return "";
+    return `<h4>Optimiser plan on the map</h4>` +
+      `<div class="seg" id="luPlan">` +
+      `<button data-p="free" class="on">no housing rule</button>` +
+      `<button data-p="keep">housing kept</button></div>` +
+      `<p class="muted" id="luPlanInfo"></p>`;
+  }
+
+  function planInfo() {
+    const r = plans[planKey];
+    const el = body.querySelector("#luPlanInfo");
+    if (!r || !el) return;
+    el.innerHTML = `${planKey === "keep" ? "All " + r.baseline_score.residential_cells +
+      " housing cells kept" : "No rule on housing"}: objective ` +
+      `${r.best_objective.toFixed(3)}, mix ${r.score.landuse_mix.toFixed(3)}, ` +
+      `${(r.score.green_share * 100).toFixed(0)} % green, ` +
+      `${r.score.residential_cells} housing cells. Switch on ` +
+      `<em>Optimiser plan (RL)</em> under Analysis to see it.`;
+  }
+
+  function comparisonTable() {
+    const rows = [["no housing rule", rl, dqn], ["housing kept", rlKeep, dqnKeep]]
+      .filter(([, a, b]) => a && b?.random_policy);
+    if (!rows.length) return "";
+    const f = (x) => (x == null ? "—" : x.toFixed(3));
+    return `<h4>Linear agent vs deep Q-network</h4>` +
+      `<table class="kv"><thead><tr><th>rule</th><th>random</th><th>linear</th>` +
+      `<th>DQN best</th><th>DQN greedy</th></tr></thead><tbody>` +
+      rows.map(([n, a, b]) => `<tr><td>${n}</td><td>${f(b.random_policy.mean)}</td>` +
+        `<td>${f(a.best_objective)}</td><td>${f(b.best_objective)}</td>` +
+        `<td>${f(b.greedy_objective)}</td></tr>`).join("") +
+      `</tbody></table>` +
+      `<p class="muted">Same site, objective and reward; only the agent differs. ` +
+      `<em>Random</em> is the mean of a purely random policy, the baseline to beat. ` +
+      `<em>Best</em> is the best training episode; <em>greedy</em> is one run of ` +
+      `the DQN's learned policy with no exploration.</p>`;
+  }
+
+  const planBtns = [...body.querySelectorAll("#luPlan button")];
+  planBtns.forEach((b) => b.addEventListener("click", async () => {
+    planBtns.forEach((x) => x.classList.toggle("on", x === b));
+    planKey = b.dataset.p;
+    planInfo();
+    await showPlan();
+  }));
+  planInfo();
 
   // the scenario switcher at the top of the dashboard drives this too
   ctx.onScenarioChange((s) => {

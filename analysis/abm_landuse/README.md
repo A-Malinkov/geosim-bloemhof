@@ -215,6 +215,37 @@ fixed, the agent's only freedom is where to put 24 cells, and the linear agent
 places them no better than its early, mostly random episodes. Read this plan as
 an example layout, the best of 120 episodes, not as an optimum.
 
+### A deep Q-network on the same problem
+
+`rl_dqn.py` swaps the agent and keeps everything else: grid, site, objective,
+reward, discount and the housing rule. The network is a fully convolutional CNN
+over a crop of the grid around the site (one-hot land use, site and empty-cell
+masks, access, distance to water, plus broadcast site-wide shares, progress and
+housing quota), four 3x3 convolutions (two dilated) and a 1x1 head giving a
+Q-value for every cell x use, 70,372 weights. It picks from all empty cells, not
+40 sampled ones. DQN with replay, a target network, Double DQN targets, Huber
+loss and Adam; one update every 4 steps; 120 episodes, about 34 min on CPU.
+Needs PyTorch (CPU), which is optional (see `requirements.txt`).
+
+It also reports what the linear script does not: a **random policy** on the same
+problem (30 episodes), the baseline any agent has to beat, and one **greedy**
+run of the learned policy with no exploration.
+
+| objective over the site | random, mean | linear Q, best | DQN, best | DQN, greedy | DQN, end of training |
+|---|---|---|---|---|---|
+| no housing rule | 2.360 | **2.480** | 2.475 | 2.180 | 2.234 |
+| today's housing kept | 1.281 | **1.300** | 1.295 | 1.250 | 1.169 |
+
+**The DQN does not do better.** Its best episodes came early, while it was still
+exploring; its greedy policy and its last episodes score *below the random
+policy*. A CNN with 70,000 weights gets about 5,000 gradient steps in 120
+episodes, far too few; the linear agent's 13 weights per use learn much faster
+from the same experience. More episodes, reward shaping or a policy-gradient
+method might change this, at hours of CPU per run. The random baseline also puts
+the linear agent in proportion: on a cleared site, a random mix of four uses
+already scores 2.36, so the agent's gain is 0.12, and under the housing rule
+none (`fig_landuse_rl_comparison.png`).
+
 ## Honest limitations
 
 - **Demand is set by us**, not derived from a regional model. This explores the

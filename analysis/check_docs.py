@@ -68,6 +68,7 @@ def main() -> int:
     ca, rl, fc = load("landuse_abm.json"), load("landuse_rl.json"), load("knmi_forecast.json")
     ws = load("landuse_weight_sensitivity.json")
     rlk = load("landuse_rl_keep_housing.json")
+    dqn = load("landuse_rl_dqn.json")
 
     MAIN = ROOT / "README.md"
     MORPH = ROOT / "analysis/morphology/README.md"
@@ -266,6 +267,13 @@ def main() -> int:
              rlk["objective_last_decile_mean"] <= rlk["objective_first_decile_mean"]),
             ("ABM README: 'keep-housing keeps exactly today's homes'",
              rlk["score"]["residential_cells"] == rlk["baseline_score"]["residential_cells"]),
+        ]
+    if dqn and rl:
+        claims += [
+            ("ABM README: 'the DQN does not do better'",
+             dqn["best_objective"] <= rl["best_objective"]),
+            ("ABM README: 'its greedy policy scores below the random policy'",
+             dqn["greedy_objective"] < dqn["random_policy"]["mean"]),
         ]
     broken = [c for c, ok in claims if not ok]
 
