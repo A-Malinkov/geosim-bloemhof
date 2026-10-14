@@ -44,6 +44,8 @@ inputs = [
         maxspeedPath : [name: 'CSV of OSM way id -> maxspeed (km/h)', type: String.class],
         outDir       : [name: 'Output directory', type: String.class],
         height       : [name: 'Receiver height (m)', type: Double.class],
+        maxArea      : [name: 'Maximum receiver triangle area (m2)', type: Double.class],
+        threads      : [name: 'Propagation threads (0 = all cores)', type: Integer.class],
         maxSrcDist   : [name: 'Maximum source-receiver distance (m)', type: Double.class],
         isoClass     : [name: 'Iso levels in dB', type: String.class],
 ]
@@ -94,6 +96,9 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
             sourcesTableName: "ROADS",
             fenceTableName  : "FENCE",
             height          : input.height,
+            // Default 2500 m2: open squares and big courtyards then get one
+            // receiver per ~70 m triangle and render as flat blocks.
+            maxArea         : input.maxArea,
             outputTableName : "RECEIVERS",
     ])
 
@@ -107,6 +112,7 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
             tableReceivers      : "RECEIVERS",
             tableGroundAbs      : "GROUND",
             confMaxSrcDist      : input.maxSrcDist,
+            confThreadNumber    : input.threads,
             // Over-the-roof diffraction. Off by default, and then a courtyard
             // closed on all sides — most of Bloemhof — has no sound path at all
             // and comes out at the -92 dB "nothing received" floor.

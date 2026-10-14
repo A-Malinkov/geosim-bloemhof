@@ -44,9 +44,13 @@ The model chain — OSM import → road emission → Delaunay receivers →
 propagation — is in `noise_pipeline.groovy`, run headless by `ScriptRunner`.
 Inputs are cached in `cache/noise/` (gitignored).
 
-Writes `data/processed/noise_baseline.json` (5 m Lden grid + summary) and
+Writes `data/processed/noise_baseline.json` (2 m Lden grid + summary) and
 `docs/fig_noise_baseline.png`. Scenarios exit with a message until
 `design_massing.geojson` exists; the hook is `buildings_for()`.
+
+The dense run needs more memory than a 16 GB laptop with an IDE open had —
+the JVM segfaulted. To run it on another machine, follow
+`RUN_NOISE_ON_ANOTHER_PC.md` (written for an AI agent, but readable).
 
 Traps found on the way, all handled in the code:
 

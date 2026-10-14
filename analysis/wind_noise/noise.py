@@ -27,7 +27,9 @@ OSM import -> road emission -> Delaunay receivers -> propagation -> isosurface.
              i.e. the same height definition as fetch_buildings.py.
   ground     OSM land cover -> acoustic absorption (NoiseModelling's own mapping).
   receivers  Delaunay grid at 1.75 m (pedestrian level, as the SVF), inside the
-             design site + 200 m, outside buildings.
+             design site + 200 m, outside buildings, triangles <= 100 m2 so
+             open squares are sampled too (the default 2500 m2 left them as
+             flat ~70 m blocks).
   sources    every road within 250 m of a receiver, so the edge of the fence
              still hears the roads beyond it (the default is 150 m).
 
@@ -79,7 +81,12 @@ FENCE_BUFFER_M = 200      # receivers: design site + this
 MAX_SRC_DIST_M = 250      # sources heard from up to this far
 DATA_PAD_M = MAX_SRC_DIST_M + 50   # roads/buildings fetched this far past the fence
 RECEIVER_HEIGHT_M = 1.75
-GRID_M = 5.0              # regular grid for the app and the statistics
+GRID_M = 2.0              # regular grid for the app and the statistics
+MAX_TRIANGLE_M2 = 100     # Delaunay receivers: largest triangle (default 2500)
+# Propagation threads. NoiseModelling defaults to every core, and with 16
+# threads on the dense receiver grid the JVM ran out of native memory and
+# segfaulted (2026-10-14, ~4 GB free). Override with NOISE_THREADS.
+THREADS = int(os.environ.get("NOISE_THREADS", min(8, os.cpu_count() or 1)))
 BKL_STANDARD_DB = 53.0    # Bkl standard value, municipal roads, Lden
 BKL_LIMIT_DB = 70.0       # Bkl limit value, municipal roads, Lden
 ISO_CLASS = "35,40,45,50,53,55,60,65,70,75,80,200"
@@ -232,7 +239,8 @@ def write_geojson_rd(gdf, path: pathlib.Path) -> None:
 # ------------------------------------------------------------------- run NM
 def run_noisemodelling(work: pathlib.Path, osm: pathlib.Path, buildings: pathlib.Path,
                        fence: pathlib.Path, maxspeed: pathlib.Path) -> None:
-    runner = NM_HOME / "bin" / "ScriptRunner"
+    # Windows ships a .bat launcher next to the shell script.
+    runner = NM_HOME / "bin" / ("ScriptRunner.bat" if os.name == "nt" else "ScriptRunner")
     if not runner.exists():
         sys.exit(f"NoiseModelling not found at {NM_HOME}. Unpack "
                  "NoiseModelling_6.0.0.zip there or set NOISEMODELLING_HOME.")
@@ -243,6 +251,7 @@ def run_noisemodelling(work: pathlib.Path, osm: pathlib.Path, buildings: pathlib
            "--fencePath", str(fence), "--maxspeedPath", str(maxspeed),
            "--outDir", str(work),
            "--height", str(RECEIVER_HEIGHT_M), "--maxSrcDist", str(MAX_SRC_DIST_M),
+           "--maxArea", str(MAX_TRIANGLE_M2), "--threads", str(THREADS),
            "--isoClass", ISO_CLASS]
     print("  running NoiseModelling (a few minutes)…")
     t0 = time.time()
@@ -356,7 +365,9 @@ def main() -> int:
     values = [[None if not np.isfinite(x) else round(float(x), 1) for x in row]
               for row in warped]
 
-    write_processed(f"noise_{args.scenario}.json", {
+    # indent=None: at 2 m the grid is ~200k values, and one per line would
+    # make the file several times larger for the browser to download.
+    write_processed(f"noise_{args.scenario}.json", indent=None, payload={
         "quantity": "noise_lden_db",
         "label": "Road-traffic noise, Lden",
         "unit": "dB(A)",
@@ -378,6 +389,7 @@ def main() -> int:
                          f"{FENCE_BUFFER_M} m",
             "max_source_distance_m": MAX_SRC_DIST_M,
             "grid_m": GRID_M,
+            "max_receiver_triangle_m2": MAX_TRIANGLE_M2,
             "reference_lines": "Bkl municipal roads: 53 dB standard value, "
                                "70 dB limit value (façade values, used here as reference only)",
         },
