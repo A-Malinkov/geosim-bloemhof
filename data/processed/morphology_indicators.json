@@ -10,11 +10,7 @@
       "height_std_m": 0,
       "landuse_mix": 0
     },
-    "_keys": [
-      "baseline",
-      "scenario_a",
-      "scenario_b"
-    ]
+    "_keys": ["baseline", "scenario_a", "scenario_b"]
   },
   "baseline": {
     "svf_mean": 0.7256,

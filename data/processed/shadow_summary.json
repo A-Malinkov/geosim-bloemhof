@@ -9,17 +9,25 @@
     "daylight_hours": "number — hours of daylight sampled",
     "bbox_wgs84": "[west, south, east, north] the overlay PNG is drawn on",
     "open_ground_sunlit_hours": {
-      "mean": "number", "median": "number",
-      "p05": "number", "p95": "number", "n_pixels": "int"
+      "mean": "number",
+      "median": "number",
+      "p05": "number",
+      "p95": "number",
+      "n_pixels": "int"
     },
     "combined": "same shape as open_ground_sunlit_hours, clipped to both buurten",
     "per_buurt": {
-      "<buurt name>": { "open_ground_sunlit_hours": "{mean, median, p05, p95, ...}" }
+      "<buurt name>": {
+        "open_ground_sunlit_hours": "{mean, median, p05, p95, ...}"
+      }
     },
     "histogram": { "bin_edges": "number[]", "counts": "int[]" },
     "parameters": {
-      "cell_size_m": "number", "search_radius_m": "number",
-      "step_minutes": "int", "latitude": "number", "longitude": "number"
+      "cell_size_m": "number",
+      "search_radius_m": "number",
+      "step_minutes": "int",
+      "latitude": "number",
+      "longitude": "number"
     }
   }
 }

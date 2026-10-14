@@ -27,7 +27,11 @@ function applyHeightOffset(tileset, metres, Cesium) {
   if (!metres) return;
   const c = Cesium.Cartographic.fromCartesian(tileset.boundingSphere.center);
   const from = Cesium.Cartesian3.fromRadians(c.longitude, c.latitude, c.height);
-  const to   = Cesium.Cartesian3.fromRadians(c.longitude, c.latitude, c.height + metres);
+  const to = Cesium.Cartesian3.fromRadians(
+    c.longitude,
+    c.latitude,
+    c.height + metres,
+  );
   const delta = Cesium.Cartesian3.subtract(to, from, new Cesium.Cartesian3());
   tileset.modelMatrix = Cesium.Matrix4.fromTranslation(delta);
 }
@@ -48,7 +52,7 @@ async function addTileset(ctx, { key, label, group, show, styleFn = null }) {
       skipLevelOfDetail: true,
     });
 
-    tileset.__name = key;            // handy when poking around in the console
+    tileset.__name = key; // handy when poking around in the console
     tileset.__heightOffsetM = spec.heightOffsetM ?? 0;
     applyHeightOffset(tileset, spec.heightOffsetM, Cesium);
     if (styleFn) styleFn(tileset, Cesium);
@@ -57,10 +61,12 @@ async function addTileset(ctx, { key, label, group, show, styleFn = null }) {
     ctx.registerLayer({ id: key, label, group, show, target: tileset });
 
     if (config.debug) {
-      const c = Cesium.Cartographic.fromCartesian(tileset.boundingSphere.center);
+      const c = Cesium.Cartographic.fromCartesian(
+        tileset.boundingSphere.center,
+      );
       console.log(
         `[layers] ${key}: bounding-sphere centre at ${c.height.toFixed(1)} m ellipsoid ` +
-        `after a ${spec.heightOffsetM ?? 0} m offset`,
+          `after a ${spec.heightOffsetM ?? 0} m offset`,
       );
     }
     ctx.note(`${label}: loaded`, "ok");
@@ -69,7 +75,12 @@ async function addTileset(ctx, { key, label, group, show, styleFn = null }) {
     console.error(`[layers] "${label}" failed to load from ${spec.url}`, err);
     ctx.note(`${label}: FAILED`, "err");
     // Still register a (dead) toggle so the panel shows what was attempted.
-    ctx.registerLayer({ id: key, label: `${label} (failed)`, group, show: false });
+    ctx.registerLayer({
+      id: key,
+      label: `${label} (failed)`,
+      group,
+      show: false,
+    });
     return null;
   }
 }
@@ -87,8 +98,9 @@ export async function setup(ctx) {
    *   2. the matrix set is a standard WebMercatorQuad, so WebMercatorTilingScheme. */
   let aerial = null;
   try {
-    const labels = Array.from({ length: L.pdokAerial.maximumLevel + 1 }, (_, i) =>
-      String(i).padStart(2, "0"),
+    const labels = Array.from(
+      { length: L.pdokAerial.maximumLevel + 1 },
+      (_, i) => String(i).padStart(2, "0"),
     );
     const provider = new Cesium.WebMapTileServiceImageryProvider({
       url: `${L.pdokAerial.url}/${L.pdokAerial.layer}/{TileMatrixSet}/{TileMatrix}/{TileCol}/{TileRow}.jpeg`,
@@ -118,14 +130,19 @@ export async function setup(ctx) {
   /* OpenStreetMap, as a fallback/orientation basemap. Off by default. */
   try {
     const osm = viewer.imageryLayers.addImageryProvider(
-      new Cesium.OpenStreetMapImageryProvider({ url: "https://tile.openstreetmap.org/" }),
+      new Cesium.OpenStreetMapImageryProvider({
+        url: "https://tile.openstreetmap.org/",
+      }),
     );
     osm.show = false;
     // draw underneath the aerial photo
     viewer.imageryLayers.lower(osm);
     ctx.registerLayer({
-      id: "osm", label: "OpenStreetMap (fallback)", group: "Imagery",
-      show: false, target: osm,
+      id: "osm",
+      label: "OpenStreetMap (fallback)",
+      group: "Imagery",
+      show: false,
+      target: osm,
     });
   } catch (err) {
     console.warn("[layers] OSM basemap unavailable", err);
@@ -145,8 +162,11 @@ export async function setup(ctx) {
     ahn.show = false;
     ahn.alpha = 0.7;
     ctx.registerLayer({
-      id: "ahn", label: `AHN height (${L.ahnWms.layers})`, group: "Imagery",
-      show: false, target: ahn,
+      id: "ahn",
+      label: `AHN height (${L.ahnWms.layers})`,
+      group: "Imagery",
+      show: false,
+      target: ahn,
     });
   } catch (err) {
     console.warn("[layers] AHN WMS unavailable", err);
@@ -172,8 +192,11 @@ export async function setup(ctx) {
     );
     white.show = false;
     ctx.registerLayer({
-      id: "whiteGround", label: "Plain white ground (for shadows)", group: "Imagery",
-      show: false, target: white,
+      id: "whiteGround",
+      label: "Plain white ground (for shadows)",
+      group: "Imagery",
+      show: false,
+      target: white,
     });
   } catch (err) {
     console.warn("[layers] white ground layer unavailable", err);
@@ -262,8 +285,9 @@ export async function setup(ctx) {
         `<tr><td>buurt</td><td>${nm}</td></tr>` +
         `<tr><td>code</td><td>${p?.buurtcode?.getValue?.() ?? "—"}</td></tr>` +
         `<tr><td>area</td><td>${p?.area_ha?.getValue?.() ?? "—"} ha</td></tr>` +
-        `<tr><td>inhabitants</td><td>${
-          (p?.inhabitants?.getValue?.() ?? 0).toLocaleString("en-GB")}</td></tr>` +
+        `<tr><td>inhabitants</td><td>${(
+          p?.inhabitants?.getValue?.() ?? 0
+        ).toLocaleString("en-GB")}</td></tr>` +
         `</table>`;
     }
     await viewer.dataSources.add(ds);
@@ -293,7 +317,9 @@ export async function setup(ctx) {
         fill: Cesium.Color.LIME.withAlpha(0.18),
       });
       for (const ent of [...ds.entities.values]) {
-        const hier = ent.polygon?.hierarchy?.getValue?.(Cesium.JulianDate.now());
+        const hier = ent.polygon?.hierarchy?.getValue?.(
+          Cesium.JulianDate.now(),
+        );
         if (!hier?.positions?.length) continue;
         ent.polygon.outline = false;
         ds.entities.add({
@@ -330,8 +356,5 @@ export async function setup(ctx) {
   }
 
   /* ---------------------------------------------------------------- credits */
-  ctx.note(
-    "Data: PDOK · 3DBAG (TU Delft) · Rotterdam 3D · AHN",
-    "info",
-  );
+  ctx.note("Data: PDOK · 3DBAG (TU Delft) · Rotterdam 3D · AHN", "info");
 }
