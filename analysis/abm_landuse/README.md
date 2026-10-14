@@ -198,6 +198,23 @@ this objective does not represent at all. **The model is right about the
 objective, and the objective is incomplete.** Worth a paragraph in the report,
 and only running both models surfaces it.
 
+### A second example: today's housing kept
+
+`rl_landuse.py --keep-housing` adds one rule: the plan must contain exactly as
+many residential cells as the site has today (155). Actions that would break it
+are masked, and the objective is unchanged, so the two runs differ only in that
+rule (`landuse_rl_keep_housing.json`, `fig_landuse_rl_keep_housing.png`).
+
+Best 1.300 against 0.890 for the site today: mix 0.335, 6 % green and 46 m to
+the nearest amenity. The 24 non-housing cells become 6 retail, 8 amenity and 10
+green, scattered through the blocks.
+
+**It does not learn.** The last 10 % of episodes average 1.265, the first 10 %
+1.278; a 400-episode run did no better (1.286 → 1.230, best 1.307). With housing
+fixed, the agent's only freedom is where to put 24 cells, and the linear agent
+places them no better than its early, mostly random episodes. Read this plan as
+an example layout, the best of 120 episodes, not as an optimum.
+
 ## Honest limitations
 
 - **Demand is set by us**, not derived from a regional model. This explores the

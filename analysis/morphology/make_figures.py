@@ -618,7 +618,17 @@ def fig_abm(ca, rl):
     save(fig, "fig_landuse_abm.png")
 
 
-def fig_rl_site(ca, rl):
+def fig_rl_keep_housing(ca, rl):
+    """The same agent with today's number of residential cells kept."""
+    n = rl["baseline_score"]["residential_cells"]
+    fig_rl_site(ca, rl, out="fig_landuse_rl_keep_housing.png",
+                heading=f"The RL agent re-plans the site, keeping all {n} housing cells",
+                plan_label=f"Plan with {n} housing cells kept")
+
+
+def fig_rl_site(ca, rl, out="fig_landuse_rl_site.png",
+                heading="The RL agent re-plans the design site",
+                plan_label="RL agent's plan"):
     """The design site today against the RL agent's plan, and how it learned."""
     import matplotlib.patches as mpatches
 
@@ -641,7 +651,7 @@ def fig_rl_site(ca, rl):
     base, best = rl["baseline_score"], rl["score"]
     for i, (title, g, sc) in enumerate((
             ("Design site today", today, base),
-            ("RL agent's plan", plan, best))):
+            (plan_label, plan, best))):
         ax = fig.add_subplot(gs[0, i])
         ax.imshow(g[crop], cmap=cmap, vmin=0, vmax=len(classes) - 1,
                   interpolation="nearest")
@@ -706,7 +716,7 @@ def fig_rl_site(ca, rl):
     for t in leg.get_texts():
         t.set_color(INK_2)
 
-    fig.suptitle("The RL agent re-plans the design site",
+    fig.suptitle(heading,
                  x=0.012, y=0.995, ha="left", fontsize=11, fontweight="bold",
                  color=INK)
     fig.text(0.012, 0.950,
@@ -716,7 +726,7 @@ def fig_rl_site(ca, rl):
              "The model grid ends at the buurt boundary, so the site's strip "
              "south of Strevelsweg is cut off at the bottom edge",
              fontsize=8.5, color=INK_2, ha="left", va="top")
-    save(fig, "fig_landuse_rl_site.png")
+    save(fig, out)
 
 
 # ==================================================================== main
@@ -781,6 +791,9 @@ def main() -> int:
             fig_abm(abm, rl)
             if rl and rl.get("site_mask"):
                 fig_rl_site(abm, rl)
+            keep_path = PROCESSED / "landuse_rl_keep_housing.json"
+            if keep_path.exists():
+                fig_rl_keep_housing(abm, json.loads(keep_path.read_text()))
     else:
         print("  (skipping ABM figure — run ca_landuse.py first)")
 

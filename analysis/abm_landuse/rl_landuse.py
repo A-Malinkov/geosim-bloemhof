@@ -52,10 +52,18 @@ USAGE
     python analysis/abm_landuse/ca_landuse.py     # first — builds the raster
     python analysis/abm_landuse/rl_landuse.py
     python analysis/abm_landuse/rl_landuse.py --episodes 400
+    python analysis/abm_landuse/rl_landuse.py --episodes 120 --keep-housing
+
+--keep-housing adds one constraint: the plan must contain exactly as many
+residential cells as the site has today. Actions that would break it are masked
+(no more homes once the quota is met; only homes once the remaining cells are
+all needed to reach it). The objective is unchanged, so the two runs differ
+only in that rule. It writes landuse_rl_keep_housing.json instead.
 
 OUTPUT
 ------
-    data/processed/landuse_rl.json   learning curve, learned weights, best plan
+    data/processed/landuse_rl.json                learning curve, learned weights, best plan
+    data/processed/landuse_rl_keep_housing.json   the same with --keep-housing
 """
 from __future__ import annotations
 
@@ -146,7 +154,10 @@ def main() -> int:
     ap.add_argument("--candidates", type=int, default=40,
                     help="cells sampled per decision — the full grid is too many")
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--keep-housing", action="store_true",
+                    help="plan exactly as many residential cells as the site has today")
     args = ap.parse_args()
+    tag = "_keep_housing" if args.keep_housing else ""
 
     from scipy.ndimage import distance_transform_edt
 
@@ -171,6 +182,21 @@ def main() -> int:
     base_score = site_score(grid_now, args.cell, site)
     cleared_obj = objective(grid0, args.cell, site)
     print(f"  objective of the site today: {base_obj:.4f}")
+    quota = base_score["residential_cells"] if args.keep_housing else None
+    if quota is not None:
+        print(f"  housing rule: exactly {quota} residential cells, as today")
+
+    def allowed(n_resid: int, n_free: int) -> np.ndarray:
+        """Mask over PLACEABLE: which classes keep the housing rule satisfiable."""
+        ok = np.ones(len(PLACEABLE), dtype=bool)
+        if quota is not None:
+            need = quota - n_resid
+            if need <= 0:
+                ok[PLACEABLE.index(RESID)] = False          # quota met: no more homes
+            elif need >= n_free:
+                ok[:] = False                               # every cell left must be a home
+                ok[PLACEABLE.index(RESID)] = True
+        return ok
 
     rng = np.random.default_rng(args.seed)
     W = np.zeros((len(PLACEABLE), len(FEATURES)), dtype="float64")
@@ -184,6 +210,7 @@ def main() -> int:
         prev_obj = cleared_obj
         # only the cleared cells inside the design site may be built on
         free = site & (g == VACANT)
+        n_resid = 0
 
         for _ in range(n_new):
             idx = np.flatnonzero(free.ravel())
@@ -194,9 +221,13 @@ def main() -> int:
             F = features(g, acc, dist_water)
             Fc = F.reshape(F.shape[0], -1)[:, cand]              # (f, ncand)
             Q = W @ Fc                                            # (nclass, ncand)
+            ok = allowed(n_resid, idx.size)
+            Q[~ok] = -np.inf
 
             if rng.random() < eps:
-                ai = int(rng.integers(len(PLACEABLE)))
+                # unconstrained runs draw exactly as before, so they reproduce
+                ai = (int(rng.integers(len(PLACEABLE))) if quota is None
+                      else int(rng.choice(np.flatnonzero(ok))))
                 ci = int(rng.integers(cand.size))
             else:
                 ai, ci = np.unravel_index(int(np.argmax(Q)), Q.shape)
@@ -206,6 +237,7 @@ def main() -> int:
             r_, c_ = np.unravel_index(cell, g.shape)
             g[r_, c_] = klass
             free[r_, c_] = False
+            n_resid += klass == RESID
 
             new_obj = objective(g, args.cell, site)
             reward = (new_obj - prev_obj) * 100.0     # scale: deltas are tiny
@@ -217,7 +249,7 @@ def main() -> int:
                 samp = rng.choice(nxt, size=int(min(args.candidates, nxt.size)),
                                   replace=False)
                 F2 = features(g, acc, dist_water).reshape(F.shape[0], -1)[:, samp]
-                q_next = float((W @ F2).max())
+                q_next = float((W @ F2)[allowed(n_resid, nxt.size)].max())
             else:
                 q_next = 0.0
             target = reward + args.gamma * q_next
@@ -257,7 +289,9 @@ def main() -> int:
                        "gamma": args.gamma, "eps_start": args.eps_start,
                        "eps_end": args.eps_end,
                        "candidates_per_decision": args.candidates,
-                       "programme_cells": n_new},
+                       "programme_cells": n_new,
+                       "housing_rule": (f"exactly {quota} residential cells (as today)"
+                                        if quota is not None else "none")},
         "scope": "design_site",
         "scope_note": "The agent re-plans every non-road, non-water cell of "
                       "the design site; the rest of the study area is fixed "
@@ -280,14 +314,16 @@ def main() -> int:
                   "likely score similarly and explain nothing.",
         "grid": {"nx": nx, "ny": ny},
         "colours": COLOURS,
-        "png": "landuse_rl_best.png",
+        "png": f"landuse_rl{tag}_best.png",
         "bbox_wgs84": export_grid_png(g, transform, "EPSG:28992",
-                                      PROCESSED / "landuse_rl_best.png"),
+                                      PROCESSED / f"landuse_rl{tag}_best.png"),
         "best_grid": g.tolist(),
         "today_grid": grid_now.tolist(),
         "site_mask": site.astype(int).tolist(),
     }
-    (PROCESSED / "landuse_rl.json").write_text(json.dumps(out) + "\n")
+    if quota is not None:
+        assert score["residential_cells"] == quota, score   # the rule held
+    (PROCESSED / f"landuse_rl{tag}.json").write_text(json.dumps(out) + "\n")
 
     print(f"\n  learning: {first:.4f} (first 10% of episodes) -> "
           f"{last:.4f} (last 10%)   {'LEARNED' if last > first else 'NO IMPROVEMENT'}")
@@ -302,7 +338,7 @@ def main() -> int:
         bot = sorted(((v, m) for m, v in w.items()))[:2]
         print(f"     {k:12} likes {', '.join(f'{m} {v:+.1f}' for v, m in top)}"
               f"  | avoids {', '.join(f'{m} {v:+.1f}' for v, m in bot)}")
-    print("\n  wrote data/processed/landuse_rl.json")
+    print(f"\n  wrote data/processed/landuse_rl{tag}.json")
     return 0
 
 

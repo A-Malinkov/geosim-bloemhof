@@ -67,6 +67,7 @@ def main() -> int:
     den, lu = load("density_summary.json"), load("landuse_summary.json")
     ca, rl, fc = load("landuse_abm.json"), load("landuse_rl.json"), load("knmi_forecast.json")
     ws = load("landuse_weight_sensitivity.json")
+    rlk = load("landuse_rl_keep_housing.json")
 
     MAIN = ROOT / "README.md"
     MORPH = ROOT / "analysis/morphology/README.md"
@@ -258,6 +259,13 @@ def main() -> int:
              min(rl["learned_weights"]["retail"].items(), key=lambda kv: kv[1])[0] == "retail"),
             ("ABM README: 'the agent demolishes housing'",
              rl["score"]["residential_cells"] < rl["baseline_score"]["residential_cells"]),
+        ]
+    if rlk:
+        claims += [
+            ("ABM README: 'with housing kept, the agent does not learn'",
+             rlk["objective_last_decile_mean"] <= rlk["objective_first_decile_mean"]),
+            ("ABM README: 'keep-housing keeps exactly today's homes'",
+             rlk["score"]["residential_cells"] == rlk["baseline_score"]["residential_cells"]),
         ]
     broken = [c for c, ok in claims if not ok]
 
