@@ -2,7 +2,8 @@
  * modules/indicators.js  —  component 3: urban morphology indicators
  * OWNER: Atanas Malinkov
  *
- * Sky View Factor, built density (FSI/GSI), height variation, land-use mix.
+ * Sky View Factor, built density (FSI/GSI), height variation, land-use mix,
+ * street-canyon height-to-width ratio.
  * Computed in  analysis/morphology/  and written to
  *   data/processed/morphology_indicators.json
  *
@@ -329,6 +330,85 @@ function perBuurtTable(perBuurt, cols) {
   );
 }
 
+/**
+ * Street-canyon H/W (height_width.py): one polyline per street segment,
+ * coloured by its median H/W in the report figure's classes. Built on first
+ * tick, and swapped on a scenario change; a scenario without a run shows
+ * nothing rather than the previous scenario's streets.
+ */
+const HW_EDGES = [0.4, 0.7, 1.0, 1.5];
+const HW_COLOURS = ["#c6dbef", "#6baed6", "#2171b5", "#08519c", "#08306b"];
+const HW_LABELS = ["< 0.4 open", "0.4–0.7", "0.7–1.0", "1.0–1.5", "> 1.5 deep"];
+const hwClass = (v) => {
+  let i = 0;
+  while (i < HW_EDGES.length && v >= HW_EDGES[i]) i++;
+  return i;
+};
+
+function addCanyonLayer(ctx) {
+  const { Cesium, viewer } = ctx;
+  let shown = false;
+  let ds = null;
+  let dsFor = null;
+  let scenario = ctx.scenario();
+
+  async function refresh() {
+    if (!shown) {
+      if (ds) ds.show = false;
+      return;
+    }
+    if (ds && dsFor === scenario) {
+      ds.show = true;
+      return;
+    }
+    if (ds) {
+      viewer.dataSources.remove(ds, true);
+      ds = null;
+    }
+    const want = scenario;
+    const geo = await ctx.loadJson(`../data/processed/canyon_hw_${want}.geojson`, { quiet: true });
+    if (want !== scenario || !shown) return;
+    dsFor = want;
+    if (!geo?.features?.length) {
+      ctx.note(`Street canyon H/W: no run for ${want}`, "warn");
+      return;
+    }
+    const d = new Cesium.CustomDataSource(`canyon_hw_${want}`);
+    for (const f of geo.features) {
+      const p = f.properties;
+      const c = f.geometry.coordinates;
+      d.entities.add({
+        name: `${p.name || "Street"} · H/W ${p.hw.toFixed(2)}`,
+        polyline: {
+          positions: Cesium.Cartesian3.fromDegreesArray(c.flat()),
+          width: 5,
+          clampToGround: true,
+          material: Cesium.Color.fromCssColorString(HW_COLOURS[hwClass(p.hw)]),
+        },
+        description:
+          `<table>` +
+          `<tr><td>H/W (median)</td><td>${p.hw.toFixed(2)}</td></tr>` +
+          `<tr><td>wall height H</td><td>${p.h_m} m</td></tr>` +
+          `<tr><td>façade to façade W</td><td>${p.w_m} m</td></tr>` +
+          `<tr><td>canyon share</td><td>${Math.round(p.canyon_share * 100)} % of segment</td></tr>` +
+          `</table>`,
+      });
+    }
+    ds = d;
+    await viewer.dataSources.add(d);
+    viewer.scene.requestRender();
+  }
+
+  ctx.registerLayer({
+    id: "canyonHw",
+    label: "Street canyon H/W",
+    group: "Analysis",
+    show: false,
+    onToggle: (visible) => { shown = visible; refresh(); },
+  });
+  ctx.onScenarioChange((s) => { scenario = s; refresh(); });
+}
+
 /** Small inline histogram, drawn as an SVG bar chart. */
 function histogramSvg(hist, mean) {
   if (!hist?.counts?.length) return "";
@@ -552,7 +632,7 @@ export async function setup(ctx) {
   const body = ctx.registerPanel({
     id: "indicators",
     title: "Urban morphology",
-    subtitle: "Sky View Factor · density · height variation · land-use mix",
+    subtitle: "Sky View Factor · density · height variation · land-use mix · street H/W",
     order: 30,
   });
 
@@ -723,13 +803,16 @@ export async function setup(ctx) {
       return null;
     };
 
+    // Shadows on/off lives in the layer panel (Performance), with the other
+    // expensive rendering switches, so there is one control for it.
+    const PERF = ` Shadows can be switched off under <em>Performance</em>.`;
     const NOTE_LIVE =
       `Live: this moment in Rotterdam, clear-sky. The analysis uses the ` +
       `equinox — the whole-day direct-sun total is under <em>Urban ` +
-      `morphology</em>, the map overlay under <em>Analysis</em>.`;
+      `morphology</em>, the map overlay under <em>Analysis</em>.` + PERF;
     const NOTE_FIXED =
       `One instant on the chosen day. The whole-day direct-sun total is under ` +
-      `<em>Urban morphology</em>, the map overlay under <em>Analysis</em>.`;
+      `<em>Urban morphology</em>, the map overlay under <em>Analysis</em>.` + PERF;
 
     let dateStr = today();
     const sunBody = ctx.registerPanel({
@@ -749,8 +832,6 @@ export async function setup(ctx) {
       `<input type="range" id="sunTime" min="240" max="1320" step="10" value="720">` +
       `</label>` +
       `<p class="muted" id="sunNight" hidden></p>` +
-      `<label class="lrow"><input type="checkbox" id="sunShadows" checked>` +
-      `<span>Cast shadows</span></label>` +
       `<p class="muted" id="sunNote">${NOTE_LIVE}</p>`;
 
     const slider = sunBody.querySelector("#sunTime");
@@ -833,11 +914,6 @@ export async function setup(ctx) {
       dateEl.textContent = dateStr;
       setTime(Number(slider.value));
     }));
-
-    sunBody.querySelector("#sunShadows").addEventListener("change", (e) => {
-      scene.shadowMap.enabled = e.target.checked;
-      viewer.scene.requestRender?.();
-    });
 
     startLive();
   }
@@ -926,6 +1002,52 @@ export async function setup(ctx) {
       what: "Land-use mix not computed yet.",
       produces: "data/processed/landuse_summary.json",
       owner: "analysis/morphology/landuse_mix.py",
+    });
+  }
+
+  /* ---- street canyon height-to-width -------------------------------------- */
+  const hw = await ctx.loadJson("../data/processed/canyon_hw_baseline.json", {
+    quiet: true,
+  });
+  const hwBox = document.createElement("div");
+  body.appendChild(hwBox);
+
+  if (hw?.combined?.hw) {
+    addCanyonLayer(ctx);
+    const c = hw.combined;
+    const site = hw.design_site || {};
+    const flat = (o) => ({
+      hw: o.hw?.median, h: o.h_m_median, w: o.w_m_median,
+      canyon: o.canyon_share == null ? null : o.canyon_share * 100,
+    });
+    const rows = { ...Object.fromEntries(Object.entries(hw.per_buurt || {}).map(([n, v]) => [n, flat(v)])) };
+    if (site.hw) rows["Design site"] = flat(site);
+    const legend = HW_COLOURS.map((col, i) =>
+      `<span style="display:inline-flex;align-items:center;gap:3px;margin:0 6px 2px 0">` +
+      `<i style="width:12px;height:4px;background:${col};display:inline-block"></i>${HW_LABELS[i]}</span>`,
+    ).join("");
+    hwBox.innerHTML =
+      `<h4>Street canyons (H/W)</h4>` +
+      `<table class="kv"><tbody>` +
+      `<tr><td>H/W median</td><td>${c.hw.median.toFixed(2)}</td></tr>` +
+      `<tr><td>p10 – p90</td><td>${c.hw.p10.toFixed(2)} – ${c.hw.p90.toFixed(2)}</td></tr>` +
+      `<tr><td>wall height H</td><td>${c.h_m_median} m</td></tr>` +
+      `<tr><td>width W</td><td>${c.w_m_median} m</td></tr>` +
+      `<tr><td>street that is canyon</td><td>${(c.canyon_share * 100).toFixed(0)} %</td></tr>` +
+      `</tbody></table>` +
+      perBuurtTable(rows, [["hw", "H/W", 2], ["w", "W m", 1], ["canyon", "canyon %", 0]]) +
+      `<div class="muted" style="font-size:10px;line-height:1.5">${legend}</div>` +
+      `<p class="muted">Façade-to-façade width and mean wall height, sampled every ` +
+      `${hw.parameters.step_m} m along every street; a point counts as canyon only with ` +
+      `buildings on both sides within ${hw.parameters.max_ray_m} m. Below ~0.4 each ` +
+      `building meets the wind on its own; above ~0.7 the wind skims over the roofs and ` +
+      `the street below is sheltered but traps heat (Oke 1988). ` +
+      `Toggle the streets under <em>Analysis</em>.</p>`;
+  } else {
+    ctx.placeholder(hwBox, {
+      what: "Street canyon H/W not computed yet.",
+      produces: "data/processed/canyon_hw_baseline.json",
+      owner: "analysis/morphology/height_width.py",
     });
   }
 

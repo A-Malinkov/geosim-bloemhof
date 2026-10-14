@@ -68,7 +68,7 @@ import numpy as np
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 from common.project import (  # noqa: E402
     PROCESSED, RAW, STUDY_AREA, bbox_rd, bbox_wgs, buurt_polygons,
-    buurt_properties, centre_wgs, study_area_polygon,
+    buurt_properties, centre_wgs, design_site_polygon, study_area_polygon,
 )
 # Reuse the raster machinery from the SVF script rather than duplicate it: the
 # loader, the edge-safe shift, the RD->WGS84 warp and the stats helper are all
@@ -233,6 +233,9 @@ def main() -> int:
                     help="radial samples per sun position")
     ap.add_argument("--no-clip-buurt", action="store_true",
                     help="skip the CBS neighbourhood-boundary statistics")
+    ap.add_argument("--suffix", default="",
+                    help="append to output names (e.g. _2026-12-21) so extra days "
+                         "do not overwrite the app's files")
     args = ap.parse_args()
 
     dsm_path, dtm_path = RAW / "ahn_dsm_05m.tif", RAW / "ahn_dtm_05m.tif"
@@ -283,14 +286,16 @@ def main() -> int:
     sunlit_hours = daylight_h - shadow_hours
     print(f"\n  {sun_steps} sun-up steps, {daylight_h:.2f} h of daylight sampled")
 
-    # crop the context padding so outputs cover the study area only
-    pad_px = int(round(150 / args.resolution))
+    # crop most of the 150 m context padding, but keep 50 m: the design site's
+    # south edge (Strevelsweg) runs ~31 m past the buurt bounding box. Stats
+    # are clipped to polygons, so the margin only adds overlay, not counts.
+    pad_px = int(round((150 - 50) / args.resolution))
     sl = (slice(pad_px, -pad_px), slice(pad_px, -pad_px))
     sun_c, og_c = sunlit_hours[sl], open_ground[sl]
     transform_c = transform * transform.translation(pad_px, pad_px)
 
     # ---- statistics per buurt and combined, clipped to real buurt land -----
-    masks, buurt_stats = {}, {}
+    masks, buurt_stats, site_stats = {}, {}, None
     if not args.no_clip_buurt:
         try:
             from rasterio.features import geometry_mask
@@ -312,8 +317,17 @@ def main() -> int:
                     "open_ground_sunlit_hours": describe(
                         np.where(og_c & m, sun_c, np.nan)),
                 }
+            # the design site: a small polygon inside Bloemhof, edge streets included
+            m_site = ~geometry_mask([design_site_polygon()], out_shape=sun_c.shape,
+                                    transform=transform_c, invert=False)
+            site_og = np.where(og_c & m_site, sun_c, np.nan)
+            site_stats = describe(site_og)
+            v = site_og[np.isfinite(site_og)]
+            site_stats["share_under_2h"] = round(float((v < 2).mean()), 4)
+            site_stats["share_under_4h"] = round(float((v < 4).mean()), 4)
         except Exception as exc:
             print(f"  ! buurt clipping skipped ({exc})")
+            site_stats = None
 
     overlay_arr, overlay_bbox = reproject_to_wgs84(sun_c, transform_c, crs)
 
@@ -343,6 +357,7 @@ def main() -> int:
         "open_ground_sunlit_hours": describe(np.where(og_c, sun_c, np.nan)),
         "per_buurt": {k: v for k, v in buurt_stats.items() if k != STUDY_AREA.name},
         "combined": buurt_stats.get(STUDY_AREA.name),
+        "design_site": {"open_ground_sunlit_hours": site_stats} if site_stats else None,
         "histogram": {
             "bin_edges": [round(x, 3) for x in
                           np.linspace(0, max(daylight_h, 1e-6), 25).tolist()],
@@ -356,11 +371,12 @@ def main() -> int:
     }
 
     print("  writing outputs …")
-    write_tif(PROCESSED / "shadow_hours.tif", sun_c, transform_c, crs)
-    write_hours_overlay(PROCESSED / "shadow_overlay.png", overlay_arr,
+    sfx = args.suffix
+    write_tif(PROCESSED / f"shadow_hours{sfx}.tif", sun_c, transform_c, crs)
+    write_hours_overlay(PROCESSED / f"shadow_overlay{sfx}.png", overlay_arr,
                         vmax=max(daylight_h, 1e-6))
-    (PROCESSED / "shadow_summary.json").write_text(json.dumps(stats, indent=2) + "\n")
-    print("  wrote shadow_summary.json")
+    (PROCESSED / f"shadow_summary{sfx}.json").write_text(json.dumps(stats, indent=2) + "\n")
+    print(f"  wrote shadow_summary{sfx}.json")
 
     og = stats["open_ground_sunlit_hours"]
     print()
@@ -373,6 +389,10 @@ def main() -> int:
         if bg:
             print(f"     {name:<12}: mean {bg['mean']:.2f} h  median {bg['median']:.2f} h  "
                   f"p05 {bg['p05']:.2f}  p95 {bg['p95']:.2f}  ({bg['n_pixels']:,} cells)")
+    if site_stats:
+        print(f"     design site : mean {site_stats['mean']:.2f} h  median {site_stats['median']:.2f} h  "
+              f"< 2 h {100 * site_stats['share_under_2h']:.0f}%  "
+              f"({site_stats['n_pixels']:,} cells)")
     return 0
 
 

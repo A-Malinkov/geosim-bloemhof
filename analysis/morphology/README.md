@@ -22,6 +22,7 @@ numerator and denominator always share one boundary.
 | `density_height.py` | Spacematrix density (GSI, FSI, L, OSR) and height variation | `data/processed/density_grid.geojson`, `density_summary.json` |
 | `landuse_mix.py` | Shannon and Simpson land-use mix indices | `data/processed/landuse_grid.geojson`, `landuse_summary.json` |
 | `shadows.py` | direct-sun hours over one clear day, ray-cast from the AHN DSM | `data/processed/shadow_hours.tif` (gitignored), `shadow_overlay.png`, `shadow_summary.json` |
+| `height_width.py` | street-canyon height-to-width ratio from OSM centrelines and 3DBAG footprints | `data/processed/canyon_hw_baseline.json`, `canyon_hw_baseline.geojson`, `docs/fig_canyon_hw_baseline.png` |
 | `make_figures.py` | every report figure | `docs/fig_*.png` |
 
 ```bash
@@ -34,6 +35,7 @@ python analysis/morphology/sky_view_factor.py   # ~6 min
 python analysis/morphology/density_height.py    # ~1 min
 python analysis/morphology/landuse_mix.py       # ~1 min
 python analysis/morphology/shadows.py           # ~30 s, equinox; --date 2026-06-21 for summer
+python analysis/morphology/height_width.py      # ~90 s first time (fetches footprints), then ~15 s
 python analysis/morphology/make_figures.py      # ~1 min
 ```
 
@@ -202,16 +204,65 @@ Both were checked: the sun position in Cesium, in `shadows.py` and in an
 independent calculation agree to 0.1°, and a synthetic 40 m tower casts its
 shadow in the right direction (within 1°) and to the right length in both.
 
-**Not yet published.** `shadow_summary.json` is still a stub, so the dashboard
-shows a placeholder until someone runs `shadows.py` (30 s). A test run gave, on
-open ground at the equinox: Bloemhof 4.4 h, Hillesluis 5.8 h of 12.0 h daylight,
-consistent with Bloemhof's lower SVF.
+Results, direct sun on open ground (clear sky, 1 m cells, sun every 30 min).
+The equinox run is the app's overlay; the solstices use `--suffix` so they do
+not overwrite it:
+
+| Day | Daylight | Bloemhof | Hillesluis | Design site (median, share < 2 h) |
+|---|---|---|---|---|
+| 21 Dec | 7.5 h | 0.65 h | 1.90 h | 0.0 h, 86 % |
+| 20 Mar | 12.0 h | 4.44 h | 5.81 h | 4.5 h, 17 % |
+| 21 Jun | 16.5 h | 8.35 h | 9.84 h | 9.0 h, 1 % |
+
+Buurt columns are means. Bloemhof is shadier than Hillesluis, consistent with its
+lower SVF. In winter most of the site's open ground gets no direct sun at all:
+streets ≈ 11 m wide between ~7 m walls are fully shaded by a sun that peaks at
+about 15°. `shadow_figure.py` draws the three days over the site
+(`docs/fig_shadow_site.png`).
+
+The script keeps 50 m of the 150 m padding in its outputs, because the design
+site's south edge (Strevelsweg) runs ~31 m past the buurt bounding box.
 
 Limits, as the script states: a clear-sky upper bound, not measured sunshine;
 tree crowns block as if solid; obstructions beyond `--radius` (300 m) are
 ignored. In the live view, fine stripes can appear on roofs when zoomed far
 out: Cesium's shadow map has limited detail over a large view. Close up the
 shadows are clean.
+
+## Street canyons — height-to-width ratio
+
+`height_width.py` samples every street centreline every 10 m and casts a ray
+perpendicular to it on both sides, up to 60 m, to the first building façade.
+W is façade to façade, H the mean of the two buildings' heights, and a point
+counts as a canyon only with a building on both sides. Statistics are by street
+length, clipped to each buurt and to the design site.
+
+Baseline (from `canyon_hw_baseline.json`):
+
+| | H/W median | wall height H | width W | street length that is canyon |
+|---|---|---|---|---|
+| Bloemhof | 0.42 | 8.0 m | 19.9 m | 67 % |
+| Hillesluis | 0.45 | 12.1 m | 29.1 m | 56 % |
+| both | 0.43 | 9.8 m | 22.4 m | 61 % |
+| design site | 0.40 | 7.1 m | 20.6 m | 75 % |
+
+The two buurten land on almost the same H/W by opposite routes: Bloemhof has
+low walls on narrow streets, Hillesluis taller walls on wider ones. On the
+design site the interior side streets are mostly ≈ 11 m wide with 6–8 m walls
+(H/W 0.4–0.6, length-weighted median 0.54), while Lange Hilleweg along its
+north-west edge is a 56 m avenue with ~8 m walls, H/W 0.14.
+
+**One filter had to change.** Street walls exclude sheds (< 15 m² or < 3 m).
+The density analysis's "principal building" filter (≥ 40 m², ≥ 4 m) was tried
+first and is wrong here: the median building on the design site is 36 m²,
+because each terraced house is its own BAG record, so that filter removed half
+the street wall and rays slipped through the gaps. Residential streets came out
+32 m wide instead of 20 m. With no filter at all they are 20.5 m, so sheds
+rarely act as street walls anyway.
+
+**Limits.** One height per building (the roof median, not the eave), gaps
+narrower than the 10 m sample spacing are averaged over, and dual
+carriageways are measured from each half's centreline.
 
 ## For the scenario comparison
 

@@ -233,6 +233,9 @@ def write_maxspeeds(osm: pathlib.Path, path: pathlib.Path) -> int:
 
 
 def write_geojson_rd(gdf, path: pathlib.Path) -> None:
+    # Coordinates are RD New but the file carries no CRS member, so a plain
+    # gpd.read_file() labels it WGS84. Readers must
+    # .set_crs("EPSG:28992", allow_override=True), as height_width.py does.
     gdf.to_file(path, driver="GeoJSON")
 
 

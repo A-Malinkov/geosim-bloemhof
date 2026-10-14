@@ -1,0 +1,435 @@
+{
+  "source": "Cyrille Kummer, QGIS flood-vulnerability analysis (team OneDrive, QGIS Files - UPDATED, 2026-10-02); imported, not recomputed",
+  "scenario": "baseline",
+  "cell_size_m": 0.5,
+  "note": "Elevation is the AHN DTM, empty under buildings: hazard, combined and overall cover open ground only. Shares are of cells with data.",
+  "layers": [
+    {
+      "id": "overall",
+      "label": "Overall flood vulnerability",
+      "about": "combined score banded into four classes",
+      "kind": "classes",
+      "png": "flood_overall.png",
+      "bbox_wgs84": [
+        4.482632,
+        51.8860572,
+        4.5221643,
+        51.9022074
+      ],
+      "legend": [
+        {
+          "label": "1 low",
+          "colour": "#5d82aa"
+        },
+        {
+          "label": "2",
+          "colour": "#62bb7d"
+        },
+        {
+          "label": "3",
+          "colour": "#fb9f50"
+        },
+        {
+          "label": "4 high",
+          "colour": "#7a0403"
+        }
+      ],
+      "source_file": "BZO_NEW_CityRisk.tif",
+      "stats": {
+        "Bloemhof": {
+          "covered_share": 0.645,
+          "shares": {
+            "1 low": 0.249,
+            "2": 0.294,
+            "3": 0.372,
+            "4 high": 0.085
+          }
+        },
+        "Hillesluis": {
+          "covered_share": 0.715,
+          "shares": {
+            "1 low": 0.393,
+            "2": 0.393,
+            "3": 0.205,
+            "4 high": 0.01
+          }
+        },
+        "Design site": {
+          "covered_share": 0.665,
+          "shares": {
+            "1 low": 0.017,
+            "2": 0.266,
+            "3": 0.522,
+            "4 high": 0.195
+          }
+        }
+      }
+    },
+    {
+      "id": "combined",
+      "label": "Combined risk score",
+      "about": "building density + water proximity + elevation, each 1\u20134",
+      "kind": "ramp",
+      "png": "flood_combined.png",
+      "bbox_wgs84": [
+        4.482632,
+        51.8860572,
+        4.5221643,
+        51.9022074
+      ],
+      "legend": [
+        {
+          "label": "0",
+          "colour": "#65bec9"
+        },
+        {
+          "label": "2",
+          "colour": "#c8f181"
+        },
+        {
+          "label": "4",
+          "colour": "#b0ce66"
+        },
+        {
+          "label": "5",
+          "colour": "#f0e072"
+        },
+        {
+          "label": "6",
+          "colour": "#efa569"
+        },
+        {
+          "label": "8",
+          "colour": "#ad5043"
+        },
+        {
+          "label": "10",
+          "colour": "#58313a"
+        }
+      ],
+      "source_file": "BZO_NEW_BuildingDensity,WaterProximity,Elevation.tif",
+      "stats": {
+        "Bloemhof": {
+          "covered_share": 0.645,
+          "mean": 7.11,
+          "median": 7.0
+        },
+        "Hillesluis": {
+          "covered_share": 0.715,
+          "mean": 6.01,
+          "median": 6.0
+        },
+        "Design site": {
+          "covered_share": 0.665,
+          "mean": 8.3,
+          "median": 8.0
+        }
+      }
+    },
+    {
+      "id": "hazard",
+      "label": "Water hazard (proximity + elevation)",
+      "about": "water proximity + elevation, banded",
+      "kind": "classes",
+      "png": "flood_hazard.png",
+      "bbox_wgs84": [
+        4.482632,
+        51.8860572,
+        4.5221643,
+        51.9022074
+      ],
+      "legend": [
+        {
+          "label": "1 low",
+          "colour": "#1a9641"
+        },
+        {
+          "label": "2",
+          "colour": "#c4e687"
+        },
+        {
+          "label": "3",
+          "colour": "#fec981"
+        },
+        {
+          "label": "4 high",
+          "colour": "#d7191c"
+        }
+      ],
+      "source_file": "BZO_NEW_HazardMap.tif",
+      "stats": {
+        "Bloemhof": {
+          "covered_share": 0.645,
+          "shares": {
+            "1 low": 0.0,
+            "2": 0.333,
+            "3": 0.465,
+            "4 high": 0.201
+          }
+        },
+        "Hillesluis": {
+          "covered_share": 0.715,
+          "shares": {
+            "1 low": 0.113,
+            "2": 0.336,
+            "3": 0.419,
+            "4 high": 0.131
+          }
+        },
+        "Design site": {
+          "covered_share": 0.665,
+          "shares": {
+            "1 low": 0.0,
+            "2": 0.034,
+            "3": 0.635,
+            "4 high": 0.33
+          }
+        }
+      }
+    },
+    {
+      "id": "water",
+      "label": "Distance to water",
+      "about": "scored 1\u20134",
+      "kind": "classes",
+      "png": "flood_water.png",
+      "bbox_wgs84": [
+        4.482632,
+        51.8860576,
+        4.5221633,
+        51.9022074
+      ],
+      "legend": [
+        {
+          "label": "250 m +",
+          "colour": "#f7fbff"
+        },
+        {
+          "label": "100\u2013250 m",
+          "colour": "#deebf7"
+        },
+        {
+          "label": "50\u2013100 m",
+          "colour": "#4292c6"
+        },
+        {
+          "label": "0\u201350 m",
+          "colour": "#08306b"
+        }
+      ],
+      "source_file": "BZO_NEW_WaterProximityRisk.tif",
+      "stats": {
+        "Bloemhof": {
+          "covered_share": 1.0,
+          "shares": {
+            "250 m +": 0.238,
+            "100\u2013250 m": 0.437,
+            "50\u2013100 m": 0.161,
+            "0\u201350 m": 0.164
+          }
+        },
+        "Hillesluis": {
+          "covered_share": 1.0,
+          "shares": {
+            "250 m +": 0.214,
+            "100\u2013250 m": 0.397,
+            "50\u2013100 m": 0.169,
+            "0\u201350 m": 0.22
+          }
+        },
+        "Design site": {
+          "covered_share": 1.0,
+          "shares": {
+            "250 m +": 0.024,
+            "100\u2013250 m": 0.487,
+            "50\u2013100 m": 0.243,
+            "0\u201350 m": 0.246
+          }
+        }
+      }
+    },
+    {
+      "id": "elevation",
+      "label": "Low ground",
+      "about": "AHN ground level, scored 1\u20134",
+      "kind": "classes",
+      "png": "flood_elevation.png",
+      "bbox_wgs84": [
+        4.482632,
+        51.8860572,
+        4.5221643,
+        51.9022074
+      ],
+      "legend": [
+        {
+          "label": "> 1.46 m",
+          "colour": "#1a9641"
+        },
+        {
+          "label": "\u22120.67\u20261.46 m",
+          "colour": "#c4e687"
+        },
+        {
+          "label": "\u22120.99\u2026\u22120.67 m",
+          "colour": "#fec981"
+        },
+        {
+          "label": "< \u22120.99 m NAP",
+          "colour": "#d7191c"
+        }
+      ],
+      "source_file": "BZO_NEW_ElevationRisk.tif",
+      "stats": {
+        "Bloemhof": {
+          "covered_share": 0.645,
+          "shares": {
+            "> 1.46 m": 0.046,
+            "\u22120.67\u20261.46 m": 0.247,
+            "\u22120.99\u2026\u22120.67 m": 0.399,
+            "< \u22120.99 m NAP": 0.308
+          }
+        },
+        "Hillesluis": {
+          "covered_share": 0.715,
+          "shares": {
+            "> 1.46 m": 0.196,
+            "\u22120.67\u20261.46 m": 0.471,
+            "\u22120.99\u2026\u22120.67 m": 0.219,
+            "< \u22120.99 m NAP": 0.114
+          }
+        },
+        "Design site": {
+          "covered_share": 0.665,
+          "shares": {
+            "> 1.46 m": 0.0,
+            "\u22120.67\u20261.46 m": 0.064,
+            "\u22120.99\u2026\u22120.67 m": 0.53,
+            "< \u22120.99 m NAP": 0.406
+          }
+        }
+      }
+    },
+    {
+      "id": "density",
+      "label": "Building density",
+      "about": "buildings per grid cell",
+      "kind": "bins",
+      "png": "flood_density.png",
+      "bbox_wgs84": [
+        4.482632,
+        51.8860576,
+        4.5221633,
+        51.9022074
+      ],
+      "legend": [
+        {
+          "label": "\u2264 1",
+          "colour": "#fdf2d3"
+        },
+        {
+          "label": "1\u20135",
+          "colour": "#fba18b"
+        },
+        {
+          "label": "5\u201310",
+          "colour": "#922c79"
+        },
+        {
+          "label": "> 10 buildings",
+          "colour": "#000004"
+        }
+      ],
+      "source_file": "BZO_NEW_BuildingDensity4Raster.tif",
+      "stats": {
+        "Bloemhof": {
+          "covered_share": 1.0,
+          "shares": {
+            "\u2264 1": 0.357,
+            "1\u20135": 0.36,
+            "5\u201310": 0.224,
+            "> 10 buildings": 0.059
+          }
+        },
+        "Hillesluis": {
+          "covered_share": 1.0,
+          "shares": {
+            "\u2264 1": 0.672,
+            "1\u20135": 0.263,
+            "5\u201310": 0.059,
+            "> 10 buildings": 0.005
+          }
+        },
+        "Design site": {
+          "covered_share": 1.0,
+          "shares": {
+            "\u2264 1": 0.223,
+            "1\u20135": 0.32,
+            "5\u201310": 0.322,
+            "> 10 buildings": 0.135
+          }
+        }
+      }
+    },
+    {
+      "id": "roads",
+      "label": "Roads near water",
+      "about": "road distance to water, scored 1\u20134",
+      "kind": "classes",
+      "png": "flood_roads.png",
+      "bbox_wgs84": [
+        4.482632,
+        51.8860576,
+        4.5221633,
+        51.9022074
+      ],
+      "legend": [
+        {
+          "label": "250 m +",
+          "colour": "#faebdd"
+        },
+        {
+          "label": "100\u2013250 m",
+          "colour": "#f16144"
+        },
+        {
+          "label": "50\u2013100 m",
+          "colour": "#851e5a"
+        },
+        {
+          "label": "0\u201350 m",
+          "colour": "#03051a"
+        }
+      ],
+      "source_file": "BZO_NEW_RoadsWaterProximityRisk.tif",
+      "stats": {
+        "Bloemhof": {
+          "covered_share": 0.335,
+          "shares": {
+            "250 m +": 0.166,
+            "100\u2013250 m": 0.421,
+            "50\u2013100 m": 0.239,
+            "0\u201350 m": 0.173
+          }
+        },
+        "Hillesluis": {
+          "covered_share": 0.321,
+          "shares": {
+            "250 m +": 0.12,
+            "100\u2013250 m": 0.405,
+            "50\u2013100 m": 0.188,
+            "0\u201350 m": 0.287
+          }
+        },
+        "Design site": {
+          "covered_share": 0.408,
+          "shares": {
+            "250 m +": 0.028,
+            "100\u2013250 m": 0.281,
+            "50\u2013100 m": 0.412,
+            "0\u201350 m": 0.278
+          }
+        }
+      }
+    }
+  ]
+}

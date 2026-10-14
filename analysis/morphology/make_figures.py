@@ -127,7 +127,9 @@ def fig_svf_map(svf, open_ground, stats):
     ax.imshow(np.ones_like(svf), cmap=LinearSegmentedColormap.from_list(
         "n", [NEUTRAL, NEUTRAL]), vmin=0, vmax=1, interpolation="nearest")
     shown = np.where(open_ground, svf, np.nan)
-    im = ax.imshow(shown, cmap=SEQ, vmin=0.2, vmax=1.0, interpolation="nearest")
+    # viridis, as the app's SVF overlay (sky_view_factor.py): purple = enclosed,
+    # yellow = open sky, so the report and the map read the same way.
+    im = ax.imshow(shown, cmap="viridis", vmin=0.2, vmax=1.0, interpolation="nearest")
 
     ax.set_xticks([]); ax.set_yticks([])
     for s in ax.spines.values():

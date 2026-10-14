@@ -270,9 +270,9 @@ numbers here still match `data/processed/`.
 |---|---|---|---|
 | 4.1 | 3D city model + proposed massing | existing buildings ✅ · design site chosen ✅ · **massing not started** | — |
 | 4.2 | Geospatial data layers | ✅ done | — |
-| 4.3 | Urban morphological indicators | ✅ done — SVF 0.726, GSI 0.284, FSI 0.960, mix 0.351, both buurten | Atanas |
+| 4.3 | Urban morphological indicators | ✅ done — SVF 0.726, GSI 0.284, FSI 0.960, mix 0.351, both buurten; plus street H/W and direct-sun hours | Atanas |
 | 4.4 | KNMI sensors + AI prediction | ✅ done — live feed, sensors, 5 y history, model comparison | — |
-| 4.5 | Wind + noise simulation | ❌ not started | — |
+| 4.5 | Wind + noise simulation | 🟡 noise done (baseline, NoiseModelling 6.0.0) · wind not started | — |
 | 4.6 | CBS socio-demographics | ❌ not started | — |
 | 4.7 | Agent-based land-use model | ✅ done — CA + RL, prefers `scenario_b` | Atanas |
 | 4.8 | Road network optimization | ❌ not started | — |

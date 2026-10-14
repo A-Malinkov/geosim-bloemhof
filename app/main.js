@@ -37,6 +37,8 @@ import { setup as setupLanduse } from "./modules/landuse.js";
 import { setup as setupRoads } from "./modules/roads.js";
 import { setup as setupScenarios } from "./modules/scenarios.js";
 import { setup as setupPhotos } from "./modules/photos.js";
+import { setup as setupFlood } from "./modules/flood.js";
+import { setup as setupPerformance } from "./modules/performance.js";
 
 /* Load order only affects panel order when two panels share the same `order`. */
 const MODULES = [
@@ -50,6 +52,9 @@ const MODULES = [
   ["landuse", setupLanduse],
   ["roads", setupRoads],
   ["photos", setupPhotos],
+  ["flood", setupFlood],
+  // Last, so saved performance choices override defaults set by the others.
+  ["performance", setupPerformance],
 ];
 
 const boot = document.getElementById("boot");

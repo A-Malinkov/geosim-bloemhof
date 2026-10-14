@@ -1,0 +1,101 @@
+{
+  "study_area": "Bloemhof & Hillesluis",
+  "scenario": "baseline",
+  "method": "street-canyon H/W (Oke 1988): perpendicular rays from OSM centrelines to the first 3DBAG main-building fa\u00e7ade on each side",
+  "parameters": {
+    "step_m": 10.0,
+    "max_ray_m": 60.0,
+    "wall_min_footprint_m2": 15,
+    "wall_min_height_m": 3.0,
+    "class_edges": [
+      0.4,
+      0.7,
+      1.0,
+      1.5
+    ]
+  },
+  "unit": "street length; H/W statistics over canyon samples (buildings on both sides)",
+  "per_buurt": {
+    "Bloemhof": {
+      "street_km": 25.24,
+      "canyon_share": 0.672,
+      "hw": {
+        "median": 0.42,
+        "mean": 0.46,
+        "p10": 0.15,
+        "p90": 0.79
+      },
+      "h_m_median": 8.0,
+      "w_m_median": 19.9,
+      "classes": {
+        "< 0.4 open": 0.474,
+        "0.4\u20130.7": 0.382,
+        "0.7\u20131.0": 0.095,
+        "1.0\u20131.5": 0.048,
+        "> 1.5 deep": 0.001
+      }
+    },
+    "Hillesluis": {
+      "street_km": 26.13,
+      "canyon_share": 0.556,
+      "hw": {
+        "median": 0.45,
+        "mean": 0.5,
+        "p10": 0.19,
+        "p90": 0.94
+      },
+      "h_m_median": 12.1,
+      "w_m_median": 29.1,
+      "classes": {
+        "< 0.4 open": 0.447,
+        "0.4\u20130.7": 0.338,
+        "0.7\u20131.0": 0.138,
+        "1.0\u20131.5": 0.072,
+        "> 1.5 deep": 0.006
+      }
+    }
+  },
+  "combined": {
+    "street_km": 51.37,
+    "canyon_share": 0.613,
+    "hw": {
+      "median": 0.43,
+      "mean": 0.48,
+      "p10": 0.17,
+      "p90": 0.85
+    },
+    "h_m_median": 9.8,
+    "w_m_median": 22.4,
+    "classes": {
+      "< 0.4 open": 0.462,
+      "0.4\u20130.7": 0.361,
+      "0.7\u20131.0": 0.115,
+      "1.0\u20131.5": 0.059,
+      "> 1.5 deep": 0.003
+    }
+  },
+  "design_site": {
+    "street_km": 3.65,
+    "canyon_share": 0.748,
+    "hw": {
+      "median": 0.4,
+      "mean": 0.44,
+      "p10": 0.14,
+      "p90": 0.76
+    },
+    "h_m_median": 7.1,
+    "w_m_median": 20.6,
+    "classes": {
+      "< 0.4 open": 0.502,
+      "0.4\u20130.7": 0.344,
+      "0.7\u20131.0": 0.132,
+      "1.0\u20131.5": 0.022,
+      "> 1.5 deep": 0.0
+    }
+  },
+  "limitations": [
+    "One height per building (roof median), not eave height.",
+    "Gaps in a street wall narrower than the 10 m sample spacing are averaged over.",
+    "Dual carriageways are measured from each half's centreline."
+  ]
+}
