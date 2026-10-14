@@ -43,6 +43,13 @@ html, body {
 #cesiumContainer { position: absolute; inset: 0; }
 .cesium-widget-credits { display: none !important; }
 
+/* The info box draws its description in an iframe that declares no colour
+ * scheme. With :root on `dark`, Chrome then paints an OPAQUE WHITE backdrop
+ * behind the iframe (a colour-scheme mismatch with its embedder), and Cesium's
+ * light text (#edffff) becomes unreadable. Matching the iframe element to the
+ * document inside it keeps it transparent over Cesium's dark panel. */
+.cesium-infoBox-iframe { color-scheme: light; }
+
 /* ------------------------------------------------------------------ boot */
 .boot {
   position: absolute; inset: 0;

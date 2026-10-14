@@ -205,6 +205,8 @@ async function addDensityGrid(ctx) {
       `hsl(213, ${Math.round(45 + 40 * t)}%, ${Math.round(88 - 48 * t)}%)`,
     ).withAlpha(sparse ? 0.25 : 0.72);
     e.polygon.outline = false;
+    // Without a name the info box title falls back to the entity's UUID.
+    e.name = `Density cell · FSI ${fsi.toFixed(2)}`;
     e.description =
       `<table>` +
       `<tr><td>FSI</td><td>${fsi.toFixed(2)}</td></tr>` +
@@ -254,6 +256,7 @@ async function addLanduseGrid(ctx) {
       `hsl(213, ${Math.round(45 + 40 * t)}%, ${Math.round(88 - 48 * t)}%)`,
     ).withAlpha(sparse ? 0.2 : 0.72);
     e.polygon.outline = false;
+    e.name = `Land-use mix cell · Shannon ${sh.toFixed(2)}`;
     const share = (k) => {
       const v = p?.[`share_${k}`]?.getValue?.();
       return v
