@@ -27,3 +27,38 @@ import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 from common.project import STUDY_AREA, PROCESSED, RAW, bbox_rd, bbox_wgs, write_processed
 ```
+
+## Noise — what exists (2026-10-14)
+
+`noise.py` runs the road-traffic noise model for one scenario:
+
+```bash
+python analysis/wind_noise/noise.py                 # baseline, ~10 min
+python analysis/wind_noise/noise.py --refresh       # re-fetch OSM + 3DBAG first
+```
+
+It needs **Java ≥ 11** and **NoiseModelling 6.0.0** unpacked at
+`~/tools/NoiseModelling_6.0.0` (or `NOISEMODELLING_HOME`), from
+<https://github.com/Universite-Gustave-Eiffel/NoiseModelling/releases/tag/v6.0.0>.
+The model chain — OSM import → road emission → Delaunay receivers →
+propagation — is in `noise_pipeline.groovy`, run headless by `ScriptRunner`.
+Inputs are cached in `cache/noise/` (gitignored).
+
+Writes `data/processed/noise_baseline.json` (5 m Lden grid + summary) and
+`docs/fig_noise_baseline.png`. Scenarios exit with a message until
+`design_massing.geojson` exists; the hook is `buildings_for()`.
+
+Traps found on the way, all handled in the code:
+
+- **Overpass answers 406** without a `User-Agent` header.
+- **Osmosis needs `out meta`**, and recursing relations pulls in bus routes
+  reaching Belgium. Fetch ways + their nodes only.
+- **`LW_ROADS` is the source table** for `Noise_level_from_source`, not
+  `tableSourcesEmission` — it already holds geometry and per-period power.
+- **Over-the-roof diffraction is off by default.** Bloemhof's closed courtyards
+  then have no sound path and come out at −92 dB on a third of the receivers.
+  `confDiffHorizontal: true` fixes it, and takes the run from 2 to ~9 minutes.
+- **`Import_OSM` ignores `maxspeed`**: 50 km/h main streets are modelled at
+  80. The pipeline caps speeds at the OSM limit (−4.5 dB at the loudest spots).
+- **The isosurface (`CONTOURING_NOISE_MAP`) has holes** where receivers do have
+  levels, so the map is drawn from our own grid instead.
