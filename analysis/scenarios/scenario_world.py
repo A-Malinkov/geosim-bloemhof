@@ -28,8 +28,8 @@ under buildings, so there is no better local value to use.
 
 WHAT IT CANNOT TELL YOU
 -----------------------
-* Old back-garden trees on demolished lots stay in the DSM; the new design's
-  planting is not added.
+* Old back-garden trees on demolished lots stay in the DSM, except where a new
+  block or street now is; the new design's planting is not added.
 * Demolished footprints are widened by 0.5 m before flattening, so eaves and
   the AHN's soft building edges go with them.
 """
@@ -109,6 +109,17 @@ def burn_into_rasters(dsm, dtm, transform, scenario: str):
         dsm[m] = ground  #flattened to the ground: now open ground
         dtm[m] = ground  #the DTM had no value under the old buildings
         print(f"  {scenario}: {len(old)} demolished buildings flattened, {m.sum():,} cells")
+    #new streets: flat at ground level, so old crowns and sheds standing there go
+    from shapely.geometry import shape
+    from shapely.ops import transform as shp_transform
+    d = json.loads((PROCESSED / "design_streets.geojson").read_text())
+    streets = [shp_transform(lambda x, y, z=None: to_rd(x, y), shape(f["geometry"]))
+               for f in d.get("features", []) if f["properties"].get("scenario") == scenario]
+    if streets:
+        m = rasterize([(g, 1) for g in streets], out_shape=dsm.shape, transform=transform, dtype="uint8").astype(bool)
+        dsm[m] = ground  #street surface
+        dtm[m] = ground
+        print(f"  {scenario}: new streets flattened, {m.sum():,} cells")
     #new blocks, lowest first so a taller part wins where parts touch
     shapes = [(g, ground + h) for g, h in sorted(zip(new.geometry, new.height_m), key=lambda t: t[1])]
     roof = rasterize(shapes, out_shape=dsm.shape, transform=transform, fill=np.nan, dtype="float32")

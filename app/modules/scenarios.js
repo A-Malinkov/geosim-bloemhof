@@ -190,7 +190,10 @@ export async function setup(ctx) {
     const ds = byScenario.get(scenario);
     if (!ds) {
       summary.innerHTML =
-        `<p class="muted">Current situation — no proposed massing shown.</p>`;
+        (scenario === "baseline"
+          ? `<p class="muted">Current situation — no proposed massing shown.</p>`
+          : `<p class="muted">No massing for ${scenario} yet. Model it in Rhino and add it to ` +
+            `<code>analysis/scenarios/import_rhino.py</code>.</p>`);  //a scenario without massing is not the current situation
       return;
     }
     const n = ds.entities.values.length;

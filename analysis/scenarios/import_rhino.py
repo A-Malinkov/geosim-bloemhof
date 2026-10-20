@@ -50,6 +50,9 @@ WHAT IT CANNOT TELL YOU
   any sloping area it skipped.
 * The Rhino layers say tall / medium / short, not a use. use is set to
   "residential" because that is the brief, not because the model says so.
+* Trees: data/processed/trees_<scenario>.geojson is the existing tree register
+  minus the trees standing in a new block or on a new street. Proposed
+  planting is not added yet.
 * Streets are the flat surfaces on the "New ROADS" sublayer, merged (several
   are drawn twice) and clipped to the site. The road outline curves on that
   layer are not used. Green areas and fences are not imported yet.
@@ -67,6 +70,8 @@ from shapely.geometry import Polygon, mapping  #footprint geometry
 from shapely.ops import unary_union, transform  #merge triangles, reproject
 from shapely.geometry import shape  #massing back from GeoJSON for the overlap rule
 from scenario_world import site_footprints  #3DBAG footprints over the site, shared with the analyses
+import json  #tree register
+from common.project import PROCESSED  #where trees.geojson lives
 
 MODEL = RAW / "Group Project Q1 - Proposal Modelling_16.10.26.3dm"  #newest version in Modelling.zip
 
@@ -235,6 +240,21 @@ def demolished(c, feats, footprints):
     return sorted(ids)
 
 
+def write_trees(scenario, features, streets):
+    #existing trees minus those inside this scenario's new blocks or streets -> trees_<scenario>.geojson
+    trees = json.loads((PROCESSED / "trees.geojson").read_text())
+    taken = unary_union([shape(f["geometry"]) for f in features + streets
+                         if f["properties"]["scenario"] == scenario])  #lon/lat, fine for point-in-polygon
+    keep = [t for t in trees["features"] if not taken.contains(shape(t["geometry"]))]
+    print(f"  {scenario}: {len(trees['features']) - len(keep)} existing trees removed (in new blocks or streets)")
+    out = {k: v for k, v in trees.items() if k != "features"}  #same header as trees.geojson
+    out.update({"_written_by": "analysis/scenarios/import_rhino.py",
+                "_note": f"Existing tree register minus trees inside the {scenario} blocks and streets. "
+                         "Proposed planting not added.",
+                "features": keep})
+    write_processed(f"trees_{scenario}.geojson", out, indent=None)
+
+
 def main():
     if not MODEL.exists():
         sys.exit(f"missing {MODEL}\nCopy it from Modelling.zip on the shared drive (see the docstring).")
@@ -265,6 +285,8 @@ def main():
         "_note": "Polygons in EPSG:4326, one per scenario, draped on the ground by the app.",
         "features": streets,
     }, indent=1)
+    for c in CASES:  #tree set per scenario
+        write_trees(c["scenario"], features, streets)
     return 0
 
 

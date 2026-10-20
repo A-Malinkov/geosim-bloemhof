@@ -180,7 +180,7 @@ async function addDensityGrid(ctx) {
   ds.show = false;
   ctx.registerLayer({
     id: "densityGrid",
-    label: `Density grid, FSI (${geo._cell_size_m ?? 100} m)`,
+    label: `Density grid, FSI (${geo._cell_size_m ?? 100} m, baseline)`,  //not re-run per scenario, so say which
     group: "Analysis",
     show: false,
     target: ds,
@@ -247,7 +247,7 @@ async function addLanduseGrid(ctx) {
   ds.show = false;
   ctx.registerLayer({
     id: "landuseGrid",
-    label: `Land-use mix (${geo._cell_size_m ?? 100} m)`,
+    label: `Land-use mix (${geo._cell_size_m ?? 100} m, baseline)`,  //not re-run per scenario, so say which
     group: "Analysis",
     show: false,
     target: ds,
@@ -333,8 +333,9 @@ function addCanyonLayer(ctx) {
     const d = new Cesium.CustomDataSource(`canyon_hw_${want}`);
     for (const f of geo.features) {
       const p = f.properties;
-      const c = f.geometry.coordinates;
-      d.entities.add({
+      //a street cut in two (scenario runs remove the old interior grid) is a MultiLineString: draw each part
+      const lines = f.geometry.type === "MultiLineString" ? f.geometry.coordinates : [f.geometry.coordinates];
+      for (const c of lines) d.entities.add({  //one polyline per part
         name: `${p.name || "Street"} · H/W ${p.hw.toFixed(2)}`,
         polyline: {
           positions: Cesium.Cartesian3.fromDegreesArray(c.flat()),
