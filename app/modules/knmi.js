@@ -405,14 +405,21 @@ export async function setup(ctx) {
       `<tr><td>R²</td><td>${m.r2 ?? "—"}</td></tr>` +
       `</tbody></table>` +
       `<table class="kv"><thead><tr><th>horizon</th><th>model</th>` +
-      `<th>MAE</th><th>vs naive</th></tr></thead><tbody>${hRows}</tbody></table>` +
+      `<th>MAE</th><th>vs persistence</th></tr></thead><tbody>${hRows}</tbody></table>` +  //persistence, not the same-hour-yesterday baseline
       (demo ? chart2(demo.time, demo.actual, demo.predicted,
                      "actual", "predicted", "#97a3b2", "#eb6834",
                      `°C · ${demo.model} ${demo.horizon}`) : "") +
       `<p class="muted">Temperature, ${forecast.method?.test_hours?.toLocaleString("en-GB")} ` +
-      `held-out hours. "vs naive" is the improvement over assuming nothing ` +
+      `held-out hours. "vs persistence" is the improvement over assuming nothing ` +
       `changes. Chronological split — never random, or neighbouring hours leak ` +
-      `across it.</p>`;
+      `across it.</p>` +
+      `<p class="muted">Models compared: ridge regression, gradient boosting and an ` +  //what was trained, in one line
+      `LSTM, against persistence and same-hour-yesterday. Inputs: ` +
+      `${forecast.method?.train_hours?.toLocaleString("en-GB") ?? "—"} hours of ` +
+      `KNMI station ${forecast.station ?? "—"} (Rotterdam Airport), ` +
+      `${(forecast.method?.features ?? "").split(" ")[0] || "—"} features per hour: ` +  //count from the training run
+      `recent temperature, wind, humidity, pressure and dew point, plus time of day, ` +
+      `season, wind direction and cloud. Settings were not tuned.</p>`;
   } else {
     ctx.placeholder(predEl, {
       what: "Predictive model not trained yet. Report MAE/RMSE against a "

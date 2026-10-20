@@ -27,8 +27,8 @@ as it is: it is context, not something the agent may change or is scored on.
 
     state   the grid so far
     action  (cell, class) — develop this cell as that use
-    reward  the change in the planning objective caused by that placement,
-            plus a terminal bonus for the final objective
+    reward  the change in the planning objective caused by that placement
+            (times 100); there is no separate terminal bonus
 
     objective = 1.6 * land-use mix (Shannon)        over the site's cells
               + 1.0 * green share                  over the site's cells
@@ -43,7 +43,12 @@ class it has, how reachable it is, whether it is currently vacant, and how close
 it is to water. Linear rather than a deep network on purpose — the whole value
 of the RL run here is that you can READ the learned weights and argue about
 them. A DQN would score similarly and explain nothing. That is a deliberate
-choice, not a limitation to hide; a torch DQN is the obvious extension.
+choice, not a limitation to hide. rl_dqn.py is the deep version, on the
+same problem, and it does not score better.
+
+Two of the 13 features are constant for every candidate: candidates are
+always empty site cells, so is_vacant is 1 and is_green is 0. They act as
+extra bias terms.
 
 Trained with epsilon-greedy exploration and TD(0) updates.
 
@@ -84,6 +89,7 @@ from ca_landuse import (  # noqa: E402
 )
 
 PLACEABLE = [RESID, RETAIL, AMENITY, GREEN]     # what the agent may build
+#13 numbers per candidate cell: 8 neighbour counts, access, two flags, water distance, constant
 FEATURES = ([f"nb_{c}" for c in CLASSES] +
             ["access", "is_vacant", "is_green", "dist_water", "bias"])
 
@@ -96,18 +102,18 @@ def site_terms(grid, cell_m, site):
     """
     from scipy.ndimage import distance_transform_edt
     cells = grid[site]
-    target = np.isin(grid, [AMENITY, RETAIL])
-    homes = site & (grid == RESID)
+    target = np.isin(grid, [AMENITY, RETAIL])  #what a home needs to be near
+    homes = site & (grid == RESID)  #only homes inside the site are scored
     d = None
     if target.any() and homes.any():
-        d = float((distance_transform_edt(~target) * cell_m)[homes].mean())
+        d = float((distance_transform_edt(~target) * cell_m)[homes].mean())  #mean straight-line distance home -> nearest shop or amenity, m
     return shannon_mix(cells), float((cells == GREEN).sum()) / cells.size, d
 
 
 def objective(grid, cell_m, site):
     mix, green, d = site_terms(grid, cell_m, site)
-    walk = max(0.0, 1 - (d if d is not None else 400.0) / 400.0)
-    return 1.6 * mix + 1.0 * green + 0.8 * walk
+    walk = max(0.0, 1 - (d if d is not None else 400.0) / 400.0)  #1 at the door, 0 at 400 m or with no homes
+    return 1.6 * mix + 1.0 * green + 0.8 * walk  #the same weights the CA is scored with
 
 
 def site_score(grid, cell_m, site):
@@ -123,9 +129,9 @@ def neighbour_counts(grid, radius=4, decay=2.0):
     r = radius
     yy, xx = np.mgrid[-r:r + 1, -r:r + 1]
     d = np.hypot(yy, xx)
-    kern = np.exp(-d / decay)
-    kern[r, r] = 0.0
-    kern[d > r] = 0.0
+    kern = np.exp(-d / decay)  #nearer neighbours count more
+    kern[r, r] = 0.0  #a cell is not its own neighbour
+    kern[d > r] = 0.0  #round window of radius 4 cells
     return np.stack([fftconvolve((grid == k).astype("float32"), kern, mode="same")
                      for k in range(len(CLASSES))])
 
@@ -134,7 +140,7 @@ def features(grid, acc, dist_water):
     """Per-cell feature stack, shape (n_features, ny, nx)."""
     nb = neighbour_counts(grid)
     return np.concatenate([
-        nb / 8.0,
+        nb / 8.0,  #neighbour counts, scaled to roughly 0..1
         acc[None], (grid == VACANT).astype("float32")[None],
         (grid == GREEN).astype("float32")[None],
         dist_water[None],
@@ -170,14 +176,14 @@ def main() -> int:
     # cleared, and the agent decides what each one becomes
     grid0 = grid_now.copy()
     grid0[site & ~np.isin(grid_now, list(FIXED))] = VACANT
-    n_new = int((site & (grid0 == VACANT)).sum())
+    n_new = int((site & (grid0 == VACANT)).sum())  #cells the agent places per episode
     print(f"  grid {nx} x {ny}; design site {int(site.sum())} cells, "
           f"{n_new} to re-plan ({n_new * args.cell**2 / 10_000:.1f} ha)")
     print(f"  {args.episodes} episodes, {len(PLACEABLE)} placeable classes, "
           f"{args.candidates} candidates per decision")
 
     dw = distance_transform_edt(grid0 != WATER).astype("float32")
-    dist_water = np.clip(dw / 20.0, 0, 1)
+    dist_water = np.clip(dw / 20.0, 0, 1)  #distance to water in cells, capped at 20 and scaled to 0..1
     base_obj = objective(grid_now, args.cell, site)
     base_score = site_score(grid_now, args.cell, site)
     cleared_obj = objective(grid0, args.cell, site)
@@ -199,19 +205,21 @@ def main() -> int:
         return ok
 
     rng = np.random.default_rng(args.seed)
-    W = np.zeros((len(PLACEABLE), len(FEATURES)), dtype="float64")
+    W = np.zeros((len(PLACEABLE), len(FEATURES)), dtype="float64")  #the whole model: one weight per use and feature
     curve, best_obj, best_grid = [], -1e9, None
 
     for ep in range(args.episodes):
+        #exploration rate, decaying from eps_start towards eps_end
         eps = args.eps_end + (args.eps_start - args.eps_end) * \
             math.exp(-3.0 * ep / max(1, args.episodes))
         g = grid0.copy()
-        acc = accessibility(g, road_frac)
+        acc = accessibility(g, road_frac)  #roads do not change, so access is computed once per episode
         prev_obj = cleared_obj
         # only the cleared cells inside the design site may be built on
         free = site & (g == VACANT)
         n_resid = 0
 
+        #one placement per step until the site is full
         for _ in range(n_new):
             idx = np.flatnonzero(free.ravel())
             if idx.size == 0:
@@ -220,9 +228,10 @@ def main() -> int:
                               replace=False)
             F = features(g, acc, dist_water)
             Fc = F.reshape(F.shape[0], -1)[:, cand]              # (f, ncand)
+            #linear Q for every (use, candidate) pair
             Q = W @ Fc                                            # (nclass, ncand)
             ok = allowed(n_resid, idx.size)
-            Q[~ok] = -np.inf
+            Q[~ok] = -np.inf  #uses that would break the housing rule are never picked
 
             if rng.random() < eps:
                 # unconstrained runs draw exactly as before, so they reproduce
@@ -232,7 +241,7 @@ def main() -> int:
             else:
                 ai, ci = np.unravel_index(int(np.argmax(Q)), Q.shape)
             cell, klass = int(cand[ci]), PLACEABLE[ai]
-            phi = Fc[:, ci].astype("float64")
+            phi = Fc[:, ci].astype("float64")  #features of the chosen cell, for the update
 
             r_, c_ = np.unravel_index(cell, g.shape)
             g[r_, c_] = klass
@@ -252,19 +261,19 @@ def main() -> int:
                 q_next = float((W @ F2)[allowed(n_resid, nxt.size)].max())
             else:
                 q_next = 0.0
-            target = reward + args.gamma * q_next
-            W[ai] += args.alpha * (target - float(W[ai] @ phi)) * phi
-            np.clip(W, -50, 50, out=W)
+            target = reward + args.gamma * q_next  #TD(0) target: reward now plus discounted best Q next
+            W[ai] += args.alpha * (target - float(W[ai] @ phi)) * phi  #gradient step on the chosen use's weights only
+            np.clip(W, -50, 50, out=W)  #keep weights bounded so a bad step cannot run away
 
         final = objective(g, args.cell, site)
-        curve.append(round(final, 4))
+        curve.append(round(final, 4))  #objective at the end of each episode = the learning curve
         if final > best_obj:
             best_obj, best_grid = final, g.copy()
         if ep % max(1, args.episodes // 10) == 0 or ep == args.episodes - 1:
             print(f"     episode {ep+1:4}/{args.episodes}  eps {eps:.2f}  "
                   f"objective {final:.4f}  best {best_obj:.4f}")
 
-    g = best_grid
+    g = best_grid  #report the best episode's plan, which may include lucky exploration
     score = site_score(g, args.cell, site)
     d = score["mean_distance_to_amenity_m"]
 

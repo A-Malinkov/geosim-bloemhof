@@ -120,13 +120,13 @@ def main() -> int:
     site = burn([(design_site_polygon(), 1)], out_shape=grid_now.shape,
                 transform=transform).astype(bool)
     grid0 = grid_now.copy()
-    grid0[site & ~np.isin(grid_now, list(FIXED))] = VACANT
+    grid0[site & ~np.isin(grid_now, list(FIXED))] = VACANT  #clear the site except roads and water, as in rl_landuse.py
     n_new = int((site & (grid0 == VACANT)).sum())
 
     rows, cols = np.where(site)
     r0, r1 = max(0, rows.min() - MARGIN), min(site.shape[0], rows.max() + MARGIN + 1)
     c0, c1 = max(0, cols.min() - MARGIN), min(site.shape[1], cols.max() + MARGIN + 1)
-    crop = (slice(r0, r1), slice(c0, c1))
+    crop = (slice(r0, r1), slice(c0, c1))  #the network only sees the site plus MARGIN cells around it
     H, W = r1 - r0, c1 - c0
     print(f"  grid {nx} x {ny}; design site {int(site.sum())} cells, {n_new} to re-plan; "
           f"network sees a {W} x {H} crop")
@@ -144,7 +144,7 @@ def main() -> int:
 
     RES_I = PLACEABLE.index(RESID)
     site_c = torch.tensor(site[crop], dtype=torch.float32)
-    static = torch.stack([site_c, torch.tensor(acc[crop]), torch.tensor(dist_water[crop])])
+    static = torch.stack([site_c, torch.tensor(acc[crop]), torch.tensor(dist_water[crop])])  #inputs that never change during an episode
     placeable_t = torch.tensor(PLACEABLE)
 
     def allowed(n_resid: int, n_free: int) -> np.ndarray:
@@ -166,6 +166,7 @@ def main() -> int:
         q_left = 0.0 if quota is None else max(0, quota - n_resid) / max(1, n_new)
         return np.concatenate([shares, [placed / n_new, q_left]]).astype("float32")
 
+    #stack every input channel: one-hot land use, empty mask, static layers, site-wide numbers
     def inputs(gc: torch.Tensor, fc: torch.Tensor, gl: torch.Tensor) -> torch.Tensor:
         """Batch of network inputs from cropped grids (B,H,W), free masks, globals."""
         B = gc.shape[0]
@@ -174,9 +175,10 @@ def main() -> int:
                           static[None].expand(B, -1, -1, -1),
                           gl[:, :, None, None].expand(-1, -1, H, W)], dim=1)
 
-    c_in = len(CLASSES) + 1 + 3 + N_GLOBAL
+    c_in = len(CLASSES) + 1 + 3 + N_GLOBAL  #8 one-hot + empty mask + 3 static + 6 site-wide = 18 channels
     w = args.width
 
+    #fully convolutional: the same small network looks at every cell, dilations widen its view
     def make_net():
         return nn.Sequential(
             nn.Conv2d(c_in, w, 3, padding=1), nn.ReLU(),
@@ -193,13 +195,14 @@ def main() -> int:
           f"{args.episodes} episodes, replay {args.buffer}, batch {args.batch}")
 
     # replay: compact states (cropped grid + free mask + globals), rebuilt on sampling
-    buf = deque(maxlen=args.buffer)
+    buf = deque(maxlen=args.buffer)  #replay memory, oldest transitions fall out first
 
     def masked_q(q: torch.Tensor, free: torch.Tensor, ok: torch.Tensor) -> torch.Tensor:
         """q (B,4,H,W) -> flat (B, 4*H*W) with invalid actions at -inf."""
         valid = free[:, None] & ok[:, :, None, None]
         return q.masked_fill(~valid, float("-inf")).flatten(1)
 
+    #epsilon-greedy over every empty cell x use, not a sample of cells
     def act(g, free, counts, n_resid, eps):
         n_free = int(free.sum())
         ok = allowed(n_resid, n_free)
@@ -213,11 +216,12 @@ def main() -> int:
                 x = inputs(torch.tensor(g[crop][None]), torch.tensor(fc[None]),
                            torch.tensor(glob(counts, n_free, n_resid)[None]))
                 q = masked_q(net(x), torch.tensor(fc[None]), torch.tensor(ok[None]))
-                flat = int(q.argmax())
-            ai, ci = divmod(flat, H * W)
+                flat = int(q.argmax())  #best (use, cell) pair over the whole crop
+            ai, ci = divmod(flat, H * W)  #flat index -> use and cell
         r_, c_ = divmod(ci, W)
         return ai, r0 + r_, c0 + c_
 
+    #fill the site once; with learn=False it only plays (random baseline, greedy run)
     def run_episode(eps, learn=True):
         nonlocal steps
         g = grid0.copy()
@@ -235,22 +239,23 @@ def main() -> int:
             counts[ai] += 1
             n_resid += PLACEABLE[ai] == RESID
             new = objective(g, args.cell, site)
-            reward = (new - prev) * 100.0
+            reward = (new - prev) * 100.0  #same reward as rl_landuse.py: change in the objective, times 100
             prev = new
             if not learn:
                 continue
-            done = not free.any()
+            done = not free.any()  #last placement of the episode: no bootstrap after it
             buf.append((s_grid, s_free, s_glob, ai, (r_ - r0) * W + (c_ - c0), reward,
                         g[crop].copy(), free[crop].copy(),
                         glob(counts, n_free - 1, n_resid),
                         allowed(n_resid, n_free - 1), done))
             steps += 1
-            if len(buf) >= args.warmup and steps % args.train_every == 0:
+            if len(buf) >= args.warmup and steps % args.train_every == 0:  #learn every few steps once the buffer has enough
                 train_step()
-            if steps % args.target_sync == 0:
+            if steps % args.target_sync == 0:  #refresh the target network
                 tgt.load_state_dict(net.state_dict())
         return objective(g, args.cell, site), g
 
+    #one gradient step on a random minibatch from the replay memory
     def train_step():
         batch = [buf[i] for i in rng.integers(len(buf), size=args.batch)]
         sg, sf, sgl, a, cell, r, ng, nf, ngl, nok, d = zip(*batch)
@@ -262,28 +267,28 @@ def main() -> int:
         r = torch.tensor(r, dtype=torch.float32); d = torch.tensor(d, dtype=torch.float32)
 
         q = net(inputs(sg, sf, sgl)).flatten(1)
-        q_sa = q.gather(1, (a * H * W + cell)[:, None]).squeeze(1)
+        q_sa = q.gather(1, (a * H * W + cell)[:, None]).squeeze(1)  #Q of the action actually taken
         with torch.no_grad():
             xn = inputs(ng, nf, ngl)
             best = masked_q(net(xn), nf, nok).argmax(1, keepdim=True)     # Double DQN
-            q_next = tgt(xn).flatten(1).gather(1, best).squeeze(1)
-            q_next = torch.where(torch.isfinite(q_next), q_next, torch.zeros_like(q_next))
-            target = r + args.gamma * (1 - d) * q_next
-        loss = nn.functional.smooth_l1_loss(q_sa, target)
+            q_next = tgt(xn).flatten(1).gather(1, best).squeeze(1)  #...valued by the target network (Double DQN)
+            q_next = torch.where(torch.isfinite(q_next), q_next, torch.zeros_like(q_next))  #no valid next action -> 0
+            target = r + args.gamma * (1 - d) * q_next  #TD target, cut at the end of the episode
+        loss = nn.functional.smooth_l1_loss(q_sa, target)  #Huber loss
         opt.zero_grad()
         loss.backward()
-        nn.utils.clip_grad_norm_(net.parameters(), 10.0)
+        nn.utils.clip_grad_norm_(net.parameters(), 10.0)  #cap the gradient so one big error cannot wreck the weights
         opt.step()
 
     steps = 0
     # the baseline to beat: the same problem with every action random
-    rand = [run_episode(1.0, learn=False)[0] for _ in range(args.random_episodes)]
+    rand = [run_episode(1.0, learn=False)[0] for _ in range(args.random_episodes)]  #random policy: eps 1, no learning
     print(f"  random policy over {len(rand)} episodes: mean {np.mean(rand):.4f}, "
           f"best {np.max(rand):.4f}")
     curve, best_obj, best_grid = [], -1e9, None
     decay = max(1, int(0.7 * args.episodes))
     for ep in range(args.episodes):
-        eps = max(0.05, 1.0 - 0.95 * ep / decay)
+        eps = max(0.05, 1.0 - 0.95 * ep / decay)  #linear from 1.0 to 0.05 over the first 70 % of episodes
         final, g = run_episode(eps)
         curve.append(round(final, 4))
         if final > best_obj:
@@ -292,7 +297,7 @@ def main() -> int:
             print(f"     episode {ep+1:4}/{args.episodes}  eps {eps:.2f}  "
                   f"objective {final:.4f}  best {best_obj:.4f}  ({time.time()-t0:.0f} s)")
 
-    greedy_obj, greedy_grid = run_episode(0.0, learn=False)
+    greedy_obj, greedy_grid = run_episode(0.0, learn=False)  #what the network learned: no exploration
     if quota is not None:
         assert int((best_grid[site] == RESID).sum()) == quota
         assert int((greedy_grid[site] == RESID).sum()) == quota

@@ -43,7 +43,7 @@ runs everything else and says the LSTM was skipped. To include it:
 USAGE
 -----
     python analysis/knmi/fetch_knmi.py          # first, for the training data
-    python analysis/knmi/train_forecast.py
+    python analysis/knmi/train_forecast.py --epochs 12   # the published run
     python analysis/knmi/train_forecast.py --horizons 1 3 6 12 24 --epochs 30
 
 OUTPUT
@@ -63,20 +63,21 @@ import numpy as np
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 from common.project import PROCESSED, RAW, STUDY_AREA  # noqa: E402
 
-TARGETS = {"temperature_C": "temperature (degC)",
+TARGETS = {"temperature_C": "temperature (degC)",  #the two variables predicted, one model per variable and horizon
            "wind_speed_ms": "wind speed (m/s)"}
-LAGS = [0, 1, 2, 3, 6, 12, 24, 48]
-SEQ_LEN = 48
+LAGS = [0, 1, 2, 3, 6, 12, 24, 48]  #hours back each input is also given at
+SEQ_LEN = 48  #hours of history the LSTM reads as one sequence
 
 
 # ------------------------------------------------------------------- loading
+#hourly station record written by fetch_knmi.py -> times and one array per variable
 def load_hourly(station: int):
     path = RAW / f"knmi_hourly_{station}.json"
     if not path.exists():
         print(f"missing {path}\nRun: python analysis/knmi/fetch_knmi.py")
         sys.exit(1)
     rows = json.loads(path.read_text())["records"]
-    rows.sort(key=lambda r: r["time"])
+    rows.sort(key=lambda r: r["time"])  #chronological, so row i-1 is the hour before row i
     times = np.array([np.datetime64(r["time"]) for r in rows])
 
     cols = {}
@@ -90,6 +91,7 @@ def load_hourly(station: int):
 
 def build_features(times, cols):
     """Lagged values plus cyclical time and wind-direction encodings."""
+    #47 columns: 5 variables x 8 lags, wind direction, time of day, season, cloud
     n = len(times)
     hours = times.astype("datetime64[h]").astype(int)
     hod = (hours % 24).astype("float64")
@@ -101,6 +103,7 @@ def build_features(times, cols):
     doy = (days - year_start).astype("timedelta64[D]").astype("float64")
 
     feats, names = [], []
+    #each core variable now and at every lag in LAGS
     for key in ("temperature_C", "wind_speed_ms", "humidity_pct",
                 "pressure_hPa", "dewpoint_C"):
         v = cols[key]
@@ -109,7 +112,7 @@ def build_features(times, cols):
             if lag == 0:
                 shifted = v.copy()
             else:
-                shifted[lag:] = v[:-lag]
+                shifted[lag:] = v[:-lag]  #value `lag` hours earlier; the first `lag` rows stay NaN
             feats.append(shifted)
             names.append(f"{key}_lag{lag}")
 
@@ -126,6 +129,7 @@ def build_features(times, cols):
     return np.column_stack(feats), names
 
 
+#MAE, RMSE, bias and R2 over the hours where both values exist
 def metrics(y_true, y_pred):
     m = np.isfinite(y_true) & np.isfinite(y_pred)
     if m.sum() < 2:
@@ -157,24 +161,26 @@ def train_lstm(Xtr, ytr, Xte, seq_len, epochs, hidden=64, seed=0):
     torch.manual_seed(seed)
     np.random.seed(seed)
 
+    #every run of seq_len consecutive hours, as one training sample
     def windows(X):
         n, f = X.shape
         idx = np.arange(seq_len)[None, :] + np.arange(n - seq_len + 1)[:, None]
         return X[idx]                       # (samples, seq_len, features)
 
-    mu, sd = np.nanmean(Xtr, axis=0), np.nanstd(Xtr, axis=0)
+    mu, sd = np.nanmean(Xtr, axis=0), np.nanstd(Xtr, axis=0)  #scaling from the training period only
     sd[sd == 0] = 1.0
-    norm = lambda X: np.nan_to_num((X - mu) / sd, nan=0.0)
+    norm = lambda X: np.nan_to_num((X - mu) / sd, nan=0.0)  #standardise; missing values become the training mean (0)
 
     Wtr, Wte = windows(norm(Xtr)), windows(norm(Xte))
-    ytr_w = ytr[seq_len - 1:]
+    ytr_w = ytr[seq_len - 1:]  #target of each window is the one for its last hour
     ok = np.isfinite(ytr_w)
     Wtr, ytr_w = Wtr[ok], ytr_w[ok]
     if len(Wtr) < 500:
         return None, "not enough training windows"
 
-    ym, ys = float(np.mean(ytr_w)), float(np.std(ytr_w) or 1.0)
+    ym, ys = float(np.mean(ytr_w)), float(np.std(ytr_w) or 1.0)  #the target is standardised too
 
+    #two stacked LSTM layers, then a linear layer on the last time step
     class Net(nn.Module):
         def __init__(self, f):
             super().__init__()
@@ -188,13 +194,13 @@ def train_lstm(Xtr, ytr, Xte, seq_len, epochs, hidden=64, seed=0):
 
     dev = torch.device("cpu")
     net = Net(Wtr.shape[2]).to(dev)
-    opt = torch.optim.Adam(net.parameters(), lr=1e-3)
+    opt = torch.optim.Adam(net.parameters(), lr=1e-3)  #Adam, fixed learning rate, not tuned
     lossf = nn.SmoothL1Loss()                # robust to storm outliers
 
     Xt = torch.tensor(Wtr, dtype=torch.float32)
     yt = torch.tensor((ytr_w - ym) / ys, dtype=torch.float32)
     ds = torch.utils.data.TensorDataset(Xt, yt)
-    dl = torch.utils.data.DataLoader(ds, batch_size=256, shuffle=True)
+    dl = torch.utils.data.DataLoader(ds, batch_size=256, shuffle=True)  #windows shuffled within the training period only
 
     net.train()
     for ep in range(epochs):
@@ -209,11 +215,12 @@ def train_lstm(Xtr, ytr, Xte, seq_len, epochs, hidden=64, seed=0):
         if ep % 5 == 0 or ep == epochs - 1:
             print(f"        epoch {ep + 1:3}/{epochs}  loss {tot / len(ds):.4f}")
 
+    #predict the test period, back on the original scale
     net.eval()
     with torch.no_grad():
         pred = net(torch.tensor(Wte, dtype=torch.float32)).numpy() * ys + ym
     full = np.full(len(Xte), np.nan)
-    full[seq_len - 1:] = pred
+    full[seq_len - 1:] = pred  #the first seq_len-1 test hours have no full window and stay NaN
     return full, None
 
 
@@ -227,6 +234,7 @@ def main() -> int:
     ap.add_argument("--no-lstm", action="store_true")
     args = ap.parse_args()
 
+    #scikit-learn models, imported here so --help stays fast
     from sklearn.ensemble import HistGradientBoostingRegressor
     from sklearn.linear_model import Ridge
     from sklearn.pipeline import make_pipeline
@@ -235,7 +243,7 @@ def main() -> int:
 
     print(f"Weather prediction — KNMI station {args.station}, {STUDY_AREA.name}")
     times, cols = load_hourly(args.station)
-    X, feat_names = build_features(times, cols)
+    X, feat_names = build_features(times, cols)  #same 47 inputs for every model
     print(f"  {len(times):,} hourly records, {X.shape[1]} features")
     print(f"  {str(times[0])[:10]} to {str(times[-1])[:10]}")
 
@@ -259,6 +267,7 @@ def main() -> int:
     results = {}
     demo = None
 
+    #one fit per variable and horizon
     for target, label in TARGETS.items():
         y_all = cols[target]
         results[target] = {"label": label, "horizons": {}}
@@ -270,11 +279,11 @@ def main() -> int:
 
             Xtr, ytr = X[:split], y[:split]
             Xte, yte = X[split:], y[split:]
-            tr_ok = np.isfinite(ytr)
+            tr_ok = np.isfinite(ytr)  #drop training hours whose target is missing
 
             preds = {}
             # baselines
-            preds["persistence"] = y_all[split:]
+            preds["persistence"] = y_all[split:]  #the value now, used as the forecast
             # "same hour yesterday": the target at t+h is predicted by y(t+h-24)
             src_idx = np.arange(len(y_all)) + h - 24
             naive = np.full(len(y_all), np.nan)
@@ -282,11 +291,13 @@ def main() -> int:
             naive[ok_idx] = y_all[src_idx[ok_idx]]
             preds["daily_naive"] = naive[split:]
 
+            #linear model: fill gaps with the training median, standardise, L2 penalty 1.0
             ridge = make_pipeline(SimpleImputer(strategy="median"),
                                   StandardScaler(), Ridge(alpha=1.0))
             ridge.fit(Xtr[tr_ok], ytr[tr_ok])
             preds["ridge"] = ridge.predict(Xte)
 
+            #300 boosted trees, settings chosen once and not searched
             gb = HistGradientBoostingRegressor(max_iter=300, learning_rate=0.08,
                                                max_depth=None, random_state=0)
             gb.fit(Xtr[tr_ok], ytr[tr_ok])
@@ -300,7 +311,7 @@ def main() -> int:
                 else:
                     print(f"        skipped — {why}")
 
-            base_mae = metrics(yte, preds["persistence"]).get("mae")
+            base_mae = metrics(yte, preds["persistence"]).get("mae")  #the score every model is measured against
             hz = {}
             for name, p in preds.items():
                 m = metrics(yte, p)
@@ -313,7 +324,7 @@ def main() -> int:
                 print(f"     +{h} h: no model produced comparable predictions")
                 continue
 
-            best = min(hz, key=lambda k: hz[k]["mae"])
+            best = min(hz, key=lambda k: hz[k]["mae"])  #best by test MAE, baselines included
             hz["_best"] = best
             results[target]["horizons"][f"+{h}h"] = hz
 
@@ -333,7 +344,7 @@ def main() -> int:
                     sel = s_te == s
                     if sel.sum() > 24:
                         cond["by_season"][s] = metrics(yte[sel], bp[sel])
-                w = cols["wind_speed_ms"][split:]
+                w = cols["wind_speed_ms"][split:]  #wind at the time the forecast is issued, not at the target time
                 for lab, sel in (("calm (<3 m/s)", w < 3),
                                  ("moderate (3-8 m/s)", (w >= 3) & (w < 8)),
                                  ("strong (>=8 m/s)", w >= 8)):
@@ -373,7 +384,8 @@ def main() -> int:
             "test_hours": int(len(times) - split),
             "features": f"{X.shape[1]} — lags {LAGS} of temperature, wind, "
                         f"humidity, pressure and dew point, plus cyclical "
-                        f"hour-of-day, day-of-year and wind-direction encodings",
+                        f"hour-of-day, day-of-year and wind-direction encodings, "
+                        f"and cloud cover",  #cloud cover was missing from this description
             "lstm": {"seq_len": SEQ_LEN, "hidden": 64, "layers": 2,
                      "epochs": args.epochs, "loss": "SmoothL1"},
             "note": "skill_vs_persistence = 1 - MAE_model/MAE_persistence. "

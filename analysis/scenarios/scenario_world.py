@@ -141,8 +141,13 @@ def centrelines(poly, step: float = 1.0, prune_m: float = 6.0):
     lines = [e for e in shapely.get_parts(edges) if inner.contains(e)]
     if not lines:
         return []
-    merged = linemerge(shapely.union_all(lines))  #join the short Voronoi edges into runs
-    return [g for g in shapely.get_parts(merged) if g.length >= prune_m]  #drop short side branches
+    merged = list(shapely.get_parts(linemerge(shapely.union_all(lines))))  #join the short Voronoi edges into runs
+    #count how many runs meet at each end point; a run with a free end is a spur
+    ends = [tuple(np.round(g.coords[k], 3)) for g in merged for k in (0, -1)]
+    degree = {e: ends.count(e) for e in ends}
+    def spur(g):
+        return min(degree[tuple(np.round(g.coords[0], 3))], degree[tuple(np.round(g.coords[-1], 3))]) == 1
+    return [g for g in merged if g.length >= prune_m or not spur(g)]  #drop short dead ends only, keep short links at junctions
 
 
 def streets_for_scenario(roads, scenario: str):

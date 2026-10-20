@@ -45,8 +45,11 @@ propagation — is in `noise_pipeline.groovy`, run headless by `ScriptRunner`.
 Inputs are cached in `cache/noise/` (gitignored).
 
 Writes `data/processed/noise_baseline.json` (2 m Lden grid + summary) and
-`docs/fig_noise_baseline.png`. Scenarios exit with a message until
-`design_massing.geojson` exists; the hook is `buildings_for()`.
+`docs/fig_noise_baseline.png`. `--scenario scenario_a` is wired: `buildings_for()`
+takes the scenario's buildings from `analysis/scenarios/scenario_world.py`
+(1,150 demolished, 22 new volumes). It has not been run yet, because it needs
+NoiseModelling. Traffic sources are unchanged, so cars still drive the old
+interior streets the design removes; check the map near the new blocks.
 
 The dense run needs more memory than a 16 GB laptop with an IDE open had —
 the JVM segfaulted. To run it on another machine, follow

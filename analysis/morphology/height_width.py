@@ -244,14 +244,16 @@ def main() -> int:
     for i in np.unique(S[drawn]):
         m = (S == i) & drawn
         c = m & canyon
-        if c.sum() == 0:
-            continue
         r = roads.iloc[i]
         # osmnx stores tags as arrays (a segment merged from several ways can
         # carry several names), so take the distinct names in order.
         nm = r.get("name")
         nm = list(dict.fromkeys(np.atleast_1d(nm).tolist())) if nm is not None else []
         nm = [x for x in nm if isinstance(x, str) and x]
+        if c.sum() == 0:  #no facade on both sides anywhere: kept as "no canyon" so the map shows every street
+            rows.append({"geometry": r.geometry, "name": " / ".join(nm) or None,
+                         "hw": None, "h_m": None, "w_m": None, "canyon_share": 0.0})
+            continue
         rows.append({"geometry": r.geometry,
                      "name": " / ".join(nm) or None,
                      "hw": round(float(np.median(HW[c])), 2),
@@ -281,8 +283,12 @@ def figure(seg, polys, scenario, summary) -> None:
     fig, ax = plt.subplots(figsize=(10, 8.5))
     gpd.GeoSeries(list(polys.values()), crs="EPSG:28992").boundary.plot(ax=ax, color="#999", linewidth=0.8)
     gpd.GeoSeries([design_site_polygon()], crs="EPSG:28992").boundary.plot(ax=ax, color="#d95f02", linewidth=1.6)
-    seg.plot(ax=ax, column="hw", cmap=cmap, norm=norm, linewidth=2.2)
+    open_ = seg["hw"].isna()  #segments with no canyon sample
+    if open_.any():
+        seg[open_].plot(ax=ax, color="#bbbbbb", linewidth=1.0, linestyle=(0, (3, 2)))  #grey dashed
+    seg[~open_].plot(ax=ax, column="hw", cmap=cmap, norm=norm, linewidth=2.2)
     ax.legend(handles=[Line2D([0], [0], color=c, lw=3, label=l) for c, l in zip(colours, CLASS_LABELS)]
+              + [Line2D([0], [0], color="#bbbbbb", lw=1, ls="--", label="no canyon")]  #open on a side
               + [Line2D([0], [0], color="#d95f02", lw=1.6, label="design site")],
               title="H/W", loc="upper left", bbox_to_anchor=(1.01, 1), frameon=False)
     c, s = summary["combined"], summary["design_site"]

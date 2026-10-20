@@ -205,7 +205,7 @@ def neighbourhood_stack(grid):
     r = RADIUS_CELLS
     yy, xx = np.mgrid[-r:r + 1, -r:r + 1]
     d = np.hypot(yy, xx)
-    kern = np.exp(-d / DECAY)
+    kern = np.exp(-d / DECAY)  #influence falls off with distance
     kern[r, r] = 0.0                      # a cell does not influence itself
     kern[d > r] = 0.0
 
@@ -239,16 +239,17 @@ def step(grid, demand, rng, suitability, road_frac=None):
     """One CA iteration: score every convertible cell, then allocate by demand."""
     nb = neighbourhood_stack(grid)
     acc = accessibility(grid, road_frac)
-    convertible = ~np.isin(grid, list(FIXED))
+    convertible = ~np.isin(grid, list(FIXED))  #water and road never change
 
     pot = np.zeros((len(CLASSES), *grid.shape), dtype="float32")
+    #transition potential P = N * S * A * v for every class and cell
     for k in ACTIVE:
         n = np.tensordot(INFLUENCE[k], nb, axes=(0, 0))      # neighbourhood effect
-        v = 1.0 + (-np.log(rng.uniform(1e-9, 1.0, grid.shape))) ** ALPHA
-        p = (1.0 + np.maximum(n, 0.0)) * suitability[k] * acc * v
+        v = 1.0 + (-np.log(rng.uniform(1e-9, 1.0, grid.shape))) ** ALPHA  #stochastic term v, so replicates differ
+        p = (1.0 + np.maximum(n, 0.0)) * suitability[k] * acc * v  #negative neighbourhood effects floor at 0
         p[grid == k] *= INERTIA                              # incumbency
         pot[k] = p
-    pot[:, ~convertible] = -np.inf
+    pot[:, ~convertible] = -np.inf  #fixed cells can never be chosen
 
     new = grid.copy()
     counts = {k: int((grid == k).sum()) for k in ACTIVE}
@@ -270,7 +271,7 @@ def step(grid, demand, rng, suitability, road_frac=None):
         n_take = int(min(deficit, np.isfinite(flat).sum()))
         if n_take <= 0:
             continue
-        idx = np.argpartition(flat, -n_take)[-n_take:]
+        idx = np.argpartition(flat, -n_take)[-n_take:]  #the n_take highest-potential cells convert
         idx = idx[np.isfinite(flat[idx])]
         rr, cc = np.unravel_index(idx, grid.shape)
         new[rr, cc] = k
@@ -291,7 +292,7 @@ def shannon_mix(grid):
     tot = counts.sum()
     if tot <= 0:
         return 0.0
-    p = counts[counts > 0] / tot
+    p = counts[counts > 0] / tot  #share of each active class present
     return float(-(p * np.log(p)).sum() / math.log(len(ACTIVE)))
 
 
@@ -385,20 +386,20 @@ def validate_regrow(grid0, suitability, cell_m, steps, frac, seed,
         dev = np.isin(g, ACTIVE)
         idx = np.flatnonzero(dev.ravel())
         erase = rng.choice(idx, size=int(len(idx) * frac), replace=False)
-        g.ravel()[erase] = VACANT
+        g.ravel()[erase] = VACANT  #wipe a random share of the developed cells
 
-        demand = {k: int((grid0 == k).sum()) for k in ACTIVE}
+        demand = {k: int((grid0 == k).sum()) for k in ACTIVE}  #ask for exactly what was there before
         for _ in range(steps):
-            g = step(g, demand, rng, suitability)
+            g = step(g, demand, rng, suitability, road_frac)  #same road-surface access as the scenario runs; it was left out, so validation used the old discrete-road access
 
-        cmp_mask = np.isin(grid0, ACTIVE) | np.isin(g, ACTIVE)
+        cmp_mask = np.isin(grid0, ACTIVE) | np.isin(g, ACTIVE)  #compare only cells developed before or after
         a, b = grid0[cmp_mask], g[cmp_mask]
         agree = float((a == b).mean())
 
         # Cohen's kappa
         labels = sorted(set(a.tolist()) | set(b.tolist()))
         n = len(a)
-        pe = sum(((a == l).sum() / n) * ((b == l).sum() / n) for l in labels)
+        pe = sum(((a == l).sum() / n) * ((b == l).sum() / n) for l in labels)  #agreement expected by chance
         kappa = (agree - pe) / (1 - pe) if pe < 1 else 0.0
         agrees.append(agree)
         kappas.append(kappa)

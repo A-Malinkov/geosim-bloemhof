@@ -40,4 +40,16 @@ cost you time:
    `python analysis/check_docs.py`.
 
 10. **Check the browser console** before calling anything done. Zero exceptions
-    and zero failed requests is the standing bar.
+    and zero failed requests is the standing bar. Make sure the browser runs the
+    code you just wrote: a leftover headless browser or a cached module will
+    happily test the old version.
+
+11. **Scenarios come from Rhino.** `analysis/scenarios/import_rhino.py` turns
+    the team's model into massing, demolition lists, new streets and trees;
+    `analysis/scenarios/scenario_world.py` hands each analysis the scenario's
+    buildings, surface model and streets. Scenario outputs carry a
+    `_<scenario>` suffix and every missing one has a stub.
+
+12. **Know the AI results before writing about them.** The LSTM never wins; the
+    land-use DQN scores below a random policy; the RL agent demolishes housing
+    unless told not to. CLAUDE.md has the summary, the READMEs the detail.

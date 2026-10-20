@@ -133,7 +133,7 @@ add layers and dashboard panels without touching any shared file.**
 |---|---|
 | `ctx.viewer`, `ctx.Cesium` | the Cesium viewer and namespace |
 | `ctx.config` | everything from `config.js` |
-| `ctx.registerLayer({id, label, group, show, target \| onToggle})` | adds a checkbox to the left panel |
+| `ctx.registerLayer({id, label, group, show, target \| onToggle})` | adds a checkbox to the left panel, returns `{ setVisible(bool) }` |
 | `ctx.registerPanel({id, title, subtitle, order})` | adds a dashboard card, returns an empty `<div>` to fill |
 | `ctx.onScenarioChange(fn)` | `fn(scenario)` runs on every scenario switch, and once at startup |
 | `ctx.loadJson(path)` | fetches a file from `data/processed/`, returns `null` if missing or still a stub |
@@ -142,6 +142,10 @@ add layers and dashboard panels without touching any shared file.**
 
 If your `setup()` throws, main.js catches it, logs it and carries on — one broken
 module will not take the app down.
+
+The left panel groups layers into collapsible sections. Which group a layer
+lands in, the order of the groups and which start open are set in `config.js`
+under `layerPanel`, so the panel can be tidied without editing anyone's module.
 
 Reuse the CSS classes in `style.css` (`.kv`, `.ph`, `.muted`, `.delta`, `.seg`,
 `.feed`) instead of adding global styles.
@@ -270,9 +274,9 @@ numbers here still match `data/processed/`.
 |---|---|---|---|
 | 4.1 | 3D city model + proposed massing | existing buildings ✅ · design site chosen ✅ · scenario_a massing ✅ (Rhino OPTION 1) · **scenario_b not modelled yet** | — |
 | 4.2 | Geospatial data layers | ✅ done | — |
-| 4.3 | Urban morphological indicators | ✅ done — SVF 0.726, GSI 0.284, FSI 0.960, mix 0.351, both buurten; plus street H/W and direct-sun hours | Atanas |
+| 4.3 | Urban morphological indicators | ✅ done — SVF 0.726, GSI 0.284, FSI 0.960, mix 0.351, both buurten; plus street H/W and direct-sun hours. SVF, sun hours and H/W also run for scenario_a | Atanas |
 | 4.4 | KNMI sensors + AI prediction | ✅ done — live feed, sensors, 5 y history, model comparison | — |
-| 4.5 | Wind + noise simulation | 🟡 noise done (baseline, NoiseModelling 6.0.0) · wind not started | — |
+| 4.5 | Wind + noise simulation | 🟡 noise done (baseline, NoiseModelling 6.0.0) · scenario_a wired, not run · wind not started | — |
 | 4.6 | CBS socio-demographics | ❌ not started | — |
 | 4.7 | Agent-based land-use model | ✅ done — CA + RL, prefers `scenario_b` | Atanas |
 | 4.8 | Road network optimization | ❌ not started | — |

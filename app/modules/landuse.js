@@ -314,6 +314,10 @@ export async function setup(ctx) {
         `<p class="muted">The agent re-plans every cell of the design site and is ` +
         `scored over the site alone, so its numbers are not comparable with the ` +
         `CA's above.</p>` : "") +
+      `<p class="muted">The agent is linear Q-learning: it scores each empty cell ` +  //what the agent sees and learns
+      `from ${rl.features?.length ?? 13} numbers (neighbours of each land use, road access, ` +
+      `distance to water and a few flags) and learns one weight per number for each ` +
+      `use it may place, so its preferences can be read off.</p>` +
       `<p class="muted">The RL agent optimises this objective directly, while the ` +
       `CA follows fixed rules and is merely scored on it — so a higher number is ` +
       `expected and is <em>not</em> evidence that RL models cities better.</p>` +
@@ -357,7 +361,20 @@ export async function setup(ctx) {
       `<p class="muted">Same site, objective and reward; only the agent differs. ` +
       `<em>Random</em> is the mean of a purely random policy, the baseline to beat. ` +
       `<em>Best</em> is the best training episode; <em>greedy</em> is one run of ` +
-      `the DQN's learned policy with no exploration.</p>`;
+      `the DQN's learned policy with no exploration. The DQN is a convolutional ` +  //what the DQN is
+      `network that reads the grid itself and scores every cell and use at once.</p>` +
+      verdict(rows);  //what the numbers say, from the numbers
+  }
+
+  //one sentence on the comparison, generated so it cannot outlive a re-run
+  function verdict(rows) {
+    const below = rows.filter(([, , b]) => b.greedy_objective < b.random_policy.mean).map(([n]) => n);
+    const linearWins = rows.every(([, a, b]) => a.best_objective >= b.best_objective);
+    const parts = [];
+    if (linearWins) parts.push("the linear agent's best plan beats or matches the DQN's under every rule");
+    if (below.length) parts.push(`the DQN's learned policy scores below the random baseline (${below.join(", ")}), ` +
+      `so with ${rows[0][2].parameters?.episodes ?? "these"} episodes it has not learned the problem`);
+    return parts.length ? `<p class="muted">Result: ${parts.join("; ")}.</p>` : "";
   }
 
   const planBtns = [...body.querySelectorAll("#luPlan button")];

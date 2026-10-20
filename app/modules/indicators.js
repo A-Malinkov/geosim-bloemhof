@@ -335,16 +335,20 @@ function addCanyonLayer(ctx) {
       const p = f.properties;
       //a street cut in two (scenario runs remove the old interior grid) is a MultiLineString: draw each part
       const lines = f.geometry.type === "MultiLineString" ? f.geometry.coordinates : [f.geometry.coordinates];
+      const open = p.hw == null;  //no facade on both sides: drawn grey as "no canyon"
       for (const c of lines) d.entities.add({  //one polyline per part
-        name: `${p.name || "Street"} · H/W ${p.hw.toFixed(2)}`,
+        name: `${p.name || "Street"} · ${open ? "no canyon" : `H/W ${p.hw.toFixed(2)}`}`,
         polyline: {
           positions: Cesium.Cartesian3.fromDegreesArray(c.flat()),
-          width: 5,
+          width: open ? 3 : 5,  //thinner for open streets
           clampToGround: true,
-          material: Cesium.Color.fromCssColorString(HW_COLOURS[hwClass(p.hw)]),
+          material: open
+            ? new Cesium.PolylineDashMaterialProperty({ color: Cesium.Color.fromCssColorString("#bbbbbb") })  //grey dashed
+            : Cesium.Color.fromCssColorString(HW_COLOURS[hwClass(p.hw)]),
         },
-        description:
-          `<table>` +
+        description: open
+          ? `<p>Not a street canyon: no façade on both sides within 60 m anywhere along it, so it has no H/W.</p>`  //why it is grey
+          : `<table>` +
           `<tr><td>H/W (median)</td><td>${p.hw.toFixed(2)}</td></tr>` +
           `<tr><td>wall height H</td><td>${p.h_m} m</td></tr>` +
           `<tr><td>façade to façade W</td><td>${p.w_m} m</td></tr>` +
@@ -1009,7 +1013,9 @@ export async function setup(ctx) {
     const legend = HW_COLOURS.map((col, i) =>
       `<span style="display:inline-flex;align-items:center;gap:3px;margin:0 6px 2px 0">` +
       `<i style="width:12px;height:4px;background:${col};display:inline-block"></i>${HW_LABELS[i]}</span>`,
-    ).join("");
+    ).join("") +
+      `<span style="display:inline-flex;align-items:center;gap:3px;margin:0 6px 2px 0">` +
+      `<i style="width:12px;height:0;border-top:2px dashed #bbbbbb;display:inline-block"></i>no canyon</span>`;  //grey dashed streets
     hwBox.innerHTML =
       `<h4>Street canyons (H/W)</h4>` +
       `<table class="kv"><tbody>` +

@@ -14,7 +14,7 @@ Component 4.4 · feeds `app/modules/knmi.js`
 
 ```bash
 python analysis/knmi/fetch_knmi.py        # ~2 min for 5 years of history
-python analysis/knmi/train_forecast.py    # ~6 min with the LSTM
+python analysis/knmi/train_forecast.py --epochs 12   # ~6 min with the LSTM; 12 epochs is the published run
 ```
 
 ## Status
@@ -23,7 +23,8 @@ python analysis/knmi/train_forecast.py    # ~6 min with the LSTM
       HARMONIE-AROME via Open-Meteo, in the browser) *and* real KNMI station
       sensor readings via Python
 - [x] **4.4a aggregated history** — 2,090 daily records, 5 years, station 344
-- [x] **4.4b AI prediction** — five models compared, accuracy reported
+- [x] **4.4b AI prediction** — three models (ridge, gradient boosting, LSTM)
+      against two naive baselines, accuracy reported
 
 ## Three data paths, and why there are three
 
@@ -62,8 +63,35 @@ Rotterdam Airport (06344), 8.0 km from the study area.
 
 ## AI prediction — method and results
 
-Predicting **temperature** and **wind speed** at +1 h, +6 h and +24 h, from
-35,064 training hours, tested on 8,784 held-out hours.
+Predicting **temperature** and **wind speed** at +1 h, +6 h and +24 h at KNMI
+station 344 (Rotterdam Airport). Trained on 35,064 hours (2021–2024) and tested
+on the 8,784 hours that follow (1 January 2025 to 1 January 2026).
+
+### The models
+
+Two baselines and three models, all given the same inputs.
+
+| model | what it is |
+|---|---|
+| persistence | the value h hours later equals the value now. The baseline every model must beat |
+| daily naive | the value h hours later equals the value 24 h before that, i.e. same hour yesterday |
+| ridge | linear regression with an L2 penalty (α = 1) on standardised features, gaps filled with the training median |
+| gradient boosting | scikit-learn `HistGradientBoostingRegressor`, 300 trees, learning rate 0.08 |
+| LSTM | PyTorch, 2 layers of 64 units, dropout 0.1. Reads the last 48 hours of the feature table as a sequence. SmoothL1 loss, Adam (1e-3), batches of 256, 12 epochs, gradients clipped at 1.0 |
+
+**Inputs, 47 features per hour.** Temperature, wind speed, humidity, pressure
+and dew point, each now and 1, 2, 3, 6, 12, 24 and 48 hours ago (40). Wind
+direction as sine and cosine (2), hour of day and day of year as sine and cosine
+(4), and cloud cover (1). Circular quantities are encoded as sine and cosine so
+that 23:00 sits next to 00:00 and 359° next to 1°.
+
+**Target.** The same variable h hours ahead. One model is trained per variable
+and horizon, so 2 × 3 fits of each.
+
+**Score.** Mean absolute error on the test year, and skill against persistence,
+`1 − MAE_model / MAE_persistence`. Positive skill means the model beats "nothing
+changes". The LSTM is scored on 47 fewer hours than the others, because the
+first 47 hours of the test year have no full 48-hour window behind them.
 
 **The split is chronological, never random.** Shuffling hours would put the hour
 before and the hour after a test point into training, and every model would look
@@ -101,7 +129,8 @@ one hour that "the same as now" is the best available answer. A model that
 cannot beat that has learned nothing — which is why `skill_vs_persistence` is
 reported for every model rather than a bare MAE.
 
-**3. The wind model systematically under-predicts strong winds.**
+**3. The wind model systematically under-predicts strong winds** (gradient
+boosting at +6 h).
 
 | condition | MAE (m/s) | bias |
 |---|---|---|
@@ -123,6 +152,18 @@ Accuracy is broken down by season too, and is stable, so the model is not simply
 exploiting the annual cycle.
 
 ## Limitations to state in the report
+
+- **Nothing was tuned.** There is a training period and a test period, no
+  validation period. The settings in the model table were chosen once and not
+  searched, so the test year was never used to pick them. It also means every
+  model, the LSTM most of all, might do better with tuning. A held-out
+  validation year and a small search are the obvious next step.
+- **A small overlap at the split.** For the last h hours of the training period
+  the target lies in the first h hours of the test year (at most 24 of 35,064
+  rows). The effect on the scores is negligible, but it is a leak and is named
+  here.
+- The condition breakdowns (by season and by wind regime) are for the
+  **gradient boosting model at +6 h**, the best model at the middle horizon.
 
 - The station is **8.0 km** from the study area, at an airport. Wind over an
   open airfield is stronger and less obstructed than in a Rotterdam street. Do

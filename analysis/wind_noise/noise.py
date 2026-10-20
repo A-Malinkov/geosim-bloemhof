@@ -6,7 +6,7 @@ USAGE
 -----
     python analysis/wind_noise/noise.py                    # baseline
     python analysis/wind_noise/noise.py --refresh          # re-fetch OSM + 3DBAG
-    python analysis/wind_noise/noise.py --scenario scenario_a   # once massing exists
+    python analysis/wind_noise/noise.py --scenario scenario_a   # buildings from analysis/scenarios/scenario_world.py
 
 Needs Java >= 11 and NoiseModelling 6.0.0 unpacked outside the repo, by default
 at ~/tools/NoiseModelling_6.0.0 (override with NOISEMODELLING_HOME). Download:

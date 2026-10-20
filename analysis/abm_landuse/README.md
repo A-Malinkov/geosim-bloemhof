@@ -11,7 +11,8 @@ Component 4.7 · Owner: **Atanas Malinkov** · study area: Bloemhof + Hillesluis
 |---|---|---|
 | `fetch_landcover.py` | OSM green, water and roads — the surface BAG cannot see | `data/raw/osm_landcover.geojson`, `osm_roads.geojson` |
 | `ca_landuse.py` | constrained cellular automaton, scenarios, validation | `data/processed/landuse_abm.json` + frame PNGs |
-| `rl_landuse.py` | Q-learning agent that re-plans the design site, scored on the same formula | `data/processed/landuse_rl.json` |
+| `rl_landuse.py` | linear Q-learning agent that re-plans the design site, scored on the same formula | `data/processed/landuse_rl.json` (and `_keep_housing`) |
+| `rl_dqn.py` | deep Q-network on the same problem, for comparison | `data/processed/landuse_rl_dqn.json` (and `_keep_housing`) |
 | `weight_sensitivity.py` | re-scores the stored replicates across the weight simplex | `data/processed/landuse_weight_sensitivity.json` |
 
 ```bash
@@ -19,6 +20,9 @@ python analysis/morphology/fetch_landuse.py      # BAG units — needed first
 python analysis/abm_landuse/fetch_landcover.py   # ~30 s
 python analysis/abm_landuse/ca_landuse.py        # ~10 s
 python analysis/abm_landuse/rl_landuse.py --episodes 120   # ~90 s
+python analysis/abm_landuse/rl_landuse.py --episodes 120 --keep-housing
+python analysis/abm_landuse/rl_dqn.py --episodes 120        # ~34 min, needs PyTorch
+python analysis/abm_landuse/rl_dqn.py --episodes 120 --keep-housing
 python analysis/abm_landuse/weight_sensitivity.py  # ~2 s, no model re-run
 ```
 
@@ -79,14 +83,19 @@ back.
 
 | erased | agreement | Cohen's κ |
 |---|---|---|
-| 10 % | 86.3 % | **0.715** |
-| 25 % | 73.1 % | 0.492 |
-| 50 % | 57.7 % | 0.253 |
+| 10 % | 87.7 % | **0.740** |
+| 25 % | 76.9 % | 0.548 |
+| 50 % | 63.9 % | 0.336 |
 
 κ discounts the agreement you would get by guessing the commonest class. The
 curve degrades as a neighbourhood-driven model should: with context intact it
 reconstructs well; strip half the city and it cannot know where things were.
-κ ≈ 0.71 at 10 % is in the range land-use CA papers report.
+κ ≈ 0.74 at 10 % is in the range land-use CA papers report.
+
+These numbers come from a corrected run. Until 2026-10-21 the regrow test
+measured road access from discrete road cells, the method rejected above, while
+the scenario runs used the road surface. With both on the road surface, κ rose
+from 0.715, 0.492 and 0.253. The scenarios were not affected.
 
 ## Scenario results
 
@@ -163,9 +172,24 @@ nearest shop or amenity anywhere. Because the CA is scored over both buurten,
 **the two models' numbers are not comparable**, and the figures keep them apart
 (`fig_landuse_abm.png` for the CA, `fig_landuse_rl_site.png` for the agent).
 
+**What the agent sees.** For each candidate cell, 13 numbers: how many
+neighbours of each of the 8 land-use classes it has within 4 cells
+(distance-weighted), its road accessibility, whether it is vacant, whether it is
+green, its distance to water, and a constant. Q for each of the 4 uses it may
+place (residential, retail, amenity, green) is a weighted sum of those 13, so
+the agent learns 4 × 13 weights. Because the agent only ever considers empty
+site cells, "vacant" is always 1 and "green" always 0 for a candidate. Those two
+add nothing beyond the constant.
+
+**How it learns.** Each step it samples 40 empty cells and either picks the
+best (cell, use) pair by Q or, with probability ε, a random one. ε falls from
+0.9 towards 0.05. The reward is the change in the objective caused by that
+placement, times 100. The weights follow the TD(0) update with learning rate
+0.02 and discount 0.95, clipped to ±50.
+
 Linear rather than deep **on purpose** — the value here is that the weights can
-be read and argued with. A DQN would score similarly and explain nothing. A
-torch DQN is the obvious extension.
+be read and argued with. The deep version is `rl_dqn.py`, below, and it does
+not score better.
 
 Learns: 2.364 over the first 10 % of episodes → 2.473 over the last 10 %.
 Best 2.480 against 0.890 for the site today; its plan reaches mix 0.780,
@@ -274,3 +298,10 @@ The preferred configuration (scenario_b) is a land-use allocation, not a
 building design. `analysis/scenarios/` turns it into massing, which can then be
 fed back through the SVF, density and mix indicators to check the model was
 right.
+
+**The names clash.** The CA's `scenario_a` ("compact") and `scenario_b`
+("green") are land-use programmes over both buurten. The design scenarios in
+`analysis/scenarios/` use the same keys for massing on the design site:
+design `scenario_a` is the team's Rhino OPTION 1. One scenario switch in the app
+drives both, so the land-use card and the massing show different things under
+the same name until the two are aligned.
