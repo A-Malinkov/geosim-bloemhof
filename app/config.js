@@ -235,6 +235,34 @@ export const CONFIG = {
       landuse:         "../data/processed/landuse_abm.json",
       roads:           "../data/processed/road_metrics.json",
       designMassing:   "../data/processed/design_massing.geojson",
+      designStreets:   "../data/processed/design_streets.geojson",  //new street surfaces per scenario, import_rhino.py
+    },
+  },
+
+  /* ---------------------------------------------------------- Layer panel */
+  /* How the left-hand layer list is grouped. Modules still pass their own
+   * `group`; `regroup` overrides it by layer id, so the panel can be tidied
+   * here without editing anyone's module. An id ending in "*" is a prefix.
+   * Groups are drawn in `order`; a group not listed goes at the end.
+   * Groups in `open` start expanded, the rest start collapsed. A viewer's
+   * own open/closed clicks are remembered per browser. */
+  layerPanel: {
+    order: [
+      "Reference", "Design", "Imagery", "3D city model", "Vegetation",
+      "Morphology", "Wind & noise", "Flood vulnerability", "Land use",
+      "Roads", "Performance",
+    ],
+    open: ["Reference", "Design", "Imagery", "3D city model"],
+    regroup: {
+      svfOverlay:     "Morphology",
+      shadowOverlay:  "Morphology",
+      densityGrid:    "Morphology",
+      canyonHw:       "Morphology",
+      landuseGrid:    "Land use",
+      landuseModel:   "Land use",
+      landuseRlPlan:  "Land use",
+      noiseOverlay:   "Wind & noise",
+      "roads-*":      "Roads",
     },
   },
 

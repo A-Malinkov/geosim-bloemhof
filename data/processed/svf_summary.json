@@ -1,5 +1,6 @@
 {
   "study_area": "Bloemhof & Hillesluis",
+  "scenario": "baseline",
   "method": "multi-directional horizon angle (Zaksek, Ostir & Kokalj 2011)",
   "formulation": {
     "svf": "mean(cos^2(gamma)) \u2014 cosine-weighted, urban-climate convention",
@@ -155,6 +156,20 @@
       "p75": 0.7056,
       "p95": 0.9429,
       "max": 1.0
+    }
+  },
+  "design_site": {
+    "open_ground": {
+      "n_pixels": 231986,
+      "mean": 0.7125,
+      "std": 0.1577,
+      "min": 0.004,
+      "p05": 0.4303,
+      "p25": 0.6106,
+      "median": 0.7408,
+      "p75": 0.8388,
+      "p95": 0.9146,
+      "max": 0.9663
     }
   },
   "histogram": {

@@ -47,12 +47,14 @@ USAGE
     python analysis/morphology/shadows.py            # equinox, 1 m, 30 min steps
     python analysis/morphology/shadows.py --date 2026-06-21 --step-minutes 15
     python analysis/morphology/shadows.py --date 2026-12-21 --resolution 0.5
+    python analysis/morphology/shadows.py --scenario scenario_a   # demolition + new blocks burned in
 
 OUTPUTS
 -------
     data/processed/shadow_hours.tif      direct-sun hours raster, EPSG:28992 (gitignored)
     data/processed/shadow_overlay.png    colour ramp for draping in Cesium
     data/processed/shadow_summary.json   statistics for the dashboard
+    (a scenario run appends _<scenario> to the names, before any --suffix)
 """
 from __future__ import annotations
 
@@ -236,6 +238,8 @@ def main() -> int:
     ap.add_argument("--suffix", default="",
                     help="append to output names (e.g. _2026-12-21) so extra days "
                          "do not overwrite the app's files")
+    ap.add_argument("--scenario", default="baseline",
+                    choices=["baseline", "scenario_a", "scenario_b"])  #which built environment
     args = ap.parse_args()
 
     dsm_path, dtm_path = RAW / "ahn_dsm_05m.tif", RAW / "ahn_dtm_05m.tif"
@@ -258,6 +262,10 @@ def main() -> int:
     dsm, transform, crs = load_raster(dsm_path, args.resolution)
     dtm, _, _ = load_raster(dtm_path, args.resolution)
     print(f"  grid {dsm.shape[1]} x {dsm.shape[0]}")
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "scenarios"))
+    from scenario_world import burn_into_rasters  #demolition + new blocks, no-op for baseline
+    dsm, dtm = burn_into_rasters(dsm, dtm, transform, args.scenario)
+    print(f"  scenario {args.scenario}")
 
     ndsm = dsm - dtm
     open_ground = np.isfinite(ndsm) & (ndsm < 2.0)
@@ -333,7 +341,7 @@ def main() -> int:
 
     stats = {
         "study_area": STUDY_AREA.name,
-        "scenario": "baseline",
+        "scenario": args.scenario,  #which built environment this is
         "method": "ray-cast direct-sun accumulation from the AHN DSM",
         "solar_position": "NOAA solar-position algorithm (geometric, no refraction)",
         "date": args.date,
@@ -344,7 +352,9 @@ def main() -> int:
             "step_minutes": args.step_minutes,
             "latitude": round(lat, 6),
             "longitude": round(lon, 6),
-            "surface": "AHN dsm_05m (buildings + tree crowns)",
+            "surface": "AHN dsm_05m (buildings + tree crowns)"
+                       + ("" if args.scenario == "baseline" else
+                          f", with the {args.scenario} demolition and massing burned in"),  #see scenario_world.py
         },
         "daylight_hours": round(daylight_h, 3),
         "n_sun_steps": sun_steps,
@@ -371,7 +381,7 @@ def main() -> int:
     }
 
     print("  writing outputs …")
-    sfx = args.suffix
+    sfx = ("" if args.scenario == "baseline" else f"_{args.scenario}") + args.suffix  #scenario first, then the day
     write_tif(PROCESSED / f"shadow_hours{sfx}.tif", sun_c, transform_c, crs)
     write_hours_overlay(PROCESSED / f"shadow_overlay{sfx}.png", overlay_arr,
                         vmax=max(daylight_h, 1e-6))

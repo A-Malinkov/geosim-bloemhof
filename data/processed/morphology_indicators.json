@@ -10,7 +10,11 @@
       "height_std_m": 0,
       "landuse_mix": 0
     },
-    "_keys": ["baseline", "scenario_a", "scenario_b"]
+    "_keys": [
+      "baseline",
+      "scenario_a",
+      "scenario_b"
+    ]
   },
   "baseline": {
     "svf_mean": 0.7256,
@@ -22,9 +26,15 @@
     "height_mean_m": 9.541,
     "height_std_m": 3.076,
     "landuse_mix": 0.3515,
-    "landuse_simpson": 0.3463
+    "landuse_simpson": 0.3463,
+    "svf_site_mean": 0.7125
   },
   "_svf_source": "analysis/morphology/sky_view_factor.py",
   "_density_source": "analysis/morphology/density_height.py",
-  "_landuse_source": "analysis/morphology/landuse_mix.py"
+  "_landuse_source": "analysis/morphology/landuse_mix.py",
+  "scenario_a": {
+    "svf_mean": 0.7195,
+    "svf_median": 0.743,
+    "svf_site_mean": 0.6394
+  }
 }

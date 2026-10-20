@@ -106,11 +106,27 @@ html, body {
 .panel__body { padding: 10px 12px; overflow-y: auto; }
 
 /* ------------------------------------------------------- layer toggles */
-.lgroup + .lgroup { margin-top: 12px; }
+.lgroup + .lgroup { margin-top: 4px; border-top: 1px solid var(--line); padding-top: 4px; }  /*thin rule between groups*/
 .lgroup__title {
-  margin: 0 0 6px; font-size: 10px; font-weight: 700;
+  display: flex; align-items: center; gap: 6px; width: 100%;  /*header is now a clickable button*/
+  margin: 0; padding: 4px 0; border: 0; background: transparent; cursor: pointer;
+  font: inherit; font-size: 10px; font-weight: 700; text-align: left;
   letter-spacing: .09em; text-transform: uppercase; color: var(--accent);
 }
+.lgroup__title:hover .lgroup__name { color: #fff; }
+.lgroup__caret::before { content: "\25BE"; display: inline-block; width: 10px; }  /*down-pointing triangle when open*/
+.lgroup--closed .lgroup__caret::before { content: "\25B8"; }  /*right-pointing triangle when closed*/
+.lgroup__name { flex: 1; }
+.lgroup__count { font-weight: 500; letter-spacing: 0; color: var(--text-dim); }  /*on/total*/
+.lgroup__count--on { color: var(--accent); }  /*highlight when something in the group is on*/
+.lgroup__rows { padding: 0 0 4px 16px; }  /*indent rows under their header*/
+.lgroup--closed .lgroup__rows { display: none; }  /*folded*/
+.lgroup__all {  /*fold-all button in the panel head, styled like .panel__collapse*/
+  border: 1px solid var(--line); background: transparent; color: var(--text-dim);
+  height: 22px; padding: 0 6px; border-radius: 4px; cursor: pointer; font-size: 11px;
+  margin-left: auto;
+}
+.lgroup__all:hover { color: var(--text); border-color: var(--accent); }
 .lrow {
   display: flex; align-items: flex-start; gap: 8px;
   padding: 3px 0; cursor: pointer;

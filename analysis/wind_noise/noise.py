@@ -196,15 +196,12 @@ def buildings_for(scenario: str, extent_poly, src: pathlib.Path):
     print(f"  buildings: {len(b)} ({int(missing.sum())} without a height -> 3 m)")
 
     if scenario != "baseline":
-        massing = PROCESSED / "design_massing.geojson"
-        m = json.loads(massing.read_text())
-        if m.get("_status") == "not_computed_yet" or not m.get("features"):
-            sys.exit(f"No massing for {scenario} yet: {massing.relative_to(ROOT)} "
-                     "is still a stub. Run the baseline, or add the massing first.")
-        # Planned: remove 3DBAG buildings demolished by the design, add the
-        # massing with HEIGHT = height_m - ground_nap_m. Not written until the
-        # massing exists and says what it demolishes.
-        sys.exit("Scenario buildings are not wired up yet — see buildings_for().")
+        sys.path.insert(0, str(HERE.parent / "scenarios"))  #shared scenario geometry
+        from scenario_world import buildings_for_scenario
+        b = buildings_for_scenario(b, scenario)  #demolished 3DBAG ids out, new blocks in, height_m above ground
+        #sources are unchanged: traffic still runs on the OSM network, including the old
+        #interior streets the design removes. Edge-street traffic dominates the site, but
+        #a source left inside a new block is screened by it, so check the map near the blocks.
 
     b["geometry"] = b.geometry.apply(make_valid).buffer(0)
     b = b[~b.geometry.is_empty]

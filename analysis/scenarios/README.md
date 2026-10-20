@@ -19,6 +19,41 @@ The app treats a stub as "no data" and shows a placeholder until you overwrite i
 - To make the other components respond to your scenarios, write per-scenario outputs with matching keys (`baseline`, `scenario_a`, `scenario_b`). Every module already listens for the switch.
 - For SVF and wind per scenario, burn the massing into a copy of the AHN DSM and re-run the morphology and wind scripts.
 
+## Scenario A comes from the team's Rhino model
+
+`import_rhino.py` reads the `OPTION 1` layer tree of
+`Group Project Q1 - Proposal Modelling_16.10.26.3dm` (from Modelling.zip on the
+shared drive, copied to `data/raw/`, gitignored) and writes it as `scenario_a`.
+
+```bash
+python analysis/scenarios/import_rhino.py
+```
+
+Fixes it applies on the way in. The model stands on NAP 0, so each block keeps
+its modelled height and is stood on the site ground instead. A block left at the
+model origin is dropped. Two blocks crossing the eastern site edge are clipped
+to it. Heights are read from the roof faces, because rhino3dm's Brep bounding
+boxes are loose. Each roof level becomes its own flat extrusion, so the stepped
+tower comes in as two parts.
+
+The file also lists, per scenario, the 3DBAG buildings the design removes
+(`demolishes`, BAG pand ids). The app hides them while that massing is shown.
+For scenario_a the rule is the whole site, because OPTION 1 lays a new street
+grid over all of it. The other rule, `overlap`, removes only what a new block
+covers. Set it per case in `CASES`.
+
+The flat surfaces on the `New ROADS` sublayer go to `design_streets.geojson`,
+merged into one shape and clipped to the site. The app drapes them on the ground
+while that scenario's massing is shown. Green areas and fences are not imported yet.
+
+`scenario_world.py` turns those files into what each analysis needs: a building
+table (H/W, noise), a DSM and DTM with the scenario burned in (SVF, sun hours),
+and street centrelines with the old interior grid swapped for the new one (H/W).
+
+`OPTION 2` is not imported yet. In the 16.10 model it holds one freeform volume
+that reaches 18 m below ground. Add it to `CASES` as `scenario_b` once it is
+modelled as solids.
+
 ## Getting started
 
 ```python

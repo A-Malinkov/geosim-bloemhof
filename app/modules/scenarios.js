@@ -62,10 +62,57 @@ export async function setup(ctx) {
 
   /* ---- build one entity collection per scenario -------------------------- */
   const byScenario = new Map();
+  const layerHandles = new Map();  //scenario name -> registerLayer handle, keeps the layer checkbox in step
   for (const f of geo.features) {
     const name = f.properties?.scenario || "scenario_a";
     if (!byScenario.has(name)) byScenario.set(name, []);
     byScenario.get(name).push(f);
+  }
+
+  /* ---- demolition: hide the 3DBAG buildings a shown massing replaces ------ */
+  //ids per scenario, written by analysis/scenarios/import_rhino.py
+  const demolishes = new Map(Object.entries(geo.demolishes ?? {}).map(([k, ids]) => [k, new Set(ids)]));
+  const shownMassing = new Set();  //scenarios whose massing is currently visible
+  function applyDemolition() {
+    //the 3DBAG tileset is loaded by layers.js; find it by the name it sets
+    const ts = viewer.scene.primitives._primitives.find((p) => p.__name === "bag3d");
+    if (!ts?.style) return;
+    const hidden = new Set();  //union of the ids of every visible massing
+    for (const name of shownMassing) for (const id of demolishes.get(name) ?? []) hidden.add(id);
+    //custom show evaluator on the existing style, so the colour set in layers.js stays
+    ts.style.show = hidden.size
+      ? { evaluate: (feature) => !hidden.has(feature.getProperty("identificatie")) }
+      : true;
+    ts.makeStyleDirty();  //re-evaluate features already loaded
+  }
+
+  /* ---- new streets: flat surfaces draped on the ground, per scenario ----- */
+  const streetsGeo = config.dataSources.processed.designStreets
+    ? await ctx.loadJson(config.dataSources.processed.designStreets, { quiet: true }) : null;  //optional file
+  const streetsByScenario = new Map();  //scenario name -> CustomDataSource of street polygons
+  for (const f of streetsGeo?.features ?? []) {
+    const name = f.properties?.scenario;
+    if (!name) continue;
+    if (!streetsByScenario.has(name)) {
+      const ds = new Cesium.CustomDataSource(`streets-${name}`);
+      ds.show = false;  //shown together with the massing
+      await viewer.dataSources.add(ds);
+      streetsByScenario.set(name, ds);
+    }
+    const polys = f.geometry?.type === "Polygon" ? [f.geometry.coordinates]
+      : f.geometry?.type === "MultiPolygon" ? f.geometry.coordinates : [];
+    for (const poly of polys) {
+      const toCart = (ring) => Cesium.Cartesian3.fromDegreesArray(ring.flatMap(([x, y]) => [x, y]));  //lon/lat ring -> Cartesian
+      streetsByScenario.get(name).entities.add({
+        name: f.properties.name ?? `${name} streets`,
+        description: `<table><tr><td>new streets</td><td>${f.properties.area_m2 ?? "—"} m²</td></tr></table>`,
+        polygon: {
+          hierarchy: new Cesium.PolygonHierarchy(toCart(poly[0]), poly.slice(1).map((h) => new Cesium.PolygonHierarchy(toCart(h)))),  //outer ring plus holes
+          classificationType: Cesium.ClassificationType.TERRAIN,  //drape on the ground, over the aerial photo
+          material: Cesium.Color.fromCssColorString("#4a4f57").withAlpha(0.95),  //asphalt grey
+        },
+      });
+    }
   }
 
   const lift = config.napToEllipsoidM;
@@ -95,6 +142,7 @@ export async function setup(ctx) {
           description:
             `<table><tr><td>use</td><td>${p.use ?? "—"}</td></tr>` +
             `<tr><td>height</td><td>${p.height_m ?? "—"} m NAP</td></tr>` +
+            (p.building_height_m != null ? `<tr><td>building height</td><td>${p.building_height_m} m</td></tr>` : "") +  //as modelled, above ground
             `<tr><td>scenario</td><td>${name}</td></tr></table>`,
           polygon: {
             hierarchy: new Cesium.PolygonHierarchy(
@@ -104,6 +152,7 @@ export async function setup(ctx) {
             height:          (p.base_height_m ?? defaultBase) + lift,
             extrudedHeight:  (p.height_m ?? 12) + lift,
             material:        colour.withAlpha(0.85),
+            shadows:         Cesium.ShadowMode.ENABLED,  //cast and receive shadows for the sun slider
             outline:         true,
             outlineColor:    Cesium.Color.BLACK.withAlpha(0.5),
           },
@@ -115,13 +164,19 @@ export async function setup(ctx) {
     collection.show = false;
     byScenario.set(name, collection);
 
-    ctx.registerLayer({
+    layerHandles.set(name, ctx.registerLayer({  //keep the handle so a scenario switch can tick the checkbox
       id: `massing-${name}`,
       label: `Proposed massing — ${name}`,
       group: "Design",
       show: false,
       target: collection,
-    });
+      onToggle: (visible) => {  //old buildings go when the new ones show, and come back when they hide
+        if (visible) shownMassing.add(name); else shownMassing.delete(name);
+        applyDemolition();
+        const st = streetsByScenario.get(name);  //this scenario's new streets
+        if (st) st.show = visible;  //streets follow the massing
+      },
+    }));  //end of registerLayer, handle stored
   }
 
   /* ---- summary table ---------------------------------------------------- */
@@ -130,7 +185,7 @@ export async function setup(ctx) {
 
   function render(scenario) {
     // show only the active scenario's massing
-    for (const [name, ds] of byScenario) ds.show = name === scenario;
+    for (const [name] of byScenario) layerHandles.get(name)?.setVisible(name === scenario);  //shows the massing and ticks its checkbox
 
     const ds = byScenario.get(scenario);
     if (!ds) {
@@ -148,9 +203,11 @@ export async function setup(ctx) {
       .filter((h) => h != null)
       .map((h) => h - ctx.config.napToEllipsoidM);
     const max = heights.length ? Math.max(...heights) : null;
+    const nDemo = demolishes.get(scenario)?.size;  //existing buildings this scenario removes
     summary.innerHTML =
       `<table class="kv"><tbody>` +
       `<tr><td>volumes</td><td>${n}</td></tr>` +
+      (nDemo != null ? `<tr><td>existing buildings removed</td><td>${nDemo}</td></tr>` : "") +  //hidden from the 3DBAG layer
       `<tr><td>max height</td><td>${max == null ? "—" : max.toFixed(1) + " m NAP"}</td></tr>` +
       `</tbody></table>`;
   }

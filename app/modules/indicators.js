@@ -67,116 +67,73 @@ const INDICATORS = [
   },
 ];
 
-/* ---------------------------------------------------------------------------
- * Sky View Factor overlay.
- * sky_view_factor.py writes an RGBA PNG plus the bbox it covers, so we can
- * drape it straight onto the globe with a SingleTileImageryProvider.
- * ------------------------------------------------------------------------ */
-async function addSvfOverlay(ctx, svf) {
-  const { Cesium, viewer } = ctx;
-  const bb = svf?.bbox_wgs84;
-  if (!bb) return null;
-  const [west, south, east, north] = bb;
-  /* The image is ~1.8 MB and the layer is off by default, so it is loaded the
-   * first time someone ticks the box rather than during startup — otherwise
-   * every panel in the dashboard waits on a download nobody asked for.
-   * The toggle is registered immediately so the layer list stays in a fixed
-   * order regardless of how long the image takes. */
-  let layer = null;
-  let loading = null;
+//file suffix of a scenario run: baseline keeps the original names
+const runSuffix = (scenario) => (scenario === "baseline" ? "" : `_${scenario}`);
 
-  async function ensureLoaded() {
-    if (layer) return layer;
-    if (!loading) {
-      // fromUrl reads the image's real dimensions. The synchronous constructor
-      // makes you supply tileWidth/tileHeight by hand, and they were wrong
-      // (512 against a 1400 px image) — asserting a size you have not checked
-      // is how an overlay silently ends up distorted.
-      loading = Cesium.SingleTileImageryProvider.fromUrl(
-        "../data/processed/svf_overlay.png",
-        { rectangle: Cesium.Rectangle.fromDegrees(west, south, east, north) },
-      )
-        .then((provider) => {
-          layer = viewer.imageryLayers.addImageryProvider(provider);
+/* ---------------------------------------------------------------------------
+ * Raster overlays that follow the scenario switch: Sky View Factor and direct
+ * sun. sky_view_factor.py and shadows.py write, per scenario, an RGBA PNG
+ * already warped to EPSG:4326 plus a summary JSON holding the bbox it covers
+ * (<base>_overlay[_scenario].png, <base>_summary[_scenario].json), so the PNG
+ * drapes straight onto the globe with a SingleTileImageryProvider.
+ * ------------------------------------------------------------------------ */
+function addScenarioOverlay(ctx, { id, label, base }) {
+  const { Cesium, viewer } = ctx;
+  const layers = new Map();  //scenario -> Promise of its ImageryLayer, or null when there is no run
+  let shown = false;  //layer checkbox state
+  let current = ctx.scenario();  //scenario the app is on
+
+  //Images are ~2 MB and the layer is off by default, so each scenario's image
+  //loads the first time it is actually needed, not during startup.
+  function load(scenario) {
+    if (!layers.has(scenario)) {
+      layers.set(scenario, (async () => {
+        const sum = await ctx.loadJson(`../data/processed/${base}_summary${runSuffix(scenario)}.json`, { quiet: true });
+        const bb = sum?.bbox_wgs84;  //the warped bbox, not the RD square's corners
+        if (!bb) return null;  //no run for this scenario
+        try {
+          //fromUrl reads the image's real size; the synchronous constructor needs
+          //tileWidth/tileHeight by hand, and a wrong guess distorts the overlay silently
+          const provider = await Cesium.SingleTileImageryProvider.fromUrl(
+            `../data/processed/${base}_overlay${runSuffix(scenario)}.png`,
+            { rectangle: Cesium.Rectangle.fromDegrees(...bb) },
+          );
+          const layer = viewer.imageryLayers.addImageryProvider(provider);
           layer.alpha = 0.85;
+          layer.show = false;  //refresh() decides
           return layer;
-        })
-        .catch((err) => {
-          console.warn("[indicators] SVF overlay failed to load", err);
-          ctx.note("SVF overlay: failed", "err");
+        } catch (err) {
+          console.warn(`[indicators] ${label} overlay failed to load`, err);
+          ctx.note(`${label}: overlay failed`, "err");
           return null;
-        });
+        }
+      })());
     }
-    return loading;
+    return layers.get(scenario);
+  }
+
+  //show exactly the current scenario's image, or nothing if it has no run
+  async function refresh() {
+    for (const p of layers.values()) {
+      const l = await p;
+      if (l) l.show = false;  //hide every scenario's image first
+    }
+    if (!shown) return;
+    const want = current;
+    const l = await load(want);
+    if (want !== current || !shown) return;  //switched while loading
+    if (l) l.show = true;
+    else ctx.note(`${label}: no run for ${want}`, "warn");
   }
 
   ctx.registerLayer({
-    id: "svfOverlay",
-    label: "Sky View Factor (AHN)",
+    id,
+    label,
     group: "Analysis",
     show: false,
-    onToggle: async (visible) => {
-      if (!visible) {
-        if (layer) layer.show = false;
-        return;
-      }
-      const l = await ensureLoaded();
-      if (l) l.show = true;
-    },
+    onToggle: (visible) => { shown = visible; refresh(); },  //checkbox
   });
-  return true;
-}
-
-/* ---------------------------------------------------------------------------
- * Direct-sun / shadow overlay.
- * shadows.py writes an RGBA PNG of direct-sun hours plus the bbox it covers,
- * already warped to EPSG:4326, so it drapes straight onto the globe. Loaded
- * lazily on first toggle, exactly like the SVF overlay above.
- * ------------------------------------------------------------------------ */
-async function addShadowOverlay(ctx, shadow) {
-  const { Cesium, viewer } = ctx;
-  const bb = shadow?.bbox_wgs84;
-  if (!bb) return null;
-  const [west, south, east, north] = bb;
-  let layer = null;
-  let loading = null;
-
-  async function ensureLoaded() {
-    if (layer) return layer;
-    if (!loading) {
-      loading = Cesium.SingleTileImageryProvider.fromUrl(
-        "../data/processed/shadow_overlay.png",
-        { rectangle: Cesium.Rectangle.fromDegrees(west, south, east, north) },
-      )
-        .then((provider) => {
-          layer = viewer.imageryLayers.addImageryProvider(provider);
-          layer.alpha = 0.85;
-          return layer;
-        })
-        .catch((err) => {
-          console.warn("[indicators] shadow overlay failed to load", err);
-          ctx.note("Sun-hours overlay: failed", "err");
-          return null;
-        });
-    }
-    return loading;
-  }
-
-  ctx.registerLayer({
-    id: "shadowOverlay",
-    label: "Direct sun hours (AHN)",
-    group: "Analysis",
-    show: false,
-    onToggle: async (visible) => {
-      if (!visible) {
-        if (layer) layer.show = false;
-        return;
-      }
-      const l = await ensureLoaded();
-      if (l) l.show = true;
-    },
-  });
-  return true;
+  ctx.onScenarioChange((sc) => { current = sc; refresh(); });  //scenario switch
 }
 
 /* ---------------------------------------------------------------------------
@@ -636,24 +593,49 @@ export async function setup(ctx) {
     order: 30,
   });
 
-  /* ---- Sky View Factor -------------------------------------------------- */
-  const svf = await ctx.loadJson("../data/processed/svf_summary.json", {
-    quiet: true,
-  });
+  /* ---- Sky View Factor and direct sun, per scenario ---------------------- */
+  //map overlays, each following the scenario switch
+  addScenarioOverlay(ctx, { id: "svfOverlay", label: "Sky View Factor (AHN)", base: "svf" });
+  addScenarioOverlay(ctx, { id: "shadowOverlay", label: "Direct sun hours (AHN)", base: "shadow" });
+
   const svfBox = document.createElement("div");
   body.appendChild(svfBox);
+  const shadowBox = document.createElement("div");
+  body.appendChild(shadowBox);
 
-  if (svf?.open_ground) {
+  //summary JSON of one run, baseline or a scenario
+  const summary = (base, sc) =>
+    ctx.loadJson(`../data/processed/${base}_summary${runSuffix(sc)}.json`, { quiet: true });
+
+  //one table row for the design site, with the baseline value beside a scenario's
+  const siteRow = (label, v, vBase, digits, unit = "") =>
+    v == null ? "" :
+      `<tr><td>${label}</td><td>${v.toFixed(digits)}${unit}` +
+      (vBase != null ? ` <span class="muted">(baseline ${vBase.toFixed(digits)}${unit})</span>` : "") +
+      `</td></tr>`;
+
+  async function renderSvf(sc) {
+    const [svf, svfBase] = await Promise.all([summary("svf", sc), sc === "baseline" ? null : summary("svf", "baseline")]);
+    if (sc !== ctx.scenario()) return;  //switched while loading
+    if (!svf?.open_ground) {
+      ctx.placeholder(svfBox, {
+        what: `Sky View Factor not computed for "${sc}" yet.`,
+        produces: `data/processed/svf_summary${runSuffix(sc)}.json`,
+        owner: `analysis/morphology/sky_view_factor.py${sc === "baseline" ? "" : ` --scenario ${sc}`}`,
+      });
+      return;
+    }
     // The clipped figure: the raster covers the bounding box, which takes in
     // the Maashaven where SVF is ~1.0 and would flatter the neighbourhood.
     const g = svf.combined?.open_ground || svf.open_ground;
-    addSvfOverlay(ctx, svf);
     svfBox.innerHTML =
       `<h4>Sky View Factor</h4>` +
       `<table class="kv"><tbody>` +
       `<tr><td>mean</td><td>${g.mean.toFixed(3)}</td></tr>` +
       `<tr><td>median</td><td>${g.median.toFixed(3)}</td></tr>` +
       `<tr><td>p05 – p95</td><td>${g.p05.toFixed(2)} – ${g.p95.toFixed(2)}</td></tr>` +
+      siteRow("design site mean", svf.design_site?.open_ground?.mean,
+              svfBase?.design_site?.open_ground?.mean, 3) +  //where the scenarios differ
       `</tbody></table>` +
       histogramSvg(svf.histogram, g.mean) +
       perBuurtTable(
@@ -675,33 +657,35 @@ export async function setup(ctx) {
           svf.open_ground_geometric?.mean
         )?.toFixed(3) ?? "—"
       }. ` +
+      (sc === "baseline" ? "" : `Scenario run: demolition and new blocks burned into the AHN surface. `) +  //say what changed
       `Toggle the map overlay under <em>Analysis</em>.</p>`;
-  } else {
-    ctx.placeholder(svfBox, {
-      what: "Sky View Factor not computed yet.",
-      produces: "data/processed/svf_summary.json",
-      owner: "analysis/morphology/sky_view_factor.py",
-    });
   }
 
-  /* ---- direct sun / shadow ---------------------------------------------- */
-  const shadow = await ctx.loadJson("../data/processed/shadow_summary.json", {
-    quiet: true,
-  });
-  const shadowBox = document.createElement("div");
-  body.appendChild(shadowBox);
-
-  if (shadow?.open_ground_sunlit_hours) {
+  async function renderShadow(sc) {
+    const [shadow, shadowBase] = await Promise.all([summary("shadow", sc), sc === "baseline" ? null : summary("shadow", "baseline")]);
+    if (sc !== ctx.scenario()) return;  //switched while loading
+    if (!shadow?.open_ground_sunlit_hours) {
+      ctx.placeholder(shadowBox, {
+        what: `Direct-sun analysis not computed for "${sc}" yet.`,
+        produces: `data/processed/shadow_summary${runSuffix(sc)}.json`,
+        owner: `analysis/morphology/shadows.py${sc === "baseline" ? "" : ` --scenario ${sc}`}`,
+      });
+      return;
+    }
     const g =
       shadow.combined?.open_ground_sunlit_hours ||
       shadow.open_ground_sunlit_hours;
-    addShadowOverlay(ctx, shadow);
+    const site = shadow.design_site?.open_ground_sunlit_hours;  //design site, open ground
+    const siteBase = shadowBase?.design_site?.open_ground_sunlit_hours;
     shadowBox.innerHTML =
       `<h4>Direct sun</h4>` +
       `<table class="kv"><tbody>` +
       `<tr><td>mean sun</td><td>${g.mean.toFixed(1)} h</td></tr>` +
       `<tr><td>median</td><td>${g.median.toFixed(1)} h</td></tr>` +
       `<tr><td>p05 – p95</td><td>${g.p05.toFixed(1)} – ${g.p95.toFixed(1)} h</td></tr>` +
+      siteRow("design site mean", site?.mean, siteBase?.mean, 1, " h") +  //where the scenarios differ
+      siteRow("site under 2 h", site?.share_under_2h != null ? 100 * site.share_under_2h : null,
+              siteBase?.share_under_2h != null ? 100 * siteBase.share_under_2h : null, 0, " %") +
       `</tbody></table>` +
       perBuurtTable(
         Object.fromEntries(
@@ -715,14 +699,13 @@ export async function setup(ctx) {
       `<p class="muted">Hours of direct sun on open ground on ${shadow.date}, ` +
       `of ${shadow.daylight_hours.toFixed(1)} h of daylight. Ray-cast from the ` +
       `AHN surface every ${shadow.parameters.step_minutes} min; clear-sky, so an ` +
-      `upper bound. Toggle the map overlay under <em>Analysis</em>.</p>`;
-  } else {
-    ctx.placeholder(shadowBox, {
-      what: "Shadow / direct-sun analysis not computed yet.",
-      produces: "data/processed/shadow_summary.json",
-      owner: "analysis/morphology/shadows.py",
-    });
+      `upper bound. ` +
+      (sc === "baseline" ? "" : `Demolition adds open ground, so the site means cover ` +
+        `different areas: compare the shares too. `) +  //the denominators differ between scenarios
+      `Toggle the map overlay under <em>Analysis</em>.</p>`;
   }
+
+  ctx.onScenarioChange((sc) => { renderSvf(sc); renderShadow(sc); });  //also runs once at startup
 
   /* ---- time-of-day sun scrubber ----------------------------------------- */
   /* A live sun scrubber: turn on the scene shadow map and move the clock, so

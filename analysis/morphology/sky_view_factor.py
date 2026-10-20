@@ -47,12 +47,16 @@ USAGE
     # quicker, coarser
     python analysis/morphology/sky_view_factor.py --resolution 1.0 --directions 8
 
+    # a design scenario: demolition and new blocks burned into the DSM first
+    python analysis/morphology/sky_view_factor.py --scenario scenario_a
+
 OUTPUTS
 -------
     data/processed/svf.tif              SVF raster (cos^2 form), EPSG:28992
     data/processed/svf_geometric.tif    SVF raster (1-sin form)
     data/processed/svf_overlay.png      colour ramp for draping in Cesium
     data/processed/svf_summary.json     statistics for the dashboard
+    (a scenario run writes the same names with _<scenario> appended)
 
 Figures for the report come from make_figures.py, run that afterwards.
     ... and merges svf_mean into morphology_indicators.json under "baseline"
@@ -72,7 +76,7 @@ from rasterio.enums import Resampling
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 from common.project import (  # noqa: E402
     PROCESSED, RAW, STUDY_AREA, bbox_rd, bbox_wgs, buurt_polygons,
-    buurt_properties, study_area_polygon,
+    buurt_properties, design_site_polygon, study_area_polygon,
 )
 
 AHN_NODATA = 3.4028234663852886e38
@@ -303,7 +307,10 @@ def main() -> int:
     ap.add_argument("--observer-height", type=float, default=OBSERVER_HEIGHT_M)
     ap.add_argument("--no-clip-buurt", action="store_true",
                     help="skip the CBS neighbourhood-boundary statistics")
+    ap.add_argument("--scenario", default="baseline",
+                    choices=["baseline", "scenario_a", "scenario_b"])  #which built environment
     args = ap.parse_args()
+    sfx = "" if args.scenario == "baseline" else f"_{args.scenario}"  #baseline keeps the original file names
 
     dsm_path, dtm_path = RAW / "ahn_dsm_05m.tif", RAW / "ahn_dtm_05m.tif"
     for p in (dsm_path, dtm_path):
@@ -311,13 +318,16 @@ def main() -> int:
             print(f"missing {p}. Run: python analysis/morphology/fetch_ahn.py")
             return 1
 
-    print(f"Sky View Factor — {STUDY_AREA.name}")
+    print(f"Sky View Factor — {STUDY_AREA.name}, {args.scenario}")
     print(f"  cell {args.resolution} m | radius {args.radius} m | "
           f"{args.directions} directions | observer {args.observer_height} m above ground")
 
     dsm, transform, crs = load_raster(dsm_path, args.resolution)
     dtm, _, _ = load_raster(dtm_path, args.resolution)
     print(f"  grid {dsm.shape[1]} x {dsm.shape[0]}")
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "scenarios"))
+    from scenario_world import burn_into_rasters  #demolition + new blocks, no-op for baseline
+    dsm, dtm = burn_into_rasters(dsm, dtm, transform, args.scenario)
 
     # open ground = DTM known and the surface is within 2 m of it
     ndsm = dsm - dtm
@@ -370,13 +380,19 @@ def main() -> int:
                     "open_ground_geometric": describe(
                         np.where(og_c & m, svf_geo_c, np.nan)),
                 }
+            #the design site, where the scenarios differ
+            m_site = ~geometry_mask([design_site_polygon()], out_shape=svf_rad_c.shape,
+                                    transform=transform_c, invert=False)
+            buurt_stats["_design_site"] = {"open_ground": describe(np.where(og_c & m_site, svf_rad_c, np.nan))}
         except Exception as exc:
             print(f"  ! buurt clipping skipped ({exc})")
 
     overlay_arr, overlay_bbox = reproject_to_wgs84(svf_rad_c, transform_c, crs)
 
+    site_stats = buurt_stats.pop("_design_site", None)  #kept out of the per-buurt table
     stats = {
         "study_area": STUDY_AREA.name,
+        "scenario": args.scenario,  #which built environment this is
         "method": "multi-directional horizon angle (Zaksek, Ostir & Kokalj 2011)",
         "formulation": {
             "svf": "mean(cos^2(gamma)) — cosine-weighted, urban-climate convention",
@@ -388,7 +404,9 @@ def main() -> int:
             "n_directions": args.directions,
             "n_radial_steps": args.steps,
             "observer_height_m": args.observer_height,
-            "surface": "AHN dsm_05m (buildings + tree crowns)",
+            "surface": "AHN dsm_05m (buildings + tree crowns)"
+                       + ("" if args.scenario == "baseline" else
+                          f", with the {args.scenario} demolition and massing burned in"),  #see scenario_world.py
             "ground": "AHN dtm_05m, gaps filled by nearest-neighbour dilation",
         },
         "bbox_rd": [round(v, 1) for v in bbox_rd()],
@@ -403,6 +421,7 @@ def main() -> int:
         "per_buurt": {k: v for k, v in buurt_stats.items()
                       if k != STUDY_AREA.name},
         "combined": buurt_stats.get(STUDY_AREA.name),
+        "design_site": site_stats,  #open ground inside the design site
         "histogram": {
             "bin_edges": [round(x, 3) for x in np.linspace(0, 1, 41).tolist()],
             "counts": np.histogram(svf_rad_c[og_c & np.isfinite(svf_rad_c)],
@@ -411,17 +430,17 @@ def main() -> int:
     }
 
     print("  writing outputs …")
-    write_tif(PROCESSED / "svf.tif", svf_rad_c, transform_c, crs)
-    write_tif(PROCESSED / "svf_geometric.tif", svf_geo_c, transform_c, crs)
+    write_tif(PROCESSED / f"svf{sfx}.tif", svf_rad_c, transform_c, crs)  #scenario runs get a suffix
+    write_tif(PROCESSED / f"svf_geometric{sfx}.tif", svf_geo_c, transform_c, crs)
 
     # The GeoTIFFs stay in RD. The browser overlay was warped to EPSG:4326 above,
     # so the lon/lat rectangle Cesium drapes it on is genuinely where the data is.
-    write_overlay_png(PROCESSED / "svf_overlay.png", overlay_arr)
+    write_overlay_png(PROCESSED / f"svf_overlay{sfx}.png", overlay_arr)
     print(f"  overlay warped to EPSG:4326, bbox "
           f"{[round(v, 6) for v in overlay_bbox]}")
 
-    (PROCESSED / "svf_summary.json").write_text(json.dumps(stats, indent=2) + "\n")
-    print("  wrote svf_summary.json")
+    (PROCESSED / f"svf_summary{sfx}.json").write_text(json.dumps(stats, indent=2) + "\n")
+    print(f"  wrote svf_summary{sfx}.json")
 
     # merge the headline number into the shared morphology indicators file
     mi_path = PROCESSED / "morphology_indicators.json"
@@ -430,11 +449,13 @@ def main() -> int:
     except Exception:
         mi = {}
     mi.pop("_status", None)
-    mi.setdefault("baseline", {})
+    mi.setdefault(args.scenario, {})  #keyed by scenario
     headline = ((stats.get("combined") or {}).get("open_ground")
                 or stats["open_ground"])
-    mi["baseline"]["svf_mean"] = headline["mean"]
-    mi["baseline"]["svf_median"] = headline["median"]
+    mi[args.scenario]["svf_mean"] = headline["mean"]
+    mi[args.scenario]["svf_median"] = headline["median"]
+    if site_stats:
+        mi[args.scenario]["svf_site_mean"] = site_stats["open_ground"]["mean"]  #design site only, where scenarios differ
     mi["_svf_source"] = "analysis/morphology/sky_view_factor.py"
     mi_path.write_text(json.dumps(mi, indent=2) + "\n")
     print("  merged svf_mean into morphology_indicators.json")

@@ -178,17 +178,101 @@ async function boot_() {
 
   layerPanelBody.innerHTML = "";
 
+  /* ---- layer groups: collapsible, ordered, regrouped from config ---------- */
+  const LP = CONFIG.layerPanel ?? {};  //grouping rules, see config.js
+  const groupOrder = LP.order ?? [];  //fixed draw order of groups
+  const GROUP_KEY = "geosim.layerGroupsOpen";  //localStorage key for open/closed state
+  let openState = {};  //group name -> true/false, remembered per browser
+  try {
+    openState = JSON.parse(localStorage.getItem(GROUP_KEY) || "{}") || {};
+  } catch { openState = {}; }  //private window or blocked storage, use defaults
+  const saveOpen = () => {
+    try { localStorage.setItem(GROUP_KEY, JSON.stringify(openState)); } catch { /*not remembered*/ }
+  };
+
+  //group a layer belongs to, config override first, then the module's own
+  function resolveGroup(id, group) {
+    const map = LP.regroup ?? {};
+    if (map[id]) return map[id];  //exact id
+    for (const [k, g] of Object.entries(map)) {
+      if (k.endsWith("*") && id.startsWith(k.slice(0, -1))) return g;  //prefix match
+    }
+    return group;
+  }
+
+  //rank used to keep groups in config order, unknown groups last
+  const rank = (name) => {
+    const i = groupOrder.indexOf(name);
+    return i < 0 ? groupOrder.length : i;
+  };
+
   const groups = new Map();
   function groupEl(name) {
     if (!groups.has(name)) {
+      const open = openState[name] ?? (LP.open ? LP.open.includes(name) : true);  //remembered, else config default
       const wrap = document.createElement("div");
-      wrap.className = "lgroup";
-      wrap.innerHTML = `<h3 class="lgroup__title">${name}</h3>`;
-      layerPanelBody.appendChild(wrap);
+      wrap.className = "lgroup" + (open ? "" : " lgroup--closed");
+      wrap.dataset.rank = String(rank(name));
+      wrap.innerHTML =
+        `<button class="lgroup__title" aria-expanded="${open}">` +
+        `<span class="lgroup__caret"></span>` +
+        `<span class="lgroup__name">${name}</span>` +
+        `<span class="lgroup__count"></span>` +
+        `</button>` +
+        `<div class="lgroup__rows"></div>`;
+      //click the header to fold or unfold the group
+      wrap.querySelector(".lgroup__title").addEventListener("click", () => {
+        setGroupOpen(name, wrap.classList.contains("lgroup--closed"));
+        saveOpen();
+      });
+      //insert before the first group that ranks later, so order does not depend on module load order
+      const after = [...layerPanelBody.children].find((g) => Number(g.dataset.rank) > rank(name));
+      layerPanelBody.insertBefore(wrap, after || null);
       groups.set(name, wrap);
+      refreshAllBtn();  //a new group can change whether any is open
     }
-    return groups.get(name);
+    return groups.get(name).querySelector(".lgroup__rows");
   }
+
+  //open or close one group and remember it
+  function setGroupOpen(name, open) {
+    const wrap = groups.get(name);
+    if (!wrap) return;
+    wrap.classList.toggle("lgroup--closed", !open);
+    wrap.querySelector(".lgroup__title").setAttribute("aria-expanded", String(open));
+    openState[name] = open;
+    refreshAllBtn();  //button label follows the state
+  }
+
+  //"Fold all" while any group is open, "Unfold all" once every group is folded
+  function refreshAllBtn() {
+    const anyOpen = [...groups.values()].some((w) => !w.classList.contains("lgroup--closed"));
+    allBtn.textContent = anyOpen ? "Fold all" : "Unfold all";
+  }
+
+  //"2/5" on each header, so a collapsed group still shows what is switched on
+  function updateCount(name) {
+    const wrap = groups.get(name);
+    if (!wrap) return;
+    const boxes = wrap.querySelectorAll(".lgroup__rows input[type=checkbox]");
+    const on = [...boxes].filter((b) => b.checked).length;
+    const el = wrap.querySelector(".lgroup__count");
+    el.textContent = `${on}/${boxes.length}`;
+    el.classList.toggle("lgroup__count--on", on > 0);
+  }
+
+  //panel-head button that folds or unfolds every group at once
+  const allBtn = document.createElement("button");
+  allBtn.className = "lgroup__all";  //own class, .panel__collapse buttons get the panel-collapse handler
+  allBtn.title = "Collapse or expand all groups";
+  allBtn.textContent = "Fold all";
+  allBtn.addEventListener("click", () => {
+    const anyOpen = [...groups.values()].some((w) => !w.classList.contains("lgroup--closed"));
+    for (const name of groups.keys()) setGroupOpen(name, !anyOpen);  //fold all if any is open, else unfold all
+    saveOpen();
+  });
+  const layerHead = document.querySelector("#layerPanel .panel__head");
+  layerHead.insertBefore(allBtn, layerHead.querySelector(".panel__collapse"));  //sits left of the panel's own collapse button
 
   const ctx = {
     viewer,
@@ -212,17 +296,27 @@ async function boot_() {
       row.innerHTML =
         `<input type="checkbox" id="lyr-${id}" ${show ? "checked" : ""}>` +
         `<span>${label}</span>`;
-      groupEl(group).appendChild(row);
+      const gName = resolveGroup(id, group);  //config.layerPanel.regroup may move it
+      groupEl(gName).appendChild(row);
+      updateCount(gName);  //refresh the on/total count on the header
 
       const apply = (visible) => {
         if (target && "show" in target) target.show = visible;
         if (onToggle) onToggle(visible);
       };
       apply(show);
-      row
-        .querySelector("input")
-        .addEventListener("change", (e) => apply(e.target.checked));
-      return { setVisible: apply };
+      const box = row.querySelector("input");  //kept so setVisible can tick it too
+      box.addEventListener("change", (e) => {
+        apply(e.target.checked);
+        updateCount(gName);  //count follows the click
+      });
+      return {
+        setVisible: (visible) => {
+          box.checked = visible;  //keep the checkbox and the count in step with code-driven toggles
+          apply(visible);
+          updateCount(gName);
+        },
+      };
     },
 
     /* Add a panel to the right-hand dashboard. Returns the empty <div> body,

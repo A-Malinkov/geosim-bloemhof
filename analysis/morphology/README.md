@@ -39,6 +39,20 @@ python analysis/morphology/height_width.py      # ~90 s first time (fetches foot
 python analysis/morphology/make_figures.py      # ~1 min
 ```
 
+Design scenarios. `sky_view_factor.py`, `shadows.py` and `height_width.py` take
+`--scenario scenario_a` (or `scenario_b`). The scenario's demolition and new
+blocks come from `analysis/scenarios/scenario_world.py`, which reads what
+`import_rhino.py` wrote. SVF and sun hours burn them into the AHN surface. H/W
+swaps the buildings and replaces the old streets inside the site with the new
+ones. Outputs get a `_<scenario>` suffix, the baseline keeps its names, and the
+app switches between them.
+
+```bash
+python analysis/morphology/sky_view_factor.py --scenario scenario_a   # ~6 min
+python analysis/morphology/shadows.py --scenario scenario_a           # ~30 s per day
+python analysis/morphology/height_width.py --scenario scenario_a      # ~15 s
+```
+
 ## Status — all four indicators complete
 
 | indicator | Bloemhof | Hillesluis | both |

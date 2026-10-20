@@ -1,0 +1,5 @@
+{
+  "_status": "not_computed_yet",
+  "_written_by": "analysis/morphology/sky_view_factor.py",
+  "_note": "Sky View Factor for scenario_b. Model OPTION 2 in Rhino, add it to CASES in analysis/scenarios/import_rhino.py, then run the script with --scenario scenario_b."
+}

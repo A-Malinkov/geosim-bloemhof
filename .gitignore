@@ -14,6 +14,11 @@ app/config.local.js
 data/raw/*.tif
 data/processed/*.tif
 
+# The team's Rhino model (~94 MB per version). It lives in Modelling.zip on
+# the shared drive; analysis/scenarios/import_rhino.py reads it from data/raw/.
+data/raw/*.3dm
+data/raw/*.3dmbak
+
 # osmnx writes its HTTP cache here when analysis/abm_landuse/fetch_landcover.py
 # runs. Regenerable, and it is just a copy of Overpass responses.
 cache/

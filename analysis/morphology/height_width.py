@@ -51,7 +51,6 @@ OUTPUT
 from __future__ import annotations
 
 import argparse
-import json
 import pathlib
 import sys
 
@@ -169,12 +168,8 @@ def main() -> int:
                     choices=["baseline", "scenario_a", "scenario_b"])
     ap.add_argument("--refresh", action="store_true")
     args = ap.parse_args()
-    if args.scenario != "baseline":
-        m = json.loads((PROCESSED / "design_massing.geojson").read_text())
-        if m.get("_status") == "not_computed_yet" or not m.get("features"):
-            sys.exit(f"No massing for {args.scenario} yet: design_massing.geojson is a stub.")
-        sys.exit("Scenario walls are not wired up yet: add the massing (and remove what it "
-                 "demolishes) in footprints(), the same way as noise.py buildings_for().")
+    sys.path.insert(0, str(HERE.parent / "scenarios"))
+    from scenario_world import buildings_for_scenario, streets_for_scenario  #no-ops for baseline
 
     import geopandas as gpd
     import shapely
@@ -182,12 +177,14 @@ def main() -> int:
 
     print(f"Street canyon H/W — {STUDY_AREA.name}, {args.scenario}")
     b = footprints(args.refresh)
+    b = buildings_for_scenario(b, args.scenario)  #demolished out, new blocks in
     walls = shapely.boundary(b.geometry.values)
     heights = b["height_m"].to_numpy(float)
     print(f"  {len(b)} buildings as street walls (sheds excluded)")
 
     roads = gpd.read_file(RAW / "osm_roads.geojson").to_crs(28992)
     roads = roads[roads.intersects(box(*bbox_rd(0)))].reset_index(drop=True)
+    roads = streets_for_scenario(roads, args.scenario).reset_index(drop=True)  #old interior grid swapped for the new streets
     P, N, S = sample_streets(roads)
 
     # A sample inside a building (a passage under it) has no street wall.
