@@ -1,0 +1,121 @@
+{
+  "_objective": "J = mean walking distance from a dwelling to the nearest shop, education, health care and rail stop, equal weights over the four types, dwelling-weighted over the study area and the design site. Minimised by adding straight footpaths through the site, greedily.",
+  "_method": "analysis/roads/optimise_links.py",
+  "scenario_a": {
+    "budget": 10,
+    "candidate_rule": {
+      "min_m": 10.0,
+      "max_m": 150.0,
+      "detour_min": 1.5,
+      "reach_m": 20.0
+    },
+    "n_candidates": 99,
+    "J_before_m": 270.91,
+    "site_dwellings_before_m": 424.2,
+    "site_grid_before_m": 428.6,
+    "J_ceiling_m": 265.94,
+    "site_grid_ceiling_m": 374.6,
+    "site_grid_baseline_m": 380.9,
+    "steps": [
+      {
+        "rank": 1,
+        "length_m": 44.3,
+        "gain_m": 1.26,
+        "J_m": 269.65,
+        "site_dwellings_m": 416.1,
+        "site_grid_m": 419.5,
+        "share_of_ceiling": 0.254
+      },
+      {
+        "rank": 2,
+        "length_m": 74.7,
+        "gain_m": 0.841,
+        "J_m": 268.81,
+        "site_dwellings_m": 410.6,
+        "site_grid_m": 417.6,
+        "share_of_ceiling": 0.423
+      },
+      {
+        "rank": 3,
+        "length_m": 59.8,
+        "gain_m": 1.033,
+        "J_m": 267.78,
+        "site_dwellings_m": 403.9,
+        "site_grid_m": 414.0,
+        "share_of_ceiling": 0.631
+      },
+      {
+        "rank": 4,
+        "length_m": 94.7,
+        "gain_m": 0.553,
+        "J_m": 267.23,
+        "site_dwellings_m": 400.3,
+        "site_grid_m": 410.8,
+        "share_of_ceiling": 0.742
+      },
+      {
+        "rank": 5,
+        "length_m": 20.2,
+        "gain_m": 0.516,
+        "J_m": 266.71,
+        "site_dwellings_m": 397.0,
+        "site_grid_m": 407.6,
+        "share_of_ceiling": 0.846
+      },
+      {
+        "rank": 6,
+        "length_m": 107.4,
+        "gain_m": 0.464,
+        "J_m": 266.25,
+        "site_dwellings_m": 393.9,
+        "site_grid_m": 402.9,
+        "share_of_ceiling": 0.939
+      },
+      {
+        "rank": 7,
+        "length_m": 29.9,
+        "gain_m": 0.147,
+        "J_m": 266.1,
+        "site_dwellings_m": 393.0,
+        "site_grid_m": 402.3,
+        "share_of_ceiling": 0.969
+      },
+      {
+        "rank": 8,
+        "length_m": 109.8,
+        "gain_m": 0.046,
+        "J_m": 266.05,
+        "site_dwellings_m": 392.7,
+        "site_grid_m": 402.0,
+        "share_of_ceiling": 0.978
+      },
+      {
+        "rank": 9,
+        "length_m": 32.3,
+        "gain_m": 0.036,
+        "J_m": 266.02,
+        "site_dwellings_m": 392.5,
+        "site_grid_m": 401.8,
+        "share_of_ceiling": 0.985
+      },
+      {
+        "rank": 10,
+        "length_m": 44.8,
+        "gain_m": 0.019,
+        "J_m": 266.0,
+        "site_dwellings_m": 392.3,
+        "site_grid_m": 401.3,
+        "share_of_ceiling": 0.989
+      }
+    ],
+    "geojson": "../data/processed/road_links_scenario_a.geojson"
+  },
+  "baseline": {
+    "_status": "not_computed_yet",
+    "_note": "baseline: open land is private gardens"
+  },
+  "scenario_b": {
+    "_status": "not_computed_yet",
+    "_note": "scenario_b has no massing yet"
+  }
+}

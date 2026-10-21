@@ -279,10 +279,10 @@ numbers here still match `data/processed/`.
 | 4.5 | Wind + noise simulation | 🟡 noise done (baseline, NoiseModelling 6.0.0) · scenario_a wired, not run · wind not started | — |
 | 4.6 | CBS socio-demographics | ❌ not started | — |
 | 4.7 | Agent-based land-use model | ✅ done — CA + RL, prefers `scenario_b` | Atanas |
-| 4.8 | Road network optimization | ❌ not started | — |
+| 4.8 | Road network optimization | ✅ done — walk network and walks to everyday destinations for baseline and scenario_a, footpath-link optimiser on scenario_a. Site grid 380.9 m → 428.6 m in scenario_a, six links win back most of it | Atanas |
 | 4.9 | Scenario comparison | ❌ not started | — |
 
-**4 of 9 complete.** The four unstarted components carry the heaviest rubric
+**5 of 9 complete.** The remaining components carry the heaviest rubric
 weight, and 4.9 depends on all of them writing outputs keyed
 `baseline` / `scenario_a` / `scenario_b` — which the module contract already
 does, so do not build anything that cannot be re-run per scenario.
@@ -313,6 +313,9 @@ python analysis/abm_landuse/fetch_landcover.py   # OSM green/water/roads     (~3
 python analysis/abm_landuse/ca_landuse.py        # cellular automaton        (~5 s)
 python analysis/abm_landuse/rl_landuse.py --episodes 120  # RL agent, design site  (~90 s)
 python analysis/abm_landuse/weight_sensitivity.py # objective-weight sweep    (~2 s)
+
+python analysis/roads/road_network.py            # walk network, per scenario (~3 min first run)
+python analysis/roads/optimise_links.py          # footpath links, scenario_a (~15 s)
 ```
 
 > The LSTM needs PyTorch, which is **not** in `requirements.txt` (~780 MB).

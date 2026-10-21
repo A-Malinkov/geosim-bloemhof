@@ -234,6 +234,7 @@ export const CONFIG = {
       noiseBaseline:   "../data/processed/noise_baseline.json",
       landuse:         "../data/processed/landuse_abm.json",
       roads:           "../data/processed/road_metrics.json",
+      roadLinks:       "../data/processed/road_links.json",  //footpath links the optimiser picks, analysis/roads/optimise_links.py
       designMassing:   "../data/processed/design_massing.geojson",
       designStreets:   "../data/processed/design_streets.geojson",  //new street surfaces per scenario, import_rhino.py
     },
