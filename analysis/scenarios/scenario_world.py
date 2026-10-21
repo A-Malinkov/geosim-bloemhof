@@ -48,6 +48,8 @@ from common.project import DESIGN_SITE, PROCESSED, ROOT, design_site_polygon, to
 FOOTPRINTS = ROOT / "cache" / "scenarios" / "footprints_site.geojson"  #3DBAG LoD0 over the site, gitignored
 DEMOLISH_PAD_M = 0.5  #widen demolished footprints so eaves and soft AHN edges go too
 EDGE_BAND_M = 15.0  #OSM streets this close to the site outline are the kept edge streets
+EDGE_STREETS = ("Lange Hilleweg", "Sandelingstraat", "Dortsmondstraat", "Dubbelstraat",
+                "Strevelsweg")  #the site's edge streets, kept whole: Strevelsweg runs up to 20 m inside the outline
 
 
 # ------------------------------------------------------------------- inputs
@@ -160,9 +162,11 @@ def streets_for_scenario(roads, scenario: str):
     site = design_site_polygon()
     interior = site.buffer(-EDGE_BAND_M)  #inside this, the old grid is gone
     kept = roads.copy()
-    kept["geometry"] = kept.geometry.difference(interior)  #cut the old interior streets away
+    edge = kept["name"].astype(str).str.contains("|".join(EDGE_STREETS)) if "name" in kept else False  #edge streets by name
+    kept["geometry"] = kept.geometry.difference(interior).where(~edge, kept.geometry)  #cut the old interior streets away, edge streets stay whole
+    cut = ~kept.geometry.geom_equals(roads.geometry)  #shortened by the cut
     kept = kept[~kept.geometry.is_empty]
-    stub = kept.geometry.within(site) & (kept.geometry.length < 2 * EDGE_BAND_M)  #leftover ends of interior streets
+    stub = cut[kept.index] & kept.geometry.within(site) & (kept.geometry.length < 2 * EDGE_BAND_M)  #leftover ends of interior streets, untouched short edges stay
     kept = kept[~stub]
     d = json.loads((PROCESSED / "design_streets.geojson").read_text())
     polys = [shape(f["geometry"]) for f in d.get("features", []) if f["properties"].get("scenario") == scenario]

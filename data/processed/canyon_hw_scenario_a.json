@@ -17,18 +17,18 @@
   "unit": "street length; H/W statistics over canyon samples (buildings on both sides)",
   "per_buurt": {
     "Bloemhof": {
-      "street_km": 26.42,
-      "canyon_share": 0.678,
+      "street_km": 26.49,
+      "canyon_share": 0.676,
       "hw": {
         "median": 0.46,
         "mean": 0.49,
         "p10": 0.18,
         "p90": 0.81
       },
-      "h_m_median": 9.5,
+      "h_m_median": 9.6,
       "w_m_median": 20.0,
       "classes": {
-        "< 0.4 open": 0.431,
+        "< 0.4 open": 0.432,
         "0.4\u20130.7": 0.422,
         "0.7\u20131.0": 0.084,
         "1.0\u20131.5": 0.06,
@@ -56,8 +56,8 @@
     }
   },
   "combined": {
-    "street_km": 52.55,
-    "canyon_share": 0.617,
+    "street_km": 52.62,
+    "canyon_share": 0.616,
     "hw": {
       "median": 0.45,
       "mean": 0.49,
@@ -75,21 +75,21 @@
     }
   },
   "design_site": {
-    "street_km": 4.98,
-    "canyon_share": 0.763,
+    "street_km": 5.41,
+    "canyon_share": 0.756,
     "hw": {
-      "median": 0.57,
-      "mean": 0.57,
+      "median": 0.52,
+      "mean": 0.56,
       "p10": 0.22,
-      "p90": 0.97
+      "p90": 0.89
     },
     "h_m_median": 12.0,
-    "w_m_median": 22.0,
+    "w_m_median": 23.7,
     "classes": {
-      "< 0.4 open": 0.311,
-      "0.4\u20130.7": 0.529,
-      "0.7\u20131.0": 0.063,
-      "1.0\u20131.5": 0.092,
+      "< 0.4 open": 0.301,
+      "0.4\u20130.7": 0.548,
+      "0.7\u20131.0": 0.061,
+      "1.0\u20131.5": 0.086,
       "> 1.5 deep": 0.005
     }
   },

@@ -207,7 +207,7 @@ def main() -> int:
             ("roads: site intersections scenario_a", r"^\| intersection density", f"{as_['intersection_density_km2']:.1f}", [ROADS]),
             ("roads: study-area intersections", r"^\| intersection density",
              f"{b['areas']['study_area']['intersection_density_km2']:.1f}", [ROADS]),
-            ("roads: outside the site", r"^\*\*The neighbours barely notice",
+            ("roads: outside the site", r"^\*\*The neighbours do not notice",
              f"{b['areas']['outside_site']['mean_of_types_m']:.1f} m", [ROADS]),
             ("roads: connectors", r"centreline is joined to the nearest street|that crosses no new block\. \d+ connectors",
              f"{a['network']['connectors']} connectors", [ROADS]),
@@ -222,6 +222,8 @@ def main() -> int:
             ("roads: J ceiling", r"^\d+ candidates\. J starts", f"{L['J_ceiling_m']:.2f} m", [ROADS]),
             ("roads: six links length", r"^\*\*Six links",
              f"{sum(x['length_m'] for x in L['steps'][:6]):.0f} m", [ROADS]),
+            ("roads: two links length", r"^\*\*Two links",
+             f"{sum(x['length_m'] for x in L['steps'][:2]):.0f} m", [ROADS]),
             ("roads: six links share", r"^give\.\*\*|^\*\*Six links",
              f"{100 * L['steps'][5]['share_of_ceiling']:.0f} %", [ROADS]),
         ]
@@ -316,21 +318,21 @@ def main() -> int:
     if rm and rm.get("scenario_a", {}).get("areas"):
         b, a = rm["baseline"], rm["scenario_a"]
         claims += [
-            ("roads README: 'Scenario A lengthens everyday walks on the site'",
+            ("roads README: 'Scenario A makes everyday walks on the site slightly longer'",
              a["site_grid"]["mean_of_types_m"] > b["site_grid"]["mean_of_types_m"]),
-            ("roads README: 'the neighbours barely notice' (under 2 m)",
+            ("roads README: 'the neighbours do not notice' (under 2 m)",
              abs(a["areas"]["outside_site"]["mean_of_types_m"] - b["areas"]["outside_site"]["mean_of_types_m"]) < 2),
-            ("roads README: 'the new diagonal becomes the busiest walking route'",
-             a["areas"]["design_site"]["betweenness_max"] == a["areas"]["study_area"]["betweenness_max"]
-             and b["areas"]["design_site"]["betweenness_max"] < b["areas"]["study_area"]["betweenness_max"]),
+            ("roads README: 'the new grid has more junctions'",
+             a["areas"]["design_site"]["intersection_density_km2"] > b["areas"]["design_site"]["intersection_density_km2"]),
             ("roads README: 'the 15-minute walk does not separate anything'",
              all(rm[s]["areas"][n]["walk_15min_reach_frac"] == 1.0 for s in ("baseline", "scenario_a") for n in rm[s]["areas"])),
         ]
     if rlinks and rlinks.get("scenario_a", {}).get("steps"):
         st = rlinks["scenario_a"]["steps"]
         claims += [
-            ("roads README: 'after link 6 each link saves under 0.2 m'", all(x["gain_m"] < 0.2 for x in st[6:])),
-            ("roads README: 'link 3 saves more than link 2'", st[2]["gain_m"] > st[1]["gain_m"]),
+            ("roads README: 'after link 6 each link saves under 0.1 m'", all(x["gain_m"] < 0.1 for x in st[6:])),
+            ("roads README: 'two links bring the site grid back below today's'",
+             st[1]["site_grid_m"] < rm["baseline"]["site_grid"]["mean_of_types_m"] < st[0]["site_grid_m"]),
             ("roads README: 'site dwellings close to today's' (within 10 m after six links)",
              abs(st[5]["site_dwellings_m"] - rm["baseline"]["areas"]["design_site"]["mean_of_types_m"]) < 10),
         ]

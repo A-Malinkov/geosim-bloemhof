@@ -279,7 +279,7 @@ numbers here still match `data/processed/`.
 | 4.5 | Wind + noise simulation | 🟡 noise done (baseline, NoiseModelling 6.0.0) · scenario_a wired, not run · wind not started | — |
 | 4.6 | CBS socio-demographics | ❌ not started | — |
 | 4.7 | Agent-based land-use model | ✅ done — CA + RL, prefers `scenario_b` | Atanas |
-| 4.8 | Road network optimization | ✅ done — walk network and walks to everyday destinations for baseline and scenario_a, footpath-link optimiser on scenario_a. Site grid 380.9 m → 428.6 m in scenario_a, six links win back most of it | Atanas |
+| 4.8 | Road network optimization | ✅ done — walk network and walks to everyday destinations for baseline and scenario_a, footpath-link optimiser on scenario_a. Site grid 380.9 m → 390.0 m in scenario_a, two footpath links bring it back below today's | Atanas |
 | 4.9 | Scenario comparison | ❌ not started | — |
 
 **5 of 9 complete.** The remaining components carry the heaviest rubric
