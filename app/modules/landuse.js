@@ -14,7 +14,8 @@
  *       keeps today's housing (--keep-housing -> landuse_rl_keep_housing.json),
  *       and a convolutional DQN (rl_dqn.py -> landuse_rl_dqn*.json) is run on
  *       the same problem for comparison. The "Optimiser plan (RL)" layer shows
- *       the linear agent's plan for either rule; the DQN appears as numbers only.
+ *       the linear agent's plan for either rule; the housing-kept plans of both
+ *       agents also have their own layers.
  *
  * MAP RENDERING
  * -------------
@@ -158,6 +159,37 @@ export async function setup(ctx) {
       onToggle: async (v) => { planOn = v; await showPlan(); },
     });
   }
+
+  /* ---- housing-kept plans as their own layers ----------------------------
+   * The --keep-housing runs of both agents, each a standalone layer so they
+   * can be shown without the panel switch. Loaded on first toggle. */
+  function planLayer(id, label, run) {
+    if (!run?.png || !run?.bbox_wgs84) return;  //run missing or still a stub
+    let l = null;
+    ctx.registerLayer({
+      id, label, group: "Land use", show: false,
+      onToggle: async (v) => {
+        if (v && !l) {
+          try {
+            const [w, s2, e, n] = run.bbox_wgs84;
+            const provider = await Cesium.SingleTileImageryProvider.fromUrl(
+              `../data/processed/${run.png}`,
+              { rectangle: Cesium.Rectangle.fromDegrees(w, s2, e, n) });
+            l = viewer.imageryLayers.addImageryProvider(provider);
+            l.alpha = 0.8;
+          } catch (err) {
+            console.warn("[landuse] plan layer failed to load", run.png, err);
+            ctx.note(`${label}: failed to load`, "err");
+            return;
+          }
+        }
+        if (l) l.show = v;
+        viewer.scene.requestRender();
+      },
+    });
+  }
+  planLayer("landuseRlKeepLinear", "RL plan, housing kept (linear)", rlKeep);  //linear Q-learning
+  planLayer("landuseRlKeepDqn", "RL plan, housing kept (DQN)", dqnKeep);  //convolutional DQN best episode
 
   /* ---- panel ------------------------------------------------------------ */
   const names = Object.keys(ca.scenarios);
