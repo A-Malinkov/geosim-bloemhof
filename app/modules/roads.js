@@ -72,6 +72,9 @@ export async function setup(ctx) {
   /* ---------------------------------------------------------- map layers */
   const nets = new Map();   //scenario -> promise of {ds, handle} for the network
   const picks = new Map();  //scenario -> promise of {ds, handle} for the optimiser's links
+  const wanted = new Map([[nets, true], [picks, true]]);  //checkbox choice per kind, kept across scenario switches
+  //a tick or untick on the current scenario's layer is the user's choice; the switch's own hiding is not
+  const remember = (map, scenario) => (v) => { if (scenario === ctx.scenario()) wanted.set(map, v); };
 
   async function loadNetwork(scenario) {
     //the scenario's walk network, coloured by edge betweenness
@@ -89,8 +92,9 @@ export async function setup(ctx) {
       id: `roads-${scenario}`,
       label: `Walk network, betweenness (${scenario})`,
       group: "Roads",
-      show: true,
+      show: wanted.get(nets),  //start as the user last left it, so registering does not reset the choice
       target: ds,
+      onToggle: remember(nets, scenario),
     });
     return { ds, handle };
   }
@@ -122,8 +126,9 @@ export async function setup(ctx) {
       id: `roads-links-${scenario}`,
       label: `Optimiser footpath links (${scenario})`,
       group: "Roads",
-      show: true,
+      show: wanted.get(picks),  //start as the user last left it
       target: ds,
+      onToggle: remember(picks, scenario),
     });
     return { ds, handle };
   }
@@ -140,9 +145,10 @@ export async function setup(ctx) {
       for (const [s, p] of map) {
         const layer = await p;
         if (ctx.scenario() !== scenario) return;  //switched again while loading, the newer call sets visibility
-        layer?.handle.setVisible(s === scenario);
+        layer?.handle.setVisible(s === scenario && wanted.get(map));  //only the current scenario's, and only if wanted
       }
     }
+    ctx.viewer.scene.requestRender();  //layers loaded asynchronously, so ask for a redraw
   }
 
   /* ------------------------------------------------------------- the card */

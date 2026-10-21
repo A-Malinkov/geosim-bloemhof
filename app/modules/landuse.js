@@ -131,21 +131,30 @@ export async function setup(ctx) {
   let planKey = "free";
 
   async function showPlan() {
-    for (const [k, l] of Object.entries(planLayers)) l.show = planOn && k === planKey;
-    const run = plans[planKey];
-    if (!planOn || !run || planLayers[planKey]) { viewer.scene.requestRender(); return; }
-    try {
-      const [w, s2, e, n] = run.bbox_wgs84;
-      const provider = await Cesium.SingleTileImageryProvider.fromUrl(
-        `../data/processed/${run.png}`,
-        { rectangle: Cesium.Rectangle.fromDegrees(w, s2, e, n) });
-      const l = viewer.imageryLayers.addImageryProvider(provider);
-      l.alpha = 0.8;
-      planLayers[planKey] = l;
-      l.show = planOn;
-    } catch (err) {
-      console.warn("[landuse] optimiser plan failed to load", run.png, err);
-      ctx.note("Optimiser plan: failed to load", "err");
+    const key = planKey;  //the plan wanted when this call started
+    const run = plans[key];
+    if (planOn && run && !planLayers[key]) {
+      //store the promise at once, so a second toggle while loading does not add the image twice
+      planLayers[key] = (async () => {
+        try {
+          const [w, s2, e, n] = run.bbox_wgs84;
+          const provider = await Cesium.SingleTileImageryProvider.fromUrl(
+            `../data/processed/${run.png}`,
+            { rectangle: Cesium.Rectangle.fromDegrees(w, s2, e, n) });
+          const l = viewer.imageryLayers.addImageryProvider(provider);
+          l.alpha = 0.8;
+          l.show = false;  //the loop below decides
+          return l;
+        } catch (err) {
+          console.warn("[landuse] optimiser plan failed to load", run.png, err);
+          ctx.note("Optimiser plan: failed to load", "err");
+          return null;
+        }
+      })();
+    }
+    for (const [k, p] of Object.entries(planLayers)) {
+      const l = await p;
+      if (l) l.show = planOn && k === planKey;  //read the state after loading, not before
     }
     viewer.scene.requestRender();
   }
@@ -165,25 +174,31 @@ export async function setup(ctx) {
    * can be shown without the panel switch. Loaded on first toggle. */
   function planLayer(id, label, run) {
     if (!run?.png || !run?.bbox_wgs84) return;  //run missing or still a stub
-    let l = null;
+    let loading = null;  //Promise of the image layer, created on first tick
+    let on = false;  //checkbox state
     ctx.registerLayer({
       id, label, group: "Land use", show: false,
       onToggle: async (v) => {
-        if (v && !l) {
-          try {
-            const [w, s2, e, n] = run.bbox_wgs84;
-            const provider = await Cesium.SingleTileImageryProvider.fromUrl(
-              `../data/processed/${run.png}`,
-              { rectangle: Cesium.Rectangle.fromDegrees(w, s2, e, n) });
-            l = viewer.imageryLayers.addImageryProvider(provider);
-            l.alpha = 0.8;
-          } catch (err) {
-            console.warn("[landuse] plan layer failed to load", run.png, err);
-            ctx.note(`${label}: failed to load`, "err");
-            return;
-          }
+        on = v;
+        if (v && !loading) {
+          loading = (async () => {
+            try {
+              const [w, s2, e, n] = run.bbox_wgs84;
+              const provider = await Cesium.SingleTileImageryProvider.fromUrl(
+                `../data/processed/${run.png}`,
+                { rectangle: Cesium.Rectangle.fromDegrees(w, s2, e, n) });
+              const l = viewer.imageryLayers.addImageryProvider(provider);
+              l.alpha = 0.8;
+              return l;
+            } catch (err) {
+              console.warn("[landuse] plan layer failed to load", run.png, err);
+              ctx.note(`${label}: failed to load`, "err");
+              return null;
+            }
+          })();
         }
-        if (l) l.show = v;
+        const l = loading ? await loading : null;
+        if (l) l.show = on;  //the state now, so unticking during the load wins
         viewer.scene.requestRender();
       },
     });

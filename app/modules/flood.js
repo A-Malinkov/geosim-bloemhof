@@ -40,6 +40,7 @@ export async function setup(ctx) {
   for (const L of data.layers) {
     let layer = null;
     let loading = null;
+    let on = false;  //checkbox state, read again after the image loads
     const ensure = () => {
       if (layer) return Promise.resolve(layer);
       if (!loading) {
@@ -62,16 +63,13 @@ export async function setup(ctx) {
     };
     ctx.registerLayer({
       id: `flood_${L.id}`,
-      label: L.label,
+      label: `${L.label} (baseline)`,  //Cyrille's analysis is of today's city, not re-run per scenario
       group: "Flood vulnerability",
       show: false,
       onToggle: async (visible) => {
-        if (!visible) {
-          if (layer) layer.show = false;
-        } else {
-          const l = await ensure();
-          if (l) l.show = true;
-        }
+        on = visible;
+        const l = visible ? await ensure() : layer;
+        if (l) l.show = on;  //unticking while the image loads keeps it hidden
         viewer.scene.requestRender();
       },
     });

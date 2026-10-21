@@ -127,12 +127,45 @@ export async function setup(ctx) {
   const prims = buildPrimitives(ctx, geo.features);
   prims.forEach((p) => viewer.scene.primitives.add(p));
 
+  /* One tree set per scenario. The checkbox and the scenario switch both go
+   * through apply(), so neither can show a set the other has hidden. */
+  const sets = new Map([["baseline", Promise.resolve(prims)]]);  //scenario -> Promise of its primitives, null when it has no tree file
+  let treesOn = true;  //layer checkbox
+  let current = ctx.scenario();  //scenario the app is on
+
+  function load(scenario) {
+    //trees_<scenario>.geojson built once and cached, hidden until apply() decides
+    if (!sets.has(scenario)) {
+      sets.set(scenario, ctx.loadJson(`../data/processed/trees_${scenario}.geojson`, { quiet: true })
+        .then((alt) => {
+          if (!alt?.features?.length) return null;  //no scenario planting: today's trees stand in
+          const ps = buildPrimitives(ctx, alt.features);
+          ps.forEach((p) => { p.show = false; viewer.scene.primitives.add(p); });
+          return ps;
+        }));
+    }
+    return sets.get(scenario);
+  }
+
+  async function apply() {
+    //show exactly one set: the current scenario's, or today's if it has none; nothing if unticked
+    const sc = current;
+    const own = await load(sc);
+    if (sc !== current) return;  //switched again while loading, the newer call decides
+    const showing = own ? sc : "baseline";
+    for (const [k, p] of sets) {
+      const ps = await p;
+      if (ps) ps.forEach((x) => { x.show = treesOn && k === showing; });
+    }
+    viewer.scene.requestRender();  //low-power mode redraws only when asked
+  }
+
   ctx.registerLayer({
     id: "treeModels",
     label: `3D trees from register (${geo.features.length})`,
     group: "Vegetation",
     show: true,
-    onToggle: (v) => prims.forEach((p) => { p.show = v; }),
+    onToggle: (v) => { treesOn = v; apply(); },  //checkbox hides whichever set is showing
   });
 
   /* ---- panel ------------------------------------------------------------ */
@@ -211,24 +244,5 @@ export async function setup(ctx) {
    * Scenarios can keep, remove or add trees. Drop a
    * data/processed/trees_<scenario>.geojson next to trees.geojson and it will
    * replace the baseline set when that scenario is selected. */
-  let extra = null;
-  ctx.onScenarioChange(async (scenario) => {
-    if (scenario === "baseline") {
-      prims.forEach((p) => { p.show = true; });
-      if (extra) extra.forEach((p) => { p.show = false; });
-      return;
-    }
-    const alt = await ctx.loadJson(
-      `../data/processed/trees_${scenario}.geojson`, { quiet: true });
-    if (!alt?.features?.length) {
-      // no scenario-specific planting yet: keep the existing trees visible
-      prims.forEach((p) => { p.show = true; });
-      if (extra) extra.forEach((p) => { p.show = false; });
-      return;
-    }
-    if (extra) extra.forEach((p) => viewer.scene.primitives.remove(p));
-    extra = buildPrimitives(ctx, alt.features);
-    extra.forEach((p) => viewer.scene.primitives.add(p));
-    prims.forEach((p) => { p.show = false; });
-  });
+  ctx.onScenarioChange((scenario) => { current = scenario; apply(); });  //apply() keeps the checkbox state
 }

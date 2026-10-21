@@ -303,6 +303,7 @@ async function boot_() {
       const apply = (visible) => {
         if (target && "show" in target) target.show = visible;
         if (onToggle) onToggle(visible);
+        viewer.scene.requestRender();  //low-power mode only redraws when asked, so a toggle must ask
       };
       apply(show);
       const box = row.querySelector("input");  //kept so setVisible can tick it too

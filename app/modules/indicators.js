@@ -118,12 +118,14 @@ function addScenarioOverlay(ctx, { id, label, base }) {
       const l = await p;
       if (l) l.show = false;  //hide every scenario's image first
     }
+    viewer.scene.requestRender();  //the hiding happened after awaits, so ask for a redraw
     if (!shown) return;
     const want = current;
     const l = await load(want);
     if (want !== current || !shown) return;  //switched while loading
     if (l) l.show = true;
     else ctx.note(`${label}: no run for ${want}`, "warn");
+    viewer.scene.requestRender();  //the image appears after loading, so ask for a redraw
   }
 
   ctx.registerLayer({
@@ -356,6 +358,8 @@ function addCanyonLayer(ctx) {
           `</table>`,
       });
     }
+    if (want !== scenario || !shown) return;  //switched or unticked while the entities were built
+    if (ds) viewer.dataSources.remove(ds, true);  //a second load finished first: replace it, never stack two
     ds = d;
     await viewer.dataSources.add(d);
     viewer.scene.requestRender();
