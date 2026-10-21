@@ -21,7 +21,7 @@ python analysis/abm_landuse/fetch_landcover.py   # ~30 s
 python analysis/abm_landuse/ca_landuse.py        # ~10 s
 python analysis/abm_landuse/rl_landuse.py --episodes 120   # ~90 s
 python analysis/abm_landuse/rl_landuse.py --episodes 120 --keep-housing
-python analysis/abm_landuse/rl_dqn.py --episodes 120        # ~34 min, needs PyTorch
+python analysis/abm_landuse/rl_dqn.py --episodes 120        # ~25 min, needs PyTorch
 python analysis/abm_landuse/rl_dqn.py --episodes 120 --keep-housing
 python analysis/abm_landuse/weight_sensitivity.py  # ~2 s, no model re-run
 ```
@@ -160,7 +160,7 @@ explores the three terms we chose without asking whether they are the right thre
 Q-learning, TD(0), **linear** function approximation, ε-greedy, 120 episodes.
 
 **It works on the design site only**, not the whole study area. Every cell of the
-site that is not road or water (179 of 180) is cleared, and each episode the
+site that is not road or water (194 of 195) is cleared, and each episode the
 agent re-plans all of them one cell at a time; reward is the change in the
 objective. The rest of Bloemhof and Hillesluis is fixed context: it feeds the
 agent's neighbourhood features, and a shop just outside the site still counts
@@ -191,11 +191,11 @@ Linear rather than deep **on purpose** — the value here is that the weights ca
 be read and argued with. The deep version is `rl_dqn.py`, below, and it does
 not score better.
 
-Learns: 2.364 over the first 10 % of episodes → 2.473 over the last 10 %.
-Best 2.480 against 0.890 for the site today; its plan reaches mix 0.780,
-48 % green and 26 m to the nearest amenity (today 0.164, 2 % and 94 m).
+Learns: 2.374 over the first 10 % of episodes → 2.466 over the last 10 %.
+Best 2.478 against 1.107 for the site today; its plan reaches mix 0.798,
+46 % green and 28 m to the nearest amenity (today 0.279, 5 % and 93 m).
 
-**It gets there by demolishing housing: 155 residential cells become 27.** Nothing
+**It gets there by demolishing housing: 159 residential cells become 33.** Nothing
 in the objective values homes, and both the mix and the green term reward
 replacing them, so this is the objective working as written, not a bug. It is the
 clearest finding of the site run: a "mixed, green, walkable" score alone would
@@ -204,15 +204,15 @@ number of residential cells) is the obvious next constraint and is not in yet.
 
 ### The interesting disagreement
 
-The agent learned that **retail should avoid other retail**: −18.0, its
+The agent learned that **retail should avoid other retail**: −20.7, its
 strongest aversion. Our CA assumes the opposite — its matrix gives
 retail→retail **+0.8**, i.e. shops cluster.
 
-Read the weights within a row, not on their own. Every class carries about +45 on
+Read the weights within a row, not on their own. Every class carries about +43 on
 *vacant* neighbours and a negative weight on everything else, because on a
 cleared site the vacant count mainly tells the agent how early in the episode it
 is. What separates the classes is which neighbour each avoids most, and each
-avoids its own kind: retail→retail −18.0, amenity→amenity −20.1. That is the mix
+avoids its own kind: retail→retail −20.7, amenity→amenity −20.0. That is the mix
 term asking for uses to be spread out.
 
 Both are defensible and the disagreement is informative. The objective rewards
@@ -225,17 +225,17 @@ and only running both models surfaces it.
 ### A second example: today's housing kept
 
 `rl_landuse.py --keep-housing` adds one rule: the plan must contain exactly as
-many residential cells as the site has today (155). Actions that would break it
+many residential cells as the site has today (159). Actions that would break it
 are masked, and the objective is unchanged, so the two runs differ only in that
 rule (`landuse_rl_keep_housing.json`, `fig_landuse_rl_keep_housing.png`).
 
-Best 1.300 against 0.890 for the site today: mix 0.335, 6 % green and 46 m to
-the nearest amenity. The 24 non-housing cells become 6 retail, 8 amenity and 10
-green, scattered through the blocks.
+Best 1.457 against 1.107 for the site today: mix 0.415, 7 % green and 40 m to
+the nearest amenity. The 35 non-housing cells become 11 retail, 10 amenity and
+14 green.
 
-**It does not learn.** The last 10 % of episodes average 1.265, the first 10 %
-1.278; a 400-episode run did no better (1.286 → 1.230, best 1.307). With housing
-fixed, the agent's only freedom is where to put 24 cells, and the linear agent
+**It does not learn.** The last 10 % of episodes average 1.429, the first 10 %
+1.430; a 400-episode run did no better (1.434 → 1.403, best 1.464). With housing
+fixed, the agent's only freedom is where to put 35 cells, and the linear agent
 places them no better than its early, mostly random episodes. Read this plan as
 an example layout, the best of 120 episodes, not as an optimum.
 
@@ -248,7 +248,7 @@ masks, access, distance to water, plus broadcast site-wide shares, progress and
 housing quota), four 3x3 convolutions (two dilated) and a 1x1 head giving a
 Q-value for every cell x use, 70,372 weights. It picks from all empty cells, not
 40 sampled ones. DQN with replay, a target network, Double DQN targets, Huber
-loss and Adam; one update every 4 steps; 120 episodes, about 34 min on CPU.
+loss and Adam; one update every 4 steps; 120 episodes, about 25 min on CPU.
 Needs PyTorch (CPU), which is optional (see `requirements.txt`).
 
 It also reports what the linear script does not: a **random policy** on the same
@@ -257,18 +257,18 @@ run of the learned policy with no exploration.
 
 | objective over the site | random, mean | linear Q, best | DQN, best | DQN, greedy | DQN, end of training |
 |---|---|---|---|---|---|
-| no housing rule | 2.360 | **2.480** | 2.475 | 2.180 | 2.234 |
-| today's housing kept | 1.281 | **1.300** | 1.295 | 1.250 | 1.169 |
+| no housing rule | 2.366 | **2.478** | 2.475 | 2.241 | 2.287 |
+| today's housing kept | 1.434 | **1.457** | 1.454 | 1.392 | 1.353 |
 
 **The DQN does not do better.** Its best episodes came early, while it was still
 exploring; its greedy policy and its last episodes score *below the random
-policy*. A CNN with 70,000 weights gets about 5,000 gradient steps in 120
+policy*. A CNN with 70,000 weights gets under 6,000 gradient steps in 120
 episodes, far too few; the linear agent's 13 weights per use learn much faster
 from the same experience. More episodes, reward shaping or a policy-gradient
 method might change this, at hours of CPU per run. The random baseline also puts
 the linear agent in proportion: on a cleared site, a random mix of four uses
-already scores 2.36, so the agent's gain is 0.12, and under the housing rule
-none (`fig_landuse_rl_comparison.png`).
+already scores 2.37, so the agent's gain is 0.11, and under the housing rule
+0.02 (`fig_landuse_rl_comparison.png`).
 
 ## Honest limitations
 
@@ -282,9 +282,9 @@ none (`fig_landuse_rl_comparison.png`).
   space and scenario_a the rest. Only "baseline never wins" holds regardless.
   Whether those three terms are the right three is still untested.
 - The RL agent re-plans the design site with **no housing requirement**, and
-  loses 83 % of the site's residential cells doing so (above).
+  loses 79 % of the site's residential cells doing so (above).
 - The land-use grid ends at the buurt bounding box, which cuts off the site's
-  strip south of Strevelsweg: 11.25 of its 12.38 ha are modelled.
+  strip south of Strevelsweg: 12.19 of its 13.24 ha are modelled.
 - The RL run is one seed. The CA's scenarios are spread over replicates; the
   agent's best plan is not.
 - 25 m cells cannot represent a building. This allocates land use; turning that

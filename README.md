@@ -279,7 +279,7 @@ numbers here still match `data/processed/`.
 | 4.5 | Wind + noise simulation | 🟡 noise done (baseline, NoiseModelling 6.0.0) · scenario_a wired, not run · wind not started | — |
 | 4.6 | CBS socio-demographics | ❌ not started | — |
 | 4.7 | Agent-based land-use model | ✅ done — CA + RL, prefers `scenario_b` | Atanas |
-| 4.8 | Road network optimization | ✅ done — walk network and walks to everyday destinations for baseline and scenario_a, footpath-link optimiser on scenario_a. Site grid 380.9 m → 390.0 m in scenario_a, two footpath links bring it back below today's | Atanas |
+| 4.8 | Road network optimization | ✅ done — walk network and walks to everyday destinations for baseline and scenario_a, footpath-link optimiser on scenario_a. Site grid 377.4 m → 387.3 m in scenario_a, two footpath links bring it back below today's | Atanas |
 | 4.9 | Scenario comparison | ❌ not started | — |
 
 **5 of 9 complete.** The remaining components carry the heaviest rubric
@@ -351,7 +351,7 @@ Other results:
 | SVF under a tree crown vs 15 m from any tree | **0.46 vs 0.79** — trees remove 42 % of visible sky |
 | Weather forecast (temperature, +6 h) | MAE 1.29 °C, 54 % better than assuming no change |
 | Weather forecast (wind, +6 h) | MAE 1.13 m/s — but it under-predicts strong winds by 0.5 m/s |
-| Land-use model | CA prefers **scenario_b** (mix 0.550); RL agent re-planning the design site reaches mix 0.780, but keeps only 27 of its 155 residential cells |
+| Land-use model | CA prefers **scenario_b** (mix 0.550); RL agent re-planning the design site reaches mix 0.798, but keeps only 33 of its 159 residential cells |
 
 ### Figures (`docs/`)
 

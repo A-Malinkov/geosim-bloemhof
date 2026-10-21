@@ -258,7 +258,7 @@ Baseline (from `canyon_hw_baseline.json`):
 | Bloemhof | 0.42 | 8.0 m | 19.9 m | 67 % |
 | Hillesluis | 0.45 | 12.1 m | 29.1 m | 56 % |
 | both | 0.43 | 9.8 m | 22.4 m | 61 % |
-| design site | 0.41 | 7.3 m | 22.9 m | 76 % |
+| design site | 0.39 | 7.3 m | 22.9 m | 76 % |
 
 The two buurten land on almost the same H/W by opposite routes: Bloemhof has
 low walls on narrow streets, Hillesluis taller walls on wider ones. On the

@@ -112,9 +112,9 @@
   },
   "design_site": {
     "open_ground_sunlit_hours": {
-      "n_pixels": 70104,
-      "mean": 0.5361,
-      "std": 1.0035,
+      "n_pixels": 74198,
+      "mean": 0.5595,
+      "std": 1.0505,
       "min": 0.0,
       "p05": 0.0,
       "p25": 0.0,
@@ -122,8 +122,8 @@
       "p75": 0.5,
       "p95": 3.0,
       "max": 6.5,
-      "share_under_2h": 0.87,
-      "share_under_4h": 0.9844
+      "share_under_2h": 0.8643,
+      "share_under_4h": 0.9791
     }
   },
   "histogram": {

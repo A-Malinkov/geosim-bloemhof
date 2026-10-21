@@ -39,6 +39,9 @@ too. Rule per case:
              street grid over the whole site, so keeping only the buildings it
              does not overlap would leave old rows standing in new courtyards.
   "overlap"  only buildings a new block overlaps by more than 1 m2.
+A case can also name a "keep_rd" ring: part of the site the scenario leaves
+standing (no demolition, old streets kept). It is written to the output as
+`keep_rd` so scenario_world.py cuts streets only in the cleared part.
 Footprints come from the 3DBAG API (cached in cache/scenarios/, gitignored).
 
 WHAT IT CANNOT TELL YOU
@@ -76,8 +79,13 @@ from common.project import PROCESSED  #where trees.geojson lives
 MODEL = RAW / "Group Project Q1 - Proposal Modelling_16.10.26.3dm"  #newest version in Modelling.zip
 
 #one dict per scenario: which Rhino layer tree becomes which app scenario
+#the block added to the site on 2026-10-21 (school, halls, workshops); OPTION 1 places nothing there, so it stays
+KEEP_RD = [(94158.0, 433881.0), (94045.0, 433883.0), (94017.8, 433885.5), (94068.9, 433931.5),
+           (94123.9, 433976.9), (94136.6, 433976.9), (94168.8, 433939.6)]
+
 CASES = [
-    {"scenario": "scenario_a", "layer_prefix": "OPTION 1", "model": MODEL, "demolish": "site"},  #new grid over the whole site
+    {"scenario": "scenario_a", "layer_prefix": "OPTION 1", "model": MODEL, "demolish": "site",
+     "keep_rd": KEEP_RD},  #new grid over the whole site except the 2026-10-21 block
     #OPTION 2 is unfinished in the 16.10 model (one freeform blob reaching 18 m below ground); add it once it is modelled
     #{"scenario": "scenario_b", "layer_prefix": "OPTION 2", "model": MODEL, "demolish": "overlap"},
 ]
@@ -230,6 +238,8 @@ def import_streets(c):
 def demolished(c, feats, footprints):
     #BAG pand ids this scenario removes, by the case's rule
     site = design_site_polygon()
+    if c.get("keep_rd"):
+        site = site.difference(Polygon(c["keep_rd"]))  #the part the scenario leaves standing is not demolished
     on_site = [(pid, g) for pid, g in footprints if g.representative_point().within(site)]  #outline crosses no building
     if c["demolish"] == "site":
         ids = [pid for pid, _ in on_site]
@@ -276,6 +286,8 @@ def main():
         "_demolishes_note": "BAG pand ids (3DBAG 'identificatie') removed by each scenario; "
                             "rule per scenario in import_rhino.py CASES.",
         "demolishes": demolishes,
+        "_keep_note": "RD rings of site parts each scenario leaves standing, see KEEP_RD in import_rhino.py.",
+        "keep_rd": {c["scenario"]: c.get("keep_rd") for c in CASES},  #read by scenario_world.cleared_area()
         "features": features,
     }, indent=1)
     write_processed("design_streets.geojson", {

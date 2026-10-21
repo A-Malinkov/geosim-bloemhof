@@ -21,6 +21,7 @@ Three entry points, all a no-op for "baseline":
     streets_for_scenario(roads, scenario)     street centrelines (RD): OSM streets in
                                               the site interior swapped for centrelines
                                               traced from the new street surfaces
+    cleared_area(scenario)                    the part of the site the scenario rebuilds
 
 Ground for demolished and new buildings is the site ground level,
 DESIGN_SITE["ground_nap_m"] (AHN DTM median over the site). The DTM is empty
@@ -79,6 +80,14 @@ def load_scenario(scenario: str):
     new = gpd.GeoDataFrame.from_features(feats, crs="EPSG:4326").to_crs(28992)
     new["height_m"] = new["building_height_m"].astype(float)  #above ground, like 3DBAG heights here
     return new[["name", "height_m", "geometry"]], set(d.get("demolishes", {}).get(scenario, []))
+
+
+def cleared_area(scenario: str):
+    #the part of the design site the scenario rebuilds (RD): the site minus what import_rhino.py says it keeps
+    from shapely.geometry import Polygon
+    site = design_site_polygon()
+    keep = json.loads((PROCESSED / "design_massing.geojson").read_text()).get("keep_rd", {}).get(scenario)
+    return site.difference(Polygon(keep)) if keep else site
 
 
 # ---------------------------------------------------------------- buildings
@@ -159,7 +168,7 @@ def streets_for_scenario(roads, scenario: str):
     from shapely.geometry import shape
     if scenario == "baseline":
         return roads
-    site = design_site_polygon()
+    site = cleared_area(scenario)  #the kept block's streets stay
     interior = site.buffer(-EDGE_BAND_M)  #inside this, the old grid is gone
     kept = roads.copy()
     edge = kept["name"].astype(str).str.contains("|".join(EDGE_STREETS)) if "name" in kept else False  #edge streets by name

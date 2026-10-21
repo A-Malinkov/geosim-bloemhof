@@ -33,10 +33,11 @@ METHOD
             BAG dwelling size on the site today, placed at the block centroid.
   dest.     shops (BAG winkelfunctie), education (onderwijsfunctie), health
             care (gezondheidszorgfunctie) and rail stops (OSM tram, metro and
-            train stops). THE SAME SET IN EVERY SCENARIO: destinations on the
-            design site are left out of all of them, so a difference between
-            scenarios is the network and the homes, not shops the design
-            removes. How many destinations the site holds today is reported.
+            train stops). THE SAME SET IN EVERY SCENARIO: destinations on
+            ground a scenario clears are left out of all of them, so a
+            difference between scenarios is the network and the homes, not
+            shops the design removes. How many that ground holds today is
+            reported. Buildings a scenario keeps stay destinations.
   distance  each home and destination is snapped to the nearest point on the
             nearest edge. Walking distance = access to the edge + network
             distance, by Dijkstra from all destinations of a type at once.
@@ -147,9 +148,11 @@ def osm_edges():
 
 
 def destinations():
-    #destination points (RD) per type; everything on the design site left out
+    #destination points (RD) per type; everything on ground a scenario clears left out
     import geopandas as gpd
-    site = design_site_polygon()
+    from shapely.ops import unary_union
+    from scenario_world import cleared_area
+    site = unary_union([cleared_area(c["scenario"]) for c in CASES if c["scenario"] != "baseline"])  #kept buildings stay destinations
     bag = gpd.read_file(RAW / "bag_verblijfsobjecten.geojson").to_crs(28992)
     bag = bag[bag["gebruiksdoel"].notna()]
     on_site = bag.within(site)

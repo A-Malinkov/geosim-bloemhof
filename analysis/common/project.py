@@ -88,6 +88,14 @@ STUDY_AREA = StudyArea()
 #: closest facade 0.8 m). Part of it lies south of the buurt boundary, because
 #: that boundary runs down the middle of Strevelsweg and the site takes in the
 #: whole street.
+#: Extended 2026-10-21 at Atanas's request (app screenshot): that block of large
+#: buildings and trees is now in the site too, the triangle between the diagonal
+#: street, Dubbelstraat and Oudelandstraat. Its notch, vertices (94045.0,
+#: 433883.0) to (94136.6, 433976.9), is replaced by one edge from (94158.0,
+#: 433881.0) to (94168.8, 433939.6), which crosses no building. +0.86 ha, 6
+#: buildings (a school, assembly halls, workshops). Scenario A keeps them: the
+#: site is where we measure, the triangle is not cleared (KEEP_RD in
+#: analysis/scenarios/import_rhino.py).
 #:
 #: Vertices are RD New (EPSG:28992), counter-clockwise, not closed.
 DESIGN_SITE = {
@@ -103,8 +111,7 @@ DESIGN_SITE = {
         (93616.8, 433795.9), (93690.6, 433797.7), (93696.1, 433798.0), (93696.1, 433799.3),
         (93713.8, 433800.0), (93713.7, 433800.5), (93764.6, 433802.1), (93767.9, 433802.3),
         (93767.8, 433802.8), (93933.6, 433808.0), (93933.5, 433812.1), (93989.9, 433814.1),
-        (94158.0, 433815.5), (94158.0, 433881.0), (94045.0, 433883.0), (94017.8, 433885.5),
-        (94068.9, 433931.5), (94123.9, 433976.9), (94136.6, 433976.9), (94168.8, 433939.6),
+        (94158.0, 433815.5), (94158.0, 433881.0), (94168.8, 433939.6),
         (94211.3, 433976.9), (94222.4, 433976.9), (94236.6, 433988.9), (94237.5, 433989.1),
         (94241.0, 433992.0), (94242.1, 433990.7), (94261.1, 434001.4), (94258.9, 434004.0),
         (94260.0, 434005.0), (94248.4, 434025.5), (94245.3, 434022.8), (94243.6, 434024.7),
