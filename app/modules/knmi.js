@@ -1,6 +1,6 @@
 /* =============================================================================
  * modules/knmi.js  —  component 4: KNMI weather dashboard + AI prediction
- * OWNER: <put your name here>   (live feed wired up by Atanas Malinkov)
+ * OWNER: Atanas Malinkov
  *
  * TWO DATA PATHS, AND YOU NEED BOTH
  * ---------------------------------

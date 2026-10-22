@@ -1,6 +1,6 @@
 # analysis/knmi — weather dashboard and AI prediction
 
-Component 4.4 · feeds `app/modules/knmi.js`
+Component 4.4 · Owner: **Atanas Malinkov** · feeds `app/modules/knmi.js`
 
 > Numbers here are generated from `data/processed/knmi_forecast.json`. If you
 > retrain, regenerate this file — they go stale silently otherwise.
