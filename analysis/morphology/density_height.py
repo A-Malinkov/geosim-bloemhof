@@ -154,17 +154,18 @@ def main() -> int:
     c = args.cell
     nx = int(np.ceil((xmax - xmin) / c))
     ny = int(np.ceil((ymax - ymin) / c))
-    col = np.clip(((x - xmin) // c).astype(int), 0, nx - 1)
-    row = np.clip(((y - ymin) // c).astype(int), 0, ny - 1)
-    flat = row * nx + col
+    col = ((x - xmin) // c).astype(int)
+    row = ((y - ymin) // c).astype(int)
+    on_grid = (col >= 0) & (col < nx) & (row >= 0) & (row < ny)  #raw data can reach past the box; clamping piled it into edge cells
+    flat = np.where(on_grid, row * nx + col, 0)
     ncell = nx * ny
     cell_area = c * c
 
-    sum_area = np.bincount(flat, weights=area, minlength=ncell)
-    sum_gfa = np.bincount(flat, weights=gfa, minlength=ncell)
-    count = np.bincount(flat, minlength=ncell)
+    sum_area = np.bincount(flat, weights=np.where(on_grid, area, 0), minlength=ncell)  #off-grid buildings weigh nothing
+    sum_gfa = np.bincount(flat, weights=np.where(on_grid, gfa, 0), minlength=ncell)
+    count = np.bincount(flat, weights=on_grid.astype(float), minlength=ncell).astype(int)  #and are not counted
 
-    pm = principal & np.isfinite(height)
+    pm = principal & np.isfinite(height) & on_grid  #height stats on grid buildings only
     p_flat, p_h = flat[pm], height[pm]
     p_cnt = np.bincount(p_flat, minlength=ncell)
     p_sum = np.bincount(p_flat, weights=p_h, minlength=ncell)

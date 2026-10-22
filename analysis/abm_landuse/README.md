@@ -1,6 +1,6 @@
 # analysis/abm_landuse — agent-based land-use modelling
 
-Component 4.7 · Owner: **Atanas Malinkov** · study area: Bloemhof + Hillesluis · feeds `app/modules/landuse.js`
+Component 4.7 · Owner: **Atanas Malinkov** · study area: Bloemhof · feeds `app/modules/landuse.js`
 
 > Numbers here are generated from `data/processed/landuse_abm.json` and
 > `landuse_rl.json`. If you re-run the models, re-check this file.
@@ -23,7 +23,7 @@ python analysis/abm_landuse/rl_landuse.py --episodes 120   # ~90 s
 python analysis/abm_landuse/rl_landuse.py --episodes 120 --keep-housing
 python analysis/abm_landuse/rl_dqn.py --episodes 120        # ~25 min, needs PyTorch
 python analysis/abm_landuse/rl_dqn.py --episodes 120 --keep-housing
-python analysis/abm_landuse/weight_sensitivity.py  # ~2 s, no model re-run
+python analysis/abm_landuse/weight_sensitivity.py --step 0.01  # ~2 s, no model re-run; 0.01 is the published lattice
 ```
 
 ## Why two models
@@ -41,7 +41,7 @@ is worth arguing about — and they do disagree (below).
 Constrained CA after **White, Engelen & Uljee (1997)**, *The use of constrained
 cellular automata for high-resolution modelling of urban dynamics*.
 
-Grid: 76 × 59 cells of 25 m. States: water, road, green, residential, retail, amenity, industry, vacant.
+Grid: 42 × 39 cells of 25 m over Bloemhof's bounding box. States: water, road, green, residential, retail, amenity, industry, vacant.
 Water and road never convert.
 
 ```
@@ -65,7 +65,7 @@ width is 99 ha, more than the square itself — and BAG buildings then overwrote
 plausible and was indefensible.
 
 Now: carriageway width per OSM class (primary 14 m … service 5 m), measured as
-an **area fraction** on a 5 m sub-grid, giving **17 % carriageway** across the
+an **area fraction** on a 5 m sub-grid, giving **23 % carriageway** across the
 study area. Priority is explicit — water, then building, then road, then land
 cover.
 
@@ -83,29 +83,31 @@ back.
 
 | erased | agreement | Cohen's κ |
 |---|---|---|
-| 10 % | 87.7 % | **0.740** |
-| 25 % | 76.9 % | 0.548 |
-| 50 % | 63.9 % | 0.336 |
+| 10 % | 89.7 % | **0.668** |
+| 25 % | 82.0 % | 0.481 |
+| 50 % | 73.3 % | 0.295 |
 
 κ discounts the agreement you would get by guessing the commonest class. The
 curve degrades as a neighbourhood-driven model should: with context intact it
 reconstructs well; strip half the city and it cannot know where things were.
-κ ≈ 0.74 at 10 % is in the range land-use CA papers report.
+κ ≈ 0.67 at 10 % is in the range land-use CA papers report.
 
 These numbers come from a corrected run. Until 2026-10-21 the regrow test
 measured road access from discrete road cells, the method rejected above, while
 the scenario runs used the road surface. With both on the road surface, κ rose
-from 0.715, 0.492 and 0.253. The scenarios were not affected.
+from 0.715, 0.492 and 0.253. The scenarios were not affected. Those were over
+Bloemhof and Hillesluis; over Bloemhof alone (since 2026-10-22) the grid is
+smaller and κ at 10 % is 0.668 against 0.740 over both buurten.
 
 ## Scenario results
 
-Programme: 269 cells (16.8 ha), 12 stochastic replicates each.
+Programme: 98 cells (6.1 ha, 6 % of the grid), 12 stochastic replicates each.
 
 | scenario | objective | land-use mix | green | home → amenity |
 |---|---|---|---|---|
-| baseline | 1.560 | 0.522 | 8.5 % | 80 m |
-| scenario_a | 1.665 | 0.548 | 8.5 % | 48 m |
-| scenario_b **★** | 1.686 | 0.550 | 11.5 % | 54 m |
+| baseline | 1.215 | 0.340 | 5.3 % | 91 m |
+| scenario_a | 1.355 | 0.382 | 5.3 % | 54 m |
+| scenario_b **★** | 1.374 | 0.391 | 8.2 % | 67 m |
 
 ```
 objective = 1.6 · land-use mix + 1.0 · green share
@@ -118,8 +120,8 @@ maximising housing: it gains more on mix and green than it loses on walkability.
 ### How much of that is the weights?
 
 Those three weights are ours, and the gap between the top two scenarios is
-0.0059 on a normalised scale, against a replicate spread of
-σ 0.0035 and 0.0027. So the ranking deserves a
+0.0051 on a normalised scale, against a replicate spread of
+σ 0.0056 and 0.0051. So the ranking deserves a
 sensitivity check rather than a full stop.
 
 `weight_sensitivity.py` re-scores every stored replicate across
@@ -130,21 +132,22 @@ three raw components, so the sweep is exact and takes seconds.
 
 | scenario | share of the weight space it wins |
 |---|---|
-| scenario_b **★** | 71 % |
-| scenario_a | 29 % |
+| scenario_b **★** | 59 % |
+| scenario_a | 41 % |
 | baseline | 0 % |
 
-**scenario_b's win is robust in direction but not overwhelming.** It takes
-71 % of the weight space, scenario_a takes the other 29 %, and
+**scenario_b's win holds at the default but is close to a coin toss across
+the weight space.** It takes 59 % of the weight space, scenario_a takes the other 41 %, and
 baseline never wins under any positive weighting — that last part is
 the firm result. The nearest weights that flip the answer are
-0.51 · 0.14 · 0.35 (favouring scenario_a),
-0.20 away on the simplex, so the default is not sitting
-on a knife edge. Scenario_a wins when walkability is weighted heavily against
+0.45 · 0.22 · 0.33 (favouring scenario_a),
+0.12 away on the simplex. The default is not on a knife edge, but it is
+closer to one than it was over both buurten (0.20 away, 71 % for scenario_b). Scenario_a wins when walkability is weighted heavily against
 green space, which is exactly the trade it makes.
 
-Three methods agree on the shares: a 0.02 lattice (72 / 28), a 0.01 lattice
-(71 / 29) and 200,000 uniform Dirichlet draws (71 / 29).
+Two lattices agree on the shares: 0.02 (59 / 41) and 0.01 (59 / 41). (Over
+both buurten 200,000 uniform Dirichlet draws also agreed with the lattices;
+that check was not repeated for Bloemhof.)
 
 The script reproduces the published objectives from the stored replicates before
 it sweeps, and exits 1 if it cannot. Injecting a wrong weight or a wrong distance
@@ -160,15 +163,15 @@ explores the three terms we chose without asking whether they are the right thre
 Q-learning, TD(0), **linear** function approximation, ε-greedy, 120 episodes.
 
 **It works on the design site only**, not the whole study area. Every cell of the
-site that is not road or water (194 of 195) is cleared, and each episode the
+site that is not road or water (188 of 189) is cleared, and each episode the
 agent re-plans all of them one cell at a time; reward is the change in the
-objective. The rest of Bloemhof and Hillesluis is fixed context: it feeds the
+objective. The rest of Bloemhof is fixed context: it feeds the
 agent's neighbourhood features, and a shop just outside the site still counts
 for walkability, but the agent cannot change it and is not scored on it.
 
 The objective is the CA's formula, **computed over the site's cells**: mix and
 green share of the site, and the mean distance from homes in the site to the
-nearest shop or amenity anywhere. Because the CA is scored over both buurten,
+nearest shop or amenity anywhere. Because the CA is scored over the whole buurt,
 **the two models' numbers are not comparable**, and the figures keep them apart
 (`fig_landuse_abm.png` for the CA, `fig_landuse_rl_site.png` for the agent).
 
@@ -191,11 +194,16 @@ Linear rather than deep **on purpose** — the value here is that the weights ca
 be read and argued with. The deep version is `rl_dqn.py`, below, and it does
 not score better.
 
-Learns: 2.374 over the first 10 % of episodes → 2.466 over the last 10 %.
-Best 2.478 against 1.107 for the site today; its plan reaches mix 0.798,
-46 % green and 28 m to the nearest amenity (today 0.279, 5 % and 93 m).
+Learns: 2.374 over the first 10 % of episodes → 2.464 over the last 10 %.
+Best 2.479 against 1.000 for the site today; its plan reaches mix 0.779,
+49 % green and 27 m to the nearest amenity (today 0.229, 3 % and 99 m).
 
-**It gets there by demolishing housing: 159 residential cells become 33.** Nothing
+The site's cells depend on the grid, and the grid is anchored on the study-area
+box's top edge. Narrowing the study area to Bloemhof on 2026-10-22 moved that
+edge, so the site now covers 189 cells instead of 195 and its score today is
+1.000 rather than 1.107. Same site, different 25 m cells.
+
+**It gets there by demolishing housing: 160 residential cells become 30.** Nothing
 in the objective values homes, and both the mix and the green term reward
 replacing them, so this is the objective working as written, not a bug. It is the
 clearest finding of the site run: a "mixed, green, walkable" score alone would
@@ -204,7 +212,7 @@ number of residential cells) is the obvious next constraint and is not in yet.
 
 ### The interesting disagreement
 
-The agent learned that **retail should avoid other retail**: −20.7, its
+The agent learned that **retail should avoid other retail**: −19.4, its
 strongest aversion. Our CA assumes the opposite — its matrix gives
 retail→retail **+0.8**, i.e. shops cluster.
 
@@ -212,7 +220,7 @@ Read the weights within a row, not on their own. Every class carries about +43 o
 *vacant* neighbours and a negative weight on everything else, because on a
 cleared site the vacant count mainly tells the agent how early in the episode it
 is. What separates the classes is which neighbour each avoids most, and each
-avoids its own kind: retail→retail −20.7, amenity→amenity −20.0. That is the mix
+avoids its own kind: retail→retail −19.4, amenity→amenity −19.7. That is the mix
 term asking for uses to be spread out.
 
 Both are defensible and the disagreement is informative. The objective rewards
@@ -225,17 +233,17 @@ and only running both models surfaces it.
 ### A second example: today's housing kept
 
 `rl_landuse.py --keep-housing` adds one rule: the plan must contain exactly as
-many residential cells as the site has today (159). Actions that would break it
+many residential cells as the site has today (160). Actions that would break it
 are masked, and the objective is unchanged, so the two runs differ only in that
 rule (`landuse_rl_keep_housing.json`, `fig_landuse_rl_keep_housing.png`).
 
-Best 1.457 against 1.107 for the site today: mix 0.415, 7 % green and 40 m to
-the nearest amenity. The 35 non-housing cells become 11 retail, 10 amenity and
-14 green.
+Best 1.349 against 1.000 for the site today: mix 0.362, 6 % green and 45 m to
+the nearest amenity. The 28 non-housing cells become 8 retail, 9 amenity and
+11 green.
 
-**It does not learn.** The last 10 % of episodes average 1.429, the first 10 %
-1.430; a 400-episode run did no better (1.434 → 1.403, best 1.464). With housing
-fixed, the agent's only freedom is where to put 35 cells, and the linear agent
+**It does not learn.** The last 10 % of episodes average 1.313, the first 10 %
+1.329; on the earlier two-buurt grid a 400-episode run did no better either.
+With housing fixed, the agent's only freedom is where to put 28 cells, and the linear agent
 places them no better than its early, mostly random episodes. Read this plan as
 an example layout, the best of 120 episodes, not as an optimum.
 
@@ -257,17 +265,19 @@ run of the learned policy with no exploration.
 
 | objective over the site | random, mean | linear Q, best | DQN, best | DQN, greedy | DQN, end of training |
 |---|---|---|---|---|---|
-| no housing rule | 2.366 | **2.478** | 2.475 | 2.241 | 2.287 |
-| today's housing kept | 1.434 | **1.457** | 1.454 | 1.392 | 1.353 |
+| no housing rule | 2.357 | **2.479** | 2.477 | 2.207 | 2.283 |
+| today's housing kept | 1.331 | 1.349 | **1.352** | 1.315 | 1.232 |
 
-**The DQN does not do better.** Its best episodes came early, while it was still
-exploring; its greedy policy and its last episodes score *below the random
-policy*. A CNN with 70,000 weights gets under 6,000 gradient steps in 120
+**The DQN does not do better.** Without the housing rule its best plan scores
+just below the linear agent's. With the rule its best edges ahead by 0.004, but
+the best of the 30 random episodes scores 1.352 as well, so that is a lucky
+exploratory episode, not learning. In both runs its greedy policy and its last
+episodes score *below the random policy*. A CNN with 70,000 weights gets under 6,000 gradient steps in 120
 episodes, far too few; the linear agent's 13 weights per use learn much faster
 from the same experience. More episodes, reward shaping or a policy-gradient
 method might change this, at hours of CPU per run. The random baseline also puts
 the linear agent in proportion: on a cleared site, a random mix of four uses
-already scores 2.37, so the agent's gain is 0.11, and under the housing rule
+already scores 2.36, so the agent's gain is 0.12, and under the housing rule
 0.02 (`fig_landuse_rl_comparison.png`).
 
 ## Honest limitations
@@ -278,13 +288,13 @@ already scores 2.37, so the agent's gain is 0.11, and under the housing rule
   rules and is merely *scored* on it. RL scoring higher is expected by
   construction and is **not** evidence that RL models cities better.
 - The objective is a weighted sum of three terms we chose. The sweep above
-  shows the winner is weight-dependent: scenario_b takes 71 % of the weight
+  shows the winner is weight-dependent: scenario_b takes 59 % of the weight
   space and scenario_a the rest. Only "baseline never wins" holds regardless.
   Whether those three terms are the right three is still untested.
 - The RL agent re-plans the design site with **no housing requirement**, and
-  loses 79 % of the site's residential cells doing so (above).
+  loses 81 % of the site's residential cells doing so (above).
 - The land-use grid ends at the buurt bounding box, which cuts off the site's
-  strip south of Strevelsweg: 12.19 of its 13.24 ha are modelled.
+  strip south of Strevelsweg: 12.20 of its 13.24 ha are modelled.
 - The RL run is one seed. The CA's scenarios are spread over replicates; the
   agent's best plan is not.
 - 25 m cells cannot represent a building. This allocates land use; turning that
@@ -300,7 +310,7 @@ fed back through the SVF, density and mix indicators to check the model was
 right.
 
 **The names clash.** The CA's `scenario_a` ("compact") and `scenario_b`
-("green") are land-use programmes over both buurten. The design scenarios in
+("green") are land-use programmes over the whole study area. The design scenarios in
 `analysis/scenarios/` use the same keys for massing on the design site:
 design `scenario_a` is the team's Rhino OPTION 1. One scenario switch in the app
 drives both, so the land-use card and the massing show different things under

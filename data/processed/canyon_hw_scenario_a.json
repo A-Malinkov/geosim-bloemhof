@@ -1,5 +1,5 @@
 {
-  "study_area": "Bloemhof & Hillesluis",
+  "study_area": "Bloemhof",
   "scenario": "scenario_a",
   "method": "street-canyon H/W (Oke 1988): perpendicular rays from OSM centrelines to the first 3DBAG main-building fa\u00e7ade on each side",
   "parameters": {
@@ -34,44 +34,25 @@
         "1.0\u20131.5": 0.06,
         "> 1.5 deep": 0.002
       }
-    },
-    "Hillesluis": {
-      "street_km": 26.13,
-      "canyon_share": 0.556,
-      "hw": {
-        "median": 0.45,
-        "mean": 0.5,
-        "p10": 0.19,
-        "p90": 0.94
-      },
-      "h_m_median": 12.1,
-      "w_m_median": 29.1,
-      "classes": {
-        "< 0.4 open": 0.447,
-        "0.4\u20130.7": 0.338,
-        "0.7\u20131.0": 0.138,
-        "1.0\u20131.5": 0.072,
-        "> 1.5 deep": 0.006
-      }
     }
   },
   "combined": {
-    "street_km": 52.67,
-    "canyon_share": 0.616,
+    "street_km": 26.54,
+    "canyon_share": 0.675,
     "hw": {
-      "median": 0.45,
+      "median": 0.46,
       "mean": 0.49,
       "p10": 0.18,
-      "p90": 0.87
+      "p90": 0.81
     },
-    "h_m_median": 11.1,
-    "w_m_median": 22.7,
+    "h_m_median": 9.6,
+    "w_m_median": 20.0,
     "classes": {
-      "< 0.4 open": 0.438,
-      "0.4\u20130.7": 0.384,
-      "0.7\u20131.0": 0.108,
-      "1.0\u20131.5": 0.065,
-      "> 1.5 deep": 0.004
+      "< 0.4 open": 0.431,
+      "0.4\u20130.7": 0.422,
+      "0.7\u20131.0": 0.084,
+      "1.0\u20131.5": 0.06,
+      "> 1.5 deep": 0.002
     }
   },
   "design_site": {

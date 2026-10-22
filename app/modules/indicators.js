@@ -260,8 +260,9 @@ async function addLanduseGrid(ctx) {
 /**
  * A compact per-buurt comparison table.
  *
- * The study area is two buurten and the brief is to analyse both, so a single
- * combined figure hides the finding: they have noticeably different fabric.
+ * When the study area holds more than one buurt, a single combined figure
+ * hides how different their fabric is. With one buurt (Bloemhof only, since
+ * 2026-10-22) the table is skipped.
  */
 function perBuurtTable(perBuurt, cols) {
   const names = Object.keys(perBuurt || {});
@@ -482,7 +483,7 @@ function spacematrixSvg(points, perBuurt) {
   for (const pt of points) {
     if (pt.gsi == null || pt.fsi == null) continue;
     const c = COL[pt.buurt] || "#5b6675";
-    // Cells outside both buurten are context, not findings: drawn smaller and
+    // Cells outside the study area are context, not findings: drawn smaller and
     // dimmer so they cannot be mistaken for part of the neighbourhood.
     const r = pt.buurt ? 2.4 : 1.6;
     parts.push(
@@ -541,9 +542,9 @@ function spacematrixSvg(points, perBuurt) {
     parts.join("") +
     `</svg>` +
     `<p class="muted" style="margin:2px 0 0">` +
-    `<span style="color:${COL.Bloemhof}">●</span> Bloemhof ` +
-    `<span style="color:${COL.Hillesluis}">●</span> Hillesluis ` +
-    `<span style="color:#5b6675">●</span> outside both · crosses are the buurt ` +
+    Object.keys(perBuurt || {})  //one swatch per study-area buurt present in the data
+      .map((n) => `<span style="color:${COL[n] || "#e7ecf2"}">●</span> ${n} `).join("") +
+    `<span style="color:#5b6675">●</span> outside the study area · crosses are the buurt ` +
     `aggregates. Thin lines are storeys (L), dashed are open space ratio (OSR).</p>`
   );
 }

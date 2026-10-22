@@ -12,7 +12,7 @@ The app treats a stub as "no data" and shows a placeholder until you overwrite i
 ## Notes
 
 - Table **86358NED** (Kerncijfers wijken en buurten 2026) is the newest; 2025 = 86165NED, 2024 = 85984NED. Older tables are useful for trends.
-- The study area is **two buurten**: **BU05991081** (Bloemhof) and **BU05991082** (Hillesluis), gemeente **GM0599**. Report each one and both together — the other components do, and the two are visibly different places. Compare against the gemeente and national figures — a number alone says nothing. The codes live in `STUDY_AREA.buurten` in `analysis/common/project.py`; read them from there rather than hard-coding.
+- The study area is **one buurt**: **BU05991081** (Bloemhof), gemeente **GM0599** (Hillesluis, BU05991082, was dropped on 2026-10-22). Compare against the gemeente and national figures — a number alone says nothing. The codes live in `STUDY_AREA.buurten` in `analysis/common/project.py`; read them from there rather than hard-coding.
 - CBS OData does not reliably send CORS headers, so fetch in Python.
 - CBS pads codes with spaces and uses `-99997`-style sentinels for "not applicable". Strip and filter both.
 - `analysis/common/project.py` has `fetch_buurt()` for the boundary polygon, which also returns inhabitants and area.

@@ -4,15 +4,16 @@ An interactive CesiumJS web app backed by Python geospatial analysis. We design 
 residential complex in **Bloemhof** (wijk Feijenoord, Rotterdam-Zuid) and justify
 it with geospatial analysis and simulation.
 
-**Study area: two buurten — Bloemhof and Hillesluis**, adjacent in
-Rotterdam-Zuid. 169 ha and about 26,000 people between them. Everything is
-*analysed* over both; the design scenarios occupy only a small site inside them.
+**Study area: the buurt Bloemhof**, 78.8 ha and about 13,700 people. Everything
+is *analysed* over it; the design scenarios occupy only a small site inside it.
+(Until 2026-10-22 the study area also took in Hillesluis next door; the team
+narrowed it to Bloemhof and every analysis was re-run.)
 
 The boundaries come from the CBS wijkenbuurten service, not from hand-typed
 coordinates. They are defined in exactly two places —
 [`app/config.js`](app/config.js) for the app and
 [`analysis/common/project.py`](analysis/common/project.py) for the analyses.
-Change the buurt codes there if the area moves; nothing else hard-codes it.
+Change the buurt codes there if the area moves, then re-run the analyses.
 
 ---
 
@@ -274,7 +275,7 @@ numbers here still match `data/processed/`.
 |---|---|---|---|
 | 4.1 | 3D city model + proposed massing | existing buildings ✅ · design site chosen ✅ · scenario_a massing ✅ (Rhino OPTION 1) · **scenario_b not modelled yet** | — |
 | 4.2 | Geospatial data layers | ✅ done | — |
-| 4.3 | Urban morphological indicators | ✅ done — SVF 0.726, GSI 0.284, FSI 0.960, mix 0.351, both buurten; plus street H/W and direct-sun hours. SVF, sun hours and H/W also run for scenario_a | Atanas |
+| 4.3 | Urban morphological indicators | ✅ done — SVF 0.696, GSI 0.333, FSI 1.003, mix 0.267, Bloemhof; plus street H/W and direct-sun hours. SVF, sun hours and H/W also run for scenario_a | Atanas |
 | 4.4 | KNMI sensors + AI prediction | ✅ done — live feed, sensors, 5 y history, model comparison | — |
 | 4.5 | Wind + noise simulation | 🟡 noise done (baseline, NoiseModelling 6.0.0) · scenario_a wired, not run · wind not started | — |
 | 4.6 | CBS socio-demographics | ❌ not started | — |
@@ -298,7 +299,7 @@ source ~/.venvs/geosim-rotterdam/bin/activate
 
 python analysis/common/project.py                # buurt boundaries          (~5 s)
 python analysis/morphology/fetch_ahn.py          # AHN DSM + DTM, tiled      (~30 s)
-python analysis/morphology/fetch_trees.py        # 2,172 trees, 206 species  (~30 s)
+python analysis/morphology/fetch_trees.py        # tree register; --from-cache if the service is down
 python analysis/morphology/fetch_buildings.py    # 5,804 buildings from 3DBAG(~1 min)
 python analysis/morphology/sky_view_factor.py    # SVF raster + statistics   (~40 s)
 python analysis/morphology/density_height.py     # Spacematrix density       (~15 s)
@@ -327,31 +328,29 @@ and *Sky View Factor* appears under **Analysis** in the layer panel.
 
 ### Headline numbers
 
-Every figure is clipped to the buurt polygons, so numerator and denominator
+Every figure is clipped to the buurt polygon, so numerator and denominator
 share one boundary.
 
-| indicator | Bloemhof | Hillesluis | both |
-|---|---|---|---|
-| Sky View Factor, pedestrian level | 0.696 | 0.748 | **0.726** |
-| GSI · FSI · storeys | 0.33 · 1.00 · 3.0 | 0.24 · 0.92 · 3.8 | **0.284 · 0.960 · 3.38** |
-| Mean building height | 8.5 m | 11.2 m | **9.5 m** (σ 3.1) |
-| Land-use mix, Shannon | 0.267 | 0.422 | **0.351** |
-| Trees · per hectare | 1,204 · 15.3 | 1,598 · 17.7 | **2,802 · 16.6** |
-| Canopy cover | 6.6 % | 9.0 % | **7.9 %** |
+| indicator | Bloemhof |
+|---|---|
+| Sky View Factor, pedestrian level | **0.696** |
+| GSI · FSI · storeys | **0.333 · 1.003 · 3.01** |
+| Mean building height | **8.5 m** (σ 2.9) |
+| Land-use mix, Shannon | **0.267** |
+| Trees · per hectare | **1,204 · 15.3** |
+| Canopy cover | **6.6 %** |
 
-**The two are not the same place.** Hillesluis is less built-up but taller
-(GSI 0.24 vs 0.33, 3.8 vs 3.0 storeys), noticeably more mixed
-(Shannon 0.42 vs 0.27), greener and more open. Bloemhof is the denser,
-more enclosed, more mono-functional of the two.
+Bloemhof is dense, low, enclosed and mono-functional: 86 % of its floor space is
+residential.
 
 Other results:
 
 | | |
 |---|---|
-| SVF under a tree crown vs 15 m from any tree | **0.46 vs 0.79** — trees remove 42 % of visible sky |
+| SVF under a tree crown vs 15 m from any tree | **0.35 vs 0.70** — trees remove 50 % of visible sky |
 | Weather forecast (temperature, +6 h) | MAE 1.29 °C, 54 % better than assuming no change |
 | Weather forecast (wind, +6 h) | MAE 1.13 m/s — but it under-predicts strong winds by 0.5 m/s |
-| Land-use model | CA prefers **scenario_b** (mix 0.550); RL agent re-planning the design site reaches mix 0.798, but keeps only 33 of its 159 residential cells |
+| Land-use model | CA prefers **scenario_b** (mix 0.391); RL agent re-planning the design site reaches mix 0.779, but keeps only 30 of its 160 residential cells |
 
 ### Figures (`docs/`)
 
@@ -371,9 +370,9 @@ Other results:
 
 Everything else is a wired-up skeleton waiting for its owner.
 
-> **Note on the study area.** It is the two whole buurten, Bloemhof and
-> Hillesluis, taken from the CBS boundaries — not a square round a point, which
-> an earlier version used. Statistics are clipped to the buurt polygons; the data
+> **Note on the study area.** It is the whole buurt Bloemhof, taken from the CBS
+> boundary — not a square round a point, which an earlier version used, and no
+> longer Hillesluis as well (dropped 2026-10-22). Statistics are clipped to the buurt polygon; the data
 > is fetched over a padded box so that buildings just outside still count as
 > obstructions. The design scenarios occupy only the smaller design site inside.
 

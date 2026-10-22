@@ -246,7 +246,7 @@ export async function setup(ctx) {
   /* ---------------------------------------------------- study area boundaries */
   /* The real buurt polygons, written by analysis/common/project.py. Drawing a
    * circle round a centre point was fine when the study area WAS a circle; it
-   * is now two adjacent buurten with a ragged shared edge, and a circle would
+   * is now a real buurt polygon (Bloemhof) with a ragged edge, and a circle would
    * misrepresent what is actually being analysed. */
   const sa = config.studyArea;
   try {

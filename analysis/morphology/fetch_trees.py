@@ -106,6 +106,27 @@ def fetch_all(bbox) -> list[dict]:
     return feats
 
 
+def load_cached(bbox) -> list[dict]:
+    #rebuild service-shaped records from data/raw/rotterdam_trees_rd.geojson, for when the service is down
+    xmin, ymin, xmax, ymax = bbox
+    fc = json.loads((RAW / "rotterdam_trees_rd.geojson").read_text())
+    feats = []
+    for f in fc["features"]:
+        x, y = f["geometry"]["coordinates"]
+        if not (xmin <= x <= xmax and ymin <= y <= ymax):  #same envelope test the service applies
+            continue
+        p = f["properties"]
+        feats.append({"geometry": {"x": x, "y": y}, "attributes": {  #props back to the service's field names
+            "ID": p.get("id"), "BOOMSORTIMENT": p.get("species"),
+            "BOOMSORTIMENT_NEDERLANDS": p.get("species_nl"), "GESLACHT": p.get("genus"),
+            "HOOGTE": p.get("height_class"), "KROONOMVANG": p.get("crown_m"),
+            "DIAMETER": p.get("trunk_diameter_cm"), "STAMLENGTE": p.get("trunk_height_m"),
+            "AANLEGJAAR": p.get("planted"), "CONDITIE": p.get("condition"),
+            "STRAAT": p.get("street"), "WIJK": p.get("wijk")}})
+    print(f"  {len(feats)} of {len(fc['features'])} cached trees inside the box")
+    return feats
+
+
 def sample_ground(xs, ys):
     """Ground level (m NAP) under each tree, from the AHN DTM."""
     import rasterio
@@ -154,12 +175,14 @@ def main() -> int:
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--pad", type=int, default=0,
                     help="extra context beyond the study-area edge, in metres")
+    ap.add_argument("--from-cache", action="store_true",
+                    help="use data/raw/rotterdam_trees_rd.geojson instead of the service")  #service answered 404 on 2026-10-22
     args = ap.parse_args()
 
     bbox = bbox_rd(args.pad)
     print(f"Rotterdam tree register — {STUDY_AREA.name}")
     try:
-        feats = fetch_all(bbox)
+        feats = load_cached(bbox) if args.from_cache else fetch_all(bbox)  #cache mode skips the network
     except requests.HTTPError as exc:
         code = exc.response.status_code if exc.response is not None else "?"
         print(f"\n  the Rotterdam tree service returned HTTP {code}.")
@@ -237,12 +260,13 @@ def main() -> int:
             "properties": props,
         })
 
-    (RAW / "rotterdam_trees_rd.geojson").write_text(json.dumps({
-        "type": "FeatureCollection",
-        "crs": {"type": "name", "properties": {"name": "urn:ogc:def:crs:EPSG::28992"}},
-        "features": raw_features,
-    }) + "\n")
-    print("  wrote data/raw/rotterdam_trees_rd.geojson")
+    if not args.from_cache:  #in cache mode keep the full raw download rather than overwrite it with a subset
+        (RAW / "rotterdam_trees_rd.geojson").write_text(json.dumps({
+            "type": "FeatureCollection",
+            "crs": {"type": "name", "properties": {"name": "urn:ogc:def:crs:EPSG::28992"}},
+            "features": raw_features,
+        }) + "\n")
+        print("  wrote data/raw/rotterdam_trees_rd.geojson")
 
     (PROCESSED / "trees.geojson").write_text(json.dumps({
         "type": "FeatureCollection",

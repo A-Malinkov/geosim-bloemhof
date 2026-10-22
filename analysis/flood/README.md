@@ -29,8 +29,9 @@ Checked on every cell of the rasters, not taken from file names:
 - **overall** (`CityRisk`) = combined banded at 5.25 / 7.5 / 9.75 (100 % match);
 - **hazard** = water + elevation, banded (100 % match).
 
-Design site, open ground: 66 % in overall classes 3–4 (Bloemhof 46 %,
-Hillesluis 22 %). The water along Lange Hilleweg that drives the site's
+Design site, open ground: 61 % in overall classes 3–4 (Bloemhof 46 %).
+Statistics are over Bloemhof only since 2026-10-22; the overlays still show
+Cyrille's full raster, which reaches into Hillesluis. The water along Lange Hilleweg that drives the site's
 water-proximity score is real: OSM has a 772 m water body there.
 
 ## Limits

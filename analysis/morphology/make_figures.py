@@ -397,7 +397,7 @@ def fig_spacematrix(dens):
     # point put text straight through the data cloud and the three captions
     # overlapped each other.
     marks = list((dens.get("per_buurt") or {}).values())
-    comb = dens.get("combined")
+    comb = dens.get("combined") if len(marks) > 1 else None  #one buurt: its star IS the combined figure
     entries = [(b, False) for b in marks if b] + ([(comb, True)] if comb else [])
     for b, is_comb in entries:
         ax.scatter([b["gsi"]], [b["fsi"]], marker="*",
@@ -612,7 +612,7 @@ def fig_abm(ca, rl):
                  x=0.012, y=1.0, ha="left", fontsize=11, fontweight="bold",
                  color=INK)
     fig.text(0.012, 0.915,
-             "Bloemhof + Hillesluis, 25 m cells · rules are assumed, "
+             f"{STUDY_AREA.name}, 25 m cells · rules are assumed, "  #study-area name from project.py
              "best of the replicates shown · * = preferred by the objective",
              fontsize=8.5, color=INK_2, ha="left")
     save(fig, "fig_landuse_abm.png")

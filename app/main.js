@@ -141,7 +141,7 @@ async function boot_() {
   /* ---- camera over the study area --------------------------------------- */
   const sa = CONFIG.studyArea;
   /* Frame the whole extent rather than guessing an offset from a centre point:
-   * the study area is two buurten, about 1.9 x 1.5 km, and a fixed nudge that
+   * the study area is a whole buurt, about 1.1 x 1.0 km, and a fixed nudge that
    * suited a 600 m square puts half of it off screen. */
   {
     const [w, s, e, n] = sa.bbox;

@@ -23,125 +23,125 @@
     "zero_weights_excluded": true
   },
   "default_winner": "scenario_b",
-  "default_margin": 0.0059,
+  "default_margin": 0.0051,
   "win_share": {
     "baseline": 0.0,
-    "scenario_a": 0.2876,
-    "scenario_b": 0.7124
+    "scenario_a": 0.4104,
+    "scenario_b": 0.5896
   },
   "win_counts": {
     "baseline": 0,
-    "scenario_a": 1395,
-    "scenario_b": 3456
+    "scenario_a": 1991,
+    "scenario_b": 2860
   },
   "nearest_flip": {
     "weights": [
-      0.51,
-      0.14,
-      0.35
+      0.45,
+      0.22,
+      0.33
     ],
     "winner": "scenario_a",
-    "simplex_distance": 0.1961
+    "simplex_distance": 0.122
   },
   "mix_weight_slice": [
     {
       "w_mix": 0.1,
       "winner": "scenario_b",
-      "margin": 0.0096,
+      "margin": 0.0025,
       "objectives": {
-        "baseline": 0.4144,
-        "scenario_a": 0.4489,
-        "scenario_b": 0.4585
+        "baseline": 0.3692,
+        "scenario_a": 0.411,
+        "scenario_b": 0.4135
       }
     },
     {
       "w_mix": 0.2,
       "winner": "scenario_b",
-      "margin": 0.0086,
+      "margin": 0.0033,
       "objectives": {
-        "baseline": 0.4264,
-        "scenario_a": 0.4599,
-        "scenario_b": 0.4685
+        "baseline": 0.366,
+        "scenario_a": 0.4076,
+        "scenario_b": 0.4109
       }
     },
     {
       "w_mix": 0.3,
       "winner": "scenario_b",
-      "margin": 0.0076,
+      "margin": 0.0042,
       "objectives": {
-        "baseline": 0.4384,
-        "scenario_a": 0.471,
-        "scenario_b": 0.4786
+        "baseline": 0.3627,
+        "scenario_a": 0.4042,
+        "scenario_b": 0.4084
       }
     },
     {
       "w_mix": 0.4,
       "winner": "scenario_b",
-      "margin": 0.0067,
+      "margin": 0.0049,
       "objectives": {
-        "baseline": 0.4504,
-        "scenario_a": 0.482,
-        "scenario_b": 0.4887
+        "baseline": 0.3595,
+        "scenario_a": 0.4009,
+        "scenario_b": 0.4058
       }
     },
     {
       "w_mix": 0.5,
       "winner": "scenario_b",
-      "margin": 0.0058,
+      "margin": 0.0056,
       "objectives": {
-        "baseline": 0.4624,
-        "scenario_a": 0.4931,
-        "scenario_b": 0.4989
+        "baseline": 0.3563,
+        "scenario_a": 0.3977,
+        "scenario_b": 0.4033
       }
     },
     {
       "w_mix": 0.6,
       "winner": "scenario_b",
-      "margin": 0.0049,
+      "margin": 0.0063,
       "objectives": {
-        "baseline": 0.4744,
-        "scenario_a": 0.5042,
-        "scenario_b": 0.509
+        "baseline": 0.3531,
+        "scenario_a": 0.3945,
+        "scenario_b": 0.4008
       }
     },
     {
       "w_mix": 0.7,
       "winner": "scenario_b",
-      "margin": 0.004,
+      "margin": 0.0069,
       "objectives": {
-        "baseline": 0.4864,
-        "scenario_a": 0.5152,
-        "scenario_b": 0.5192
+        "baseline": 0.3499,
+        "scenario_a": 0.3913,
+        "scenario_b": 0.3982
       }
     },
     {
       "w_mix": 0.8,
       "winner": "scenario_b",
-      "margin": 0.003,
+      "margin": 0.0078,
       "objectives": {
-        "baseline": 0.4984,
-        "scenario_a": 0.5263,
-        "scenario_b": 0.5293
+        "baseline": 0.3466,
+        "scenario_a": 0.388,
+        "scenario_b": 0.3958
       }
     },
     {
       "w_mix": 0.9,
       "winner": "scenario_b",
-      "margin": 0.0024,
+      "margin": 0.0087,
       "objectives": {
-        "baseline": 0.5104,
-        "scenario_a": 0.5373,
-        "scenario_b": 0.5397
+        "baseline": 0.3434,
+        "scenario_a": 0.3848,
+        "scenario_b": 0.3935
       }
     }
   ],
   "margin": {
-    "at_default": 0.0059,
-    "median_over_simplex": 0.0067,
+    "at_default": 0.0051,
+    "median_over_simplex": 0.01,
     "replicate_sd_at_default": {
       "baseline": 0.0,
-      "scenario_a": 0.0035,
-      "scenario_b": 0.0027
+      "scenario_a": 0.0056,
+      "scenario_b": 0.0051
     }
   },
   "limitations": [

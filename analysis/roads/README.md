@@ -20,8 +20,8 @@ not computed until it has massing.
 
 ## Method
 
-**Network.** OSM walk network (osmnx 2.1.1, `network_type="walk"`) over the two
-buurten plus 500 m, so routes and betweenness near the edge see the streets
+**Network.** OSM walk network (osmnx 2.1.1, `network_type="walk"`) over
+Bloemhof plus 500 m (over both buurten plus 500 m before 2026-10-22), so routes and betweenness near the edge see the streets
 beyond it. Undirected, weighted by length in RD.
 
 **Scenario.** `streets_for_scenario()` in `analysis/scenarios/scenario_world.py`
@@ -73,13 +73,17 @@ Network over each area. An edge counts in an area if its midpoint lies in it.
 
 | | study area, baseline | study area, Scenario A | design site, baseline | design site, Scenario A |
 |---|---|---|---|---|
-| nodes | 717 | 747 | 72 | 105 |
-| edges | 1,089 | 1,126 | 90 | 126 |
-| network length | 53.61 km | 54.70 km | 4.83 km | 5.86 km |
-| avg edge length | 49.2 m | 48.6 m | 53.7 m | 46.5 m |
-| intersection density | 373.7 /km² | 376.7 /km² | 422.9 /km² | 453.1 /km² |
-| circuity | 1.022 | 1.020 | 1.032 | 1.007 |
-| max edge betweenness | 0.0961 | 0.0955 | 0.0788 | 0.0813 |
+| nodes | 343 | 373 | 72 | 105 |
+| edges | 537 | 574 | 90 | 126 |
+| network length | 25.85 km | 26.94 km | 4.83 km | 5.86 km |
+| avg edge length | 48.1 m | 46.9 m | 53.7 m | 46.5 m |
+| intersection density | 402.1 /km² | 408.4 /km² | 422.9 /km² | 453.1 /km² |
+| circuity | 1.023 | 1.019 | 1.032 | 1.007 |
+| max edge betweenness | 0.1209 | 0.1187 | 0.1067 | 0.1035 |
+
+Betweenness is a share of all shortest walks in the fetched network, so it
+changed on the site too when the network shrank with the study area; every other
+design-site figure is unchanged.
 
 Mean walk to the nearest destination, design site.
 
@@ -101,36 +105,36 @@ across the long east-west streets, and gains a little on shops and rail stops.
 387.9 m to 407.2 m. Most of the 19 m is where the dwellings are, not the
 network. The new blocks hold 1,920 estimated dwellings, against 1,027 today.
 
-**The neighbours do not notice.** Dwellings outside the site stay at 242.4 m.
+**The neighbours do not notice.** Dwellings outside the site stay at 267.3 m.
 
-**The 15-minute walk does not separate anything.** Every dwelling in both
-buurten reaches all four types within 15 min (1,200 m) in both scenarios. The
+**The 15-minute walk does not separate anything.** Every dwelling in the
+study area reaches all four types within 15 min (1,200 m) in both scenarios. The
 5-minute share (400 m) is what varies. On the site no dwelling has a rail stop
 within 5 min in Scenario A, 2 % do today.
 
 ### Footpath links, Scenario A
 
-60 candidates. J starts at 267.92 m, the ceiling is 265.45 m.
+60 candidates. J starts at 304.49 m, the ceiling is 300.24 m.
 
 | # | length | J saved | J | site dwellings | site grid | of ceiling |
 |---|---|---|---|---|---|---|
-| 1 | 44 m | 1.00 m | 266.93 m | 400.7 m | 380.2 m | 40 % |
-| 2 | 95 m | 0.64 m | 266.29 m | 396.6 m | 375.7 m | 66 % |
-| 3 | 46 m | 0.35 m | 265.94 m | 394.3 m | 375.2 m | 80 % |
-| 4 | 30 m | 0.12 m | 265.82 m | 393.5 m | 374.7 m | 85 % |
-| 5 | 11 m | 0.09 m | 265.72 m | 392.9 m | 374.3 m | 89 % |
-| 6 | 32 m | 0.08 m | 265.65 m | 392.5 m | 373.6 m | 92 % |
-| 7 | 21 m | 0.04 m | 265.61 m | 392.2 m | 373.2 m | 94 % |
-| 8 | 45 m | 0.07 m | 265.54 m | 391.8 m | 372.7 m | 96 % |
-| 9 | 45 m | 0.02 m | 265.52 m | 391.6 m | 372.0 m | 97 % |
-| 10 | 50 m | 0.02 m | 265.50 m | 391.5 m | 371.9 m | 98 % |
+| 1 | 44 m | 1.71 m | 302.78 m | 400.7 m | 380.2 m | 40 % |
+| 2 | 95 m | 1.10 m | 301.68 m | 396.6 m | 375.7 m | 66 % |
+| 3 | 46 m | 0.60 m | 301.08 m | 394.3 m | 375.2 m | 80 % |
+| 4 | 30 m | 0.21 m | 300.87 m | 393.5 m | 374.7 m | 85 % |
+| 5 | 11 m | 0.16 m | 300.71 m | 392.9 m | 374.3 m | 89 % |
+| 6 | 32 m | 0.13 m | 300.58 m | 392.5 m | 373.6 m | 92 % |
+| 7 | 20 m | 0.07 m | 300.51 m | 392.2 m | 373.2 m | 94 % |
+| 8 | 45 m | 0.11 m | 300.40 m | 391.8 m | 372.7 m | 96 % |
+| 9 | 45 m | 0.04 m | 300.36 m | 391.6 m | 372.0 m | 97 % |
+| 10 | 50 m | 0.03 m | 300.33 m | 391.5 m | 371.9 m | 98 % |
 
 **Two links, 139 m of footpath, bring the site grid back below today's.** After
 link 2 it is 375.7 m, against 377.4 m now. Link 1 opens the north tip to Lange
 Hilleweg, link 2 runs east from the central street to Dubbelstraat.
 
 **Six links, 258 m, take 92 % of what all 60 candidates could give.** After
-link 6 each link saves under 0.1 m of J. Site dwellings come back from 407.2 m
+link 6 each link saves about 0.1 m of J or less. Site dwellings come back from 407.2 m
 to 392.5 m, close to today's 387.9 m.
 
 J is over the whole study area, so its changes look small. The site columns

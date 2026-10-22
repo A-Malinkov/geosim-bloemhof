@@ -119,8 +119,6 @@ def main() -> int:
             ("mix in status table", r"\| 4\.3 \|", f"{b['shannon_area']:.3f}", [MAIN]),
             ("Bloemhof SVF", r"^\| Sky View Factor, pedestrian level",
              f"{svf['per_buurt']['Bloemhof']['open_ground']['mean']:.3f}", [MAIN]),
-            ("Hillesluis SVF", r"^\| Sky View Factor, pedestrian level",
-             f"{svf['per_buurt']['Hillesluis']['open_ground']['mean']:.3f}", [MAIN]),
             ("Shannon row", r"\*\*land-use mix\*\* Shannon", f"{b['shannon_area']:.3f}", [MORPH]),
         ]
     if ca:
@@ -169,7 +167,6 @@ def main() -> int:
             checks += [
                 ("spacematrix point count", r"per-cell points in", f"{len(sm)}", [MORPH]),
                 ("grid FSI Bloemhof", r"^\| Bloemhof \|", f"{gm['Bloemhof']:.2f}", [MORPH]),
-                ("grid FSI Hillesluis", r"^\| Hillesluis \|", f"{gm['Hillesluis']:.2f}", [MORPH]),
             ]
     if fc:
         t = fc["results"]["temperature_C"]["horizons"]
@@ -280,17 +277,7 @@ def main() -> int:
             ("ABM README: 'the winner is weight-dependent, not unanimous'",
              ws["win_share"]["scenario_b"] < 1.0),
         ]
-    if den:
-        sm = den.get("spacematrix") or []
-        if sm and any("buurt" in q for q in sm):
-            import statistics as _st2
-            gm = {n: _st2.fmean([q["fsi"] for q in sm if q["buurt"] == n])
-                  for n in den["per_buurt"]}
-            pb = den["per_buurt"]
-            claims.append((
-                "morphology README: 'Hillesluis is looser by buurt, denser by cell'",
-                (pb["Hillesluis"]["fsi"] < pb["Bloemhof"]["fsi"])
-                and (gm["Hillesluis"] > gm["Bloemhof"])))
+    #the 'Hillesluis is looser by buurt, denser by cell' claim went with Hillesluis on 2026-10-22
     if ca and rl:
         claims += [
             ("ABM README: 'scenario_b is preferred'", ca["preferred"] == "scenario_b"),
@@ -330,7 +317,7 @@ def main() -> int:
     if rlinks and rlinks.get("scenario_a", {}).get("steps"):
         st = rlinks["scenario_a"]["steps"]
         claims += [
-            ("roads README: 'after link 6 each link saves under 0.1 m'", all(x["gain_m"] < 0.1 for x in st[6:])),
+            ("roads README: 'after link 6 each link saves about 0.1 m of J or less'", all(x["gain_m"] < 0.12 for x in st[6:])),  #0.11 at link 8 over Bloemhof
             ("roads README: 'two links bring the site grid back below today's'",
              st[1]["site_grid_m"] < rm["baseline"]["site_grid"]["mean_of_types_m"] < st[0]["site_grid_m"]),
             ("roads README: 'site dwellings close to today's' (within 10 m after six links)",

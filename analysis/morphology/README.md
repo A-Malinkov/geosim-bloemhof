@@ -6,8 +6,9 @@ Owner: **Atanas Malinkov** · feeds `app/modules/indicators.js` and `app/modules
 > they go stale silently — regenerate this file and run
 > `python analysis/check_docs.py`.
 
-**The study area is two buurten**, Bloemhof and Hillesluis, analysed separately
-and together. Every indicator below is clipped to the buurt polygons, so the
+**The study area is one buurt, Bloemhof** (78.8 ha). Until 2026-10-22 it was
+Bloemhof and Hillesluis together; every indicator was re-run when the team
+narrowed it. Every indicator below is clipped to the buurt polygon, so the
 numerator and denominator always share one boundary.
 
 ## Scripts
@@ -55,36 +56,26 @@ python analysis/morphology/height_width.py --scenario scenario_a      # ~15 s
 
 ## Status — all four indicators complete
 
-| indicator | Bloemhof | Hillesluis | both |
-|---|---|---|---|
-| **Sky View Factor** | 0.696 | 0.748 | **0.726** |
-| **GSI** ground space index | 0.333 | 0.241 | **0.284** |
-| **FSI** floor space index | 1.003 | 0.922 | **0.960** |
-| **L** storeys | 3.01 | 3.82 | **3.38** |
-| **OSR** | 0.67 | 0.82 | **0.75** |
-| **mean building height** | 8.5 m | 11.2 m | **9.5 m** |
-| **height variation σ** | 2.9 m | 2.5 m | **3.1 m** |
-| **land-use mix** Shannon | 0.267 | 0.422 | **0.351** |
-| **trees** | 1,204 | 1,598 | **2,802** |
-| **trees per hectare** | 15.3 | 17.7 | **16.6** |
-| **canopy cover** | 6.6 % | 9.0 % | **7.9 %** |
+| indicator | Bloemhof |
+|---|---|
+| **Sky View Factor** | **0.696** |
+| **GSI** ground space index | **0.333** |
+| **FSI** floor space index | **1.003** |
+| **L** storeys | **3.01** |
+| **OSR** | **0.67** |
+| **mean building height** | **8.5 m** |
+| **height variation σ** | **2.9 m** |
+| **land-use mix** Shannon | **0.267** |
+| **trees** | **1,204** |
+| **trees per hectare** | **15.3** |
+| **canopy cover** | **6.6 %** |
 
-### The two buurten are not the same place
-
-Worth a paragraph in the report, because it is the main thing comparing them buys:
-
-- **Hillesluis is less built-up but taller.** GSI 0.24 against Bloemhof's
-  0.33, yet 3.8 storeys against 3.0. Similar floor space
-  (FSI 0.92 vs 1.00) delivered by a different fabric.
-- **Hillesluis is markedly more mixed.** Shannon 0.422 against 0.267;
-  86 % of Bloemhof's floor space is residential against
-  74 % in Hillesluis.
-- **Hillesluis is greener and more open.** 17.7 trees/ha against 15.3,
-  canopy 9.0 % against 6.6 %, and SVF
-  0.75 against 0.70.
-
-Bloemhof is the denser, more enclosed, more mono-functional of the two. If the
-design is meant to address a deficit, Bloemhof is where the indicators say it is.
+Bloemhof is dense, low and enclosed, and mono-functional: 86 % of its floor
+space is residential. Against Hillesluis next door, which the study area
+covered until 2026-10-22, it was the denser, more enclosed, less mixed and less
+green of the two (Hillesluis: GSI 0.24, Shannon 0.42, 17.7 trees/ha, SVF 0.75).
+If the design is meant to address a deficit, those are the ones the indicators
+point at.
 
 ## Sky View Factor — method
 
@@ -101,7 +92,7 @@ SVF_geometric = 1 − (1/N) · Σ sin(γᵢ)
 ```
 
 Both are in the literature and **they are not the same number** — here they are
-0.726 and 0.576. The cos² form is cosine-weighted, so sky near the
+0.696 and 0.526. The cos² form is cosine-weighted, so sky near the
 zenith counts for more; that governs radiation exchange and is what urban
 climatology means by SVF. Both go into `svf_summary.json`.
 
@@ -123,8 +114,9 @@ climatology means by SVF. Both go into `svf_summary.json`.
 
 ### Vegetation effect
 
-0.79 in the open against 0.46 under a tree crown, a drop of
-0.33 (42 %). Street trees are doing measurable work on enclosure,
+0.70 in the open against 0.35 under a tree crown, a drop of
+0.35 (50 %), over Bloemhof's raster (0.79 against 0.46 over the earlier
+two-buurt raster). Street trees are doing measurable work on enclosure,
 which connects the vegetation component directly to the morphology one.
 
 ## Density — Spacematrix
@@ -143,7 +135,10 @@ OSR = (1 - GSI) / FSI                 open space per m² of floor space
   buildings where 3DBAG gives both a count and a height. It fills in the
   3,696 buildings with no storey count.
 - **Sheds count for density but not for height.** 44 % of BAG *Pand*
-  records are outbuildings holding 10 % of the built area. They cover
+  records are outbuildings holding 10 % of the built area. (This share, the
+  storey height and the 3,696 are measured over the whole 3DBAG download,
+  which still covers the two-buurt box from before 2026-10-22; every density
+  figure itself is clipped to Bloemhof.) They cover
   ground, so they belong in GSI and FSI, but they are not what "building height"
   means: statistics use principal buildings only (≥ 40 m², ≥ 4 m).
 - **Height is above each building's own ground** (`b3_h_dak_50p − b3_h_maaiveld`),
@@ -157,32 +152,30 @@ GSI and FSI fix the other two indicators, so a GSI–FSI scatter carries all fou
 L is a straight line through the origin, OSR is a curve. Fabric types separate by
 *where* they sit, which no single number shows. `make_figures.py` writes the static
 `docs/fig_spacematrix.png`; `app/modules/indicators.js` draws the same diagram in
-the dashboard from the 200 per-cell points in `density_summary.json`, coloured
+the dashboard from the 107 per-cell points in `density_summary.json`, coloured
 by buurt, so the proposed massing can later be overplotted to show the new fabric
-move relative to the existing two.
+move relative to the existing one.
 
-Each point now carries a `buurt` label, assigned by whichever polygon contains the
+Each point carries a `buurt` label, assigned by whichever polygon contains the
 cell **centre** — 81 Bloemhof,
-68 Hillesluis,
-51 outside both (the bounding box is larger
-than the buurten). A cell on the boundary goes to one side rather than being counted
-twice.
+26 outside it (the bounding box is larger
+than the buurt). Buildings outside the grid are dropped, not clamped into the
+edge cells (`np.clip` on the cell index did that after the study area shrank and
+the raw downloads did not, giving a 100 m cell a GSI of 5.9).
 
-### The two scales disagree, and that is the finding
+### The two scales give different numbers
 
 | | FSI over the whole buurt | mean FSI over built cells |
 |---|---|---|
 | Bloemhof | 1.003 | 0.97 |
-| Hillesluis | 0.922 | 1.24 |
 
-Hillesluis reads as the **looser** buurt at buurt scale and the **denser** one at
-cell scale. Both are correct. The buurt figure divides floor area by all of its
-land, gaps included, and Hillesluis has more gaps; the grid mean averages only
-cells holding at least 3 buildings, so it
+Both are correct. The buurt figure divides floor area by all of its land, gaps
+included; the grid mean averages only cells holding at least 3 buildings, so it
 describes built fabric and ignores the gaps. This is the modifiable areal unit
 problem arriving in a number we publish, which is why the cell size travels with
-every figure. The app states the reversal in the panel, generated from the data so
-it disappears if a re-run removes it.
+every figure. With two buurten the scales even ranked them in opposite orders;
+the app states such a reversal in the panel, generated from the data, so it only
+appears when there is one.
 
 ## Land-use mix — method
 
@@ -190,7 +183,7 @@ Shannon entropy (normalised) and Simpson diversity over BAG `gebruiksdoel`,
 **weighted by usable floor area**.
 
 - Weighting by floor area rather than unit count roughly doubles the measured mix
-  (0.160 → 0.351): most units are residential but non-residential
+  (0.144 → 0.267): most units are residential but non-residential
   ones are individually much larger. Both are reported.
 - **N is the full 11-class BAG vocabulary, fixed a priori**, not "classes present
   here" — otherwise cells with shorter category lists score spuriously high.
@@ -207,7 +200,7 @@ Added by Stefan. Two parts that answer different questions:
 - **`shadows.py` — how many hours of direct sun a place gets over a whole day.**
   It casts the sun across one clear day (equinox by default, every 30 min) over
   the AHN surface model and counts, per 1 m cell, the hours it is sunlit.
-  Reported on open ground only, per buurt and combined, like the SVF.
+  Reported on open ground only, over the buurt and the design site, like the SVF.
 - **The "Sun & shadows" card in the app — one instant.** It opens on *Live*:
   the sun as it stands right now in Rotterdam, clear-sky, for orientation only.
   Pick a reference day (equinox, summer or winter solstice) or drag the time, and
@@ -222,14 +215,18 @@ Results, direct sun on open ground (clear sky, 1 m cells, sun every 30 min).
 The equinox run is the app's overlay; the solstices use `--suffix` so they do
 not overwrite it:
 
-| Day | Daylight | Bloemhof | Hillesluis | Design site (median, share < 2 h) |
-|---|---|---|---|---|
-| 21 Dec | 7.5 h | 0.65 h | 1.90 h | 0.0 h, 87 % |
-| 20 Mar | 12.0 h | 4.44 h | 5.81 h | 4.5 h, 20 % |
-| 21 Jun | 16.5 h | 8.35 h | 9.84 h | 9.0 h, 1 % |
+| Day | Daylight | Bloemhof | Design site (median, share < 2 h) |
+|---|---|---|---|
+| 21 Dec | 7.5 h | 0.61 h | 0.0 h, 87 % |
+| 20 Mar | 12.0 h | 4.28 h | 4.0 h, 22 % |
+| 21 Jun | 16.5 h | 8.14 h | 9.0 h, 1 % |
 
-Buurt columns are means. Bloemhof is shadier than Hillesluis, consistent with its
-lower SVF. In winter most of the site's open ground gets no direct sun at all:
+The Bloemhof column is a mean. (Hillesluis, in the study area until 2026-10-22,
+got 1.90 / 5.81 / 9.84 h: Bloemhof is the shadier, consistent with its lower
+SVF.) These figures are from the AHN re-download of 2026-10-22, which sits on
+AHN's own 0.5 m grid; the earlier mosaic was offset by about half a cell, and at
+1 m that alone moved the equinox mean from 4.44 h to 4.28 h and the site's
+share under 2 h from 20 % to 22 %. SVF did not move (0.696 both times). In winter most of the site's open ground gets no direct sun at all:
 streets ≈ 11 m wide between ~7 m walls are fully shaded by a sun that peaks at
 about 15°. `shadow_figure.py` draws the three days over the site
 (`docs/fig_shadow_site.png`).
@@ -249,19 +246,16 @@ shadows are clean.
 perpendicular to it on both sides, up to 60 m, to the first building façade.
 W is façade to façade, H the mean of the two buildings' heights, and a point
 counts as a canyon only with a building on both sides. Statistics are by street
-length, clipped to each buurt and to the design site.
+length, clipped to the buurt and to the design site.
 
 Baseline (from `canyon_hw_baseline.json`):
 
 | | H/W median | wall height H | width W | street length that is canyon |
 |---|---|---|---|---|
 | Bloemhof | 0.42 | 8.0 m | 19.9 m | 67 % |
-| Hillesluis | 0.45 | 12.1 m | 29.1 m | 56 % |
-| both | 0.43 | 9.8 m | 22.4 m | 61 % |
 | design site | 0.39 | 7.3 m | 22.9 m | 76 % |
 
-The two buurten land on almost the same H/W by opposite routes: Bloemhof has
-low walls on narrow streets, Hillesluis taller walls on wider ones. On the
+Bloemhof's streets are low walls on fairly narrow streets. On the
 design site the interior side streets are mostly ≈ 11 m wide with 6–8 m walls
 (H/W 0.4–0.6, length-weighted median 0.51), while Lange Hilleweg along its
 north-west edge is a 56 m avenue with ~8 m walls, H/W 0.14.
@@ -282,4 +276,4 @@ carriageways are measured from each half's centreline.
 
 These indicators are the measuring stick. Add the proposed massing, re-run, and
 compare — the Spacematrix plot will show the new fabric moving relative to the
-existing two.
+existing one.

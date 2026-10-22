@@ -246,8 +246,8 @@ def figures(areas) -> None:
               title="vulnerability", loc="upper left", bbox_to_anchor=(1.01, 1), frameon=False)
     s = summary_overall
     ax.set_title("Overall flood vulnerability (Cyrille, QGIS) — open ground, 0.5 m\n"
-                 f"classes 3–4: design site {s['Design site']:.0%}, Bloemhof {s['Bloemhof']:.0%}, "
-                 f"Hillesluis {s['Hillesluis']:.0%}")
+                 f"classes 3–4: design site {s['Design site']:.0%}, " +
+                 ", ".join(f"{n} {s[n]:.0%}" for _, n in STUDY_AREA.buurten))  #every study-area buurt, however many
     plt.tight_layout(); fig.savefig(DOCS / "fig_flood_overall.png", dpi=140); plt.close(fig)
 
     fig, axs = plt.subplots(1, 3, figsize=(15, 4.6))

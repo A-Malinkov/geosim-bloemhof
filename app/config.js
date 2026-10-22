@@ -25,10 +25,10 @@ export const CONFIG = {
   /* ------------------------------------------------------------ Study area */
   /* TWO BUURTEN, not a point with a radius.
    *
-   * Bloemhof (BU05991081) and Hillesluis (BU05991082) are adjacent buurten in
-   * Rotterdam-Zuid. Everything is ANALYSED over both, about 169 ha and 26,000
-   * inhabitants. The design scenarios occupy only a small site inside them, set
-   * separately in `designSite` below.
+   * Bloemhof (BU05991081), a buurt in Rotterdam-Zuid, 78.8 ha and about 13,700
+   * inhabitants. Everything is ANALYSED over it. The design scenarios occupy
+   * only a small site inside it, set separately in `designSite` below.
+   * (2026-10-22: Hillesluis, BU05991082, was dropped from the study area.)
    *
    * The boundaries themselves live in data/processed/study_area.geojson, written
    * by `python analysis/common/project.py`, which derives everything from the
@@ -36,21 +36,20 @@ export const CONFIG = {
    * analysis/common/project.py; do not hand-edit coordinates here.
    */
   studyArea: {
-    name: "Bloemhof & Hillesluis",
+    name: "Bloemhof",
     wijk: "Feijenoord",
     municipality: "Rotterdam",
 
     buurten: [
       { code: "BU05991081", name: "Bloemhof" },
-      { code: "BU05991082", name: "Hillesluis" },
     ],
 
-    // Centre of the combined extent, for the opening camera.
-    lon: 4.507635,
-    lat: 51.896283,
+    // Centre of the buurt's extent, for the opening camera.
+    lon: 4.501535,
+    lat: 51.894034,
 
-    // WGS84 bounds of both buurten together: [west, south, east, north].
-    bbox: [4.493657, 51.8895625, 4.5216124, 51.9030038],
+    // WGS84 bounds of the buurt: [west, south, east, north].
+    bbox: [4.4937446, 51.8895625, 4.5093258, 51.898507],
 
     // Boundaries for the map, in WGS84.
     boundaries: "../data/processed/study_area.geojson",
@@ -60,8 +59,8 @@ export const CONFIG = {
     // Nearest KNMI synoptic station: 344 = Rotterdam The Hague Airport.
     knmiStation: 344,
 
-    // Opening camera. Higher than before: the area is now ~1.9 x 1.5 km.
-    camera: { heightM: 1500, headingDeg: 10, pitchDeg: -45 },
+    // Opening camera. Bloemhof alone is ~1.1 x 1.0 km (both buurten took 1500 m)
+    camera: { heightM: 1000, headingDeg: 10, pitchDeg: -45 },
   },
 
   /**

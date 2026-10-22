@@ -126,8 +126,13 @@ def main() -> int:
     print(f"  {len(x):,} addressable units, {N_CATEGORIES} categories in the scheme")
 
     # ------------------------------------------------------------ whole area
+    import shapely
+    in_area = shapely.contains_xy(study_area_polygon(), x, y)  #the download's box is bigger than the study area
+    print(f"  {int(in_area.sum()):,} of them inside the study area")
     area_by, count_by = Counter(), Counter()
-    for cs, a in zip(cats, area):
+    for ok, cs, a in zip(in_area, cats, area):
+        if not ok:
+            continue  #whole-area figures cover the study area only, like every other indicator
         for c in cs:
             area_by[c] += a
             count_by[c] += 1
@@ -149,13 +154,16 @@ def main() -> int:
     c = args.cell
     nx = int(np.ceil((xmax - xmin) / c))
     ny = int(np.ceil((ymax - ymin) / c))
-    col = np.clip(((x - xmin) // c).astype(int), 0, nx - 1)
-    row = np.clip(((y - ymin) // c).astype(int), 0, ny - 1)
+    col = ((x - xmin) // c).astype(int)
+    row = ((y - ymin) // c).astype(int)
+    on_grid = (col >= 0) & (col < nx) & (row >= 0) & (row < ny)  #units past the box are dropped, not clamped into edge cells
     flat = row * nx + col
 
     per_cell_area: dict[int, Counter] = {}
     per_cell_count: dict[int, Counter] = {}
-    for i, cs, a in zip(flat, cats, area):
+    for i, ok, cs, a in zip(flat, on_grid, cats, area):
+        if not ok:
+            continue  #outside the grid
         pa = per_cell_area.setdefault(int(i), Counter())
         pc = per_cell_count.setdefault(int(i), Counter())
         for cat in cs:

@@ -294,6 +294,9 @@ def describe(a: np.ndarray) -> dict:
 
 
 # ---------------------------------------------------------------------- main
+COMBINED = "_combined"  #key of the whole-study-area stats while they are collected
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Sky View Factor from AHN",
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -324,6 +327,15 @@ def main() -> int:
 
     dsm, transform, crs = load_raster(dsm_path, args.resolution)
     dtm, _, _ = load_raster(dtm_path, args.resolution)
+    #the crop below assumes the AHN rasters span the study area + 150 m; a stale download
+    #(e.g. from before the study area changed) would silently analyse the wrong area
+    have = (transform.c, transform.f + dsm.shape[0] * transform.e,
+            transform.c + dsm.shape[1] * transform.a, transform.f)
+    want = bbox_rd(150)
+    if max(abs(a - b) for a, b in zip(have, want)) > 2 * args.resolution + 1:
+        print(f"  AHN rasters span {[round(v) for v in have]}, but the study area + 150 m is "
+              f"{[round(v) for v in want]}.\n  Re-download: python analysis/morphology/fetch_ahn.py --force")
+        return 1
     print(f"  grid {dsm.shape[1]} x {dsm.shape[0]}")
     sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "scenarios"))
     from scenario_world import burn_into_rasters  #demolition + new blocks, no-op for baseline
@@ -369,7 +381,7 @@ def main() -> int:
                 print(f"  {name:12} covers {100 * m.mean():5.1f}% of the raster")
             m_all = ~geometry_mask([study_area_polygon()], out_shape=svf_rad_c.shape,
                                    transform=transform_c, invert=False)
-            masks[STUDY_AREA.name] = m_all
+            masks[COMBINED] = m_all  #reserved key: a one-buurt study area shares its buurt's name
             for name, m in masks.items():
                 code = next((c for c, n in STUDY_AREA.buurten if n == name), None)
                 buurt_stats[name] = {
@@ -418,9 +430,8 @@ def main() -> int:
         "all_cells": describe(svf_rad_c),
         "open_ground": describe(np.where(og_c, svf_rad_c, np.nan)),
         "open_ground_geometric": describe(np.where(og_c, svf_geo_c, np.nan)),
-        "per_buurt": {k: v for k, v in buurt_stats.items()
-                      if k != STUDY_AREA.name},
-        "combined": buurt_stats.get(STUDY_AREA.name),
+        "per_buurt": {k: v for k, v in buurt_stats.items() if k != COMBINED},
+        "combined": buurt_stats.get(COMBINED),
         "design_site": site_stats,  #open ground inside the design site
         "histogram": {
             "bin_edges": [round(x, 3) for x in np.linspace(0, 1, 41).tolist()],

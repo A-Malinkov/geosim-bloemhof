@@ -9,15 +9,17 @@ nobody hard-codes a bounding box:
     sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
     from common.project import STUDY_AREA, PROCESSED, bbox_rd, to_rd, to_wgs
 
-THE STUDY AREA IS TWO BUURTEN, NOT A SQUARE
--------------------------------------------
-Bloemhof (BU05991081) and Hillesluis (BU05991082), adjacent buurten in
-Rotterdam-Zuid, 169 ha and about 26,000 inhabitants between them. Everything is
-analysed over BOTH; the design scenarios occupy only a small site inside them
-(see `DESIGN_SITE`).
+THE STUDY AREA IS ONE BUURT, NOT A SQUARE
+-----------------------------------------
+Bloemhof (BU05991081) in Rotterdam-Zuid. Everything is analysed over it; the
+design scenarios occupy only a small site inside it (see `DESIGN_SITE`).
+
+From 2026-09-30 to 2026-10-22 the study area was Bloemhof AND Hillesluis
+(BU05991082); the team narrowed it to Bloemhof alone on 2026-10-22. `buurten`
+below is a tuple, so adding a buurt back is a one-line change plus re-runs.
 
 Earlier versions of this file used a 600 m square around a point, which covered
-75% of Bloemhof and none of Hillesluis. `bbox_rd()` now derives its box from the
+75% of Bloemhof. `bbox_rd()` now derives its box from the
 actual buurt polygons, so it cannot drift out of step with them again. It takes a
 PADDING in metres, not a radius — several analyses need context beyond the edge
 (a building just outside still blocks sky inside).
@@ -42,13 +44,12 @@ for _d in (RAW, PROCESSED, DOCS):
 # ---------------------------------------------------------------- study area
 @dataclass(frozen=True)
 class StudyArea:
-    name: str = "Bloemhof & Hillesluis"
+    name: str = "Bloemhof"
     municipality: str = "Rotterdam"
     wijk: str = "Feijenoord"
     #: CBS buurt code -> name. Analysis covers all of these.
     buurten: tuple[tuple[str, str], ...] = (
-        ("BU05991081", "Bloemhof"),
-        ("BU05991082", "Hillesluis"),
+        ("BU05991081", "Bloemhof"),  #Hillesluis (BU05991082) dropped 2026-10-22
     )
     cbs_gemeente: str = "GM0599"
     #: Year of the CBS wijkenbuurten edition the boundaries come from.
@@ -60,7 +61,7 @@ STUDY_AREA = StudyArea()
 
 #: Where the design scenarios go. The brief is that scenarios occupy only a
 #: small part of the study area, so this is a separate, smaller footprint:
-#: everything is ANALYSED over both buurten, but baseline / scenario_a /
+#: everything is ANALYSED over the whole study area, but baseline / scenario_a /
 #: scenario_b only differ inside this polygon.
 #:
 #: Chosen by the team on 2026-09-30: the blocks in south-west Bloemhof between
@@ -185,11 +186,14 @@ def buurt_polygons(refresh: bool = False) -> dict[str, object]:
     if _polys is not None and not refresh:
         return _polys
 
+    wanted = [code for code, _ in STUDY_AREA.buurten]
     if _CACHE.exists() and not refresh:
         fc = json.loads(_CACHE.read_text())
-        _polys = {f["properties"]["buurtcode"]: sg.shape(f["geometry"])
+        cached = {f["properties"]["buurtcode"]: sg.shape(f["geometry"])
                   for f in fc["features"]}
-        return _polys
+        if all(c in cached for c in wanted):  #the cache may hold more buurten than the study area
+            _polys = {c: cached[c] for c in wanted}  #only the study-area buurten, in STUDY_AREA order
+            return _polys
 
     feats = []
     for code, name in STUDY_AREA.buurten:
@@ -210,7 +214,9 @@ def buurt_properties() -> dict[str, dict]:
     """{buurt code: CBS attributes} — inhabitants, area and the rest."""
     buurt_polygons()                       # ensure the cache exists
     fc = json.loads(_CACHE.read_text())
-    return {f["properties"]["buurtcode"]: f["properties"] for f in fc["features"]}
+    wanted = {code for code, _ in STUDY_AREA.buurten}  #skip cached buurten outside the study area
+    return {f["properties"]["buurtcode"]: f["properties"] for f in fc["features"]
+            if f["properties"]["buurtcode"] in wanted}
 
 
 def study_area_polygon():

@@ -184,7 +184,7 @@ export async function setup(ctx) {
       (sc === "baseline" ? " (BAG)" : `, ${fmt(data[sc].network.new_block_dwellings_est)} of them estimated for the new blocks`) +
       `, so it moves with who lives there. <em>Site grid</em>: the same ${fmt(grid.grid_points)} points ` +
       `in every scenario, so it moves with the network alone. ≤ 5 min is 400 m. ` +
-      `Every home in both buurten reaches all four within 15 min in every scenario ` +
+      `Every home in the study area reaches all four within 15 min in every scenario ` +
       `(${fmt(100 * data[sc].metrics.walk_15min_reach_frac, 0, " %")}).</p>`;
   }
 

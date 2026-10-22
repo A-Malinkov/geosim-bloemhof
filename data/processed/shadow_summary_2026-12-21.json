@@ -1,5 +1,5 @@
 {
-  "study_area": "Bloemhof & Hillesluis",
+  "study_area": "Bloemhof",
   "scenario": "baseline",
   "method": "ray-cast direct-sun accumulation from the AHN DSM",
   "solar_position": "NOAA solar-position algorithm (geometric, no refraction)",
@@ -9,8 +9,8 @@
     "search_radius_m": 300.0,
     "n_radial_steps": 80,
     "step_minutes": 30,
-    "latitude": 51.894459,
-    "longitude": 4.506851,
+    "latitude": 51.893449,
+    "longitude": 4.50061,
     "surface": "AHN dsm_05m (buildings + tree crowns)"
   },
   "daylight_hours": 7.5,
@@ -18,54 +18,54 @@
   "bbox_rd": [
     93506.5,
     433826.5,
-    95413.1,
-    435299.0
+    94567.2,
+    434808.8
   ],
   "bbox_wgs84": [
-    4.492922,
-    51.8891035,
-    4.5223466,
-    51.9034583
+    4.4930164,
+    51.889112,
+    4.510056,
+    51.8989635
   ],
   "bbox_wgs84_rd_corners": [
-    4.493657,
+    4.4937446,
     51.8895625,
-    4.5216124,
-    51.9030038
+    4.5093258,
+    51.898507
   ],
   "all_cells_sunlit_hours": {
-    "n_pixels": 3153432,
-    "mean": 2.7002,
-    "std": 2.7214,
-    "min": 0.0,
-    "p05": 0.0,
-    "p25": 0.0,
-    "median": 2.0,
-    "p75": 5.5,
-    "p95": 7.0,
-    "max": 7.5
-  },
-  "open_ground_sunlit_hours": {
-    "n_pixels": 1677504,
-    "mean": 1.7509,
-    "std": 2.1477,
+    "n_pixels": 1255120,
+    "mean": 1.9088,
+    "std": 2.5223,
     "min": 0.0,
     "p05": 0.0,
     "p25": 0.0,
     "median": 0.5,
-    "p75": 3.0,
-    "p95": 6.0,
+    "p75": 3.5,
+    "p95": 7.0,
     "max": 7.5
+  },
+  "open_ground_sunlit_hours": {
+    "n_pixels": 638637,
+    "mean": 0.6754,
+    "std": 1.1592,
+    "min": 0.0,
+    "p05": 0.0,
+    "p25": 0.0,
+    "median": 0.0,
+    "p75": 1.0,
+    "p95": 3.5,
+    "max": 7.0
   },
   "per_buurt": {
     "Bloemhof": {
       "code": "BU05991081",
       "inhabitants": 13740,
-      "raster_coverage_fraction": 0.2499,
+      "raster_coverage_fraction": 0.6281,
       "open_ground_sunlit_hours": {
-        "n_pixels": 409491,
-        "mean": 0.6543,
-        "std": 1.1022,
+        "n_pixels": 405751,
+        "mean": 0.6089,
+        "std": 1.06,
         "min": 0.0,
         "p05": 0.0,
         "p25": 0.0,
@@ -74,56 +74,39 @@
         "p95": 3.0,
         "max": 7.0
       }
-    },
-    "Hillesluis": {
-      "code": "BU05991082",
-      "inhabitants": 12185,
-      "raster_coverage_fraction": 0.2861,
-      "open_ground_sunlit_hours": {
-        "n_pixels": 533781,
-        "mean": 1.9012,
-        "std": 2.1946,
-        "min": 0.0,
-        "p05": 0.0,
-        "p25": 0.0,
-        "median": 1.0,
-        "p75": 3.5,
-        "p95": 6.0,
-        "max": 7.5
-      }
     }
   },
   "combined": {
     "code": null,
     "inhabitants": null,
-    "raster_coverage_fraction": 0.536,
+    "raster_coverage_fraction": 0.6281,
     "open_ground_sunlit_hours": {
-      "n_pixels": 943272,
-      "mean": 1.3599,
-      "std": 1.9065,
+      "n_pixels": 405751,
+      "mean": 0.6089,
+      "std": 1.06,
       "min": 0.0,
       "p05": 0.0,
       "p25": 0.0,
-      "median": 0.5,
-      "p75": 2.0,
-      "p95": 6.0,
-      "max": 7.5
+      "median": 0.0,
+      "p75": 1.0,
+      "p95": 3.0,
+      "max": 7.0
     }
   },
   "design_site": {
     "open_ground_sunlit_hours": {
-      "n_pixels": 74198,
-      "mean": 0.5595,
-      "std": 1.0505,
+      "n_pixels": 73527,
+      "mean": 0.5272,
+      "std": 1.0217,
       "min": 0.0,
       "p05": 0.0,
       "p25": 0.0,
       "median": 0.0,
       "p75": 0.5,
       "p95": 3.0,
-      "max": 6.5,
-      "share_under_2h": 0.8643,
-      "share_under_4h": 0.9791
+      "max": 7.0,
+      "share_under_2h": 0.8731,
+      "share_under_4h": 0.9807
     }
   },
   "histogram": {
@@ -155,30 +138,30 @@
       7.5
     ],
     "counts": [
-      716866,
-      128476,
+      395561,
+      60860,
       0,
-      112212,
-      98581,
+      47576,
+      37128,
       0,
-      83304,
+      26270,
       0,
-      71742,
-      62729,
+      19902,
+      16182,
       0,
-      55008,
-      48509,
+      12333,
+      8698,
       0,
-      48756,
+      6797,
       0,
-      53695,
-      60296,
+      4684,
+      2158,
       0,
-      64431,
-      49508,
+      456,
+      29,
       0,
-      22388,
-      1003
+      3,
+      0
     ]
   },
   "_note": "Geometric clear-sky direct-sun hours on one day, an upper bound: no clouds, tree crowns treated as solid, shadows from obstructions beyond --radius ignored."

@@ -10,18 +10,18 @@
       "reach_m": 20.0
     },
     "n_candidates": 60,
-    "J_before_m": 267.92,
+    "J_before_m": 304.49,
     "site_dwellings_before_m": 407.2,
     "site_grid_before_m": 387.3,
-    "J_ceiling_m": 265.45,
+    "J_ceiling_m": 300.24,
     "site_grid_ceiling_m": 369.6,
     "site_grid_baseline_m": 377.4,
     "steps": [
       {
         "rank": 1,
         "length_m": 44.3,
-        "gain_m": 0.996,
-        "J_m": 266.93,
+        "gain_m": 1.711,
+        "J_m": 302.78,
         "site_dwellings_m": 400.7,
         "site_grid_m": 380.2,
         "share_of_ceiling": 0.403
@@ -29,8 +29,8 @@
       {
         "rank": 2,
         "length_m": 94.7,
-        "gain_m": 0.642,
-        "J_m": 266.29,
+        "gain_m": 1.103,
+        "J_m": 301.68,
         "site_dwellings_m": 396.6,
         "site_grid_m": 375.7,
         "share_of_ceiling": 0.663
@@ -38,8 +38,8 @@
       {
         "rank": 3,
         "length_m": 45.5,
-        "gain_m": 0.347,
-        "J_m": 265.94,
+        "gain_m": 0.597,
+        "J_m": 301.08,
         "site_dwellings_m": 394.3,
         "site_grid_m": 375.2,
         "share_of_ceiling": 0.803
@@ -47,8 +47,8 @@
       {
         "rank": 4,
         "length_m": 29.9,
-        "gain_m": 0.122,
-        "J_m": 265.82,
+        "gain_m": 0.21,
+        "J_m": 300.87,
         "site_dwellings_m": 393.5,
         "site_grid_m": 374.7,
         "share_of_ceiling": 0.853
@@ -56,8 +56,8 @@
       {
         "rank": 5,
         "length_m": 11.1,
-        "gain_m": 0.094,
-        "J_m": 265.72,
+        "gain_m": 0.161,
+        "J_m": 300.71,
         "site_dwellings_m": 392.9,
         "site_grid_m": 374.3,
         "share_of_ceiling": 0.891
@@ -65,8 +65,8 @@
       {
         "rank": 6,
         "length_m": 32.3,
-        "gain_m": 0.076,
-        "J_m": 265.65,
+        "gain_m": 0.13,
+        "J_m": 300.58,
         "site_dwellings_m": 392.5,
         "site_grid_m": 373.6,
         "share_of_ceiling": 0.921
@@ -74,8 +74,8 @@
       {
         "rank": 7,
         "length_m": 20.5,
-        "gain_m": 0.039,
-        "J_m": 265.61,
+        "gain_m": 0.067,
+        "J_m": 300.51,
         "site_dwellings_m": 392.2,
         "site_grid_m": 373.2,
         "share_of_ceiling": 0.937
@@ -83,8 +83,8 @@
       {
         "rank": 8,
         "length_m": 44.7,
-        "gain_m": 0.066,
-        "J_m": 265.54,
+        "gain_m": 0.113,
+        "J_m": 300.4,
         "site_dwellings_m": 391.8,
         "site_grid_m": 372.7,
         "share_of_ceiling": 0.964
@@ -92,8 +92,8 @@
       {
         "rank": 9,
         "length_m": 44.8,
-        "gain_m": 0.021,
-        "J_m": 265.52,
+        "gain_m": 0.036,
+        "J_m": 300.36,
         "site_dwellings_m": 391.6,
         "site_grid_m": 372.0,
         "share_of_ceiling": 0.972
@@ -101,8 +101,8 @@
       {
         "rank": 10,
         "length_m": 50.1,
-        "gain_m": 0.017,
-        "J_m": 265.5,
+        "gain_m": 0.03,
+        "J_m": 300.33,
         "site_dwellings_m": 391.5,
         "site_grid_m": 371.9,
         "share_of_ceiling": 0.979
