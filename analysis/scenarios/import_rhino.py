@@ -250,6 +250,16 @@ def demolished(c, feats, footprints):
     return sorted(ids)
 
 
+def kept(c, footprints):
+    #BAG pand ids standing in the part of the site this scenario keeps (keep_rd); the app colours them as the scenario
+    if not c.get("keep_rd"):
+        return []
+    keep = design_site_polygon().intersection(Polygon(c["keep_rd"]))  #kept part, within the site
+    ids = [pid for pid, g in footprints if g.representative_point().within(keep)]  #same test as demolished()
+    print(f"  keeps {len(ids)} 3DBAG buildings on the site")
+    return sorted(ids)
+
+
 def write_trees(scenario, features, streets):
     #existing trees minus those inside this scenario's new blocks or streets -> trees_<scenario>.geojson
     trees = json.loads((PROCESSED / "trees.geojson").read_text())
@@ -268,13 +278,14 @@ def write_trees(scenario, features, streets):
 def main():
     if not MODEL.exists():
         sys.exit(f"missing {MODEL}\nCopy it from Modelling.zip on the shared drive (see the docstring).")
-    features, demolishes, streets = [], {}, []
+    features, demolishes, keeps, streets = [], {}, {}, []
     footprints = site_footprints()  #existing buildings, for the demolition lists
     for c in CASES:  #one Rhino layer tree per scenario
         print(f"{c['scenario']} <- {c['layer_prefix']} ({c['model'].name})")
         feats = import_option(c)
         features += feats
         demolishes[c["scenario"]] = demolished(c, feats, footprints)  #ids the app hides with this massing
+        keeps[c["scenario"]] = kept(c, footprints)  #ids the app colours with this massing
         streets += import_streets(c)  #new street surfaces of the same option
     write_processed("design_massing.geojson", {
         "type": "FeatureCollection",
@@ -288,6 +299,9 @@ def main():
         "demolishes": demolishes,
         "_keep_note": "RD rings of site parts each scenario leaves standing, see KEEP_RD in import_rhino.py.",
         "keep_rd": {c["scenario"]: c.get("keep_rd") for c in CASES},  #read by scenario_world.cleared_area()
+        "_keeps_note": "BAG pand ids standing in each scenario's keep_rd part of the site; "
+                       "the app shows them in the scenario's colour as part of the design.",
+        "keeps": keeps,
         "features": features,
     }, indent=1)
     write_processed("design_streets.geojson", {

@@ -72,6 +72,8 @@ export async function setup(ctx) {
   /* ---- demolition: hide the 3DBAG buildings a shown massing replaces ------ */
   //ids per scenario, written by analysis/scenarios/import_rhino.py
   const demolishes = new Map(Object.entries(geo.demolishes ?? {}).map(([k, ids]) => [k, new Set(ids)]));
+  //existing buildings a scenario keeps as part of its design (keep_rd), shown in the scenario's colour
+  const keeps = new Map(Object.entries(geo.keeps ?? {}).map(([k, ids]) => [k, new Set(ids)]));
   const shownMassing = new Set();  //scenarios whose massing is currently visible
   function applyDemolition() {
     //the 3DBAG tileset is loaded by layers.js; find it by the name it sets
@@ -83,6 +85,20 @@ export async function setup(ctx) {
     ts.style.show = hidden.size
       ? { evaluate: (feature) => !hidden.has(feature.getProperty("identificatie")) }
       : true;
+    ts.__baseColor ??= ts.style.color;  //layers.js's colour, kept for every building not recoloured
+    const tint = new Map();  //3DBAG id -> colour of the shown scenario that keeps it
+    for (const name of shownMassing)
+      for (const id of keeps.get(name) ?? []) tint.set(id, Cesium.Color.fromCssColorString(COLOURS[name] || "#ff8a3d"));  //3D tiles shade it a little darker than the massing
+    const base = ts.__baseColor;
+    ts.style.color = tint.size
+      ? {  //custom colour expression: kept buildings take the scenario colour, the rest keep the base style
+          evaluateColor: (feature, result) => {
+            const c = tint.get(feature.getProperty("identificatie"));
+            return c ? Cesium.Color.clone(c, result) : base.evaluateColor(feature, result);
+          },
+          evaluate(feature, result) { return this.evaluateColor(feature, result); },
+        }
+      : base;
     ts.makeStyleDirty();  //re-evaluate features already loaded
   }
 

@@ -322,6 +322,8 @@ export async function setup(ctx) {
         );
         if (!hier?.positions?.length) continue;
         ent.polygon.outline = false;
+        //drape the fill on the ground only: on the 3D buildings it tinted every scenario colour olive
+        ent.polygon.classificationType = Cesium.ClassificationType.TERRAIN;
         ds.entities.add({
           polyline: {
             positions: [...hier.positions, hier.positions[0]],

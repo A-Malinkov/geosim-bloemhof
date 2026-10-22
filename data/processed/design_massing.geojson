@@ -1191,6 +1191,17 @@
    ]
   ]
  },
+ "_keeps_note": "BAG pand ids standing in each scenario's keep_rd part of the site; the app shows them in the scenario's colour as part of the design.",
+ "keeps": {
+  "scenario_a": [
+   "NL.IMBAG.Pand.0599100000177837",
+   "NL.IMBAG.Pand.0599100000623494",
+   "NL.IMBAG.Pand.0599100000659973",
+   "NL.IMBAG.Pand.0599100000761545",
+   "NL.IMBAG.Pand.0599100010005541",
+   "NL.IMBAG.Pand.0599100010063147"
+  ]
+ },
  "features": [
   {
    "type": "Feature",
