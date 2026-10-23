@@ -42,7 +42,8 @@ The file also lists, per scenario, the 3DBAG buildings the design removes
 (`demolishes`, BAG pand ids). The app hides them while that massing is shown.
 For scenario_a the rule is the whole site, because OPTION 1 lays a new street
 grid over all of it, except the block added on 2026-10-21 (`KEEP_RD`), whose 6
-buildings stay. The other rule, `overlap`, removes only what a new block
+buildings stay: a school (Dubbelstraat), two community buildings and three
+sheds. scenario_b keeps the same block, the team's decision of 2026-10-23. The other rule, `overlap`, removes only what a new block
 covers. Set it per case in `CASES`.
 
 The flat surfaces on the `New ROADS` sublayer go to `design_streets.geojson`,
@@ -53,14 +54,16 @@ Each option's `Proposed Vegetation` sublayer goes to `design_planting.geojson`,
 kept apart from the massing so that no analysis sees the proposed trees (the
 team's choice for SVF and heights). For scenario_a that is
 64 trees and 124 shrubs (points at the trunk, with a height and crown measured
-from each block after its instance transform) and 16 green patches, 2.32 ha. All
-of it lies on the site and none of it on a new block or street. The one surface
+from each block after its instance transform) and 16 green patches, 2.11 ha. All
+of it lies on the site and none of it on a new block or street. Both options draw
+green over the buildings they keep (about 2,000 m², mostly over the school); that
+is cut away, and a plant standing in a kept building is dropped. The one surface
 on the top-level `Water feature?` layer (1,082 m², in the central green by
 Dubbelstraat) is imported as water and cut out of the green. It is under
 neither option. The same pond is scenario_b's: it lies wholly in OPTION 2's green,
 12 m clear of its blocks, so both scenarios carry it. For scenario_b the layer
-holds 99 trees, 87 shrubs (86 of them drawn as 4 m solids rather than blocks,
-imported as points like the rest) and 9 green patches, 4.35 ha, after the pond
+holds 99 trees, 86 shrubs (85 of them drawn as 4 m solids rather than blocks,
+imported as points like the rest) and 9 green patches, 4.15 ha, after the pond
 and 1,693 m² of green drawn under its new streets are cut away. The
 blocks are generic shapes with no species, some bushes are scaled to 7.3 m and
 one scenario_b tree to 50 m with a 38 m crown, so the sizes are what was drawn,
@@ -77,9 +80,10 @@ footprint, and 6,696 m² of new streets. Two need a fix on the way in. Tall 1 is
 an open roof surface plus a separate wall, so the roof is stood on the ground
 and the wall skipped. Medium 2's roof slopes everywhere, so it becomes one block
 at its mean roof height, 10.8 m, against a 13.3 m peak. Its blocks, roads and
-green cover 55 % of the site and overlap 1,008 of its 1,156 buildings, and its
-green runs over most of the 2026-10-21 block, so the rule is the whole site and
-nothing is kept. No analysis has a scenario_b run yet; its outputs are stubs.
+green cover 55 % of the site and overlap 1,008 of its 1,156 buildings, so the
+rule is the whole site, minus the same kept block as scenario_a: no OPTION 2
+block or street touches its buildings. It demolishes 1,150. No analysis has a
+scenario_b run yet; its outputs are stubs.
 
 ## Getting started
 

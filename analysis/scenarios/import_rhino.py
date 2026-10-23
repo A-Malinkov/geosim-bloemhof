@@ -46,6 +46,7 @@ too. Rule per case:
              does not overlap would leave old rows standing in new courtyards.
              OPTION 2 is cleared the same way: its blocks, roads and green
              cover 55 % of the site and overlap 1,008 of its 1,156 buildings.
+             Both keep the same KEEP_RD block (school, community buildings).
   "overlap"  only buildings a new block overlaps by more than 1 m2.
 A case can also name a "keep_rd" ring: part of the site the scenario leaves
 standing (no demolition, old streets kept). It is written to the output as
@@ -111,8 +112,10 @@ CASES = [
      "planting_model": PLANTING_MODEL,  #"Proposed Vegetation" sublayer, see import_planting()
      "water_layer": "Water feature?"},  #top-level layer shared by both options, in OPTION 1's central green
     #OPTION 2 is a whole-site redesign: its blocks, roads and green cover 55 % of the site and overlap 1,008 of
-    #its 1,156 buildings, its green runs over most of the 2026-10-21 block, so the whole site is cleared, nothing kept
+    #its 1,156 buildings, so the site is cleared; the team keeps the same 2026-10-21 block as scenario_a
+    #(school, community buildings, workshops): no OPTION 2 block or street touches its buildings
     {"scenario": "scenario_b", "layer_prefix": "OPTION 2", "model": MODEL, "demolish": "site",
+     "keep_rd": KEEP_RD,  #same kept block as scenario_a, team decision 2026-10-23
      "planting_model": PLANTING_MODEL,  #"Proposed Vegetation - Copy" sublayer
      "water_layer": "Water feature?"},  #the shared pond: wholly in OPTION 2's green too, 12 m clear of its blocks
 ]
@@ -287,9 +290,10 @@ def _to_wgs_feature(geom_rd, props):
     return {"type": "Feature", "geometry": mapping(wgs), "properties": props}
 
 
-def import_planting(c, streets_rd=None):
+def import_planting(c, streets_rd=None, kept_rd=None):
     #"Proposed Vegetation" sublayer -> tree and shrub points plus green surfaces, all on the design site
     #streets_rd: this option's new streets (RD); green drawn under them is cut away, as under the water
+    #kept_rd: footprints of the existing buildings the scenario keeps (RD); green and plants inside them are dropped
     model = rhino3dm.File3dm.Read(str(c["planting_model"]))
     if model is None:
         sys.exit(f"could not read {c['planting_model']}")
@@ -338,6 +342,9 @@ def import_planting(c, streets_rd=None):
             if not site.contains(Point(x, y)):
                 n_off += 1
                 continue  #planted outside the design site
+            if kept_rd is not None and kept_rd.contains(Point(x, y)):
+                n_kind["in a kept building, dropped"] = n_kind.get("in a kept building, dropped", 0) + 1
+                continue  #OPTION 2 plants over the block it keeps
             n_kind[name] = n_kind.get(name, 0) + 1
             height = max(p[2] for p in allp) - z0  #modelled height, stood on the site ground below
             props = {
@@ -356,6 +363,9 @@ def import_planting(c, streets_rd=None):
             if fp is None or not fp.intersects(site):
                 continue  #the block definitions' own solids, left at the model origin
             top = max(p.Z for m in meshes(geom) for p in m.Vertices) / MM  #true top, the bounding box is loose
+            if top - base > 1.0 and kept_rd is not None and kept_rd.contains(fp.centroid):
+                n_kind["in a kept building, dropped"] = n_kind.get("in a kept building, dropped", 0) + 1
+                continue  #a solid bush standing in a building the scenario keeps
             if top - base > 1.0:
                 #a closed solid standing up from the ground: OPTION 2 draws 86 bushes this way, not as blocks
                 x0, y0, x1, y1 = fp.bounds
@@ -392,6 +402,11 @@ def import_planting(c, streets_rd=None):
     merged = unary_union(green)
     if pond is not None:
         merged = merged.difference(pond)
+    if kept_rd is not None and not kept_rd.is_empty:
+        cut = merged.intersection(kept_rd).area
+        merged = merged.difference(kept_rd)
+        if cut > 0.5:
+            print(f"  green: {cut:.0f} m2 over the buildings the scenario keeps cut away")
     if streets_rd is not None and not streets_rd.is_empty:
         cut = merged.intersection(streets_rd).area
         merged = merged.difference(streets_rd)
@@ -487,8 +502,10 @@ def main():
     }, indent=1)
     street_rd = {f["properties"]["scenario"]: transform(lambda x, y, z=None: to_rd(x, y), shape(f["geometry"]))
                  for f in streets}  #each option's new streets back in RD, to cut out of its green
+    fp_by_id = dict(footprints)  #pand id -> RD footprint
+    kept_rd = {sc: unary_union([fp_by_id[i] for i in ids]) for sc, ids in keeps.items() if ids}  #kept buildings per scenario
     planting = [f for c in CASES if c.get("planting_model")
-                for f in import_planting(c, street_rd.get(c["scenario"]))]  #proposed trees, shrubs, green, water
+                for f in import_planting(c, street_rd.get(c["scenario"]), kept_rd.get(c["scenario"]))]  #trees, shrubs, green, water
     water = [f for f in planting if f["properties"]["kind"] == "water"]  #existing trees standing in new water go too
     for c in CASES:  #tree set per scenario
         write_trees(c["scenario"], features + water, streets)
