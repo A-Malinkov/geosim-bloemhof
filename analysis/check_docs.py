@@ -241,6 +241,30 @@ def main() -> int:
             ("roads: A all candidates", r"^give\.\*\*|^\*\*Two links, \d+ m", f"all {rlinks['scenario_a']['n_candidates']} candidates", [ROADS]),
         ]
 
+    #morphology: the scenario results table on the design site (analysis/morphology/README.md)
+    MORPH = ROOT / "analysis/morphology/README.md"
+    scen = [("", "baseline"), ("_scenario_a", "scenario_a"), ("_scenario_b", "scenario_b")]
+    msvf = {k: load(f"svf_summary{s}.json") for s, k in scen}
+    if all(v and v.get("design_site") for v in msvf.values()):
+        for s, k in scen:
+            sv = msvf[k]["design_site"]["open_ground"]
+            checks += [(f"morph: SVF mean {k}", r"^\| SVF, mean \|", f"{sv['mean']:.3f}", [MORPH]),
+                       (f"morph: SVF median {k}", r"^\| SVF, median \|", f"{sv['median']:.3f}", [MORPH])]
+            for d, lab in (("", "20 Mar"), ("_2026-06-21", "21 Jun"), ("_2026-12-21", "21 Dec")):
+                sh = load(f"shadow_summary{s}{d}.json")
+                if sh and sh.get("design_site"):
+                    o = sh["design_site"]["open_ground_sunlit_hours"]
+                    checks.append((f"morph: sun {lab} mean {k}", rf"^\| sun {lab}, mean \|", f"{o['mean']:.2f} h", [MORPH]))
+                    if d != "_2026-06-21":
+                        checks.append((f"morph: sun {lab} <2h {k}", rf"^\| sun {lab}, share < 2 h \|",
+                                       f"{100 * o['share_under_2h']:.0f} %", [MORPH]))
+            hw = load(f"canyon_hw{s or '_baseline'}.json")
+            if hw and hw.get("design_site"):
+                h = hw["design_site"]
+                checks += [(f"morph: H/W median {k}", r"^\| street H/W, median \|", f"{h['hw']['median']:.2f}", [MORPH]),
+                           (f"morph: canyon share {k}", r"^\| street length that is canyon \|", f"{100 * h['canyon_share']:.0f} %", [MORPH]),
+                           (f"morph: W median {k}", r"^\| street width W, median \|", f"{h['w_m_median']:.1f} m", [MORPH])]
+
     import re
 
     lines_of = {}
@@ -343,6 +367,21 @@ def main() -> int:
     if rlinks and rlinks.get("scenario_b", {}).get("steps"):
         stb = rlinks["scenario_b"]["steps"]
         claims.append(("roads README: 'B: two links reach the ceiling'", len(stb) == 2 and stb[-1]["share_of_ceiling"] == 1.0))
+    #morphology scenario table, the sentences under it
+    g = lambda s, d="": (load(f"shadow_summary{s}{d}.json") or {}).get("design_site", {}).get("open_ground_sunlit_hours")
+    v = lambda s: (load(f"svf_summary{s}.json") or {}).get("design_site", {}).get("open_ground")
+    if all((g(s), v(s)) for s in ("", "_scenario_a", "_scenario_b")) and g("_scenario_b") and v("_scenario_b"):
+        hwb, hwx = load("canyon_hw_baseline.json"), load("canyon_hw_scenario_b.json")
+        claims += [
+            ("morph README: 'A: less sky'", v("_scenario_a")["mean"] < v("")["mean"]),
+            ("morph README: 'A: nearly twice today's share under 2 h at the equinox' (1.5x to 2x)",
+             1.5 <= g("_scenario_a")["share_under_2h"] / g("")["share_under_2h"] <= 2.0),
+            ("morph README: 'B opens it up on every measure'",
+             v("_scenario_b")["mean"] > v("")["mean"] and all(g("_scenario_b", d)["mean"] > g("", d)["mean"] for d in ("", "_2026-06-21", "_2026-12-21"))
+             and all(g("_scenario_b", d)["share_under_2h"] < g("", d)["share_under_2h"] for d in ("", "_2026-12-21"))),
+            ("morph README: 'B: about half its street length is not a canyon' (40-60 % canyon)",
+             bool(hwx and hwx.get("design_site")) and 0.4 <= hwx["design_site"]["canyon_share"] <= 0.6),
+        ]
     broken = [c for c, ok in claims if not ok]
 
     if not args.quiet:

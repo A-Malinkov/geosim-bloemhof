@@ -82,8 +82,8 @@ and the wall skipped. Medium 2's roof slopes everywhere, so it becomes one block
 at its mean roof height, 10.8 m, against a 13.3 m peak. Its blocks, roads and
 green cover 55 % of the site and overlap 1,008 of its 1,156 buildings, so the
 rule is the whole site, minus the same kept block as scenario_a: no OPTION 2
-block or street touches its buildings. It demolishes 1,150. No analysis has a
-scenario_b run yet; its outputs are stubs.
+block or street touches its buildings. It demolishes 1,150. SVF, sun hours, H/W and the
+walk network have scenario_b runs.
 
 ## Getting started
 
