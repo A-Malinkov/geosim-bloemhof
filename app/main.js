@@ -167,6 +167,38 @@ async function boot_() {
     });
   }
 
+  /* ---- then centre on the design site, the area we work on -------------- */
+  //the buurt framing above stays as the fallback if the site outline cannot be loaded
+  try {
+    const site = await fetch(CONFIG.designSite.boundary).then((r) => r.json());
+    const ring = site.features[0].geometry.type === "Polygon"
+      ? site.features[0].geometry.coordinates[0]
+      : site.features[0].geometry.coordinates[0][0];  //first polygon of a MultiPolygon
+    //site corners at street level: ground (-0.93 m NAP) lifted to the ellipsoid
+    const groundM = (CONFIG.designSite.groundNapM ?? -0.93) + CONFIG.napToEllipsoidM;
+    const sphere = Cesium.BoundingSphere.fromPoints(
+      ring.map(([lon, lat]) => Cesium.Cartesian3.fromDegrees(lon, lat, groundM)));
+    //range so the site's width fills about 70 % of the map left between the two side panels
+    const canvas = viewer.scene.canvas;
+    const rect = (id) => document.getElementById(id)?.getBoundingClientRect();
+    const left = rect("layerPanel")?.right ?? 0;  //map visible from here...
+    const right = rect("dashboard")?.left ?? canvas.clientWidth;  //...to here
+    const visibleW = Math.max(200, right - left);
+    const fov = viewer.camera.frustum.fov;  //Cesium's fov spans the wider side of the canvas
+    const hFov = canvas.clientWidth >= canvas.clientHeight ? fov
+      : 2 * Math.atan(Math.tan(fov / 2) * canvas.clientWidth / canvas.clientHeight);
+    const range = (2 * sphere.radius / 0.7) * (canvas.clientWidth / visibleW) / (2 * Math.tan(hFov / 2));
+    viewer.camera.viewBoundingSphere(sphere, new Cesium.HeadingPitchRange(
+      Cesium.Math.toRadians(sa.camera.headingDeg), Cesium.Math.toRadians(sa.camera.pitchDeg), range));
+    viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY);  //viewBoundingSphere locks the camera to the sphere: unlock
+    //shift sideways so the site sits mid-way between the panels, not mid-canvas under one of them
+    const dxPx = (left + right) / 2 - canvas.clientWidth / 2;
+    const mPerPx = 2 * range * Math.tan(hFov / 2) / canvas.clientWidth;
+    viewer.camera.moveLeft(dxPx * mPerPx);
+  } catch (err) {
+    console.warn("[main] design site outline unavailable, camera stays on the buurt", err);
+  }
+
   /* ======================================================================
    * ctx — the only API modules should rely on.
    * ==================================================================== */
