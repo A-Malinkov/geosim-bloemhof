@@ -34,9 +34,17 @@ streets. Then every crossing or touch between a scenario street and any other
 street becomes a junction, and an old street end within 5 m of a new street (or
 a new end within 5 m of an old street) is joined to it. OSM's own crossings are
 left alone, because there a crossing without a node is mostly a bridge. Graph
-nodes closer than 0.5 m are merged into one junction. In Scenario A that is 18
-free-end connectors, 8 crossings made junctions and 12 joins, 33 connectors, 135 m
+nodes closer than 0.5 m are merged into one junction. In Scenario A that is 20
+free-end connectors, 10 crossings made junctions and 14 joins, 37 connectors, 146 m
 in all after splitting; in Scenario B 7 connectors, 2 crossings and 6 joins.
+Old streets under a scenario's new blocks or its water are cut away first.
+
+**Hand-drawn paths.** Scenario A has one path the Rhino model does not: 125 m
+along the north edge of the green round the kept school, from the main street to
+Dubbelstraat (`paths_rd` in `analysis/scenarios/import_rhino.py`, team decision
+2026-10-23). The green's only path, the old diagonal, lies under the pond and a
+block corner. The path is walked here and drawn in the app; it is not a street
+canyon, so `height_width.py` leaves it out.
 Before 2026-10-23 the graph made no junction at those crossings and split two
 ends 0.1 m apart into two nodes, so Scenario A's main street was cut in two and
 its new streets did not meet Lange Hilleweg, Strevelsweg or Dubbelstraat. Eight
@@ -87,13 +95,13 @@ Network over each area. An edge counts in an area if its midpoint lies in it.
 
 | | study area, baseline | study area, Scenario A | study area, Scenario B | design site, baseline | design site, Scenario A | design site, Scenario B |
 |---|---|---|---|---|---|---|
-| nodes | 343 | 376 | 336 | 72 | 110 | 63 |
-| edges | 537 | 596 | 530 | 90 | 155 | 77 |
-| network length | 25.85 km | 26.89 km | 24.72 km | 4.83 km | 5.82 km | 3.62 km |
-| avg edge length | 48.1 m | 45.1 m | 46.6 m | 53.7 m | 37.5 m | 47.0 m |
-| intersection density | 402.1 /km² | 413.5 /km² | 375.4 /km² | 422.9 /km² | 506.0 /km² | 241.7 /km² |
+| nodes | 343 | 386 | 337 | 72 | 120 | 64 |
+| edges | 537 | 608 | 529 | 90 | 167 | 76 |
+| network length | 25.85 km | 26.98 km | 24.65 km | 4.83 km | 5.90 km | 3.55 km |
+| avg edge length | 48.1 m | 44.4 m | 46.6 m | 53.7 m | 35.3 m | 46.7 m |
+| intersection density | 402.1 /km² | 418.6 /km² | 375.4 /km² | 422.9 /km² | 536.2 /km² | 241.7 /km² |
 | circuity | 1.023 | 1.018 | 1.019 | 1.032 | 1.007 | 1.004 |
-| max edge betweenness | 0.1209 | 0.1183 | 0.1212 | 0.1067 | 0.1028 | 0.1129 |
+| max edge betweenness | 0.1209 | 0.1176 | 0.1213 | 0.1067 | 0.1021 | 0.1130 |
 
 Betweenness is a share of all shortest walks in the fetched network, so it
 changes on the site whenever the network round it does.
@@ -102,26 +110,29 @@ Mean walk to the nearest destination, design site.
 
 | | dwellings, baseline | dwellings, Scenario A | dwellings, Scenario B | site grid, baseline | site grid, Scenario A | site grid, Scenario B |
 |---|---|---|---|---|---|---|
-| shop | 234 m | 245 m | 230 m | 228 m | 217 m | 219 m |
-| education | 269 m | 281 m | 255 m | 258 m | 259 m | 277 m |
-| health care | 412 m | 434 m | 454 m | 411 m | 423 m | 419 m |
-| rail stop | 637 m | 621 m | 602 m | 613 m | 593 m | 608 m |
-| **mean of the four** | **387.9 m** | **395.3 m** | **385.2 m** | **377.4 m** | **373.0 m** | **380.7 m** |
+| shop | 234 m | 246 m | 236 m | 228 m | 216 m | 219 m |
+| education | 269 m | 278 m | 310 m | 258 m | 254 m | 280 m |
+| health care | 412 m | 434 m | 414 m | 411 m | 421 m | 416 m |
+| rail stop | 637 m | 621 m | 601 m | 613 m | 593 m | 607 m |
+| **mean of the four** | **387.9 m** | **394.8 m** | **390.6 m** | **377.4 m** | **371.3 m** | **380.6 m** |
 
 **Scenario A's street grid makes everyday walks on the site slightly shorter.**
-On the fixed grid the mean of the four falls from 377.4 m to 373.0 m, 4.4 m. The
-new grid has more junctions (423 to 506 per km²) and straighter streets
-(circuity 1.032 to 1.007). It gains on shops and rail stops and loses a little
-on health care. Before the network was repaired (2026-10-23) this read as 10 m
-longer; that was the broken junctions, not the design.
+On the fixed grid the mean of the four falls from 377.4 m to 371.3 m, 6.1 m. The
+new grid has more junctions (423 to 536 per km²) and straighter streets
+(circuity 1.032 to 1.007), and gains on shops, education and rail stops. That
+needs the hand-drawn path through the green round the kept school: without it
+that green has no path at all (the old diagonal lies under the pond and a block
+corner), 75 grid points there walk 180 to 200 m further to a school, and the
+mean is 377.8 m, level with today. Before the network was repaired
+(2026-10-23) A read as 10 m longer; that was broken junctions, not the design.
 
-**Scenario B's makes them slightly longer.** The grid mean rises to 380.7 m,
-3.3 m. B has far fewer streets on the site (3.62 km against 4.83 km today) and
+**Scenario B's makes them slightly longer.** The grid mean rises to 380.6 m,
+3.2 m. B has far fewer streets on the site (3.55 km against 4.83 km today) and
 fewer junctions (242 per km²), but they run straight (circuity 1.004), so it
 loses on education and wins on rail stops.
 
 **Residents' walks follow where they live as much as the network.** Site
-dwellings go from 387.9 m to 395.3 m in Scenario A and 385.2 m in Scenario B.
+dwellings go from 387.9 m to 394.8 m in Scenario A and 390.6 m in Scenario B.
 A puts 1,920 estimated dwellings on the site and B 1,250, against 1,027 today.
 
 **The neighbours do not notice.** Dwellings outside the site stay at 267.3 m
@@ -134,15 +145,15 @@ within 5 min in either scenario, 2 % do today.
 
 ### Footpath links, Scenario A
 
-25 candidates. J starts at 301.34 m, the ceiling is 300.51 m.
+25 candidates. J starts at 301.46 m, the ceiling is 300.63 m.
 
 | # | length | J saved | J | site dwellings | site grid | of ceiling |
 |---|---|---|---|---|---|---|
-| 1 | 46 m | 0.60 m | 300.75 m | 393.1 m | 372.5 m | 72 % |
-| 2 | 14 m | 0.18 m | 300.56 m | 392.4 m | 372.0 m | 94 % |
-| 3 | 35 m | 0.02 m | 300.54 m | 392.3 m | 371.7 m | 97 % |
-| 4 | 28 m | 0.02 m | 300.52 m | 392.2 m | 371.6 m | 99 % |
-| 5 | 28 m | 0.01 m | 300.51 m | 392.2 m | 371.5 m | 100 % |
+| 1 | 46 m | 0.60 m | 300.86 m | 392.6 m | 370.7 m | 72 % |
+| 2 | 14 m | 0.18 m | 300.68 m | 391.9 m | 370.3 m | 94 % |
+| 3 | 35 m | 0.02 m | 300.66 m | 391.8 m | 370.1 m | 97 % |
+| 4 | 28 m | 0.02 m | 300.64 m | 391.7 m | 369.9 m | 99 % |
+| 5 | 28 m | 0.01 m | 300.63 m | 391.7 m | 369.9 m | 100 % |
 
 **Two links, 59 m of footpath, take 94 % of what all 25 candidates could
 give.** Link 1 cuts diagonally across the south-west corner park to Strevelsweg.
@@ -152,20 +163,22 @@ under 0.03 m of J. The optimiser stops after five, when no candidate saves 1 mm.
 
 ### Footpath links, Scenario B
 
-6 candidates. J starts at 289.80 m, the ceiling is 289.52 m.
+6 candidates. J starts at 290.82 m, the ceiling is 290.13 m.
 
 | # | length | J saved | J | site dwellings | site grid | of ceiling |
 |---|---|---|---|---|---|---|
-| 1 | 71 m | 0.16 m | 289.64 m | 384.4 m | 379.2 m | 58 % |
-| 2 | 48 m | 0.12 m | 289.52 m | 383.8 m | 378.2 m | 100 % |
+| 1 | 48 m | 0.53 m | 290.29 m | 387.9 m | 379.5 m | 77 % |
+| 2 | 71 m | 0.16 m | 290.13 m | 387.0 m | 377.9 m | 100 % |
 
-**Two links reach the ceiling.** Link 1 is a park path from the central junction
-across the green to the kept school block's path. Link 2 joins the end of a new
-street to the north-east edge street.
+**Two links reach the ceiling.** Link 1 joins the end of a new street to the
+north-east edge street. Link 2 is a park path from the central junction across
+the green towards the kept school block.
 
 J is over the whole study area, so its changes look small. The site columns
 show where they land. Both layouts leave little for footpaths to add once their
-streets are joined up properly: the ceilings are 0.83 m (A) and 0.28 m (B) below J.
+streets are joined up properly: the ceilings are 0.83 m (A) and 0.69 m (B) below J.
+The optimiser could not have found the path through the school green in A: a
+candidate must join two street junctions, and that green had none.
 
 ## What it cannot tell you
 

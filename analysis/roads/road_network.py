@@ -218,8 +218,8 @@ def lines_for_scenario(edges, scenario, p):
     import pandas as pd
     import shapely
     from scenario_world import load_scenario, streets_for_scenario
-    s = streets_for_scenario(edges, scenario).explode(index_parts=False).reset_index(drop=True)
-    s["kind"] = np.where(s["name"].astype(str).str.endswith("new street"), "new", "osm")
+    s = streets_for_scenario(edges, scenario, paths=True).explode(index_parts=False).reset_index(drop=True)  #with hand-drawn paths
+    s["kind"] = np.where(s["name"].astype(str).str.endswith(("new street", " path")), "new", "osm")  #design streets and paths
     if scenario == "baseline":
         return s
     blocks = shapely.union_all(load_scenario(scenario)[0].geometry.values).buffer(-0.5)  #a connector may touch a wall

@@ -115,6 +115,22 @@ export async function setup(ctx) {
       await viewer.dataSources.add(ds);
       streetsByScenario.set(name, ds);
     }
+    //hand-drawn footpaths (kind "path", import_rhino.py paths_rd): a line on the ground, either geometry type
+    const paths = f.geometry?.type === "LineString" ? [f.geometry.coordinates]
+      : f.geometry?.type === "MultiLineString" ? f.geometry.coordinates : [];
+    for (const line of paths) {
+      streetsByScenario.get(name).entities.add({
+        name: f.properties.name ?? `${name} path`,
+        description: `<table><tr><td>footpath</td><td>${f.properties.length_m ?? "—"} m</td></tr>` +
+          `<tr><td>source</td><td>${f.properties.source ?? "—"}</td></tr></table>`,
+        polyline: {
+          positions: Cesium.Cartesian3.fromDegreesArray(line.flatMap(([x, y]) => [x, y])),
+          clampToGround: true,  //follows the terrain like the street surfaces
+          width: 4,
+          material: Cesium.Color.fromCssColorString("#d9c39a"),  //gravel path
+        },
+      });
+    }
     const polys = f.geometry?.type === "Polygon" ? [f.geometry.coordinates]
       : f.geometry?.type === "MultiPolygon" ? f.geometry.coordinates : [];
     for (const poly of polys) {

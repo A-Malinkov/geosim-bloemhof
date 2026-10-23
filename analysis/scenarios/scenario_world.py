@@ -173,8 +173,9 @@ def water_for(scenario: str):
             if f["properties"].get("scenario") == scenario and f["properties"].get("kind") == "water"]
 
 
-def streets_for_scenario(roads, scenario: str):
+def streets_for_scenario(roads, scenario: str, paths: bool = False):
     #OSM street centrelines (GeoDataFrame, RD) -> centrelines for the scenario
+    #paths=True also adds the footpaths the team drew by hand (walking network yes, street canyons no)
     import geopandas as gpd
     import pandas as pd
     from shapely.geometry import shape
@@ -189,18 +190,24 @@ def streets_for_scenario(roads, scenario: str):
     kept = kept[~kept.geometry.is_empty]
     stub = cut[kept.index] & kept.geometry.within(site) & (kept.geometry.length < 2 * EDGE_BAND_M)  #leftover ends of interior streets, untouched short edges stay
     kept = kept[~stub]
-    #no old street under the scenario's water: the pond lies over the diagonal Dubbelstraat and
-    #West-Pietermanstraat, which the kept block and the edge-street rule otherwise keep (2026-10-23)
+    #no old street under the scenario's water or its new blocks: the pond lies over the diagonal Dubbelstraat
+    #and West-Pietermanstraat, and blocks reach over Heer Danielstraat and Oudelandstraat, all of which the
+    #kept block and the edge-street rule otherwise keep (2026-10-23)
+    from shapely.geometry import shape as _shape
+    from shapely.ops import transform as _tf, unary_union
+    massing = json.loads((PROCESSED / "design_massing.geojson").read_text()).get("features", [])
+    blocks = [_tf(lambda x, y, z=None: to_rd(x, y), _shape(f["geometry"])).buffer(-0.5)  #a street may run along a wall
+              for f in massing if f["properties"].get("scenario") == scenario]
     water = water_for(scenario)
-    if water:
-        from shapely.ops import unary_union
-        pond = unary_union(water)
-        wet = kept.geometry.intersects(pond)
-        kept.loc[wet, "geometry"] = kept.geometry[wet].difference(pond)
+    if blocks or water:
+        cover = unary_union(blocks + water)
+        hit = kept.geometry.intersects(cover)
+        kept.loc[hit, "geometry"] = kept.geometry[hit].difference(cover)
         kept = kept[~kept.geometry.is_empty]
-        print(f"  {scenario}: {int(wet.sum())} old street pieces cut where the scenario's water lies")
+        print(f"  {scenario}: {int(hit.sum())} old street pieces cut where the scenario's water or new blocks lie")
     d = json.loads((PROCESSED / "design_streets.geojson").read_text())
-    polys = [shape(f["geometry"]) for f in d.get("features", []) if f["properties"].get("scenario") == scenario]
+    feats = [f for f in d.get("features", []) if f["properties"].get("scenario") == scenario]
+    polys = [shape(f["geometry"]) for f in feats if f["properties"].get("kind", "street") == "street"]  #street surfaces
     from shapely.ops import transform
     lines = []
     for p in polys:
@@ -209,5 +216,13 @@ def streets_for_scenario(roads, scenario: str):
             lines += centrelines(part)
     print(f"  {scenario}: OSM streets cut out of the site interior, {len(lines)} new centrelines "
           f"({sum(g.length for g in lines):.0f} m) added")
-    new = gpd.GeoDataFrame({"name": [f"{scenario} new street"] * len(lines)}, geometry=lines, crs=roads.crs)
+    names = [f"{scenario} new street"] * len(lines)
+    if paths:  #hand-drawn footpaths, already lines
+        drawn = [transform(lambda x, y, z=None: to_rd(x, y), shape(f["geometry"])) for f in feats
+                 if f["properties"].get("kind") == "path"]
+        lines += drawn
+        names += [f"{scenario} path"] * len(drawn)
+        if drawn:
+            print(f"  {scenario}: {len(drawn)} hand-drawn paths ({sum(g.length for g in drawn):.0f} m) added")
+    new = gpd.GeoDataFrame({"name": names}, geometry=lines, crs=roads.crs)
     return gpd.GeoDataFrame(pd.concat([kept, new], ignore_index=True), crs=roads.crs)

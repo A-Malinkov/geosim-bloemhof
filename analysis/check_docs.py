@@ -321,6 +321,8 @@ def main() -> int:
         g = lambda x: x["site_grid"]["mean_of_types_m"]
         claims += [
             ("roads README: 'Scenario A's grid makes walks on the site slightly shorter'", g(a) < g(b)),
+            ("roads README: 'A gains on shops, education and rail stops' (site grid)",
+             all(a["site_grid"][k]["mean_m"] < b["site_grid"][k]["mean_m"] for k in ("shop", "education", "rail_stop"))),
             ("roads README: 'Scenario B's makes them slightly longer'", g(bb) > g(b)),
             ("roads README: 'the neighbours do not notice' (under 2 m, both scenarios)",
              all(abs(x["areas"]["outside_site"]["mean_of_types_m"] - b["areas"]["outside_site"]["mean_of_types_m"]) < 2 for x in (a, bb))),

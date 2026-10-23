@@ -110,6 +110,10 @@ CASES = [
     {"scenario": "scenario_a", "layer_prefix": "OPTION 1", "model": MODEL, "demolish": "site",
      "keep_rd": KEEP_RD,  #new grid over the whole site except the 2026-10-21 block
      "planting_model": PLANTING_MODEL,  #"Proposed Vegetation" sublayer, see import_planting()
+     #paths the team adds that are not in the Rhino model, RD polylines: the green round the kept school
+     #lost its only path to the pond and a block corner, so one runs along its north edge, main street to
+     #Dubbelstraat, 4.6 m or more clear of the school, pond, blocks and trees (team decision 2026-10-23)
+     "paths_rd": [[(94041.0, 433960.5), (94100.0, 433960.5), (94150.0, 433959.0), (94163.0, 433950.0)]],
      "water_layer": "Water feature?"},  #top-level layer shared by both options, in OPTION 1's central green
     #OPTION 2 is a whole-site redesign: its blocks, roads and green cover 55 % of the site and overlap 1,008 of
     #its 1,156 buildings, so the site is cleared; the team keeps the same 2026-10-21 block as scenario_a
@@ -281,6 +285,24 @@ def import_streets(c):
             "area_m2": round(streets.area),
         },
     }]
+
+
+def design_paths(c):
+    #a case's hand-drawn paths (paths_rd) -> GeoJSON lines, kind "path", drawn and walked like the streets
+    from shapely.geometry import LineString
+    out = []
+    for k, pts in enumerate(c.get("paths_rd", []), 1):
+        g = LineString(pts)
+        out.append(_to_wgs_feature(g, {
+            "scenario": c["scenario"],
+            "name": f"{c['scenario']} path {k}",
+            "kind": "path",
+            "length_m": round(g.length, 1),
+            "source": "added by the team, not in the Rhino model (import_rhino.py CASES paths_rd)",
+        }))
+    if out:
+        print(f"  paths: {len(out)} added by hand, {sum(f['properties']['length_m'] for f in out):.0f} m")
+    return out
 
 
 def _to_wgs_feature(geom_rd, props):
@@ -476,6 +498,7 @@ def main():
         demolishes[c["scenario"]] = demolished(c, feats, footprints)  #ids the app hides with this massing
         keeps[c["scenario"]] = kept(c, footprints)  #ids the app colours with this massing
         streets += import_streets(c)  #new street surfaces of the same option
+        streets += design_paths(c)  #paths the team added by hand
     write_processed("design_massing.geojson", {
         "type": "FeatureCollection",
         "_written_by": "analysis/scenarios/import_rhino.py",
@@ -497,11 +520,13 @@ def main():
         "type": "FeatureCollection",
         "_written_by": "analysis/scenarios/import_rhino.py",
         "_source": f"{MODEL.name}, 'New ROADS' sublayers",
-        "_note": "Polygons in EPSG:4326, one per scenario, draped on the ground by the app.",
+        "_note": "EPSG:4326. kind 'street': one polygon per scenario, the Rhino street surfaces, draped on the "
+                 "ground by the app. kind 'path': lines the team added by hand (CASES paths_rd), walked by "
+                 "road_network.py, not street canyons for height_width.py.",
         "features": streets,
     }, indent=1)
     street_rd = {f["properties"]["scenario"]: transform(lambda x, y, z=None: to_rd(x, y), shape(f["geometry"]))
-                 for f in streets}  #each option's new streets back in RD, to cut out of its green
+                 for f in streets if f["properties"]["kind"] == "street"}  #each option's street surfaces in RD, cut out of its green
     fp_by_id = dict(footprints)  #pand id -> RD footprint
     kept_rd = {sc: unary_union([fp_by_id[i] for i in ids]) for sc, ids in keeps.items() if ids}  #kept buildings per scenario
     planting = [f for c in CASES if c.get("planting_model")

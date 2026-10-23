@@ -2,7 +2,7 @@
  "type": "FeatureCollection",
  "_written_by": "analysis/scenarios/import_rhino.py",
  "_source": "Group Project Q1 - Proposal Modelling_23.10.26.3dm, 'New ROADS' sublayers",
- "_note": "Polygons in EPSG:4326, one per scenario, draped on the ground by the app.",
+ "_note": "EPSG:4326. kind 'street': one polygon per scenario, the Rhino street surfaces, draped on the ground by the app. kind 'path': lines the team added by hand (CASES paths_rd), walked by road_network.py, not street canyons for height_width.py.",
  "features": [
   {
    "type": "Feature",
@@ -518,6 +518,37 @@
     "name": "scenario_a new streets",
     "kind": "street",
     "area_m2": 12984
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      4.5016596,
+      51.8908255
+     ],
+     [
+      4.5025166,
+      51.890832
+     ],
+     [
+      4.5032431,
+      51.890824
+     ],
+     [
+      4.5034335,
+      51.8907445
+     ]
+    ]
+   },
+   "properties": {
+    "scenario": "scenario_a",
+    "name": "scenario_a path 1",
+    "kind": "path",
+    "length_m": 124.8,
+    "source": "added by the team, not in the Rhino model (import_rhino.py CASES paths_rd)"
    }
   },
   {
