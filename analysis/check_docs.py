@@ -219,8 +219,8 @@ def main() -> int:
                  f"{a['network']['new_block_dwellings_est']:,} ", [ROADS]),
             ]
         if rm["scenario_a"].get("network"):
-            checks.append(("roads: connectors scenario_a", r"^free-end connectors",
-                           f"{rm['scenario_a']['network']['connectors']} connectors", [ROADS]))
+            checks.append(("roads: connectors scenario_a", r"^street end gets both\. In all, \d+ connector",
+                           f"{rm['scenario_a']['network']['connectors']} connector pieces", [ROADS]))
     for sc in ("scenario_a", "scenario_b"):
         if not (rlinks and rlinks.get(sc, {}).get("steps")):
             continue
@@ -347,7 +347,7 @@ def main() -> int:
             ("roads README: 'Scenario A's grid makes walks on the site slightly shorter'", g(a) < g(b)),
             ("roads README: 'A gains on shops, education and rail stops' (site grid)",
              all(a["site_grid"][k]["mean_m"] < b["site_grid"][k]["mean_m"] for k in ("shop", "education", "rail_stop"))),
-            ("roads README: 'Scenario B's makes them slightly longer'", g(bb) > g(b)),
+            ("roads README: 'Scenario B leaves them about where they are' (within 2 m)", abs(g(bb) - g(b)) < 2),
             ("roads README: 'the neighbours do not notice' (under 2 m, both scenarios)",
              all(abs(x["areas"]["outside_site"]["mean_of_types_m"] - b["areas"]["outside_site"]["mean_of_types_m"]) < 2 for x in (a, bb))),
             ("roads README: 'A has more junctions on the site, B fewer'",
@@ -362,11 +362,11 @@ def main() -> int:
         st = rlinks["scenario_a"]["steps"]
         claims += [
             ("roads README: 'after link 2 each link saves under 0.03 m of J'", all(x["gain_m"] < 0.03 for x in st[2:])),
-            ("roads README: 'A stops after five links'", len(st) == 5),
+            ("roads README: 'A stops after four links'", len(st) == 4),
         ]
     if rlinks and rlinks.get("scenario_b", {}).get("steps"):
         stb = rlinks["scenario_b"]["steps"]
-        claims.append(("roads README: 'B: two links reach the ceiling'", len(stb) == 2 and stb[-1]["share_of_ceiling"] == 1.0))
+        claims.append(("roads README: 'B: three links reach the ceiling'", len(stb) == 3 and stb[-1]["share_of_ceiling"] == 1.0))
     #morphology scenario table, the sentences under it
     g = lambda s, d="": (load(f"shadow_summary{s}{d}.json") or {}).get("design_site", {}).get("open_ground_sunlit_hours")
     v = lambda s: (load(f"svf_summary{s}.json") or {}).get("design_site", {}).get("open_ground")

@@ -287,6 +287,71 @@ def import_streets(c):
     }]
 
 
+LINK_TOL_M = 35.0  #street ends this close to an edge street get a link surface; road_network.py's snap_tol_m
+
+
+def street_links(c, surface_rd, blocks_rd):
+    #link surfaces where the Rhino street surface stops short of an edge street -> GeoJSON feature or []
+    #at a free street end, or a sharp corner (two streets meeting at < 150 deg), within LINK_TOL_M of the edge
+    #street; as wide as the street a few metres back, never through a new block. B's south corner stopped
+    #14 m short of Strevelsweg and was not joined to it on the map or in the walk network (2026-10-23)
+    import math
+    import geopandas as gpd
+    import shapely
+    from shapely.geometry import LineString
+    from shapely.ops import nearest_points
+    from scenario_world import EDGE_BAND_M, EDGE_STREETS, centrelines
+    site = design_site_polygon()
+    roads = gpd.read_file(RAW / "osm_roads.geojson").to_crs(28992)
+    edge = unary_union(roads[roads["name"].astype(str).str.contains("|".join(EDGE_STREETS))].geometry.values)
+    edge = edge.difference(site.buffer(-EDGE_BAND_M))  #the edge streets round the site, not Dubbelstraat's stretch through it
+    blocks = unary_union(blocks_rd).buffer(-0.5) if blocks_rd else None  #the option's new blocks, RD
+
+    def heading(g, k):
+        #direction away from end k over its first 5 m
+        a = g.coords[k]
+        b = g.interpolate(min(5.0, g.length) if k == 0 else max(g.length - 5.0, 0.0)).coords[0]
+        return math.atan2(b[1] - a[1], b[0] - a[0])
+
+    links, axes = [], []
+    for part in getattr(surface_rd, "geoms", [surface_rd]):
+        lines = centrelines(part)
+        for i, g in enumerate(lines):
+            for k in (0, -1):
+                p = Point(g.coords[k])
+                if any(j != i and lines[j].distance(p) < 0.5 and all(Point(lines[j].coords[kk]).distance(p) >= 0.5 for kk in (0, -1))
+                       for j in range(len(lines))):
+                    continue  #ends on another street's middle: a junction
+                meet = [(j, kk) for j, h in enumerate(lines) for kk in (0, -1)
+                        if (j, kk) != (i, k) and Point(h.coords[kk]).distance(p) < 0.5]
+                if len(meet) > 1:
+                    continue  #three or more streets: a junction
+                if meet:  #two streets meeting: a corner only if they turn sharply
+                    j, kk = meet[0]
+                    turn = abs((math.degrees(heading(g, k) - heading(lines[j], kk)) + 180) % 360 - 180)
+                    if turn > 150:
+                        continue  #nearly straight: one street running on
+                d = p.distance(edge)
+                if not 1.0 < d <= LINK_TOL_M:
+                    continue  #touching already, or too far
+                seg = LineString([p, nearest_points(p, edge)[1]])
+                if blocks is not None and seg.intersects(blocks):
+                    continue  #would run through a new block
+                back = g.interpolate(min(4.0, g.length / 2) if k == 0 else max(g.length - 4.0, g.length / 2))
+                half = max(2.0, part.exterior.distance(back))  #half the street width a few metres back
+                link = seg.buffer(half, cap_style="flat").difference(part).intersection(site)
+                if link.area > 2.0:
+                    links.append(link)
+                    axes.append(seg)  #the walking line along the link, street end to edge street
+    if not links:
+        return []
+    merged = unary_union(links)
+    print(f"  street links: {len(links)} ends joined to the edge streets, {merged.area:.0f} m2")
+    axes_wgs = [[[round(v, 7) for v in to_wgs(x, y)] for x, y in a.coords] for a in axes]  #lon/lat, for road_network.py
+    return [_to_wgs_feature(merged, {"scenario": c["scenario"], "name": f"{c['scenario']} street links",
+                                     "kind": "link", "area_m2": round(merged.area), "axes": axes_wgs})]
+
+
 def design_paths(c):
     #a case's hand-drawn paths (paths_rd) -> GeoJSON lines, kind "path", drawn and walked like the streets
     from shapely.geometry import LineString
@@ -497,7 +562,11 @@ def main():
         features += feats
         demolishes[c["scenario"]] = demolished(c, feats, footprints)  #ids the app hides with this massing
         keeps[c["scenario"]] = kept(c, footprints)  #ids the app colours with this massing
-        streets += import_streets(c)  #new street surfaces of the same option
+        new_streets = import_streets(c)  #new street surfaces of the same option
+        streets += new_streets
+        blocks_rd = [transform(lambda x, y, z=None: to_rd(x, y), shape(f["geometry"])) for f in feats]  #massing back to RD
+        for f in new_streets:
+            streets += street_links(c, transform(lambda x, y, z=None: to_rd(x, y), shape(f["geometry"])), blocks_rd)  #to the edge streets
         streets += design_paths(c)  #paths the team added by hand
     write_processed("design_massing.geojson", {
         "type": "FeatureCollection",
@@ -521,12 +590,17 @@ def main():
         "_written_by": "analysis/scenarios/import_rhino.py",
         "_source": f"{MODEL.name}, 'New ROADS' sublayers",
         "_note": "EPSG:4326. kind 'street': one polygon per scenario, the Rhino street surfaces, draped on the "
-                 "ground by the app. kind 'path': lines the team added by hand (CASES paths_rd), walked by "
-                 "road_network.py, not street canyons for height_width.py.",
+                 "ground by the app. kind 'link': surfaces joining street ends that stop short of an edge street "
+                 "to it (street_links), drawn and traced like the streets. kind 'path': lines the team added by "
+                 "hand (CASES paths_rd), walked by road_network.py, not street canyons for height_width.py.",
         "features": streets,
     }, indent=1)
-    street_rd = {f["properties"]["scenario"]: transform(lambda x, y, z=None: to_rd(x, y), shape(f["geometry"]))
-                 for f in streets if f["properties"]["kind"] == "street"}  #each option's street surfaces in RD, cut out of its green
+    street_rd = {}  #each option's street and link surfaces in RD, cut out of its green
+    for f in streets:
+        if f["properties"]["kind"] in ("street", "link"):
+            g = transform(lambda x, y, z=None: to_rd(x, y), shape(f["geometry"]))
+            sc = f["properties"]["scenario"]
+            street_rd[sc] = g if sc not in street_rd else street_rd[sc].union(g)
     fp_by_id = dict(footprints)  #pand id -> RD footprint
     kept_rd = {sc: unary_union([fp_by_id[i] for i in ids]) for sc, ids in keeps.items() if ids}  #kept buildings per scenario
     planting = [f for c in CASES if c.get("planting_model")

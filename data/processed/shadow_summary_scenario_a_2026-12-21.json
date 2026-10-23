@@ -35,8 +35,8 @@
   ],
   "all_cells_sunlit_hours": {
     "n_pixels": 1255120,
-    "mean": 1.933,
-    "std": 2.5602,
+    "mean": 1.9332,
+    "std": 2.5601,
     "min": 0.0,
     "p05": 0.0,
     "p25": 0.0,
@@ -46,9 +46,9 @@
     "max": 7.5
   },
   "open_ground_sunlit_hours": {
-    "n_pixels": 651576,
-    "mean": 0.653,
-    "std": 1.134,
+    "n_pixels": 651626,
+    "mean": 0.6533,
+    "std": 1.1342,
     "min": 0.0,
     "p05": 0.0,
     "p25": 0.0,
@@ -63,9 +63,9 @@
       "inhabitants": 13740,
       "raster_coverage_fraction": 0.6281,
       "open_ground_sunlit_hours": {
-        "n_pixels": 418482,
-        "mean": 0.5764,
-        "std": 1.0178,
+        "n_pixels": 418527,
+        "mean": 0.5769,
+        "std": 1.0182,
         "min": 0.0,
         "p05": 0.0,
         "p25": 0.0,
@@ -81,9 +81,9 @@
     "inhabitants": null,
     "raster_coverage_fraction": 0.6281,
     "open_ground_sunlit_hours": {
-      "n_pixels": 418482,
-      "mean": 0.5764,
-      "std": 1.0178,
+      "n_pixels": 418527,
+      "mean": 0.5769,
+      "std": 1.0182,
       "min": 0.0,
       "p05": 0.0,
       "p25": 0.0,
@@ -95,9 +95,9 @@
   },
   "design_site": {
     "open_ground_sunlit_hours": {
-      "n_pixels": 86466,
-      "mean": 0.4863,
-      "std": 0.9675,
+      "n_pixels": 86516,
+      "mean": 0.4888,
+      "std": 0.9692,
       "min": 0.0,
       "p05": 0.0,
       "p25": 0.0,
@@ -105,8 +105,8 @@
       "p75": 0.5,
       "p95": 3.0,
       "max": 5.5,
-      "share_under_2h": 0.8694,
-      "share_under_4h": 0.9878
+      "share_under_2h": 0.8683,
+      "share_under_4h": 0.9879
     }
   },
   "histogram": {
@@ -138,18 +138,18 @@
       7.5
     ],
     "counts": [
-      409974,
-      59955,
+      409928,
+      59922,
       0,
-      47108,
-      37312,
+      47122,
+      37323,
       0,
-      27304,
+      27354,
       0,
-      20369,
-      16261,
+      20408,
+      16272,
       0,
-      12162,
+      12166,
       8313,
       0,
       6290,

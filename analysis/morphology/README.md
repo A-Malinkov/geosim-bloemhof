@@ -280,16 +280,16 @@ Open ground only for SVF and sun hours, street length for H/W. Generated from
 
 | | baseline | Scenario A | Scenario B |
 |---|---|---|---|
-| SVF, mean | 0.714 | 0.646 | 0.784 |
-| SVF, median | 0.744 | 0.645 | 0.825 |
-| sun 20 Mar, mean | 4.30 h | 3.78 h | 5.96 h |
-| sun 21 Jun, mean | 8.61 h | 8.80 h | 10.18 h |
+| SVF, mean | 0.714 | 0.647 | 0.784 |
+| SVF, median | 0.744 | 0.646 | 0.825 |
+| sun 20 Mar, mean | 4.30 h | 3.78 h | 5.97 h |
+| sun 21 Jun, mean | 8.61 h | 8.80 h | 10.19 h |
 | sun 21 Dec, mean | 0.53 h | 0.49 h | 1.32 h |
 | sun 20 Mar, share < 2 h | 22 % | 40 % | 13 % |
 | sun 21 Dec, share < 2 h | 87 % | 87 % | 67 % |
 | street H/W, median | 0.39 | 0.48 | 0.28 |
-| street length that is canyon | 76 % | 75 % | 48 % |
-| street width W, median | 22.9 m | 25.3 m | 47.1 m |
+| street length that is canyon | 76 % | 74 % | 47 % |
+| street width W, median | 22.9 m | 24.6 m | 47.1 m |
 
 Demolition opens ground, so the open-ground means cover different areas in
 each column: quote the shares next to the means (CLAUDE.md). Scenario A's

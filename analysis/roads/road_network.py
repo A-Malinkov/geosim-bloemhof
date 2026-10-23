@@ -219,27 +219,30 @@ def lines_for_scenario(edges, scenario, p):
     import shapely
     from scenario_world import load_scenario, streets_for_scenario
     s = streets_for_scenario(edges, scenario, paths=True).explode(index_parts=False).reset_index(drop=True)  #with hand-drawn paths
-    s["kind"] = np.where(s["name"].astype(str).str.endswith(("new street", " path")), "new", "osm")  #design streets and paths
+    s["kind"] = np.where(s["name"].astype(str).str.endswith(("new street", " path", " link")), "new", "osm")  #design streets, paths, links
     if scenario == "baseline":
         return s
     blocks = shapely.union_all(load_scenario(scenario)[0].geometry.values).buffer(-0.5)  #a connector may touch a wall
     key = lambda c: (round(c[0], 1), round(c[1], 1))  #end points shared by two lines are a junction
-    ends = pd.Series([key(g.coords[k]) for g in s.geometry for k in (0, -1)]).value_counts()
+    link = s["name"].astype(str).str.endswith(" link").to_numpy()  #link axes do not make a street end a junction
+    ends = pd.Series([key(g.coords[k]) for g, lk in zip(s.geometry, link) if not lk for k in (0, -1)]).value_counts()
     tree = shapely.STRtree(s.geometry.values)
     cuts = {}  #line index -> distances along it where a connector lands
     conn = []
     for i, g in enumerate(s.geometry):
-        if s.at[i, "kind"] != "new":
-            continue
+        if s.at[i, "kind"] != "new" or link[i]:
+            continue  #free ends of the design's own streets only; a link axis already ends on its edge street
         for k in (0, -1):
             c = g.coords[k]
             if ends[key(c)] > 1:
                 continue  #already a junction
             pt = shapely.Point(c)
-            cand = [j for j in tree.query(pt.buffer(p["snap_tol_m"])) if j != i]
+            cand = [j for j in tree.query(pt.buffer(p["snap_tol_m"])) if j != i and not link[j]]  #not its own link axis
             if not cand:
                 continue
             j = min(cand, key=lambda j: s.geometry[j].distance(pt))
+            if s.geometry[j].distance(pt) < 0.05:
+                continue  #already on a street (a link axis ends on its edge street): node_scenario_lines joins it
             d = s.geometry[j].project(pt)
             q = s.geometry[j].interpolate(d)
             seg = shapely.LineString([c, q.coords[0]])
@@ -302,8 +305,11 @@ def node_scenario_lines(lines, blocks, scenario, p):
                 continue
             near = [j for j in tree.query(pt.buffer(p["join_tol_m"]))
                     if old[j] != old[i] and geoms[j].distance(pt) <= p["join_tol_m"]]  #the tree only checks boxes
-            if not near or any(geoms[j].distance(pt) < 0.05 for j in near):
-                continue  #nothing of the other family near, or it already meets one
+            meets = lambda j: geoms[j].intersects(pt) or min(shapely.Point(geoms[j].coords[0]).distance(pt),
+                                                             shapely.Point(geoms[j].coords[-1]).distance(pt)) < p["node_tol_m"]
+            if not near or any(meets(j) for j in near):
+                continue  #nothing of the other family near, or it already meets one: exactly, or at an end within node_tol
+            #a gap of even 4 cm is a gap: a link axis aimed at osm_roads.geojson ended 0.04 m off the walk network's street
             j = min(near, key=lambda j: geoms[j].distance(pt))
             d = geoms[j].project(pt)
             seg = shapely.LineString([c, geoms[j].interpolate(d).coords[0]])

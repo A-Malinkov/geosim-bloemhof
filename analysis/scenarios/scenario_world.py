@@ -125,7 +125,8 @@ def burn_into_rasters(dsm, dtm, transform, scenario: str):
     from shapely.ops import transform as shp_transform
     d = json.loads((PROCESSED / "design_streets.geojson").read_text())
     streets = [shp_transform(lambda x, y, z=None: to_rd(x, y), shape(f["geometry"]))
-               for f in d.get("features", []) if f["properties"].get("scenario") == scenario]
+               for f in d.get("features", []) if f["properties"].get("scenario") == scenario
+               and f["geometry"]["type"] in ("Polygon", "MultiPolygon")]  #surfaces only: a hand-drawn path is a line
     if streets:
         m = rasterize([(g, 1) for g in streets], out_shape=dsm.shape, transform=transform, dtype="uint8").astype(bool)
         dsm[m] = ground  #street surface
@@ -216,7 +217,22 @@ def streets_for_scenario(roads, scenario: str, paths: bool = False):
             lines += centrelines(part)
     print(f"  {scenario}: OSM streets cut out of the site interior, {len(lines)} new centrelines "
           f"({sum(g.length for g in lines):.0f} m) added")
-    names = [f"{scenario} new street"] * len(lines)
+    from shapely.geometry import LineString as _Line
+    axes = [transform(lambda x, y, z=None: to_rd(x, y), _Line(a)) for f in feats
+            if f["properties"].get("kind") == "link" for a in f["properties"].get("axes", [])]
+    #start each axis exactly on an end of the centrelines traced here: import_rhino.py traced its own copy, and
+    #an end that moved by more than the 0.5 m node tolerance left the axis loose (two odd footpath picks, 2026-10-23)
+    from shapely.geometry import Point as _Pt
+    tips = [c for g in lines for c in (g.coords[0], g.coords[-1])]
+    snapped = []
+    for a in axes:
+        p0 = a.coords[0]
+        best = min(tips, key=lambda c: (c[0] - p0[0]) ** 2 + (c[1] - p0[1]) ** 2) if tips else None
+        if best is not None and _Pt(best).distance(_Pt(p0)) < 3.0:
+            a = _Line([best[:2]] + list(a.coords)[1:])
+        snapped.append(a)
+    names = [f"{scenario} new street"] * len(lines) + [f"{scenario} link"] * len(snapped)  #links named apart
+    lines += snapped  #link axes: street ends to the edge streets they stop short of (import_rhino.py street_links)
     if paths:  #hand-drawn footpaths, already lines
         drawn = [transform(lambda x, y, z=None: to_rd(x, y), shape(f["geometry"])) for f in feats
                  if f["properties"].get("kind") == "path"]

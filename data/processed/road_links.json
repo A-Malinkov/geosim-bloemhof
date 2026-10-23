@@ -9,12 +9,12 @@
       "detour_min": 1.5,
       "reach_m": 20.0
     },
-    "n_candidates": 25,
-    "J_before_m": 301.46,
+    "n_candidates": 23,
+    "J_before_m": 301.45,
     "site_dwellings_before_m": 394.8,
-    "site_grid_before_m": 371.3,
-    "J_ceiling_m": 300.63,
-    "site_grid_ceiling_m": 369.7,
+    "site_grid_before_m": 371.2,
+    "J_ceiling_m": 300.64,
+    "site_grid_ceiling_m": 369.8,
     "site_grid_baseline_m": 377.4,
     "steps": [
       {
@@ -22,44 +22,35 @@
         "length_m": 45.5,
         "gain_m": 0.596,
         "J_m": 300.86,
-        "site_dwellings_m": 392.6,
+        "site_dwellings_m": 392.5,
         "site_grid_m": 370.7,
-        "share_of_ceiling": 0.719
+        "share_of_ceiling": 0.735
       },
       {
         "rank": 2,
         "length_m": 13.9,
         "gain_m": 0.185,
-        "J_m": 300.68,
+        "J_m": 300.67,
         "site_dwellings_m": 391.9,
-        "site_grid_m": 370.3,
-        "share_of_ceiling": 0.942
+        "site_grid_m": 370.2,
+        "share_of_ceiling": 0.963
       },
       {
         "rank": 3,
         "length_m": 35.2,
         "gain_m": 0.023,
-        "J_m": 300.66,
+        "J_m": 300.65,
         "site_dwellings_m": 391.8,
-        "site_grid_m": 370.1,
-        "share_of_ceiling": 0.97
-      },
-      {
-        "rank": 4,
-        "length_m": 27.8,
-        "gain_m": 0.018,
-        "J_m": 300.64,
-        "site_dwellings_m": 391.7,
-        "site_grid_m": 369.9,
+        "site_grid_m": 370.0,
         "share_of_ceiling": 0.992
       },
       {
-        "rank": 5,
+        "rank": 4,
         "length_m": 28.3,
         "gain_m": 0.007,
-        "J_m": 300.63,
+        "J_m": 300.64,
         "site_dwellings_m": 391.7,
-        "site_grid_m": 369.9,
+        "site_grid_m": 370.0,
         "share_of_ceiling": 1.0
       }
     ],
@@ -73,22 +64,22 @@
       "detour_min": 1.5,
       "reach_m": 20.0
     },
-    "n_candidates": 6,
+    "n_candidates": 10,
     "J_before_m": 290.82,
     "site_dwellings_before_m": 390.6,
-    "site_grid_before_m": 380.6,
-    "J_ceiling_m": 290.13,
-    "site_grid_ceiling_m": 376.2,
+    "site_grid_before_m": 378.0,
+    "J_ceiling_m": 290.07,
+    "site_grid_ceiling_m": 374.9,
     "site_grid_baseline_m": 377.4,
     "steps": [
       {
         "rank": 1,
         "length_m": 47.5,
-        "gain_m": 0.533,
+        "gain_m": 0.532,
         "J_m": 290.29,
         "site_dwellings_m": 387.9,
-        "site_grid_m": 379.5,
-        "share_of_ceiling": 0.767
+        "site_grid_m": 376.9,
+        "share_of_ceiling": 0.71
       },
       {
         "rank": 2,
@@ -96,7 +87,16 @@
         "gain_m": 0.162,
         "J_m": 290.13,
         "site_dwellings_m": 387.0,
-        "site_grid_m": 377.9,
+        "site_grid_m": 375.7,
+        "share_of_ceiling": 0.926
+      },
+      {
+        "rank": 3,
+        "length_m": 16.6,
+        "gain_m": 0.056,
+        "J_m": 290.07,
+        "site_dwellings_m": 386.7,
+        "site_grid_m": 375.0,
         "share_of_ceiling": 1.0
       }
     ],

@@ -17,8 +17,8 @@
   "unit": "street length; H/W statistics over canyon samples (buildings on both sides)",
   "per_buurt": {
     "Bloemhof": {
-      "street_km": 24.36,
-      "canyon_share": 0.623,
+      "street_km": 24.42,
+      "canyon_share": 0.622,
       "hw": {
         "median": 0.42,
         "mean": 0.46,
@@ -37,8 +37,8 @@
     }
   },
   "combined": {
-    "street_km": 24.36,
-    "canyon_share": 0.623,
+    "street_km": 24.42,
+    "canyon_share": 0.622,
     "hw": {
       "median": 0.42,
       "mean": 0.46,
@@ -56,8 +56,8 @@
     }
   },
   "design_site": {
-    "street_km": 3.51,
-    "canyon_share": 0.481,
+    "street_km": 3.61,
+    "canyon_share": 0.468,
     "hw": {
       "median": 0.28,
       "mean": 0.31,
