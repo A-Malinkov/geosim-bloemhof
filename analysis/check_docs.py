@@ -265,6 +265,18 @@ def main() -> int:
                            (f"morph: canyon share {k}", r"^\| street length that is canyon \|", f"{100 * h['canyon_share']:.0f} %", [MORPH]),
                            (f"morph: W median {k}", r"^\| street width W, median \|", f"{h['w_m_median']:.1f} m", [MORPH])]
 
+    #numbers in the DQN exploration table (analysis/abm_landuse/README.md)
+    for f, row in (("landuse_rl_dqn_use_g1_n1.json", r"^\| DQN, choose use, γ 1, one-step \|"),
+                   ("landuse_rl_dqn_use_g1_n5.json", r"^\| DQN, choose use, γ 1, 5-step \|")):
+        d = load(f)
+        if d:
+            for key in ("best_objective", "greedy_objective", "objective_last_decile_mean"):
+                checks.append((f"ABM: {f} {key}", row, f"{d[key]:.3f}", [ABM]))
+            checks.append((f"ABM: {f} random mean", row, f"{d['random_policy']['mean']:.3f}", [ABM]))
+            if d.get("hill_climb"):
+                checks.append(("ABM: hill climbing best", r"^\| hill climbing", f"{d['hill_climb']['best_objective']:.3f}", [ABM]))
+                checks.append(("ABM: hill climbing evaluations", r"^\| hill climbing", f"{d['hill_climb']['evaluations']:,}", [ABM]))
+
     import re
 
     lines_of = {}
@@ -381,6 +393,20 @@ def main() -> int:
              and all(g("_scenario_b", d)["share_under_2h"] < g("", d)["share_under_2h"] for d in ("", "_2026-12-21"))),
             ("morph README: 'B: about half its street length is not a canyon' (40-60 % canyon)",
              bool(hwx and hwx.get("design_site")) and 0.4 <= hwx["design_site"]["canyon_share"] <= 0.6),
+        ]
+    #DQN exploration runs (rl_dqn.py --action use) and the hill-climbing baseline
+    dx1, dx5 = load("landuse_rl_dqn_use_g1_n1.json"), load("landuse_rl_dqn_use_g1_n5.json")
+    if dx1 and dx5 and dx5.get("hill_climb") and rl and dqn:
+        hc = dx5["hill_climb"]["best_objective"]
+        claims += [
+            ("ABM README: 'neither variant learns a policy better than random'",
+             all(d["greedy_objective"] < d["random_policy"]["mean"] for d in (dx1, dx5))),
+            ("ABM README: 'five-step returns are worse' (greedy and last decile below one-step)",
+             dx5["greedy_objective"] < dx1["greedy_objective"] and dx5["objective_last_decile_mean"] < dx1["objective_last_decile_mean"]),
+            ("ABM README: 'hill climbing beats all of them'",
+             hc > max(dx1["best_objective"], dx5["best_objective"], rl["best_objective"], dqn["best_objective"])),
+            ("ABM README: 'every agent's best episode sits at about 2.48' (within 0.01)",
+             max(d["best_objective"] for d in (dx1, dx5, rl, dqn)) - min(d["best_objective"] for d in (dx1, dx5, rl, dqn)) < 0.01),
         ]
     broken = [c for c, ok in claims if not ok]
 

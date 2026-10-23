@@ -44,6 +44,22 @@ USAGE
     python analysis/abm_landuse/rl_dqn.py --episodes 120
     python analysis/abm_landuse/rl_dqn.py --episodes 120 --keep-housing
 
+EXPLORING (2026-10-23; the defaults above are the published runs, unchanged)
+---------
+    --action use      fill the site's cells one after another and choose only
+                      the USE of the current cell: 4 actions instead of
+                      ~750 (cell x use); the network gets a current-cell channel
+    --order shuffle   with --action use: a fresh random cell order per episode
+                      (scan = row by row)
+    --gamma 1.0       the reward is the change in the objective, so an
+                      episode's rewards sum to final minus start: no reason
+                      to discount within one fixed-length episode
+    --n-step 5        n-step returns: the reward reaches back 5 placements
+    --hill-climb N    baseline: hill climbing on the objective itself with N
+                      evaluations (single-cell changes, or swaps under
+                      --keep-housing), accepting equal moves
+    --out-dir DIR --tag NAME   write somewhere other than data/processed
+
 Needs PyTorch (CPU is enough; not in requirements.txt, see the note there):
     pip install --index-url https://download.pytorch.org/whl/cpu torch
 
@@ -96,7 +112,17 @@ def main() -> int:
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--keep-housing", action="store_true",
                     help="plan exactly as many residential cells as the site has today")
+    #exploration options; the defaults reproduce the published runs
+    ap.add_argument("--action", choices=["cell", "use"], default="cell",
+                    help="cell: choose cell x use (published); use: cells in turn, choose the use")
+    ap.add_argument("--order", choices=["scan", "shuffle"], default="shuffle", help="cell order for --action use")
+    ap.add_argument("--n-step", type=int, default=1, help="n-step returns (1 = one-step, published)")
+    ap.add_argument("--eps-decay", type=float, default=0.7, help="share of episodes over which epsilon falls")
+    ap.add_argument("--hill-climb", type=int, default=0, help="evaluations for a hill-climbing baseline (0 = off)")
+    ap.add_argument("--out-dir", default=str(PROCESSED), help="where the JSON and PNG go")
+    ap.add_argument("--tag", default="", help="extra suffix for the output names")
     args = ap.parse_args()
+    use_mode = args.action == "use"  #4 actions per step instead of every empty cell x use
 
     try:
         import torch
@@ -108,7 +134,9 @@ def main() -> int:
     from rasterio.features import rasterize as burn
     from scipy.ndimage import distance_transform_edt
 
-    tag = "_keep_housing" if args.keep_housing else ""
+    tag = ("_keep_housing" if args.keep_housing else "") + args.tag
+    out_dir = pathlib.Path(args.out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
     torch.manual_seed(args.seed)
     if args.threads:
         torch.set_num_threads(args.threads)
@@ -167,15 +195,21 @@ def main() -> int:
         return np.concatenate([shares, [placed / n_new, q_left]]).astype("float32")
 
     #stack every input channel: one-hot land use, empty mask, static layers, site-wide numbers
-    def inputs(gc: torch.Tensor, fc: torch.Tensor, gl: torch.Tensor) -> torch.Tensor:
-        """Batch of network inputs from cropped grids (B,H,W), free masks, globals."""
+    def inputs(gc: torch.Tensor, fc: torch.Tensor, gl: torch.Tensor, cur=None) -> torch.Tensor:
+        """Batch of network inputs from cropped grids (B,H,W), free masks, globals;
+        with --action use also the current cell (B,) as a flat crop index, -1 for none."""
         B = gc.shape[0]
         onehot = torch.nn.functional.one_hot(gc.long(), len(CLASSES)).permute(0, 3, 1, 2).float()
-        return torch.cat([onehot, fc[:, None].float(),
-                          static[None].expand(B, -1, -1, -1),
-                          gl[:, :, None, None].expand(-1, -1, H, W)], dim=1)
+        parts = [onehot, fc[:, None].float(), static[None].expand(B, -1, -1, -1),
+                 gl[:, :, None, None].expand(-1, -1, H, W)]
+        if use_mode:  #one more channel: which cell is being decided
+            cm = torch.zeros(B, H * W)
+            has = cur >= 0
+            cm[has, cur[has]] = 1.0
+            parts.append(cm.view(B, 1, H, W))
+        return torch.cat(parts, dim=1)
 
-    c_in = len(CLASSES) + 1 + 3 + N_GLOBAL  #8 one-hot + empty mask + 3 static + 6 site-wide = 18 channels
+    c_in = len(CLASSES) + 1 + 3 + N_GLOBAL + int(use_mode)  #8 one-hot + empty + 3 static + 6 site-wide (+ current cell)
     w = args.width
 
     #fully convolutional: the same small network looks at every cell, dilations widen its view
@@ -202,6 +236,18 @@ def main() -> int:
         valid = free[:, None] & ok[:, :, None, None]
         return q.masked_fill(~valid, float("-inf")).flatten(1)
 
+    #--action use: the current cell is given, the agent picks one of the 4 uses
+    def act_use(g, free, counts, n_resid, eps, cur):
+        n_free = int(free.sum())
+        ok = allowed(n_resid, n_free)
+        if rng.random() < eps:
+            return int(rng.choice(np.flatnonzero(ok)))
+        with torch.no_grad():
+            x = inputs(torch.tensor(g[crop][None]), torch.tensor(free[crop][None]),
+                       torch.tensor(glob(counts, n_free, n_resid)[None]), torch.tensor([cur]))
+            q = net(x)[0].flatten(1)[:, cur].masked_fill(~torch.tensor(ok), float("-inf"))  #Q of each use at this cell
+        return int(q.argmax())
+
     #epsilon-greedy over every empty cell x use, not a sample of cells
     def act(g, free, counts, n_resid, eps):
         n_free = int(free.sum())
@@ -222,6 +268,9 @@ def main() -> int:
         return ai, r0 + r_, c0 + c_
 
     #fill the site once; with learn=False it only plays (random baseline, greedy run)
+    cells0 = np.argwhere(site & (grid0 == VACANT))  #the cells to fill, row by row (--action use)
+    to_crop = lambda rc: int((rc[0] - r0) * W + (rc[1] - c0))  #grid cell -> flat crop index
+
     def run_episode(eps, learn=True):
         nonlocal steps
         g = grid0.copy()
@@ -229,11 +278,18 @@ def main() -> int:
         counts = np.zeros(len(PLACEABLE))
         n_resid = 0
         prev = cleared_obj
-        for _ in range(n_new):
+        order = (cells0[rng.permutation(len(cells0))] if args.order == "shuffle" else cells0) if use_mode else None
+        pending = deque()  #n-step window: transitions waiting for their later rewards
+        for t in range(n_new):
             n_free = int(free.sum())
             s_grid, s_free = g[crop].copy(), free[crop].copy()
             s_glob = glob(counts, n_free, n_resid)
-            ai, r_, c_ = act(g, free, counts, n_resid, eps)
+            if use_mode:
+                r_, c_ = order[t]
+                cur = to_crop(order[t])
+                ai = act_use(g, free, counts, n_resid, eps, cur)
+            else:
+                ai, r_, c_ = act(g, free, counts, n_resid, eps)
             g[r_, c_] = PLACEABLE[ai]
             free[r_, c_] = False
             counts[ai] += 1
@@ -244,10 +300,29 @@ def main() -> int:
             if not learn:
                 continue
             done = not free.any()  #last placement of the episode: no bootstrap after it
-            buf.append((s_grid, s_free, s_glob, ai, (r_ - r0) * W + (c_ - c0), reward,
-                        g[crop].copy(), free[crop].copy(),
-                        glob(counts, n_free - 1, n_resid),
-                        allowed(n_resid, n_free - 1), done))
+            if use_mode or args.n_step > 1:
+                nxt_cur = to_crop(order[t + 1]) if use_mode and not done else -1  #the cell decided next
+                pending.append([s_grid, s_free, s_glob, ai, (r_ - r0) * W + (c_ - c0), reward,
+                                g[crop].copy(), free[crop].copy(), glob(counts, n_free - 1, n_resid),
+                                allowed(n_resid, n_free - 1), done, 1.0, nxt_cur])
+                #once n rewards are in, or the episode ends, the oldest pending transition is complete
+                while pending and (len(pending) >= args.n_step or done):
+                    first = pending[0]
+                    R, gp = 0.0, 1.0
+                    for tr in pending:  #discounted sum of the next n rewards
+                        R += gp * tr[5]
+                        gp *= args.gamma
+                    last = pending[-1]
+                    buf.append((first[0], first[1], first[2], first[3], first[4], R,
+                                last[6], last[7], last[8], last[9], last[10], gp, last[12]))
+                    pending.popleft()
+                    if not done:
+                        break
+            else:  #the published one-step path, unchanged
+                buf.append((s_grid, s_free, s_glob, ai, (r_ - r0) * W + (c_ - c0), reward,
+                            g[crop].copy(), free[crop].copy(),
+                            glob(counts, n_free - 1, n_resid),
+                            allowed(n_resid, n_free - 1), done))
             steps += 1
             if len(buf) >= args.warmup and steps % args.train_every == 0:  #learn every few steps once the buffer has enough
                 train_step()
@@ -258,6 +333,8 @@ def main() -> int:
     #one gradient step on a random minibatch from the replay memory
     def train_step():
         batch = [buf[i] for i in rng.integers(len(buf), size=args.batch)]
+        if use_mode or args.n_step > 1:
+            return train_step_n(batch)
         sg, sf, sgl, a, cell, r, ng, nf, ngl, nok, d = zip(*batch)
         sg = torch.tensor(np.stack(sg)); sf = torch.tensor(np.stack(sf))
         ng = torch.tensor(np.stack(ng)); nf = torch.tensor(np.stack(nf))
@@ -280,15 +357,95 @@ def main() -> int:
         nn.utils.clip_grad_norm_(net.parameters(), 10.0)  #cap the gradient so one big error cannot wreck the weights
         opt.step()
 
+    #n-step / --action use version of the update: discount gamma^n, current-cell channel
+    def train_step_n(batch):
+        sg, sf, sgl, a, cell, r, ng, nf, ngl, nok, d, gp, ncur = zip(*batch)
+        T = lambda v, **k: torch.tensor(np.stack(v) if isinstance(v[0], np.ndarray) else v, **k)
+        sg, sf, sgl, ng, nf, ngl, nok = (T(v) for v in (sg, sf, sgl, ng, nf, ngl, nok))
+        a, cell, ncur = torch.tensor(a), torch.tensor(cell), torch.tensor(ncur)
+        r, d, gp = (torch.tensor(v, dtype=torch.float32) for v in (r, d, gp))
+        cur = cell if use_mode else None
+        q = net(inputs(sg, sf, sgl, cur)).flatten(1)
+        q_sa = q.gather(1, (a * H * W + cell)[:, None]).squeeze(1)  #Q of the action taken
+        with torch.no_grad():
+            xn = inputs(ng, nf, ngl, ncur if use_mode else None)
+            if use_mode:  #next decision: the 4 uses at the next cell
+                at = ncur.clamp(min=0)
+                qn = net(xn).flatten(2)[torch.arange(len(at)), :, at].masked_fill(~nok, float("-inf"))
+                best = qn.argmax(1)
+                q_next = tgt(xn).flatten(2)[torch.arange(len(at)), best, at]
+                q_next = torch.where(torch.isfinite(qn.max(1).values), q_next, torch.zeros_like(q_next))
+            else:
+                best = masked_q(net(xn), nf, nok).argmax(1, keepdim=True)
+                q_next = tgt(xn).flatten(1).gather(1, best).squeeze(1)
+                q_next = torch.where(torch.isfinite(q_next), q_next, torch.zeros_like(q_next))
+            target = r + gp * (1 - d) * q_next  #n-step TD target: gp = gamma^n
+        loss = nn.functional.smooth_l1_loss(q_sa, target)
+        opt.zero_grad()
+        loss.backward()
+        nn.utils.clip_grad_norm_(net.parameters(), 10.0)
+        opt.step()
+
+    #baseline: hill climbing on the objective itself, its own random generator
+    def hill_climb(budget):
+        hr = np.random.default_rng(args.seed + 1)
+        cells = [tuple(c) for c in cells0]
+        g = grid0.copy()
+        uses = hr.choice(len(PLACEABLE), size=len(cells))
+        if quota is not None:  #start from a plan that keeps the rule: exactly quota residential cells
+            uses = hr.choice([i for i in range(len(PLACEABLE)) if i != RES_I], size=len(cells))
+            uses[hr.choice(len(cells), size=quota, replace=False)] = RES_I
+        for (r_, c_), u in zip(cells, uses):
+            g[r_, c_] = PLACEABLE[u]
+        cur = objective(g, args.cell, site)
+        best, best_g, evals, accepted = cur, g.copy(), 1, 0
+        while evals < budget:
+            i = int(hr.integers(len(cells)))
+            r_, c_ = cells[i]
+            old = g[r_, c_]
+            if quota is not None and hr.random() < 0.5:  #under the housing rule, half the moves are swaps
+                #swap a residential and a non-residential cell: the count stays at the quota
+                j = int(hr.choice([k for k, (rr, cc) in enumerate(cells) if (g[rr, cc] == RESID) != (old == RESID)]))
+                r2, c2 = cells[j]
+                g[r_, c_], g[r2, c2] = g[r2, c2], g[r_, c_]
+                new = objective(g, args.cell, site); evals += 1
+                if new >= cur:
+                    cur, accepted = new, accepted + 1
+                else:
+                    g[r_, c_], g[r2, c2] = g[r2, c2], g[r_, c_]
+            else:
+                choices = [PLACEABLE[k] for k in range(len(PLACEABLE))
+                           if PLACEABLE[k] != old and (quota is None or (PLACEABLE[k] == RESID) == (old == RESID))]
+                if not choices:
+                    continue
+                g[r_, c_] = hr.choice(choices)
+                new = objective(g, args.cell, site); evals += 1
+                if new >= cur:  #accept equal moves too, so it can walk along plateaus
+                    cur, accepted = new, accepted + 1
+                else:
+                    g[r_, c_] = old
+            if cur > best:
+                best, best_g = cur, g.copy()
+        if quota is not None:
+            assert int((best_g[site] == RESID).sum()) == quota
+        return best, best_g, evals, accepted
+
     steps = 0
     # the baseline to beat: the same problem with every action random
     rand = [run_episode(1.0, learn=False)[0] for _ in range(args.random_episodes)]  #random policy: eps 1, no learning
     print(f"  random policy over {len(rand)} episodes: mean {np.mean(rand):.4f}, "
           f"best {np.max(rand):.4f}")
     curve, best_obj, best_grid = [], -1e9, None
-    decay = max(1, int(0.7 * args.episodes))
+    hc = None
+    if args.hill_climb:
+        th = time.time()
+        hb, hg, he, ha = hill_climb(args.hill_climb)
+        hc = {"evaluations": he, "accepted_moves": ha, "best_objective": round(hb, 4),
+              "score": site_score(hg, args.cell, site), "seconds": round(time.time() - th, 1)}
+        print(f"  hill climbing, {he} evaluations: best {hb:.4f} ({time.time() - th:.0f} s)")
+    decay = max(1, int(args.eps_decay * args.episodes))
     for ep in range(args.episodes):
-        eps = max(0.05, 1.0 - 0.95 * ep / decay)  #linear from 1.0 to 0.05 over the first 70 % of episodes
+        eps = max(0.05, 1.0 - 0.95 * ep / decay)  #linear from 1.0 to 0.05 over the first eps_decay share of episodes
         final, g = run_episode(eps)
         curve.append(round(final, 4))
         if final > best_obj:
@@ -321,6 +478,8 @@ def main() -> int:
                        "batch": args.batch, "buffer": args.buffer, "warmup": args.warmup,
                        "target_sync": args.target_sync, "train_every": args.train_every,
                        "eps_start": 1.0, "eps_end": 0.05,
+                       "action": args.action, "order": args.order if use_mode else None,
+                       "n_step": args.n_step, "eps_decay": args.eps_decay,
                        "seed": args.seed, "programme_cells": n_new,
                        "housing_rule": (f"exactly {quota} residential cells (as today)"
                                         if quota is not None else "none")},
@@ -343,29 +502,31 @@ def main() -> int:
                           "sd": round(float(np.std(rand)), 4),
                           "best": round(float(np.max(rand)), 4)},
         "greedy_score": greedy_score,
+        "hill_climb": hc,  #direct optimisation of the same objective, the baseline any learner should beat
         "training_seconds": round(secs, 1),
         "grid": {"nx": nx, "ny": ny},
         "colours": COLOURS,
         "png": f"landuse_rl_dqn{tag}_best.png",
         "bbox_wgs84": export_grid_png(best_grid, transform, "EPSG:28992",
-                                      PROCESSED / f"landuse_rl_dqn{tag}_best.png"),
+                                      out_dir / f"landuse_rl_dqn{tag}_best.png"),
         "best_grid": best_grid.tolist(),
         "greedy_grid": greedy_grid.tolist(),
         "today_grid": grid_now.tolist(),
         "site_mask": site.astype(int).tolist(),
     }
-    (PROCESSED / f"landuse_rl_dqn{tag}.json").write_text(json.dumps(out) + "\n")
+    (out_dir / f"landuse_rl_dqn{tag}.json").write_text(json.dumps(out) + "\n")
 
     print(f"\n  learning: {first:.4f} (first 10% of episodes) -> {last:.4f} (last 10%)   "
           f"{'LEARNED' if last > first else 'NO IMPROVEMENT'}")
     print(f"  best objective {best_obj:.4f}, greedy policy {greedy_obj:.4f}, "
           f"random policy mean {np.mean(rand):.4f} (best {np.max(rand):.4f}), "
-          f"site today {base_obj:.4f}")
+          f"site today {base_obj:.4f}"
+          + (f", hill climbing {hc['best_objective']:.4f}" if hc else ""))
     for name, sc in (("best plan", score), ("greedy plan", greedy_score)):
         print(f"  {name:11} -> mix {sc['landuse_mix']:.3f}, green {100*sc['green_share']:.1f}%, "
               f"amenity {sc['mean_distance_to_amenity_m']} m, "
               f"{sc['residential_cells']} residential cells (today {base_score['residential_cells']})")
-    print(f"  {secs:.0f} s; wrote data/processed/landuse_rl_dqn{tag}.json")
+    print(f"  {secs:.0f} s; wrote {out_dir / f'landuse_rl_dqn{tag}.json'}")
     return 0
 
 

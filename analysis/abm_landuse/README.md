@@ -23,6 +23,8 @@ python analysis/abm_landuse/rl_landuse.py --episodes 120   # ~90 s
 python analysis/abm_landuse/rl_landuse.py --episodes 120 --keep-housing
 python analysis/abm_landuse/rl_dqn.py --episodes 120        # ~25 min, needs PyTorch
 python analysis/abm_landuse/rl_dqn.py --episodes 120 --keep-housing
+python analysis/abm_landuse/rl_dqn.py --action use --gamma 1.0 --n-step 5 --episodes 300 \
+    --hill-climb 56400 --tag _use_g1_n5   # exploration, ~80 min; see 'Trying to make the DQN learn'
 python analysis/abm_landuse/weight_sensitivity.py --step 0.01  # ~2 s, no model re-run; 0.01 is the published lattice
 ```
 
@@ -274,11 +276,52 @@ the best of the 30 random episodes scores 1.352 as well, so that is a lucky
 exploratory episode, not learning. In both runs its greedy policy and its last
 episodes score *below the random policy*. A CNN with 70,000 weights gets under 6,000 gradient steps in 120
 episodes, far too few; the linear agent's 13 weights per use learn much faster
-from the same experience. More episodes, reward shaping or a policy-gradient
-method might change this, at hours of CPU per run. The random baseline also puts
+from the same experience. The obvious fixes were tried next, below; they do not
+change this. The random baseline also puts
 the linear agent in proportion: on a cleared site, a random mix of four uses
 already scores 2.36, so the agent's gain is 0.12, and under the housing rule
 0.02 (`fig_landuse_rl_comparison.png`).
+
+### Trying to make the DQN learn, and a direct optimiser to compare
+
+Three changes aimed at the reasons above, all options of `rl_dqn.py` whose
+defaults reproduce the published runs bit for bit (2026-10-23):
+
+- `--action use`: fill the site's cells one after another and let the agent
+  choose only the use of the current cell, 4 actions instead of about 750.
+- `--gamma 1.0`: the reward is the change in the objective, so an episode's
+  rewards sum to final minus start; at 0.95 the agent saw about 20 of its 188
+  placements ahead.
+- `--n-step 5`: each update looks five rewards ahead.
+
+And a baseline the learners should beat: `--hill-climb`, hill climbing on the
+objective itself (change one cell's use, keep the change if the objective does
+not fall), given the same number of objective evaluations as 300 episodes of
+188 placements. No housing rule, 300 episodes each, about 83 min per run:
+
+| objective over the site | random, mean | best episode | greedy policy | last 10 % of episodes |
+|---|---|---|---|---|
+| DQN, choose use, γ 1, one-step | 2.377 | 2.479 | 2.262 | 2.397 |
+| DQN, choose use, γ 1, 5-step | 2.377 | 2.480 | 1.709 | 1.909 |
+| hill climbing, 56,400 evaluations, 10 s | | **2.484** | | |
+
+(`landuse_rl_dqn_use_g1_n1.json`, `landuse_rl_dqn_use_g1_n5.json`; the random
+policy differs from the table above because it now fills cells in turn.)
+
+**Neither variant learns a policy better than random.** One-step returns end
+where random play does, 2.397 against 2.377, and the greedy policy scores below
+it. Five-step returns are worse: the plans hold up while the agent still
+explores and collapse once it stops, the usual sign of Q-values overestimating,
+which an undiscounted 5-step target feeds. Every agent's best episode, linear
+or deep, sits at about 2.48: that is what exploration finds, not what is learnt.
+
+**Hill climbing beats all of them in 10 seconds.** It reaches 2.484 and stops
+there, a local optimum (65 of its moves were kept). The objective can be
+computed for any plan in 0.12 ms, so optimising it directly is the right tool
+here; reinforcement learning would only earn its place by learning something
+that carries over, a policy for another site, which none of these runs tests.
+Like every agent's, its plan keeps 33 residential cells against 160 today,
+because nothing in the objective values homes.
 
 ## Honest limitations
 
