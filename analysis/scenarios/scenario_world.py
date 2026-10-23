@@ -161,6 +161,18 @@ def centrelines(poly, step: float = 1.0, prune_m: float = 6.0):
     return [g for g in merged if g.length >= prune_m or not spur(g)]  #drop short dead ends only, keep short links at junctions
 
 
+def water_for(scenario: str):
+    #the scenario's open water (RD polygons) from import_rhino.py's planting file; [] if it has none
+    from shapely.geometry import shape
+    from shapely.ops import transform
+    path = PROCESSED / "design_planting.geojson"
+    if scenario == "baseline" or not path.exists():
+        return []
+    feats = json.loads(path.read_text()).get("features", [])
+    return [transform(lambda x, y, z=None: to_rd(x, y), shape(f["geometry"])) for f in feats
+            if f["properties"].get("scenario") == scenario and f["properties"].get("kind") == "water"]
+
+
 def streets_for_scenario(roads, scenario: str):
     #OSM street centrelines (GeoDataFrame, RD) -> centrelines for the scenario
     import geopandas as gpd
@@ -177,6 +189,16 @@ def streets_for_scenario(roads, scenario: str):
     kept = kept[~kept.geometry.is_empty]
     stub = cut[kept.index] & kept.geometry.within(site) & (kept.geometry.length < 2 * EDGE_BAND_M)  #leftover ends of interior streets, untouched short edges stay
     kept = kept[~stub]
+    #no old street under the scenario's water: the pond lies over the diagonal Dubbelstraat and
+    #West-Pietermanstraat, which the kept block and the edge-street rule otherwise keep (2026-10-23)
+    water = water_for(scenario)
+    if water:
+        from shapely.ops import unary_union
+        pond = unary_union(water)
+        wet = kept.geometry.intersects(pond)
+        kept.loc[wet, "geometry"] = kept.geometry[wet].difference(pond)
+        kept = kept[~kept.geometry.is_empty]
+        print(f"  {scenario}: {int(wet.sum())} old street pieces cut where the scenario's water lies")
     d = json.loads((PROCESSED / "design_streets.geojson").read_text())
     polys = [shape(f["geometry"]) for f in d.get("features", []) if f["properties"].get("scenario") == scenario]
     from shapely.ops import transform

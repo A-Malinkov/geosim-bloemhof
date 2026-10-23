@@ -88,12 +88,12 @@ Network over each area. An edge counts in an area if its midpoint lies in it.
 | | study area, baseline | study area, Scenario A | study area, Scenario B | design site, baseline | design site, Scenario A | design site, Scenario B |
 |---|---|---|---|---|---|---|
 | nodes | 343 | 376 | 336 | 72 | 110 | 63 |
-| edges | 537 | 597 | 531 | 90 | 156 | 78 |
-| network length | 25.85 km | 26.96 km | 24.78 km | 4.83 km | 5.88 km | 3.68 km |
-| avg edge length | 48.1 m | 45.2 m | 46.7 m | 53.7 m | 37.7 m | 47.2 m |
-| intersection density | 402.1 /km² | 414.8 /km² | 376.7 /km² | 422.9 /km² | 513.5 /km² | 249.2 /km² |
+| edges | 537 | 596 | 530 | 90 | 155 | 77 |
+| network length | 25.85 km | 26.89 km | 24.72 km | 4.83 km | 5.82 km | 3.62 km |
+| avg edge length | 48.1 m | 45.1 m | 46.6 m | 53.7 m | 37.5 m | 47.0 m |
+| intersection density | 402.1 /km² | 413.5 /km² | 375.4 /km² | 422.9 /km² | 506.0 /km² | 241.7 /km² |
 | circuity | 1.023 | 1.018 | 1.019 | 1.032 | 1.007 | 1.004 |
-| max edge betweenness | 0.1209 | 0.1183 | 0.1212 | 0.1067 | 0.1029 | 0.1129 |
+| max edge betweenness | 0.1209 | 0.1183 | 0.1212 | 0.1067 | 0.1028 | 0.1129 |
 
 Betweenness is a share of all shortest walks in the fetched network, so it
 changes on the site whenever the network round it does.
@@ -102,22 +102,22 @@ Mean walk to the nearest destination, design site.
 
 | | dwellings, baseline | dwellings, Scenario A | dwellings, Scenario B | site grid, baseline | site grid, Scenario A | site grid, Scenario B |
 |---|---|---|---|---|---|---|
-| shop | 234 m | 245 m | 230 m | 228 m | 217 m | 220 m |
-| education | 269 m | 281 m | 255 m | 258 m | 259 m | 275 m |
-| health care | 412 m | 434 m | 454 m | 411 m | 423 m | 420 m |
+| shop | 234 m | 245 m | 230 m | 228 m | 217 m | 219 m |
+| education | 269 m | 281 m | 255 m | 258 m | 259 m | 277 m |
+| health care | 412 m | 434 m | 454 m | 411 m | 423 m | 419 m |
 | rail stop | 637 m | 621 m | 602 m | 613 m | 593 m | 608 m |
-| **mean of the four** | **387.9 m** | **395.3 m** | **385.2 m** | **377.4 m** | **372.9 m** | **380.6 m** |
+| **mean of the four** | **387.9 m** | **395.3 m** | **385.2 m** | **377.4 m** | **373.0 m** | **380.7 m** |
 
 **Scenario A's street grid makes everyday walks on the site slightly shorter.**
-On the fixed grid the mean of the four falls from 377.4 m to 372.9 m, 4.5 m. The
-new grid has more junctions (423 to 514 per km²) and straighter streets
+On the fixed grid the mean of the four falls from 377.4 m to 373.0 m, 4.4 m. The
+new grid has more junctions (423 to 506 per km²) and straighter streets
 (circuity 1.032 to 1.007). It gains on shops and rail stops and loses a little
 on health care. Before the network was repaired (2026-10-23) this read as 10 m
 longer; that was the broken junctions, not the design.
 
-**Scenario B's makes them slightly longer.** The grid mean rises to 380.6 m,
-3.2 m. B has far fewer streets on the site (3.68 km against 4.83 km today) and
-fewer junctions (249 per km²), but they run straight (circuity 1.004), so it
+**Scenario B's makes them slightly longer.** The grid mean rises to 380.7 m,
+3.3 m. B has far fewer streets on the site (3.62 km against 4.83 km today) and
+fewer junctions (242 per km²), but they run straight (circuity 1.004), so it
 loses on education and wins on rail stops.
 
 **Residents' walks follow where they live as much as the network.** Site
@@ -134,15 +134,15 @@ within 5 min in either scenario, 2 % do today.
 
 ### Footpath links, Scenario A
 
-25 candidates. J starts at 301.33 m, the ceiling is 300.50 m.
+25 candidates. J starts at 301.34 m, the ceiling is 300.51 m.
 
 | # | length | J saved | J | site dwellings | site grid | of ceiling |
 |---|---|---|---|---|---|---|
-| 1 | 46 m | 0.60 m | 300.73 m | 393.0 m | 372.4 m | 72 % |
-| 2 | 14 m | 0.18 m | 300.55 m | 392.3 m | 371.9 m | 94 % |
-| 3 | 35 m | 0.02 m | 300.53 m | 392.3 m | 371.7 m | 97 % |
-| 4 | 28 m | 0.02 m | 300.51 m | 392.2 m | 371.6 m | 99 % |
-| 5 | 28 m | 0.01 m | 300.50 m | 392.2 m | 371.5 m | 100 % |
+| 1 | 46 m | 0.60 m | 300.75 m | 393.1 m | 372.5 m | 72 % |
+| 2 | 14 m | 0.18 m | 300.56 m | 392.4 m | 372.0 m | 94 % |
+| 3 | 35 m | 0.02 m | 300.54 m | 392.3 m | 371.7 m | 97 % |
+| 4 | 28 m | 0.02 m | 300.52 m | 392.2 m | 371.6 m | 99 % |
+| 5 | 28 m | 0.01 m | 300.51 m | 392.2 m | 371.5 m | 100 % |
 
 **Two links, 59 m of footpath, take 94 % of what all 25 candidates could
 give.** Link 1 cuts diagonally across the south-west corner park to Strevelsweg.

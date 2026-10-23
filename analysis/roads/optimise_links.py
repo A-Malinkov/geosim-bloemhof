@@ -70,25 +70,12 @@ CASES = [
 
 
 # --------------------------------------------------------------- candidates
-def water_for(scenario):
-    #the scenario's open water (RD polygons) from import_rhino.py's planting file
-    from shapely.geometry import shape
-    from shapely.ops import transform
-    from common.project import to_rd
-    path = PROCESSED / "design_planting.geojson"
-    if not path.exists():
-        return []
-    feats = json.loads(path.read_text()).get("features", [])
-    return [transform(lambda x, y, z=None: to_rd(x, y), shape(f["geometry"])) for f in feats
-            if f["properties"].get("scenario") == scenario and f["properties"].get("kind") == "water"]
-
-
 def candidates(net, scenario, c):
     #straight links between site nodes that cross no building and save a detour -> array (i, j, length)
     import geopandas as gpd
     import shapely
     from scipy.sparse.csgraph import dijkstra
-    from scenario_world import buildings_for_scenario, site_footprints
+    from scenario_world import buildings_for_scenario, site_footprints, water_for  #water_for: the scenario's pond
     site = design_site_polygon()
     fp = site_footprints()
     b = gpd.GeoDataFrame({"identificatie": [i for i, _ in fp], "height_m": np.nan},
