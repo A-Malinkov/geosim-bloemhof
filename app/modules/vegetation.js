@@ -44,12 +44,13 @@ function buildPrimitives(ctx, features) {
     const ground = (p.ground_nap_m ?? 0) + lift;
 
     const total = Math.max(2, p.height_m ?? 9);
-    const trunkH = Math.max(0.8, Math.min(p.trunk_height_m ?? total * 0.4, total * 0.8));
+    const shrub = p.kind === "shrub";  //proposed bushes and hedges: a crown standing on the ground, no trunk
+    const trunkH = shrub ? 0 : Math.max(0.8, Math.min(p.trunk_height_m ?? total * 0.4, total * 0.8));
     const crownH = Math.max(1.2, total - trunkH);
     const crownR = Math.max(0.8, (p.crown_m ?? 5) / 2);
     const trunkR = Math.max(0.08, (p.trunk_diameter_cm ?? 30) / 200);
 
-    trunks.push(new Cesium.GeometryInstance({
+    if (!shrub) trunks.push(new Cesium.GeometryInstance({
       geometry: new Cesium.CylinderGeometry({
         length: trunkH,
         topRadius: trunkR * 0.8,
@@ -82,7 +83,7 @@ function buildPrimitives(ctx, features) {
           crownColour(Cesium, total).withAlpha(0.95),
         ),
       },
-      id: { kind: "tree", ...p },
+      id: { ...p, kind: p.kind ?? "tree" },  //register trees have no kind; proposed ones say tree or shrub
     }));
   }
 
@@ -95,9 +96,9 @@ function buildPrimitives(ctx, features) {
   // while every building around them cast a shadow.
   const shadows = Cesium.ShadowMode.ENABLED;
   return [
-    new Cesium.Primitive({ geometryInstances: trunks, appearance, asynchronous: true, shadows }),
-    new Cesium.Primitive({ geometryInstances: crowns, appearance, asynchronous: true, shadows }),
-  ];
+    trunks.length && new Cesium.Primitive({ geometryInstances: trunks, appearance, asynchronous: true, shadows }),
+    crowns.length && new Cesium.Primitive({ geometryInstances: crowns, appearance, asynchronous: true, shadows }),
+  ].filter(Boolean);  //a shrub-only set has no trunks, and an empty Primitive throws
 }
 
 /* ========================================================================== */
@@ -210,6 +211,8 @@ export async function setup(ctx) {
   function describe(picked) {
     if (!picked) return null;
     const id = picked.id;
+    if (id && id.proposed)  //planting from the Rhino model: a generic block, no species
+      return `Proposed ${id.kind} (${id.block}) · ${id.height_m} m, crown ${id.crown_m} m · ${id.scenario}`;
     if (id && (id.kind === "tree" || id.kind === "tree-trunk"))
       return (
         `${id.species_nl || id.species} · ${id.height_class || id.height_m + " m"}` +
@@ -245,4 +248,106 @@ export async function setup(ctx) {
    * data/processed/trees_<scenario>.geojson next to trees.geojson and it will
    * replace the baseline set when that scenario is selected. */
   ctx.onScenarioChange((scenario) => { current = scenario; apply(); });  //apply() keeps the checkbox state
+
+  /* ---- proposed planting -------------------------------------------------
+   * Trees, shrubs and green surfaces drawn in the Rhino model, imported by
+   * analysis/scenarios/import_rhino.py. Shown only on their own scenario. */
+  const plant = await ctx.loadJson("../data/processed/design_planting.geojson", { quiet: true });
+  if (!plant?.features?.length) return;  //no scenario has planting yet
+  const C2 = ctx.Cesium;
+  const planting = new Map();  //scenario -> { tree, shrub, green, counts }
+  for (const f of plant.features) {
+    const p = f.properties || {};
+    if (!planting.has(p.scenario)) planting.set(p.scenario, { feats: { tree: [], shrub: [], green: [], water: [] } });
+    planting.get(p.scenario).feats[p.kind]?.push(f);
+  }
+  async function drape(id, feats, what, colour) {
+    //flat surfaces draped on the terrain, as the new streets are; hidden until applyPlanting() decides
+    const ds = new C2.CustomDataSource(id);
+    ds.show = false;
+    const toCart = (ring) => C2.Cartesian3.fromDegreesArray(ring.flat());
+    for (const f of feats) {
+      const polys = f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.coordinates;  //shapely can return either
+      for (const poly of polys) {
+        ds.entities.add({
+          name: f.properties.name,
+          description: `<table><tr><td>${what}</td><td>${f.properties.area_m2} m²</td></tr></table>`,
+          polygon: {
+            hierarchy: new C2.PolygonHierarchy(toCart(poly[0]), poly.slice(1).map((h) => new C2.PolygonHierarchy(toCart(h)))),  //holes kept
+            classificationType: C2.ClassificationType.TERRAIN,  //drape on the ground, over the aerial photo
+            material: C2.Color.fromCssColorString(colour).withAlpha(0.85),
+          },
+        });
+      }
+    }
+    await viewer.dataSources.add(ds);
+    return ds;
+  }
+  const areaOf = (feats) => feats.reduce((a, f) => a + (f.properties.area_m2 ?? 0), 0);  //m²
+
+  for (const [sc, set] of planting) {
+    const { tree, shrub, green, water } = set.feats;
+    //trees and shrubs as batched primitives, like the register trees
+    set.tree = buildPrimitives(ctx, tree);
+    set.shrub = buildPrimitives(ctx, shrub);
+    [...set.tree, ...set.shrub].forEach((x) => { x.show = false; viewer.scene.primitives.add(x); });
+    set.green = await drape(`planting-green-${sc}`, green, "proposed green", "#6fbf4a");  //grass green, water already cut out
+    set.water = await drape(`planting-water-${sc}`, water, "proposed water", "#3d8fd6");  //pond blue
+    set.area = areaOf(green);
+    set.waterArea = areaOf(water);
+  }
+
+  //panel: proposed planting of the current scenario under the register figures; before the layers, whose onToggle renders it at once
+  const plantBox = document.createElement("div");
+  body.appendChild(plantBox);
+
+  const plantOn = { tree: true, shrub: true, green: true, water: true };  //one checkbox per kind
+  function applyPlanting() {
+    //each kind shows only on its own scenario, and only when its checkbox is ticked
+    for (const [sc, set] of planting) {
+      const here = sc === current;
+      set.tree.forEach((x) => { x.show = plantOn.tree && here; });
+      set.shrub.forEach((x) => { x.show = plantOn.shrub && here; });
+      set.green.show = plantOn.green && here;
+      set.water.show = plantOn.water && here;
+    }
+    renderPlanting();
+    viewer.scene.requestRender();  //low-power mode redraws only when asked
+  }
+
+  //labels name the scenarios that have planting, e.g. "Proposed trees (scenario_a: 64)"
+  const having = (kind) => [...planting].filter(([, s]) => s.feats[kind].length);  //scenarios with this kind only
+  const count = (kind) => having(kind).map(([sc, s]) => `${sc}: ${s.feats[kind].length}`).join(", ");
+  const LABELS = {
+    tree: `Proposed trees (${count("tree")})`,
+    shrub: `Proposed shrubs (${count("shrub")})`,
+    green: `Proposed green areas (${having("green").map(([sc, s]) => `${sc}: ${(s.area / 1e4).toFixed(2)} ha`).join(", ")})`,
+    water: `Proposed water (${having("water").map(([sc, s]) => `${sc}: ${s.waterArea.toLocaleString("en-GB")} m²`).join(", ")})`,
+  };
+  for (const kind of ["tree", "shrub", "green", "water"]) {
+    if (![...planting.values()].some((s) => s.feats[kind].length)) continue;  //no scenario has this kind, no checkbox
+    ctx.registerLayer({
+      id: `planting-${kind}`,
+      label: LABELS[kind],
+      group: "Vegetation",
+      show: true,  //on, but only visible on a scenario that has planting
+      onToggle: (v) => { plantOn[kind] = v; applyPlanting(); },
+    });
+  }
+
+  function renderPlanting() {
+    const set = planting.get(current);
+    plantBox.innerHTML = !set ? "" :
+      `<h4>Proposed planting — ${current}</h4>` +
+      `<table class="kv"><tbody>` +
+      `<tr><td>new trees</td><td>${set.feats.tree.length}</td></tr>` +
+      `<tr><td>new shrubs</td><td>${set.feats.shrub.length}</td></tr>` +
+      `<tr><td>green areas</td><td>${set.feats.green.length} · ${(set.area / 1e4).toFixed(2)} ha</td></tr>` +
+      (set.waterArea ? `<tr><td>water</td><td>${set.waterArea.toLocaleString("en-GB")} m²</td></tr>` : "") +  //"Water feature?" layer
+      `</tbody></table>` +
+      `<p class="muted">From the Rhino model's generic blocks: sizes as drawn, no species.</p>`;
+  }
+
+  ctx.onScenarioChange((scenario) => { current = scenario; applyPlanting(); });  //not relying on handler order
+  applyPlanting();
 }

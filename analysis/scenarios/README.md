@@ -19,11 +19,12 @@ The app treats a stub as "no data" and shows a placeholder until you overwrite i
 - To make the other components respond to your scenarios, write per-scenario outputs with matching keys (`baseline`, `scenario_a`, `scenario_b`). Every module already listens for the switch.
 - For SVF and wind per scenario, burn the massing into a copy of the AHN DSM and re-run the morphology and wind scripts.
 
-## Scenario A comes from the team's Rhino model
+## Scenarios A and B come from the team's Rhino model
 
-`import_rhino.py` reads the `OPTION 1` layer tree of
-`Group Project Q1 - Proposal Modelling_16.10.26.3dm` (from Modelling.zip on the
-shared drive, copied to `data/raw/`, gitignored) and writes it as `scenario_a`.
+`import_rhino.py` reads the `OPTION 1` and `OPTION 2` layer trees of
+`Group Project Q1 - Proposal Modelling_23.10.26.3dm` (from Modelling on the
+shared drive, copied to `data/raw/`, gitignored) and writes them as `scenario_a`
+and `scenario_b`. OPTION 1 comes out of 23.10 exactly as it did out of 16.10.
 
 ```bash
 python analysis/scenarios/import_rhino.py
@@ -46,15 +47,39 @@ covers. Set it per case in `CASES`.
 
 The flat surfaces on the `New ROADS` sublayer go to `design_streets.geojson`,
 merged into one shape and clipped to the site. The app drapes them on the ground
-while that scenario's massing is shown. Green areas and fences are not imported yet.
+while that scenario's massing is shown. Fences are not imported.
+
+Each option's `Proposed Vegetation` sublayer goes to `design_planting.geojson`,
+kept apart from the massing so that no analysis sees the proposed trees (the
+team's choice for SVF and heights). For scenario_a that is
+64 trees and 124 shrubs (points at the trunk, with a height and crown measured
+from each block after its instance transform) and 16 green patches, 2.32 ha. All
+of it lies on the site and none of it on a new block or street. The one surface
+on the top-level `Water feature?` layer (1,082 m², in the central green by
+Dubbelstraat) is imported as water and cut out of the green. It is under
+neither option. The same pond is scenario_b's: it lies wholly in OPTION 2's green,
+12 m clear of its blocks, so both scenarios carry it. For scenario_b the layer
+holds 99 trees, 87 shrubs (86 of them drawn as 4 m solids rather than blocks,
+imported as points like the rest) and 9 green patches, 4.35 ha, after the pond
+and 1,693 m² of green drawn under its new streets are cut away. The
+blocks are generic shapes with no species, some bushes are scaled to 7.3 m and
+one scenario_b tree to 50 m with a 38 m crown, so the sizes are what was drawn,
+not a planting plan. The app shows them under
+Vegetation (`app/modules/vegetation.js`) on their own scenario only. No analysis
+uses them yet: SVF and sun hours burn in buildings only.
 
 `scenario_world.py` turns those files into what each analysis needs: a building
 table (H/W, noise), a DSM and DTM with the scenario burned in (SVF, sun hours),
 and street centrelines with the old interior grid swapped for the new one (H/W).
 
-`OPTION 2` is not imported yet. In the 16.10 model it holds one freeform volume
-that reaches 18 m below ground. Add it to `CASES` as `scenario_b` once it is
-modelled as solids.
+`OPTION 2` (scenario_b) is ten freeform blocks, 7.3 to 27.2 m, 20,719 m² of
+footprint, and 6,696 m² of new streets. Two need a fix on the way in. Tall 1 is
+an open roof surface plus a separate wall, so the roof is stood on the ground
+and the wall skipped. Medium 2's roof slopes everywhere, so it becomes one block
+at its mean roof height, 10.8 m, against a 13.3 m peak. Its blocks, roads and
+green cover 55 % of the site and overlap 1,008 of its 1,156 buildings, and its
+green runs over most of the 2026-10-21 block, so the rule is the whole site and
+nothing is kept. No analysis has a scenario_b run yet; its outputs are stubs.
 
 ## Getting started
 

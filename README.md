@@ -273,7 +273,7 @@ numbers here still match `data/processed/`.
 
 | # | Component | Status | Owner |
 |---|---|---|---|
-| 4.1 | 3D city model + proposed massing | existing buildings ✅ · design site chosen ✅ · scenario_a massing ✅ (Rhino OPTION 1) · **scenario_b not modelled yet** | — |
+| 4.1 | 3D city model + proposed massing | existing buildings ✅ · design site chosen ✅ · scenario_a massing ✅ (Rhino OPTION 1) · scenario_b massing ✅ (Rhino OPTION 2, no analysis runs yet) | — |
 | 4.2 | Geospatial data layers | ✅ done | — |
 | 4.3 | Urban morphological indicators | ✅ done — SVF 0.696, GSI 0.333, FSI 1.003, mix 0.267, Bloemhof; plus street H/W and direct-sun hours. SVF, sun hours and H/W also run for scenario_a | Atanas |
 | 4.4 | KNMI sensors + AI prediction | ✅ done — live feed, sensors, 5 y history, model comparison | Atanas |
