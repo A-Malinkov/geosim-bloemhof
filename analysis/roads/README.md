@@ -15,8 +15,8 @@ python analysis/roads/road_network.py      # first run fetches OSM into cache/ro
 python analysis/roads/optimise_links.py    # needs road_network.py's output, about 15 s
 ```
 
-Both have one case dict per scenario in `CASES`. `scenario_b` is written as
-not computed until it has massing.
+Both have one case dict per scenario in `CASES`: baseline, scenario_a and
+scenario_b (the optimiser skips the baseline, see below).
 
 ## Method
 
@@ -29,8 +29,18 @@ cuts the old streets out of the site interior and adds centrelines traced from
 the new street surfaces, the same helper street H/W uses. The surfaces in the
 Rhino model stop short of the edge streets in places, so each free end of a new
 centreline is joined to the nearest street within 35 m by a straight connector
-that crosses no new block. 18 connectors, 117 m in all. They assume the design's
-streets meet the edge streets. The edge streets themselves (Lange Hilleweg,
+that crosses no new block. They assume the design's streets meet the edge
+streets. Then every crossing or touch between a scenario street and any other
+street becomes a junction, and an old street end within 5 m of a new street (or
+a new end within 5 m of an old street) is joined to it. OSM's own crossings are
+left alone, because there a crossing without a node is mostly a bridge. Graph
+nodes closer than 0.5 m are merged into one junction. In Scenario A that is 18
+free-end connectors, 8 crossings made junctions and 12 joins, 33 connectors, 135 m
+in all after splitting; in Scenario B 7 connectors, 2 crossings and 6 joins.
+Before 2026-10-23 the graph made no junction at those crossings and split two
+ends 0.1 m apart into two nodes, so Scenario A's main street was cut in two and
+its new streets did not meet Lange Hilleweg, Strevelsweg or Dubbelstraat. Eight
+of the ten footpath links the optimiser chose then only repaired that. The edge streets themselves (Lange Hilleweg,
 Sandelingstraat, Dortsmondstraat, Dubbelstraat, Strevelsweg) are kept whole by
 name, because Strevelsweg runs up to 20 m inside the site outline.
 
@@ -38,7 +48,7 @@ name, because Strevelsweg runs up to 20 m inside the site outline.
 the addresses in demolished buildings and adds the new blocks' dwellings,
 estimated as footprint × storeys (height / 3 m) × 0.8 net/gross / 73 m², the
 median BAG dwelling on the site today. That gives 1,920 dwellings in Scenario A
-against 1,027 today, each block's at its centroid.
+and 1,250 in Scenario B, against 1,027 today, each block's at its centroid.
 
 **Destinations.** Shops (BAG winkelfunctie), education (onderwijsfunctie),
 health care (gezondheidszorgfunctie) and rail stops (OSM tram, metro and train).
@@ -62,83 +72,100 @@ they mix the network effect with the new housing. The *site grid* is the same
 nearest shop, education, health care and rail stop, equal weights over the
 four, dwelling-weighted over the whole study area. Candidates are straight
 footpaths between two network nodes on the site or within 20 m of it, 10 to
-150 m long, at most 20 m off the site, crossing no building, meeting the network
-only at their two nodes, and saving a detour of at least 1.5× the straight line.
-Greedy adds the candidate that lowers J most, re-scores the rest, and repeats
-ten times. The ceiling is J with all candidates at once.
+150 m long, at most 20 m off the site, crossing no building and no water,
+starting or ending on the design's own network (a new street or connector),
+meeting the network only at their two nodes, and saving a detour of at least
+1.5× the straight line. The own-network rule keeps out links that only mend a
+gap OSM has today too, such as a footway ending 2 m short of Lange Hilleweg at
+the site's west tip. Greedy adds the candidate that lowers J most, re-scores the
+rest, and repeats up to ten times, stopping when no candidate lowers J by 1 mm.
+The ceiling is J with all candidates at once.
 
 ## Results
 
 Network over each area. An edge counts in an area if its midpoint lies in it.
 
-| | study area, baseline | study area, Scenario A | design site, baseline | design site, Scenario A |
-|---|---|---|---|---|
-| nodes | 343 | 373 | 72 | 105 |
-| edges | 537 | 574 | 90 | 126 |
-| network length | 25.85 km | 26.94 km | 4.83 km | 5.86 km |
-| avg edge length | 48.1 m | 46.9 m | 53.7 m | 46.5 m |
-| intersection density | 402.1 /km² | 408.4 /km² | 422.9 /km² | 453.1 /km² |
-| circuity | 1.023 | 1.019 | 1.032 | 1.007 |
-| max edge betweenness | 0.1209 | 0.1187 | 0.1067 | 0.1035 |
+| | study area, baseline | study area, Scenario A | study area, Scenario B | design site, baseline | design site, Scenario A | design site, Scenario B |
+|---|---|---|---|---|---|---|
+| nodes | 343 | 376 | 336 | 72 | 110 | 63 |
+| edges | 537 | 597 | 531 | 90 | 156 | 78 |
+| network length | 25.85 km | 26.96 km | 24.78 km | 4.83 km | 5.88 km | 3.68 km |
+| avg edge length | 48.1 m | 45.2 m | 46.7 m | 53.7 m | 37.7 m | 47.2 m |
+| intersection density | 402.1 /km² | 414.8 /km² | 376.7 /km² | 422.9 /km² | 513.5 /km² | 249.2 /km² |
+| circuity | 1.023 | 1.018 | 1.019 | 1.032 | 1.007 | 1.004 |
+| max edge betweenness | 0.1209 | 0.1183 | 0.1212 | 0.1067 | 0.1029 | 0.1129 |
 
 Betweenness is a share of all shortest walks in the fetched network, so it
-changed on the site too when the network shrank with the study area; every other
-design-site figure is unchanged.
+changes on the site whenever the network round it does.
 
 Mean walk to the nearest destination, design site.
 
-| | dwellings, baseline | dwellings, Scenario A | site grid, baseline | site grid, Scenario A |
-|---|---|---|---|---|
-| shop | 234 m | 250 m | 228 m | 222 m |
-| education | 269 m | 300 m | 258 m | 283 m |
-| health care | 412 m | 450 m | 411 m | 444 m |
-| rail stop | 637 m | 628 m | 613 m | 600 m |
-| **mean of the four** | **387.9 m** | **407.2 m** | **377.4 m** | **387.3 m** |
+| | dwellings, baseline | dwellings, Scenario A | dwellings, Scenario B | site grid, baseline | site grid, Scenario A | site grid, Scenario B |
+|---|---|---|---|---|---|---|
+| shop | 234 m | 245 m | 230 m | 228 m | 217 m | 220 m |
+| education | 269 m | 281 m | 255 m | 258 m | 259 m | 275 m |
+| health care | 412 m | 434 m | 454 m | 411 m | 423 m | 420 m |
+| rail stop | 637 m | 621 m | 602 m | 613 m | 593 m | 608 m |
+| **mean of the four** | **387.9 m** | **395.3 m** | **385.2 m** | **377.4 m** | **372.9 m** | **380.6 m** |
 
-**Scenario A's street layout makes everyday walks on the site slightly
-longer.** On the fixed grid the mean of the four rises from 377.4 m to 387.3 m,
-10 m. The new grid has more junctions (423 to 453 per km²) and straighter streets
-(circuity 1.032 to 1.007). It loses on education and health care, which lie
-across the long east-west streets, and gains a little on shops and rail stops.
+**Scenario A's street grid makes everyday walks on the site slightly shorter.**
+On the fixed grid the mean of the four falls from 377.4 m to 372.9 m, 4.5 m. The
+new grid has more junctions (423 to 514 per km²) and straighter streets
+(circuity 1.032 to 1.007). It gains on shops and rail stops and loses a little
+on health care. Before the network was repaired (2026-10-23) this read as 10 m
+longer; that was the broken junctions, not the design.
 
-**Residents walk further than the grid suggests.** Site dwellings go from
-387.9 m to 407.2 m. Most of the 19 m is where the dwellings are, not the
-network. The new blocks hold 1,920 estimated dwellings, against 1,027 today.
+**Scenario B's makes them slightly longer.** The grid mean rises to 380.6 m,
+3.2 m. B has far fewer streets on the site (3.68 km against 4.83 km today) and
+fewer junctions (249 per km²), but they run straight (circuity 1.004), so it
+loses on education and wins on rail stops.
 
-**The neighbours do not notice.** Dwellings outside the site stay at 267.3 m.
+**Residents' walks follow where they live as much as the network.** Site
+dwellings go from 387.9 m to 395.3 m in Scenario A and 385.2 m in Scenario B.
+A puts 1,920 estimated dwellings on the site and B 1,250, against 1,027 today.
+
+**The neighbours do not notice.** Dwellings outside the site stay at 267.3 m
+in every scenario.
 
 **The 15-minute walk does not separate anything.** Every dwelling in the
-study area reaches all four types within 15 min (1,200 m) in both scenarios. The
+study area reaches all four types within 15 min (1,200 m) in every scenario. The
 5-minute share (400 m) is what varies. On the site no dwelling has a rail stop
-within 5 min in Scenario A, 2 % do today.
+within 5 min in either scenario, 2 % do today.
 
 ### Footpath links, Scenario A
 
-60 candidates. J starts at 304.49 m, the ceiling is 300.24 m.
+25 candidates. J starts at 301.33 m, the ceiling is 300.50 m.
 
 | # | length | J saved | J | site dwellings | site grid | of ceiling |
 |---|---|---|---|---|---|---|
-| 1 | 44 m | 1.71 m | 302.78 m | 400.7 m | 380.2 m | 40 % |
-| 2 | 95 m | 1.10 m | 301.68 m | 396.6 m | 375.7 m | 66 % |
-| 3 | 46 m | 0.60 m | 301.08 m | 394.3 m | 375.2 m | 80 % |
-| 4 | 30 m | 0.21 m | 300.87 m | 393.5 m | 374.7 m | 85 % |
-| 5 | 11 m | 0.16 m | 300.71 m | 392.9 m | 374.3 m | 89 % |
-| 6 | 32 m | 0.13 m | 300.58 m | 392.5 m | 373.6 m | 92 % |
-| 7 | 20 m | 0.07 m | 300.51 m | 392.2 m | 373.2 m | 94 % |
-| 8 | 45 m | 0.11 m | 300.40 m | 391.8 m | 372.7 m | 96 % |
-| 9 | 45 m | 0.04 m | 300.36 m | 391.6 m | 372.0 m | 97 % |
-| 10 | 50 m | 0.03 m | 300.33 m | 391.5 m | 371.9 m | 98 % |
+| 1 | 46 m | 0.60 m | 300.73 m | 393.0 m | 372.4 m | 72 % |
+| 2 | 14 m | 0.18 m | 300.55 m | 392.3 m | 371.9 m | 94 % |
+| 3 | 35 m | 0.02 m | 300.53 m | 392.3 m | 371.7 m | 97 % |
+| 4 | 28 m | 0.02 m | 300.51 m | 392.2 m | 371.6 m | 99 % |
+| 5 | 28 m | 0.01 m | 300.50 m | 392.2 m | 371.5 m | 100 % |
 
-**Two links, 139 m of footpath, bring the site grid back below today's.** After
-link 2 it is 375.7 m, against 377.4 m now. Link 1 opens the north tip to Lange
-Hilleweg, link 2 runs east from the central street to Dubbelstraat.
+**Two links, 59 m of footpath, take 94 % of what all 25 candidates could
+give.** Link 1 cuts diagonally across the south-west corner park to Strevelsweg.
+Link 2 is a crossing of Strevelsweg in line with Jagerslaan: the road is a dual
+carriageway and OSM has no crossing near there. After link 2 each link saves
+under 0.03 m of J. The optimiser stops after five, when no candidate saves 1 mm.
 
-**Six links, 258 m, take 92 % of what all 60 candidates could give.** After
-link 6 each link saves about 0.1 m of J or less. Site dwellings come back from 407.2 m
-to 392.5 m, close to today's 387.9 m.
+### Footpath links, Scenario B
+
+6 candidates. J starts at 289.80 m, the ceiling is 289.52 m.
+
+| # | length | J saved | J | site dwellings | site grid | of ceiling |
+|---|---|---|---|---|---|---|
+| 1 | 71 m | 0.16 m | 289.64 m | 384.4 m | 379.2 m | 58 % |
+| 2 | 48 m | 0.12 m | 289.52 m | 383.8 m | 378.2 m | 100 % |
+
+**Two links reach the ceiling.** Link 1 is a park path from the central junction
+across the green to the kept school block's path. Link 2 joins the end of a new
+street to the north-east edge street.
 
 J is over the whole study area, so its changes look small. The site columns
-show where they land.
+show where they land. Both layouts leave little for footpaths to add once their
+streets are joined up properly: the ceilings are 0.83 m (A) and 0.28 m (B) below J.
 
 ## What it cannot tell you
 

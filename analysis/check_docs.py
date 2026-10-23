@@ -190,42 +190,56 @@ def main() -> int:
                                        f"{res[hz][model]['mae']:.3f}", [KNMI]))
 
     if rm and rm.get("scenario_a", {}).get("areas"):
-        #road network: the site comparison and the network table
-        b, a = rm["baseline"], rm["scenario_a"]
-        bs, as_ = b["areas"]["design_site"], a["areas"]["design_site"]
+        #road network: the site comparison and the network table, both scenarios
+        b = rm["baseline"]
+        bs = b["areas"]["design_site"]
         checks += [
             ("roads: site grid baseline", r"^\| \*\*mean of the four\*\*", f"{b['site_grid']['mean_of_types_m']:.1f} m", [ROADS]),
-            ("roads: site grid scenario_a", r"^\| \*\*mean of the four\*\*", f"{a['site_grid']['mean_of_types_m']:.1f} m", [ROADS]),
             ("roads: site dwellings baseline", r"^\| \*\*mean of the four\*\*", f"{bs['mean_of_types_m']:.1f} m", [ROADS]),
-            ("roads: site dwellings scenario_a", r"^\| \*\*mean of the four\*\*", f"{as_['mean_of_types_m']:.1f} m", [ROADS]),
             ("roads: site grid in status table", r"^\| 4\.8 \|", f"{b['site_grid']['mean_of_types_m']:.1f} m", [MAIN]),
-            ("roads: site grid A in status table", r"^\| 4\.8 \|", f"{a['site_grid']['mean_of_types_m']:.1f} m", [MAIN]),
             ("roads: site intersections baseline", r"^\| intersection density", f"{bs['intersection_density_km2']:.1f}", [ROADS]),
-            ("roads: site intersections scenario_a", r"^\| intersection density", f"{as_['intersection_density_km2']:.1f}", [ROADS]),
             ("roads: study-area intersections", r"^\| intersection density",
              f"{b['areas']['study_area']['intersection_density_km2']:.1f}", [ROADS]),
             ("roads: outside the site", r"^\*\*The neighbours do not notice",
              f"{b['areas']['outside_site']['mean_of_types_m']:.1f} m", [ROADS]),
-            ("roads: connectors", r"centreline is joined to the nearest street|that crosses no new block\. \d+ connectors",
-             f"{a['network']['connectors']} connectors", [ROADS]),
-            ("roads: new-block dwellings", r"^median BAG dwelling on the site today",
-             f"{a['network']['new_block_dwellings_est']:,} dwellings", [ROADS]),
         ]
-    if rlinks and rlinks.get("scenario_a", {}).get("steps"):
-        L = rlinks["scenario_a"]
+        for sc in ("scenario_a", "scenario_b"):
+            if not rm.get(sc, {}).get("areas"):
+                continue
+            a = rm[sc]
+            as_ = a["areas"]["design_site"]
+            checks += [
+                (f"roads: site grid {sc}", r"^\| \*\*mean of the four\*\*", f"{a['site_grid']['mean_of_types_m']:.1f} m", [ROADS]),
+                (f"roads: site dwellings {sc}", r"^\| \*\*mean of the four\*\*", f"{as_['mean_of_types_m']:.1f} m", [ROADS]),
+                (f"roads: site grid {sc} in status table", r"^\| 4\.8 \|", f"{a['site_grid']['mean_of_types_m']:.1f} m", [MAIN]),
+                (f"roads: site intersections {sc}", r"^\| intersection density", f"{as_['intersection_density_km2']:.1f}", [ROADS]),
+                (f"roads: study-area intersections {sc}", r"^\| intersection density",
+                 f"{a['areas']['study_area']['intersection_density_km2']:.1f}", [ROADS]),
+                (f"roads: new-block dwellings {sc}", r"^median BAG dwelling on the site today|^and [\d,]+ in Scenario B",
+                 f"{a['network']['new_block_dwellings_est']:,} ", [ROADS]),
+            ]
+        if rm["scenario_a"].get("network"):
+            checks.append(("roads: connectors scenario_a", r"^free-end connectors",
+                           f"{rm['scenario_a']['network']['connectors']} connectors", [ROADS]))
+    for sc in ("scenario_a", "scenario_b"):
+        if not (rlinks and rlinks.get(sc, {}).get("steps")):
+            continue
+        L = rlinks[sc]
+        head = r"^\d+ candidates\. J starts"
         checks += [
-            ("roads: candidates", r"^\d+ candidates\. J starts", f"{L['n_candidates']} candidates", [ROADS]),
-            ("roads: J before", r"^\d+ candidates\. J starts", f"{L['J_before_m']:.2f} m", [ROADS]),
-            ("roads: J ceiling", r"^\d+ candidates\. J starts", f"{L['J_ceiling_m']:.2f} m", [ROADS]),
-            ("roads: six links length", r"^\*\*Six links",
-             f"{sum(x['length_m'] for x in L['steps'][:6]):.0f} m", [ROADS]),
-            ("roads: two links length", r"^\*\*Two links",
-             f"{sum(x['length_m'] for x in L['steps'][:2]):.0f} m", [ROADS]),
-            ("roads: six links share", r"^give\.\*\*|^\*\*Six links",
-             f"{100 * L['steps'][5]['share_of_ceiling']:.0f} %", [ROADS]),
+            (f"roads: {sc} candidates", head, f"{L['n_candidates']} candidates", [ROADS]),
+            (f"roads: {sc} J before", head, f"{L['J_before_m']:.2f} m", [ROADS]),
+            (f"roads: {sc} J ceiling", head, f"{L['J_ceiling_m']:.2f} m", [ROADS]),
         ]
-        for x in L["steps"]:  #one row per link
-            checks.append((f"roads: link {x['rank']} J", rf"^\| {x['rank']} \| \d+ m \|", f"{x['J_m']:.2f} m", [ROADS]))
+        for x in L["steps"]:  #one row per link; the two tables share row anchors, so the value must be in one of them
+            checks.append((f"roads: {sc} link {x['rank']} J", rf"^\| {x['rank']} \| \d+ m \|", f"{x['J_m']:.2f} m", [ROADS]))
+    if rlinks and rlinks.get("scenario_a", {}).get("steps"):
+        st = rlinks["scenario_a"]["steps"]
+        checks += [
+            ("roads: A two links length", r"^\*\*Two links, \d+ m", f"{sum(x['length_m'] for x in st[:2]):.0f} m", [ROADS]),
+            ("roads: A two links share", r"^\*\*Two links, \d+ m", f"{100 * st[1]['share_of_ceiling']:.0f} %", [ROADS]),
+            ("roads: A all candidates", r"^give\.\*\*|^\*\*Two links, \d+ m", f"all {rlinks['scenario_a']['n_candidates']} candidates", [ROADS]),
+        ]
 
     import re
 
@@ -302,27 +316,31 @@ def main() -> int:
             ("ABM README: 'its greedy policy scores below the random policy'",
              dqn["greedy_objective"] < dqn["random_policy"]["mean"]),
         ]
-    if rm and rm.get("scenario_a", {}).get("areas"):
-        b, a = rm["baseline"], rm["scenario_a"]
+    if rm and rm.get("scenario_b", {}).get("areas"):
+        b, a, bb = rm["baseline"], rm["scenario_a"], rm["scenario_b"]
+        g = lambda x: x["site_grid"]["mean_of_types_m"]
         claims += [
-            ("roads README: 'Scenario A makes everyday walks on the site slightly longer'",
-             a["site_grid"]["mean_of_types_m"] > b["site_grid"]["mean_of_types_m"]),
-            ("roads README: 'the neighbours do not notice' (under 2 m)",
-             abs(a["areas"]["outside_site"]["mean_of_types_m"] - b["areas"]["outside_site"]["mean_of_types_m"]) < 2),
-            ("roads README: 'the new grid has more junctions'",
-             a["areas"]["design_site"]["intersection_density_km2"] > b["areas"]["design_site"]["intersection_density_km2"]),
+            ("roads README: 'Scenario A's grid makes walks on the site slightly shorter'", g(a) < g(b)),
+            ("roads README: 'Scenario B's makes them slightly longer'", g(bb) > g(b)),
+            ("roads README: 'the neighbours do not notice' (under 2 m, both scenarios)",
+             all(abs(x["areas"]["outside_site"]["mean_of_types_m"] - b["areas"]["outside_site"]["mean_of_types_m"]) < 2 for x in (a, bb))),
+            ("roads README: 'A has more junctions on the site, B fewer'",
+             a["areas"]["design_site"]["intersection_density_km2"] > b["areas"]["design_site"]["intersection_density_km2"]
+             > bb["areas"]["design_site"]["intersection_density_km2"]),
             ("roads README: 'the 15-minute walk does not separate anything'",
-             all(rm[s]["areas"][n]["walk_15min_reach_frac"] == 1.0 for s in ("baseline", "scenario_a") for n in rm[s]["areas"])),
+             all(rm[s]["areas"][n]["walk_15min_reach_frac"] == 1.0 for s in ("baseline", "scenario_a", "scenario_b") for n in rm[s]["areas"])),
+            ("roads README: 'no site dwelling has a rail stop within 5 min in either scenario'",
+             all(rm[s]["areas"]["design_site"]["rail_stop"]["within_5min_frac"] == 0 for s in ("scenario_a", "scenario_b"))),
         ]
     if rlinks and rlinks.get("scenario_a", {}).get("steps"):
         st = rlinks["scenario_a"]["steps"]
         claims += [
-            ("roads README: 'after link 6 each link saves about 0.1 m of J or less'", all(x["gain_m"] < 0.12 for x in st[6:])),  #0.11 at link 8 over Bloemhof
-            ("roads README: 'two links bring the site grid back below today's'",
-             st[1]["site_grid_m"] < rm["baseline"]["site_grid"]["mean_of_types_m"] < st[0]["site_grid_m"]),
-            ("roads README: 'site dwellings close to today's' (within 10 m after six links)",
-             abs(st[5]["site_dwellings_m"] - rm["baseline"]["areas"]["design_site"]["mean_of_types_m"]) < 10),
+            ("roads README: 'after link 2 each link saves under 0.03 m of J'", all(x["gain_m"] < 0.03 for x in st[2:])),
+            ("roads README: 'A stops after five links'", len(st) == 5),
         ]
+    if rlinks and rlinks.get("scenario_b", {}).get("steps"):
+        stb = rlinks["scenario_b"]["steps"]
+        claims.append(("roads README: 'B: two links reach the ceiling'", len(stb) == 2 and stb[-1]["share_of_ceiling"] == 1.0))
     broken = [c for c, ok in claims if not ok]
 
     if not args.quiet:

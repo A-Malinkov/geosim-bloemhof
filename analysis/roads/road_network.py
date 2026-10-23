@@ -26,6 +26,14 @@ METHOD
             to the nearest other street by a straight connector if one is
             within 35 m and the connector crosses no new block. The connectors
             are an assumption that the design's streets meet the edge streets.
+            Then every crossing or touch between a scenario street and any
+            other street becomes a junction (OSM's own crossings are left
+            alone: those are mostly bridges), and an old street end within
+            5 m of a new street, or a new end within 5 m of an old street,
+            is joined to it. Graph nodes closer than 0.5 m are one junction.
+            Without these the graph had streets that cross on the map but not
+            in the network, and the footpath optimiser picked links that only
+            repaired them (fixed 2026-10-23).
   homes     BAG addresses with woonfunctie inside the buurten or the site, one
             per dwelling. A scenario drops the addresses in demolished
             buildings and adds the new blocks' dwellings, estimated as
@@ -94,6 +102,8 @@ STOPS = CACHE / "pt_stops.geojson"  #OSM public-transport stops, buffered
 PARAMS = {
     "buffer_m": 500,  #network fetched this far beyond the buurten
     "snap_tol_m": 35.0,  #free ends of new streets joined to a street this close
+    "join_tol_m": 5.0,  #an old street end this close to a new street (or the reverse) is joined to it
+    "node_tol_m": 0.5,  #graph nodes closer than this are one junction
     "walk_m_per_min": 80.0,  #4.8 km/h
     "reach_min": 15,  #the 15-minute walk
     "near_min": 5,  #a short walk, 400 m: every home reaches everything within 15 min, so this is what varies
@@ -112,7 +122,7 @@ DEST = {  #destination type -> BAG gebruiksdoel, or "rail" for OSM stops
 CASES = [
     {"scenario": "baseline"},
     {"scenario": "scenario_a"},
-    #scenario_b: not modelled in Rhino yet, written as not computed
+    {"scenario": "scenario_b"},  #OPTION 2, imported 2026-10-23
 ]
 
 
@@ -248,22 +258,84 @@ def lines_for_scenario(edges, scenario, p):
              for g in conn]
     out = gpd.GeoDataFrame(rows, crs=s.crs)
     print(f"  {scenario}: {len(conn)} connectors, {sum(g.length for g in conn):.0f} m, join the new streets' free ends")
-    return out
+    return node_scenario_lines(out, blocks, scenario, p)
 
 
-def build_graph(lines):
+def split_at(g, ds):
+    #line -> pieces cut at the given distances along it
+    from shapely.ops import substring
+    ds = sorted(set([0.0] + [d for d in ds if 0.05 < d < g.length - 0.05] + [g.length]))
+    return [substring(g, a, b) for a, b in zip(ds[:-1], ds[1:])]
+
+
+def node_scenario_lines(lines, blocks, scenario, p):
+    #make every meeting of a scenario street with another street a junction:
+    #1 crossings and touches in a line's interior, 2 ends that stop just short of the other family's street
+    import geopandas as gpd
+    import shapely
+    geoms = list(lines.geometry.values)
+    old = (lines["kind"] == "osm").to_numpy()
+    site = design_site_polygon().buffer(25)  #the design and the edge streets round it
+    tree = shapely.STRtree(geoms)
+    cuts, joins = {}, []
+    #1 crossings: split both lines where a scenario line meets another one away from shared ends
+    n_cross = 0
+    for i, j in zip(*tree.query(geoms, predicate="intersects")):
+        if i >= j or (old[i] and old[j]):
+            continue  #OSM against OSM: a crossing with no node there is a bridge or tunnel
+        x = geoms[i].intersection(geoms[j])
+        pts = [q for q in getattr(x, "geoms", [x]) if q.geom_type == "Point"]
+        pts += [shapely.Point(c) for q in getattr(x, "geoms", [x]) if q.geom_type == "LineString" for c in (q.coords[0], q.coords[-1])]  #overlap: its two ends
+        for q in pts:
+            di, dj = geoms[i].project(q), geoms[j].project(q)
+            inner_i = 0.05 < di < geoms[i].length - 0.05
+            inner_j = 0.05 < dj < geoms[j].length - 0.05
+            if inner_i or inner_j:  #not merely two ends meeting, which is a junction already
+                cuts.setdefault(i, []).append(di)
+                cuts.setdefault(j, []).append(dj)
+                n_cross += 1
+    #2 near misses: an end within join_tol of the other family's line, not touching it
+    for i, g in enumerate(geoms):
+        for c in (g.coords[0], g.coords[-1]):
+            pt = shapely.Point(c)
+            if not pt.within(site):
+                continue
+            near = [j for j in tree.query(pt.buffer(p["join_tol_m"]))
+                    if old[j] != old[i] and geoms[j].distance(pt) <= p["join_tol_m"]]  #the tree only checks boxes
+            if not near or any(geoms[j].distance(pt) < 0.05 for j in near):
+                continue  #nothing of the other family near, or it already meets one
+            j = min(near, key=lambda j: geoms[j].distance(pt))
+            d = geoms[j].project(pt)
+            seg = shapely.LineString([c, geoms[j].interpolate(d).coords[0]])
+            if seg.intersects(blocks):
+                continue  #would go through a new block
+            cuts.setdefault(j, []).append(d)
+            joins.append(seg)
+    rows = []
+    for i, g in enumerate(geoms):
+        for piece in split_at(g, cuts.get(i, [])):
+            rows.append({**lines.iloc[i].drop("geometry").to_dict(), "geometry": piece})
+    rows += [{"highway": "connector", "name": f"{scenario} join", "kind": "connector", "geometry": g} for g in joins]
+    print(f"  {scenario}: {n_cross} crossings made junctions, {len(joins)} near-miss ends joined "
+          f"({sum(g.length for g in joins):.0f} m)")
+    return gpd.GeoDataFrame(rows, crs=lines.crs)
+
+
+def build_graph(lines, node_tol_m=PARAMS["node_tol_m"]):
     #lines -> nodes (xy), edges (i, j, length), keeping the largest connected component
     import scipy.sparse as sp
     from scipy.sparse.csgraph import connected_components
-    key = {}
-    xy = []
-    def node(c):
-        k = (round(c[0], 1), round(c[1], 1))  #0.1 m: OSM ends that are one node coincide exactly
-        if k not in key:
-            key[k] = len(xy)
-            xy.append(c[:2])
-        return key[k]
-    ij = np.array([(node(g.coords[0]), node(g.coords[-1])) for g in lines.geometry])
+    from scipy.spatial import cKDTree
+    ends = np.array([c[:2] for g in lines.geometry for c in (g.coords[0], g.coords[-1])])
+    #ends closer than node_tol_m are one node: rounding to a 0.1 m grid split two ends 0.1 m apart into
+    #two nodes and cut scenario_a's main street in two (2026-10-23); OSM ends that are one node coincide exactly
+    pairs = np.array(sorted(cKDTree(ends).query_pairs(node_tol_m)), dtype=int).reshape(-1, 2)  #includes identical ends
+    m = len(ends)
+    _, lab = connected_components(sp.coo_matrix((np.ones(len(pairs)), (pairs[:, 0], pairs[:, 1])), shape=(m, m)),
+                                  directed=False)
+    uniq, first = np.unique(lab, return_index=True)
+    xy = list(ends[first])  #one position per cluster, the first end found
+    ij = lab.reshape(-1, 2)
     L = lines.geometry.length.to_numpy()
     n = len(xy)
     A = sp.coo_matrix((np.ones(len(ij)), (ij[:, 0], ij[:, 1])), shape=(n, n))

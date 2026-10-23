@@ -9,113 +9,101 @@
       "detour_min": 1.5,
       "reach_m": 20.0
     },
-    "n_candidates": 60,
-    "J_before_m": 304.49,
-    "site_dwellings_before_m": 407.2,
-    "site_grid_before_m": 387.3,
-    "J_ceiling_m": 300.24,
-    "site_grid_ceiling_m": 369.6,
+    "n_candidates": 25,
+    "J_before_m": 301.33,
+    "site_dwellings_before_m": 395.3,
+    "site_grid_before_m": 372.9,
+    "J_ceiling_m": 300.5,
+    "site_grid_ceiling_m": 371.4,
     "site_grid_baseline_m": 377.4,
     "steps": [
       {
         "rank": 1,
-        "length_m": 44.3,
-        "gain_m": 1.711,
-        "J_m": 302.78,
-        "site_dwellings_m": 400.7,
-        "site_grid_m": 380.2,
-        "share_of_ceiling": 0.403
+        "length_m": 45.5,
+        "gain_m": 0.596,
+        "J_m": 300.73,
+        "site_dwellings_m": 393.0,
+        "site_grid_m": 372.4,
+        "share_of_ceiling": 0.719
       },
       {
         "rank": 2,
-        "length_m": 94.7,
-        "gain_m": 1.103,
-        "J_m": 301.68,
-        "site_dwellings_m": 396.6,
-        "site_grid_m": 375.7,
-        "share_of_ceiling": 0.663
+        "length_m": 13.9,
+        "gain_m": 0.185,
+        "J_m": 300.55,
+        "site_dwellings_m": 392.3,
+        "site_grid_m": 371.9,
+        "share_of_ceiling": 0.942
       },
       {
         "rank": 3,
-        "length_m": 45.5,
-        "gain_m": 0.597,
-        "J_m": 301.08,
-        "site_dwellings_m": 394.3,
-        "site_grid_m": 375.2,
-        "share_of_ceiling": 0.803
+        "length_m": 35.2,
+        "gain_m": 0.023,
+        "J_m": 300.53,
+        "site_dwellings_m": 392.3,
+        "site_grid_m": 371.7,
+        "share_of_ceiling": 0.97
       },
       {
         "rank": 4,
-        "length_m": 29.9,
-        "gain_m": 0.21,
-        "J_m": 300.87,
-        "site_dwellings_m": 393.5,
-        "site_grid_m": 374.7,
-        "share_of_ceiling": 0.853
+        "length_m": 27.8,
+        "gain_m": 0.018,
+        "J_m": 300.51,
+        "site_dwellings_m": 392.2,
+        "site_grid_m": 371.6,
+        "share_of_ceiling": 0.992
       },
       {
         "rank": 5,
-        "length_m": 11.1,
-        "gain_m": 0.161,
-        "J_m": 300.71,
-        "site_dwellings_m": 392.9,
-        "site_grid_m": 374.3,
-        "share_of_ceiling": 0.891
-      },
-      {
-        "rank": 6,
-        "length_m": 32.3,
-        "gain_m": 0.13,
-        "J_m": 300.58,
-        "site_dwellings_m": 392.5,
-        "site_grid_m": 373.6,
-        "share_of_ceiling": 0.921
-      },
-      {
-        "rank": 7,
-        "length_m": 20.5,
-        "gain_m": 0.067,
-        "J_m": 300.51,
+        "length_m": 28.3,
+        "gain_m": 0.007,
+        "J_m": 300.5,
         "site_dwellings_m": 392.2,
-        "site_grid_m": 373.2,
-        "share_of_ceiling": 0.937
-      },
-      {
-        "rank": 8,
-        "length_m": 44.7,
-        "gain_m": 0.113,
-        "J_m": 300.4,
-        "site_dwellings_m": 391.8,
-        "site_grid_m": 372.7,
-        "share_of_ceiling": 0.964
-      },
-      {
-        "rank": 9,
-        "length_m": 44.8,
-        "gain_m": 0.036,
-        "J_m": 300.36,
-        "site_dwellings_m": 391.6,
-        "site_grid_m": 372.0,
-        "share_of_ceiling": 0.972
-      },
-      {
-        "rank": 10,
-        "length_m": 50.1,
-        "gain_m": 0.03,
-        "J_m": 300.33,
-        "site_dwellings_m": 391.5,
-        "site_grid_m": 371.9,
-        "share_of_ceiling": 0.979
+        "site_grid_m": 371.5,
+        "share_of_ceiling": 1.0
       }
     ],
     "geojson": "../data/processed/road_links_scenario_a.geojson"
   },
+  "scenario_b": {
+    "budget": 10,
+    "candidate_rule": {
+      "min_m": 10.0,
+      "max_m": 150.0,
+      "detour_min": 1.5,
+      "reach_m": 20.0
+    },
+    "n_candidates": 6,
+    "J_before_m": 289.8,
+    "site_dwellings_before_m": 385.2,
+    "site_grid_before_m": 380.6,
+    "J_ceiling_m": 289.52,
+    "site_grid_ceiling_m": 376.5,
+    "site_grid_baseline_m": 377.4,
+    "steps": [
+      {
+        "rank": 1,
+        "length_m": 70.8,
+        "gain_m": 0.162,
+        "J_m": 289.64,
+        "site_dwellings_m": 384.4,
+        "site_grid_m": 379.2,
+        "share_of_ceiling": 0.577
+      },
+      {
+        "rank": 2,
+        "length_m": 47.5,
+        "gain_m": 0.119,
+        "J_m": 289.52,
+        "site_dwellings_m": 383.8,
+        "site_grid_m": 378.2,
+        "share_of_ceiling": 1.0
+      }
+    ],
+    "geojson": "../data/processed/road_links_scenario_b.geojson"
+  },
   "baseline": {
     "_status": "not_computed_yet",
     "_note": "baseline: open land is private gardens"
-  },
-  "scenario_b": {
-    "_status": "not_computed_yet",
-    "_note": "scenario_b has no massing yet"
   }
 }

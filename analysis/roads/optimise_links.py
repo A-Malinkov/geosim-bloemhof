@@ -23,11 +23,13 @@ METHOD
   candidates  straight footpaths between two network nodes on the site (or
               within 20 m of it, so the edge streets count), 10 to 150 m
               long, at most 20 m of it off the site, that cross no building
-              of the scenario, meet the existing network only at their two
+              and no water of the scenario, start or end on the design's own
+              network (new street or connector), meet the existing network only at their two
               nodes, and save a detour: the network route between the two
               nodes is at least 1.5 times the straight line.
   greedy      add the candidate that lowers J most, recompute, repeat until
-              the budget of links is spent. Every candidate is re-scored after
+              the budget of links is spent, the candidates run out, or no
+              candidate lowers J by 1 mm any more. Every candidate is re-scored after
               each pick, because a link can make another one useless.
   ceiling     J with every candidate added at once: the most these candidates
               could ever give. Each pick is reported as a share of it, which
@@ -62,12 +64,25 @@ from common.project import PROCESSED, ROOT, design_site_polygon, to_wgs, write_p
 
 CASES = [
     {"scenario": "scenario_a", "budget": 10, "min_m": 10.0, "max_m": 150.0, "detour_min": 1.5, "reach_m": 20.0},
+    {"scenario": "scenario_b", "budget": 10, "min_m": 10.0, "max_m": 150.0, "detour_min": 1.5, "reach_m": 20.0},
     #baseline: not run, its open land is private back gardens
-    #scenario_b: not modelled yet
 ]
 
 
 # --------------------------------------------------------------- candidates
+def water_for(scenario):
+    #the scenario's open water (RD polygons) from import_rhino.py's planting file
+    from shapely.geometry import shape
+    from shapely.ops import transform
+    from common.project import to_rd
+    path = PROCESSED / "design_planting.geojson"
+    if not path.exists():
+        return []
+    feats = json.loads(path.read_text()).get("features", [])
+    return [transform(lambda x, y, z=None: to_rd(x, y), shape(f["geometry"])) for f in feats
+            if f["properties"].get("scenario") == scenario and f["properties"].get("kind") == "water"]
+
+
 def candidates(net, scenario, c):
     #straight links between site nodes that cross no building and save a detour -> array (i, j, length)
     import geopandas as gpd
@@ -79,9 +94,15 @@ def candidates(net, scenario, c):
     b = gpd.GeoDataFrame({"identificatie": [i for i, _ in fp], "height_m": np.nan},
                          geometry=[g for _, g in fp], crs=28992)
     b = buildings_for_scenario(b, scenario)  #the scenario's buildings, old ones demolished
-    walls = shapely.STRtree(b.geometry.buffer(-0.5).values)  #a link may brush a wall, not go through it
+    walls = list(b.geometry.buffer(-0.5).values)  #a link may brush a wall, not go through it
+    walls += water_for(scenario)  #nor through the scenario's pond (two picks crossed it before 2026-10-23)
+    walls = shapely.STRtree(walls)
     streets = shapely.STRtree(net["lines"].geometry.values)  #existing network lines
     on = np.flatnonzero(shapely.within(shapely.points(net["xy"]), site.buffer(c["reach_m"])))
+    #nodes on the design's own network (new streets, connectors, joins): a link must use one, else it only
+    #mends a gap OSM has today too (two picks joined an OSM footway ending 2 m short of a street, 2026-10-23)
+    own = np.zeros(len(net["xy"]), bool)
+    own[net["ij"][(net["lines"]["kind"] != "osm").to_numpy()].ravel()] = True
     G = rn.csr(net)
     D = dijkstra(G, directed=False, indices=on)[:, on]  #network distance between every pair of site nodes
     xy = net["xy"][on]
@@ -91,6 +112,8 @@ def candidates(net, scenario, c):
             L = float(np.hypot(*(xy[a] - xy[b_])))
             if not (c["min_m"] <= L <= c["max_m"]) or D[a, b_] < c["detour_min"] * L:
                 continue  #too short, too long, or the network already goes nearly straight
+            if not (own[on[a]] or own[on[b_]]):
+                continue  #between two OSM nodes: a gap in today's network, not part of the design
             seg = shapely.LineString([xy[a], xy[b_]])
             if seg.difference(site).length > c["reach_m"]:
                 continue  #mostly off the site: not ours to build
@@ -122,9 +145,13 @@ def scorer(net, homes, dest, grid):
     return score
 
 
-def greedy(score, cand, budget):
+MIN_GAIN_M = 0.001  #a pick must lower J by at least 1 mm, or the greedy stops: it no longer helps anyone
+
+
+def greedy(score, cand, budget, start):
     #add the best remaining candidate, budget times; -> list of (index, scores after)
-    chosen, picks = [], []
+    #stops early when the candidates run out or the best one no longer lowers J (start = scores with none)
+    chosen, picks, prev = [], [], start
     for step in range(budget):
         t = time.time()
         best, best_s = None, None
@@ -134,6 +161,10 @@ def greedy(score, cand, budget):
             s = score(cand[chosen + [k]])
             if best_s is None or s[0] < best_s[0]:
                 best, best_s = k, s
+        if best is None or prev[0] - best_s[0] < MIN_GAIN_M:
+            print(f"  stopped after {step} links: " + ("no candidates left" if best is None else "no link lowers J any more"))
+            break
+        prev = best_s
         chosen.append(best)
         picks.append((best, best_s))
         print(f"  link {step + 1}: {cand[best][2]:5.1f} m, J {best_s[0]:.2f} m, "
@@ -154,7 +185,7 @@ def run(case, p, dest, dwelling_m2, baseline_grid):
     s0 = score()
     ceil = score(cand)
     print(f"  J now {s0[0]:.2f} m, with every candidate {ceil[0]:.2f} m")
-    picks = greedy(score, cand, case["budget"])
+    picks = greedy(score, cand, case["budget"], s0)
     steps, feats, prev = [], [], s0
     for r, (k, s) in enumerate(picks, 1):
         i, j, L = cand[k]

@@ -200,8 +200,9 @@ export async function setup(ctx) {
       `</tbody></table>` +
       `<p class="muted">Objective J: mean walk from a dwelling to the nearest shop, education, health care and ` +
       `rail stop, over all ${fmt(data[sc].areas.study_area.dwellings)} dwellings, now ${fmt(L.J_before_m, 2, " m")}. ` +
-      `Greedy, one straight footpath at a time, from ${L.n_candidates} candidates that cross no block and save a ` +
-      `detour of at least ${L.candidate_rule.detour_min}×. All candidates together would reach ` +
+      `Greedy, one straight footpath at a time, from ${L.n_candidates} candidates that cross no block or water, ` +
+      `start or end on the design's own streets and save a detour of at least ${L.candidate_rule.detour_min}×; ` +
+      `it stops when no link saves 1 mm any more. All candidates together would reach ` +  //rules since 2026-10-23
       `${fmt(L.J_ceiling_m, 2, " m")} (the ceiling). Site dwellings start at ${fmt(L.site_dwellings_before_m, 0, " m")}, ` +
       `today's layout gives ${fmt(data.baseline.areas.design_site.mean_of_types_m, 0, " m")}. ` +
       `${L.steps.length} links, ${fmt(total, 0, " m")} in all. ` +
