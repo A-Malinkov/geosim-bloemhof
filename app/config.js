@@ -250,7 +250,7 @@ export const CONFIG = {
     order: [
       "Reference", "Design", "Imagery", "3D city model", "Vegetation",
       "Morphology", "Wind & noise", "Flood vulnerability", "Land use",
-      "Roads", "Performance",
+      "Mobility", "Performance",
     ],
     open: ["Reference", "Design", "Imagery", "3D city model"],
     regroup: {
@@ -262,7 +262,6 @@ export const CONFIG = {
       landuseModel:   "Land use",
       landuseRlPlan:  "Land use",
       noiseOverlay:   "Wind & noise",
-      "roads-*":      "Roads",
     },
   },
 

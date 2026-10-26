@@ -104,6 +104,7 @@ Check its root is the project folder; if the data files 404, use `http.server`.
 | 6 | CBS socio-demographics | `app/modules/cbs.js` | `analysis/cbs/` |
 | 7 | **Agent-based land-use model** — *Atanas Malinkov* | `app/modules/landuse.js` | `analysis/abm_landuse/` |
 | 8 | Road network optimization | `app/modules/roads.js` | `analysis/roads/` |
+| 8b| Public-transport stops and frequencies | `app/modules/transit.js` | `analysis/transit/` |
 | 9 | Design scenarios | `app/modules/scenarios.js` | `analysis/scenarios/` |
 
 ### Shared files — go through one person
@@ -208,6 +209,7 @@ All verified reachable on 2026-09-21. URLs live in `config.js` and
 | Weather, live | Open-Meteo, KNMI HARMONIE-AROME 2 km | browser-callable, no key, CC BY 4.0 |
 | Weather, sensors | KNMI Data Platform Open Data API | Python only — see the warning below |
 | Weather, historical | `daggegevens.knmi.nl`, station 344 | JSON, no CORS → Python only |
+| Public transport | OVapi GTFS-NL (`gtfs.ovapi.nl/nl/gtfs-nl.zip`), from NDOV open data | 242 MB; Python only, cached in `cache/transit/`. Set a `User-Agent`. See `analysis/transit/README.md` |
 
 ### ⚠ KNMI: two traps, and how the live feed works around them
 1. **The dataset everyone's tutorial uses is dead.** `Actueel10mindataKNMIstations`
@@ -250,7 +252,7 @@ app/
 analysis/
   common/project.py                             ← shared: study area, CRS, paths
   morphology/  knmi/  wind_noise/  cbs/
-  abm_landuse/  roads/  scenarios/
+  abm_landuse/  roads/  scenarios/  transit/
 data/
   raw/                                          ← downloads, as delivered
   processed/                                    ← JSON the app reads
@@ -317,6 +319,8 @@ python analysis/abm_landuse/weight_sensitivity.py # objective-weight sweep    (~
 
 python analysis/roads/road_network.py            # walk network, per scenario (~3 min first run)
 python analysis/roads/optimise_links.py          # footpath links, both scenarios (~15 s)
+
+python analysis/transit/fetch_transit.py         # stops + line frequencies (~2 min, 242 MB feed on first run)
 ```
 
 > The LSTM needs PyTorch, which is **not** in `requirements.txt` (~780 MB).

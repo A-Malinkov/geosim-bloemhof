@@ -373,11 +373,11 @@ export async function setup(ctx) {
     cluster.billboard.image = clusterPin(clustered.length);
   });
 
-  ctx.registerLayer({
+  const photoLayer = ctx.registerLayer({
     id: "sitePhotos",
     label: "Site photos",
     group: "Reference",
-    show: true,
+    show: false,  //off at startup; picking a thumbnail or adding photos switches it on
     target: ds,
   });
 
@@ -547,6 +547,7 @@ export async function setup(ctx) {
         });
       }
       img.addEventListener("click", () => {
+        photoLayer.setVisible(true);  //the pin must be shown for the camera to fly to it
         showViewer(r);
         viewer.flyTo(r.entity, {
           duration: 1.0,
@@ -761,6 +762,7 @@ export async function setup(ctx) {
     refresh();
     if (fresh.length) {
       ctx.note(`Photos: +${fresh.length} added`, "ok");
+      photoLayer.setVisible(true);  //show what was just added, even with the layer off
       viewer.flyTo(ds).catch(() => {});
     }
     if (noGps) ctx.note(`Photos: ${noGps} had no GPS tag — skipped`, "warn");

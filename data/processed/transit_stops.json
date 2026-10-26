@@ -1,0 +1,2929 @@
+{
+  "label": "Public transport stops and line frequencies",
+  "source": "OVapi GTFS-NL (https://gtfs.ovapi.nl/nl/gtfs-nl.zip), from NDOV open data; best-effort, no SLA",
+  "feed_version": "9644",
+  "feed_valid": [
+    "2026-10-23",
+    "2026-12-12"
+  ],
+  "days": {
+    "weekday": "2026-10-29",
+    "saturday": "2026-10-24"
+  },
+  "periods": {
+    "peak": {
+      "day": "weekday",
+      "from_h": 7,
+      "to_h": 9
+    },
+    "day": {
+      "day": "weekday",
+      "from_h": 10,
+      "to_h": 16
+    },
+    "evening": {
+      "day": "weekday",
+      "from_h": 20,
+      "to_h": 23
+    },
+    "saturday": {
+      "day": "saturday",
+      "from_h": 10,
+      "to_h": 16
+    }
+  },
+  "catchment_m": {
+    "bus": 400,
+    "tram": 400,
+    "metro": 800,
+    "train": 800,
+    "ferry": 800
+  },
+  "scenario_independent": true,
+  "notes": [
+    "Timetabled departures, not punctuality: delays and cancellations are not in it.",
+    "Headway = 60 / departures per hour, an average; an uneven timetable means longer waits at times.",
+    "A line's frequency at a stop is that of its busiest direction and platform; per direction is in `directions`.",
+    "Current timetable: identical for every design scenario."
+  ],
+  "stops": [
+    {
+      "id": "stoparea:617734",
+      "name": "Lange Hilleweg",
+      "full_names": [
+        "Rotterdam, Lange Hilleweg"
+      ],
+      "lon": 4.502027,
+      "lat": 51.893165,
+      "n_platforms": 2,
+      "dist_to_study_area_m": 0,
+      "modes": [
+        "bus"
+      ],
+      "lines": [
+        {
+          "line": "66",
+          "name": "Zuidplein - Feijenoord",
+          "mode": "bus",
+          "operator": "RET",
+          "colour": null,
+          "text_colour": null,
+          "per_hour": {
+            "peak": 5.5,
+            "day": 6.0,
+            "evening": 2.0,
+            "saturday": 4.0
+          },
+          "headway_min": {
+            "peak": 10.9,
+            "day": 10.0,
+            "evening": 30.0,
+            "saturday": 15.0
+          },
+          "directions": [
+            {
+              "headsign": "Zuidplein",
+              "per_hour": {
+                "peak": 5.5,
+                "day": 6.0,
+                "evening": 2.0,
+                "saturday": 4.0
+              },
+              "headway_min": {
+                "peak": 10.9,
+                "day": 10.0,
+                "evening": 30.0,
+                "saturday": 15.0
+              },
+              "weekday_departures": 86,
+              "first": "06:08",
+              "last": "00:41"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stoparea:617795",
+      "name": "Strevelsweg",
+      "full_names": [
+        "Rotterdam, Strevelsweg"
+      ],
+      "lon": 4.495918,
+      "lat": 51.889719,
+      "n_platforms": 4,
+      "dist_to_study_area_m": 0,
+      "modes": [
+        "bus"
+      ],
+      "lines": [
+        {
+          "line": "66",
+          "name": "Zuidplein - Feijenoord",
+          "mode": "bus",
+          "operator": "RET",
+          "colour": null,
+          "text_colour": null,
+          "per_hour": {
+            "peak": 6.0,
+            "day": 6.0,
+            "evening": 2.0,
+            "saturday": 4.0
+          },
+          "headway_min": {
+            "peak": 10.0,
+            "day": 10.0,
+            "evening": 30.0,
+            "saturday": 15.0
+          },
+          "directions": [
+            {
+              "headsign": "Zuidplein",
+              "per_hour": {
+                "peak": 6.0,
+                "day": 6.0,
+                "evening": 2.0,
+                "saturday": 4.0
+              },
+              "headway_min": {
+                "peak": 10.0,
+                "day": 10.0,
+                "evening": 30.0,
+                "saturday": 15.0
+              },
+              "weekday_departures": 86,
+              "first": "06:06",
+              "last": "00:42"
+            }
+          ]
+        },
+        {
+          "line": "75",
+          "name": "Zuidplein - Kralingse Zoom",
+          "mode": "bus",
+          "operator": "RET",
+          "colour": null,
+          "text_colour": null,
+          "per_hour": {
+            "peak": 1.5,
+            "day": 2.0,
+            "evening": 0.0,
+            "saturday": 0.0
+          },
+          "headway_min": {
+            "peak": 40.0,
+            "day": 30.0,
+            "evening": null,
+            "saturday": null
+          },
+          "directions": [
+            {
+              "headsign": "Kralingse Zoom",
+              "per_hour": {
+                "peak": 1.5,
+                "day": 2.0,
+                "evening": 0.0,
+                "saturday": 0.0
+              },
+              "headway_min": {
+                "peak": 40.0,
+                "day": 30.0,
+                "evening": null,
+                "saturday": null
+              },
+              "weekday_departures": 22,
+              "first": "07:36",
+              "last": "18:06"
+            },
+            {
+              "headsign": "Zuidplein",
+              "per_hour": {
+                "peak": 1.5,
+                "day": 1.83,
+                "evening": 0.0,
+                "saturday": 0.0
+              },
+              "headway_min": {
+                "peak": 40.0,
+                "day": 32.8,
+                "evening": null,
+                "saturday": null
+              },
+              "weekday_departures": 23,
+              "first": "07:58",
+              "last": "19:01"
+            }
+          ]
+        },
+        {
+          "line": "77",
+          "name": "ss Rotterdam - Zuidplein",
+          "mode": "bus",
+          "operator": "RET",
+          "colour": null,
+          "text_colour": null,
+          "per_hour": {
+            "peak": 2.0,
+            "day": 2.0,
+            "evening": 1.0,
+            "saturday": 2.0
+          },
+          "headway_min": {
+            "peak": 30.0,
+            "day": 30.0,
+            "evening": 60.0,
+            "saturday": 30.0
+          },
+          "directions": [
+            {
+              "headsign": "Zuidplein",
+              "per_hour": {
+                "peak": 1.5,
+                "day": 2.0,
+                "evening": 1.0,
+                "saturday": 2.0
+              },
+              "headway_min": {
+                "peak": 40.0,
+                "day": 30.0,
+                "evening": 60.0,
+                "saturday": 30.0
+              },
+              "weekday_departures": 30,
+              "first": "06:51",
+              "last": "23:07"
+            },
+            {
+              "headsign": "ss Rotterdam",
+              "per_hour": {
+                "peak": 2.0,
+                "day": 2.0,
+                "evening": 1.0,
+                "saturday": 2.0
+              },
+              "headway_min": {
+                "peak": 30.0,
+                "day": 30.0,
+                "evening": 60.0,
+                "saturday": 30.0
+              },
+              "weekday_departures": 29,
+              "first": "06:56",
+              "last": "22:26"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stoparea:617783",
+      "name": "Sandelingplein",
+      "full_names": [
+        "Rotterdam, Sandelingplein"
+      ],
+      "lon": 4.506493,
+      "lat": 51.889565,
+      "n_platforms": 4,
+      "dist_to_study_area_m": 2,
+      "modes": [
+        "tram",
+        "bus"
+      ],
+      "lines": [
+        {
+          "line": "5",
+          "name": "Carnisselande - Rotterdam Centraal",
+          "mode": "tram",
+          "operator": "RET",
+          "colour": "#ed1944",
+          "text_colour": "#000000",
+          "per_hour": {
+            "peak": 8.0,
+            "day": 8.0,
+            "evening": 4.33,
+            "saturday": 6.0
+          },
+          "headway_min": {
+            "peak": 7.5,
+            "day": 7.5,
+            "evening": 13.9,
+            "saturday": 10.0
+          },
+          "directions": [
+            {
+              "headsign": "Carnisselande",
+              "per_hour": {
+                "peak": 8.0,
+                "day": 8.0,
+                "evening": 4.33,
+                "saturday": 6.0
+              },
+              "headway_min": {
+                "peak": 7.5,
+                "day": 7.5,
+                "evening": 13.9,
+                "saturday": 10.0
+              },
+              "weekday_departures": 133,
+              "first": "05:16",
+              "last": "00:45"
+            },
+            {
+              "headsign": "Rotterdam Centraal",
+              "per_hour": {
+                "peak": 8.0,
+                "day": 8.0,
+                "evening": 4.0,
+                "saturday": 5.83
+              },
+              "headway_min": {
+                "peak": 7.5,
+                "day": 7.5,
+                "evening": 15.0,
+                "saturday": 10.3
+              },
+              "weekday_departures": 123,
+              "first": "05:50",
+              "last": "00:18"
+            }
+          ]
+        },
+        {
+          "line": "75",
+          "name": "Zuidplein - Kralingse Zoom",
+          "mode": "bus",
+          "operator": "RET",
+          "colour": null,
+          "text_colour": null,
+          "per_hour": {
+            "peak": 1.5,
+            "day": 2.0,
+            "evening": 0.0,
+            "saturday": 0.0
+          },
+          "headway_min": {
+            "peak": 40.0,
+            "day": 30.0,
+            "evening": null,
+            "saturday": null
+          },
+          "directions": [
+            {
+              "headsign": "Kralingse Zoom",
+              "per_hour": {
+                "peak": 1.5,
+                "day": 2.0,
+                "evening": 0.0,
+                "saturday": 0.0
+              },
+              "headway_min": {
+                "peak": 40.0,
+                "day": 30.0,
+                "evening": null,
+                "saturday": null
+              },
+              "weekday_departures": 22,
+              "first": "07:39",
+              "last": "18:09"
+            },
+            {
+              "headsign": "Zuidplein",
+              "per_hour": {
+                "peak": 1.5,
+                "day": 2.0,
+                "evening": 0.0,
+                "saturday": 0.0
+              },
+              "headway_min": {
+                "peak": 40.0,
+                "day": 30.0,
+                "evening": null,
+                "saturday": null
+              },
+              "weekday_departures": 23,
+              "first": "07:55",
+              "last": "18:59"
+            }
+          ]
+        },
+        {
+          "line": "77",
+          "name": "ss Rotterdam - Zuidplein",
+          "mode": "bus",
+          "operator": "RET",
+          "colour": null,
+          "text_colour": null,
+          "per_hour": {
+            "peak": 2.0,
+            "day": 2.0,
+            "evening": 1.0,
+            "saturday": 2.0
+          },
+          "headway_min": {
+            "peak": 30.0,
+            "day": 30.0,
+            "evening": 60.0,
+            "saturday": 30.0
+          },
+          "directions": [
+            {
+              "headsign": "Zuidplein",
+              "per_hour": {
+                "peak": 1.5,
+                "day": 2.0,
+                "evening": 1.0,
+                "saturday": 2.0
+              },
+              "headway_min": {
+                "peak": 40.0,
+                "day": 30.0,
+                "evening": 60.0,
+                "saturday": 30.0
+              },
+              "weekday_departures": 30,
+              "first": "06:49",
+              "last": "23:05"
+            },
+            {
+              "headsign": "ss Rotterdam",
+              "per_hour": {
+                "peak": 2.0,
+                "day": 2.0,
+                "evening": 1.0,
+                "saturday": 2.0
+              },
+              "headway_min": {
+                "peak": 30.0,
+                "day": 30.0,
+                "evening": 60.0,
+                "saturday": 30.0
+              },
+              "weekday_departures": 29,
+              "first": "06:58",
+              "last": "22:28"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stoparea:617512",
+      "name": "Putsebocht",
+      "full_names": [
+        "Rotterdam, Putsebocht"
+      ],
+      "lon": 4.50227,
+      "lat": 51.89745,
+      "n_platforms": 2,
+      "dist_to_study_area_m": 8,
+      "modes": [
+        "tram"
+      ],
+      "lines": [
+        {
+          "line": "2",
+          "name": "Charlois - Keizerswaard",
+          "mode": "tram",
+          "operator": "RET",
+          "colour": "#f47b20",
+          "text_colour": "#000000",
+          "per_hour": {
+            "peak": 6.0,
+            "day": 6.0,
+            "evening": 4.67,
+            "saturday": 4.17
+          },
+          "headway_min": {
+            "peak": 10.0,
+            "day": 10.0,
+            "evening": 12.8,
+            "saturday": 14.4
+          },
+          "directions": [
+            {
+              "headsign": "Charlois",
+              "per_hour": {
+                "peak": 6.0,
+                "day": 6.0,
+                "evening": 4.0,
+                "saturday": 4.17
+              },
+              "headway_min": {
+                "peak": 10.0,
+                "day": 10.0,
+                "evening": 15.0,
+                "saturday": 14.4
+              },
+              "weekday_departures": 97,
+              "first": "05:35",
+              "last": "00:04"
+            },
+            {
+              "headsign": "Keizerswaard / Bredenoord",
+              "per_hour": {
+                "peak": 5.5,
+                "day": 6.0,
+                "evening": 4.67,
+                "saturday": 4.17
+              },
+              "headway_min": {
+                "peak": 10.9,
+                "day": 10.0,
+                "evening": 12.8,
+                "saturday": 14.4
+              },
+              "weekday_departures": 97,
+              "first": "05:59",
+              "last": "00:27"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stoparea:617518",
+      "name": "Hillevliet",
+      "full_names": [
+        "Rotterdam, Hillevliet"
+      ],
+      "lon": 4.506357,
+      "lat": 51.895573,
+      "n_platforms": 4,
+      "dist_to_study_area_m": 15,
+      "modes": [
+        "tram",
+        "bus"
+      ],
+      "lines": [
+        {
+          "line": "2",
+          "name": "Charlois - Keizerswaard",
+          "mode": "tram",
+          "operator": "RET",
+          "colour": "#f47b20",
+          "text_colour": "#000000",
+          "per_hour": {
+            "peak": 6.0,
+            "day": 6.0,
+            "evening": 4.67,
+            "saturday": 4.17
+          },
+          "headway_min": {
+            "peak": 10.0,
+            "day": 10.0,
+            "evening": 12.8,
+            "saturday": 14.4
+          },
+          "directions": [
+            {
+              "headsign": "Charlois",
+              "per_hour": {
+                "peak": 6.0,
+                "day": 6.0,
+                "evening": 4.0,
+                "saturday": 4.17
+              },
+              "headway_min": {
+                "peak": 10.0,
+                "day": 10.0,
+                "evening": 15.0,
+                "saturday": 14.4
+              },
+              "weekday_departures": 97,
+              "first": "05:33",
+              "last": "00:02"
+            },
+            {
+              "headsign": "Keizerswaard / Bredenoord",
+              "per_hour": {
+                "peak": 5.5,
+                "day": 6.0,
+                "evening": 4.67,
+                "saturday": 4.17
+              },
+              "headway_min": {
+                "peak": 10.9,
+                "day": 10.0,
+                "evening": 12.8,
+                "saturday": 14.4
+              },
+              "weekday_departures": 97,
+              "first": "06:00",
+              "last": "00:28"
+            }
+          ]
+        },
+        {
+          "line": "66",
+          "name": "Zuidplein - Feijenoord",
+          "mode": "bus",
+          "operator": "RET",
+          "colour": null,
+          "text_colour": null,
+          "per_hour": {
+            "peak": 5.5,
+            "day": 6.0,
+            "evening": 2.0,
+            "saturday": 4.0
+          },
+          "headway_min": {
+            "peak": 10.9,
+            "day": 10.0,
+            "evening": 30.0,
+            "saturday": 15.0
+          },
+          "directions": [
+            {
+              "headsign": "Zuidplein",
+              "per_hour": {
+                "peak": 5.5,
+                "day": 6.0,
+                "evening": 2.0,
+                "saturday": 4.0
+              },
+              "headway_min": {
+                "peak": 10.9,
+                "day": 10.0,
+                "evening": 30.0,
+                "saturday": 15.0
+              },
+              "weekday_departures": 86,
+              "first": "06:10",
+              "last": "00:40"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stoparea:502606",
+      "name": "Maashaven",
+      "full_names": [
+        "Rotterdam, Maashaven"
+      ],
+      "lon": 4.494841,
+      "lat": 51.897449,
+      "n_platforms": 7,
+      "dist_to_study_area_m": 19,
+      "modes": [
+        "metro",
+        "tram",
+        "bus"
+      ],
+      "lines": [
+        {
+          "line": "D",
+          "name": "",
+          "mode": "metro",
+          "operator": "RET",
+          "colour": "#00acd9",
+          "text_colour": "#000000",
+          "per_hour": {
+            "peak": 6.0,
+            "day": 6.0,
+            "evening": 4.0,
+            "saturday": 6.17
+          },
+          "headway_min": {
+            "peak": 10.0,
+            "day": 10.0,
+            "evening": 15.0,
+            "saturday": 9.7
+          },
+          "directions": [
+            {
+              "headsign": "De Akkers / Slinge",
+              "per_hour": {
+                "peak": 6.0,
+                "day": 6.0,
+                "evening": 4.0,
+                "saturday": 6.0
+              },
+              "headway_min": {
+                "peak": 10.0,
+                "day": 10.0,
+                "evening": 15.0,
+                "saturday": 10.0
+              },
+              "weekday_departures": 104,
+              "first": "05:59",
+              "last": "01:13"
+            },
+            {
+              "headsign": "Rotterdam Centraal",
+              "per_hour": {
+                "peak": 6.0,
+                "day": 6.0,
+                "evening": 4.0,
+                "saturday": 6.17
+              },
+              "headway_min": {
+                "peak": 10.0,
+                "day": 10.0,
+                "evening": 15.0,
+                "saturday": 9.7
+              },
+              "weekday_departures": 104,
+              "first": "05:29",
+              "last": "00:46"
+            }
+          ]
+        },
+        {
+          "line": "E",
+          "name": "",
+          "mode": "metro",
+          "operator": "RET",
+          "colour": "#0f3f94",
+          "text_colour": "#ffffff",
+          "per_hour": {
+            "peak": 12.0,
+            "day": 12.5,
+            "evening": 4.0,
+            "saturday": 6.0
+          },
+          "headway_min": {
+            "peak": 5.0,
+            "day": 4.8,
+            "evening": 15.0,
+            "saturday": 10.0
+          },
+          "directions": [
+            {
+              "headsign": "Den Haag Centraal / Rotterdam Centraal",
+              "per_hour": {
+                "peak": 12.0,
+                "day": 12.5,
+                "evening": 4.0,
+                "saturday": 6.0
+              },
+              "headway_min": {
+                "peak": 5.0,
+                "day": 4.8,
+                "evening": 15.0,
+                "saturday": 10.0
+              },
+              "weekday_departures": 171,
+              "first": "05:14",
+              "last": "00:11"
+            },
+            {
+              "headsign": "Slinge",
+              "per_hour": {
+                "peak": 10.0,
+                "day": 12.0,
+                "evening": 4.0,
+                "saturday": 5.83
+              },
+              "headway_min": {
+                "peak": 6.0,
+                "day": 5.0,
+                "evening": 15.0,
+                "saturday": 10.3
+              },
+              "weekday_departures": 171,
+              "first": "06:22",
+              "last": "01:07"
+            }
+          ]
+        },
+        {
+          "line": "2",
+          "name": "Charlois - Keizerswaard",
+          "mode": "tram",
+          "operator": "RET",
+          "colour": "#f47b20",
+          "text_colour": "#000000",
+          "per_hour": {
+            "peak": 6.0,
+            "day": 6.0,
+            "evening": 4.67,
+            "saturday": 4.17
+          },
+          "headway_min": {
+            "peak": 10.0,
+            "day": 10.0,
+            "evening": 12.8,
+            "saturday": 14.4
+          },
+          "directions": [
+            {
+              "headsign": "Charlois",
+              "per_hour": {
+                "peak": 6.0,
+                "day": 5.83,
+                "evening": 4.0,
+                "saturday": 4.17
+              },
+              "headway_min": {
+                "peak": 10.0,
+                "day": 10.3,
+                "evening": 15.0,
+                "saturday": 14.4
+              },
+              "weekday_departures": 97,
+              "first": "05:37",
+              "last": "00:06"
+            },
+            {
+              "headsign": "Keizerswaard / Bredenoord",
+              "per_hour": {
+                "peak": 5.5,
+                "day": 6.0,
+                "evening": 4.67,
+                "saturday": 4.17
+              },
+              "headway_min": {
+                "peak": 10.9,
+                "day": 10.0,
+                "evening": 12.8,
+                "saturday": 14.4
+              },
+              "weekday_departures": 97,
+              "first": "05:58",
+              "last": "00:26"
+            }
+          ]
+        },
+        {
+          "line": "7",
+          "name": "Rotterdam Centraal - Hoogvliet",
+          "mode": "bus",
+          "operator": "RET",
+          "colour": null,
+          "text_colour": null,
+          "per_hour": {
+            "peak": 0.0,
+            "day": 0.0,
+            "evening": 0.0,
+            "saturday": 0.0
+          },
+          "headway_min": {
+            "peak": null,
+            "day": null,
+            "evening": null,
+            "saturday": null
+          },
+          "directions": [
+            {
+              "headsign": "Rotterdam Centraal / Hoogvliet Centrum",
+              "per_hour": {
+                "peak": 0.0,
+                "day": 0.0,
+                "evening": 0.0,
+                "saturday": 0.0
+              },
+              "headway_min": {
+                "peak": null,
+                "day": null,
+                "evening": null,
+                "saturday": null
+              },
+              "weekday_departures": 0,
+              "first": null,
+              "last": null
+            }
+          ]
+        },
+        {
+          "line": "11",
+          "name": "Rotterdam Centraal - Barendrecht",
+          "mode": "bus",
+          "operator": "RET",
+          "colour": null,
+          "text_colour": null,
+          "per_hour": {
+            "peak": 0.0,
+            "day": 0.0,
+            "evening": 0.0,
+            "saturday": 0.0
+          },
+          "headway_min": {
+            "peak": null,
+            "day": null,
+            "evening": null,
+            "saturday": null
+          },
+          "directions": [
+            {
+              "headsign": "Rotterdam Centraal / Barendrecht",
+              "per_hour": {
+                "peak": 0.0,
+                "day": 0.0,
+                "evening": 0.0,
+                "saturday": 0.0
+              },
+              "headway_min": {
+                "peak": null,
+                "day": null,
+                "evening": null,
+                "saturday": null
+              },
+              "weekday_departures": 0,
+              "first": null,
+              "last": null
+            }
+          ]
+        },
+        {
+          "line": "456",
+          "name": "Den Haag Leyenburg via Naaldwijk - Schiedam",
+          "mode": "bus",
+          "operator": "EBS",
+          "colour": "#e1251b",
+          "text_colour": "#ffffff",
+          "per_hour": {
+            "peak": 0.0,
+            "day": 0.0,
+            "evening": 0.0,
+            "saturday": 0.0
+          },
+          "headway_min": {
+            "peak": null,
+            "day": null,
+            "evening": null,
+            "saturday": null
+          },
+          "directions": [
+            {
+              "headsign": "Den Haag Leyenburg",
+              "per_hour": {
+                "peak": 0.0,
+                "day": 0.0,
+                "evening": 0.0,
+                "saturday": 0.0
+              },
+              "headway_min": {
+                "peak": null,
+                "day": null,
+                "evening": null,
+                "saturday": null
+              },
+              "weekday_departures": 1,
+              "first": "04:51",
+              "last": "04:51"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stoparea:617742",
+      "name": "Martinus Steynstraat",
+      "full_names": [
+        "Rotterdam, Martinus Steynstraat"
+      ],
+      "lon": 4.503125,
+      "lat": 51.898279,
+      "n_platforms": 2,
+      "dist_to_study_area_m": 19,
+      "modes": [
+        "bus"
+      ],
+      "lines": [
+        {
+          "line": "77",
+          "name": "ss Rotterdam - Zuidplein",
+          "mode": "bus",
+          "operator": "RET",
+          "colour": null,
+          "text_colour": null,
+          "per_hour": {
+            "peak": 2.0,
+            "day": 2.0,
+            "evening": 1.0,
+            "saturday": 2.0
+          },
+          "headway_min": {
+            "peak": 30.0,
+            "day": 30.0,
+            "evening": 60.0,
+            "saturday": 30.0
+          },
+          "directions": [
+            {
+              "headsign": "Zuidplein",
+              "per_hour": {
+                "peak": 2.0,
+                "day": 2.0,
+                "evening": 1.0,
+                "saturday": 2.0
+              },
+              "headway_min": {
+                "peak": 30.0,
+                "day": 30.0,
+                "evening": 60.0,
+                "saturday": 30.0
+              },
+              "weekday_departures": 30,
+              "first": "06:34",
+              "last": "22:49"
+            },
+            {
+              "headsign": "ss Rotterdam",
+              "per_hour": {
+                "peak": 2.0,
+                "day": 2.0,
+                "evening": 1.0,
+                "saturday": 2.0
+              },
+              "headway_min": {
+                "peak": 30.0,
+                "day": 30.0,
+                "evening": 60.0,
+                "saturday": 30.0
+              },
+              "weekday_departures": 29,
+              "first": "07:14",
+              "last": "22:44"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stoparea:617523",
+      "name": "Randweg",
+      "full_names": [
+        "Rotterdam, Randweg"
+      ],
+      "lon": 4.509931,
+      "lat": 51.893524,
+      "n_platforms": 4,
+      "dist_to_study_area_m": 35,
+      "modes": [
+        "tram"
+      ],
+      "lines": [
+        {
+          "line": "2",
+          "name": "Charlois - Keizerswaard",
+          "mode": "tram",
+          "operator": "RET",
+          "colour": "#f47b20",
+          "text_colour": "#000000",
+          "per_hour": {
+            "peak": 6.0,
+            "day": 6.0,
+            "evening": 4.33,
+            "saturday": 4.17
+          },
+          "headway_min": {
+            "peak": 10.0,
+            "day": 10.0,
+            "evening": 13.9,
+            "saturday": 14.4
+          },
+          "directions": [
+            {
+              "headsign": "Charlois",
+              "per_hour": {
+                "peak": 6.0,
+                "day": 6.0,
+                "evening": 4.0,
+                "saturday": 4.17
+              },
+              "headway_min": {
+                "peak": 10.0,
+                "day": 10.0,
+                "evening": 15.0,
+                "saturday": 14.4
+              },
+              "weekday_departures": 97,
+              "first": "05:33",
+              "last": "00:02"
+            },
+            {
+              "headsign": "Keizerswaard / Bredenoord",
+              "per_hour": {
+                "peak": 5.5,
+                "day": 6.0,
+                "evening": 4.33,
+                "saturday": 4.17
+              },
+              "headway_min": {
+                "peak": 10.9,
+                "day": 10.0,
+                "evening": 13.9,
+                "saturday": 14.4
+              },
+              "weekday_departures": 97,
+              "first": "06:02",
+              "last": "00:30"
+            }
+          ]
+        },
+        {
+          "line": "5",
+          "name": "Carnisselande - Rotterdam Centraal",
+          "mode": "tram",
+          "operator": "RET",
+          "colour": "#ed1944",
+          "text_colour": "#000000",
+          "per_hour": {
+            "peak": 8.0,
+            "day": 8.0,
+            "evening": 4.33,
+            "saturday": 5.83
+          },
+          "headway_min": {
+            "peak": 7.5,
+            "day": 7.5,
+            "evening": 13.9,
+            "saturday": 10.3
+          },
+          "directions": [
+            {
+              "headsign": "Carnisselande",
+              "per_hour": {
+                "peak": 7.0,
+                "day": 8.0,
+                "evening": 4.33,
+                "saturday": 5.67
+              },
+              "headway_min": {
+                "peak": 8.6,
+                "day": 7.5,
+                "evening": 13.9,
+                "saturday": 10.6
+              },
+              "weekday_departures": 122,
+              "first": "06:27",
+              "last": "00:42"
+            },
+            {
+              "headsign": "Rotterdam Centraal",
+              "per_hour": {
+                "peak": 8.0,
+                "day": 8.0,
+                "evening": 4.0,
+                "saturday": 5.83
+              },
+              "headway_min": {
+                "peak": 7.5,
+                "day": 7.5,
+                "evening": 15.0,
+                "saturday": 10.3
+              },
+              "weekday_departures": 124,
+              "first": "05:37",
+              "last": "00:21"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stoparea:617748",
+      "name": "Motorstraat",
+      "full_names": [
+        "Rotterdam, Motorstraat"
+      ],
+      "lon": 4.494762,
+      "lat": 51.887785,
+      "n_platforms": 2,
+      "dist_to_study_area_m": 169,
+      "modes": [
+        "bus"
+      ],
+      "lines": [
+        {
+          "line": "76",
+          "name": "Zuidplein - Keizerswaard",
+          "mode": "bus",
+          "operator": "RET",
+          "colour": null,
+          "text_colour": null,
+          "per_hour": {
+            "peak": 5.0,
+            "day": 4.17,
+            "evening": 2.33,
+            "saturday": 4.0
+          },
+          "headway_min": {
+            "peak": 12.0,
+            "day": 14.4,
+            "evening": 25.8,
+            "saturday": 15.0
+          },
+          "directions": [
+            {
+              "headsign": "Keizerswaard",
+              "per_hour": {
+                "peak": 5.0,
+                "day": 4.17,
+                "evening": 2.0,
+                "saturday": 4.0
+              },
+              "headway_min": {
+                "peak": 12.0,
+                "day": 14.4,
+                "evening": 30.0,
+                "saturday": 15.0
+              },
+              "weekday_departures": 69,
+              "first": "06:04",
+              "last": "00:18"
+            },
+            {
+              "headsign": "Zuidplein",
+              "per_hour": {
+                "peak": 4.5,
+                "day": 4.0,
+                "evening": 2.33,
+                "saturday": 3.83
+              },
+              "headway_min": {
+                "peak": 13.3,
+                "day": 15.0,
+                "evening": 25.8,
+                "saturday": 15.7
+              },
+              "weekday_departures": 70,
+              "first": "06:22",
+              "last": "00:38"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stoparea:617659",
+      "name": "Afrikaanderplein",
+      "full_names": [
+        "Rotterdam, Afrikaanderplein"
+      ],
+      "lon": 4.499081,
+      "lat": 51.900011,
+      "n_platforms": 2,
+      "dist_to_study_area_m": 185,
+      "modes": [
+        "bus"
+      ],
+      "lines": [
+        {
+          "line": "77",
+          "name": "ss Rotterdam - Zuidplein",
+          "mode": "bus",
+          "operator": "RET",
+          "colour": null,
+          "text_colour": null,
+          "per_hour": {
+            "peak": 2.0,
+            "day": 2.0,
+            "evening": 1.0,
+            "saturday": 2.0
+          },
+          "headway_min": {
+            "peak": 30.0,
+            "day": 30.0,
+            "evening": 60.0,
+            "saturday": 30.0
+          },
+          "directions": [
+            {
+              "headsign": "Zuidplein",
+              "per_hour": {
+                "peak": 2.0,
+                "day": 2.0,
+                "evening": 1.0,
+                "saturday": 2.0
+              },
+              "headway_min": {
+                "peak": 30.0,
+                "day": 30.0,
+                "evening": 60.0,
+                "saturday": 30.0
+              },
+              "weekday_departures": 30,
+              "first": "06:33",
+              "last": "22:48"
+            },
+            {
+              "headsign": "ss Rotterdam",
+              "per_hour": {
+                "peak": 2.0,
+                "day": 2.0,
+                "evening": 1.0,
+                "saturday": 2.0
+              },
+              "headway_min": {
+                "peak": 30.0,
+                "day": 30.0,
+                "evening": 60.0,
+                "saturday": 30.0
+              },
+              "weekday_departures": 29,
+              "first": "07:15",
+              "last": "22:45"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stoparea:502608",
+      "name": "Ikazia Ziekenhuis",
+      "full_names": [
+        "Rotterdam, Ikazia Ziekenhuis"
+      ],
+      "lon": 4.492538,
+      "lat": 51.887339,
+      "n_platforms": 3,
+      "dist_to_study_area_m": 211,
+      "modes": [
+        "bus"
+      ],
+      "lines": [
+        {
+          "line": "66",
+          "name": "Zuidplein - Feijenoord",
+          "mode": "bus",
+          "operator": "RET",
+          "colour": null,
+          "text_colour": null,
+          "per_hour": {
+            "peak": 6.0,
+            "day": 6.0,
+            "evening": 2.0,
+            "saturday": 4.0
+          },
+          "headway_min": {
+            "peak": 10.0,
+            "day": 10.0,
+            "evening": 30.0,
+            "saturday": 15.0
+          },
+          "directions": [
+            {
+              "headsign": "Zuidplein",
+              "per_hour": {
+                "peak": 6.0,
+                "day": 6.0,
+                "evening": 2.0,
+                "saturday": 4.0
+              },
+              "headway_min": {
+                "peak": 10.0,
+                "day": 10.0,
+                "evening": 30.0,
+                "saturday": 15.0
+              },
+              "weekday_departures": 86,
+              "first": "06:05",
+              "last": "00:44"
+            }
+          ]
+        },
+        {
+          "line": "75",
+          "name": "Zuidplein - Kralingse Zoom",
+          "mode": "bus",
+          "operator": "RET",
+          "colour": null,
+          "text_colour": null,
+          "per_hour": {
+            "peak": 1.5,
+            "day": 2.0,
+            "evening": 0.0,
+            "saturday": 0.0
+          },
+          "headway_min": {
+            "peak": 40.0,
+            "day": 30.0,
+            "evening": null,
+            "saturday": null
+          },
+          "directions": [
+            {
+              "headsign": "Kralingse Zoom",
+              "per_hour": {
+                "peak": 1.5,
+                "day": 2.0,
+                "evening": 0.0,
+                "saturday": 0.0
+              },
+              "headway_min": {
+                "peak": 40.0,
+                "day": 30.0,
+                "evening": null,
+                "saturday": null
+              },
+              "weekday_departures": 22,
+              "first": "07:35",
+              "last": "18:05"
+            },
+            {
+              "headsign": "Zuidplein",
+              "per_hour": {
+                "peak": 1.0,
+                "day": 1.83,
+                "evening": 0.0,
+                "saturday": 0.0
+              },
+              "headway_min": {
+                "peak": 60.0,
+                "day": 32.8,
+                "evening": null,
+                "saturday": null
+              },
+              "weekday_departures": 23,
+              "first": "08:00",
+              "last": "19:04"
+            }
+          ]
+        },
+        {
+          "line": "77",
+          "name": "ss Rotterdam - Zuidplein",
+          "mode": "bus",
+          "operator": "RET",
+          "colour": null,
+          "text_colour": null,
+          "per_hour": {
+            "peak": 2.0,
+            "day": 2.0,
+            "evening": 1.0,
+            "saturday": 2.0
+          },
+          "headway_min": {
+            "peak": 30.0,
+            "day": 30.0,
+            "evening": 60.0,
+            "saturday": 30.0
+          },
+          "directions": [
+            {
+              "headsign": "Zuidplein",
+              "per_hour": {
+                "peak": 1.5,
+                "day": 2.0,
+                "evening": 1.0,
+                "saturday": 2.0
+              },
+              "headway_min": {
+                "peak": 40.0,
+                "day": 30.0,
+                "evening": 60.0,
+                "saturday": 30.0
+              },
+              "weekday_departures": 30,
+              "first": "06:52",
+              "last": "23:08"
+            },
+            {
+              "headsign": "ss Rotterdam",
+              "per_hour": {
+                "peak": 2.0,
+                "day": 2.0,
+                "evening": 1.0,
+                "saturday": 2.0
+              },
+              "headway_min": {
+                "peak": 30.0,
+                "day": 30.0,
+                "evening": 60.0,
+                "saturday": 30.0
+              },
+              "weekday_departures": 29,
+              "first": "06:55",
+              "last": "22:25"
+            }
+          ]
+        },
+        {
+          "line": "456",
+          "name": "Den Haag Leyenburg via Naaldwijk - Schiedam",
+          "mode": "bus",
+          "operator": "EBS",
+          "colour": "#e1251b",
+          "text_colour": "#ffffff",
+          "per_hour": {
+            "peak": 0.0,
+            "day": 0.0,
+            "evening": 0.0,
+            "saturday": 0.0
+          },
+          "headway_min": {
+            "peak": null,
+            "day": null,
+            "evening": null,
+            "saturday": null
+          },
+          "directions": [
+            {
+              "headsign": "Den Haag Leyenburg",
+              "per_hour": {
+                "peak": 0.0,
+                "day": 0.0,
+                "evening": 0.0,
+                "saturday": 0.0
+              },
+              "headway_min": {
+                "peak": null,
+                "day": null,
+                "evening": null,
+                "saturday": null
+              },
+              "weekday_departures": 1,
+              "first": "04:49",
+              "last": "04:49"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stoparea:617683",
+      "name": "Christiaan de Wetstraat",
+      "full_names": [
+        "Rotterdam, Christiaan de Wetstraat"
+      ],
+      "lon": 4.506523,
+      "lat": 51.898417,
+      "n_platforms": 2,
+      "dist_to_study_area_m": 268,
+      "modes": [
+        "bus"
+      ],
+      "lines": [
+        {
+          "line": "77",
+          "name": "ss Rotterdam - Zuidplein",
+          "mode": "bus",
+          "operator": "RET",
+          "colour": null,
+          "text_colour": null,
+          "per_hour": {
+            "peak": 2.0,
+            "day": 2.0,
+            "evening": 1.0,
+            "saturday": 2.0
+          },
+          "headway_min": {
+            "peak": 30.0,
+            "day": 30.0,
+            "evening": 60.0,
+            "saturday": 30.0
+          },
+          "directions": [
+            {
+              "headsign": "Zuidplein",
+              "per_hour": {
+                "peak": 2.0,
+                "day": 2.0,
+                "evening": 1.0,
+                "saturday": 2.0
+              },
+              "headway_min": {
+                "peak": 30.0,
+                "day": 30.0,
+                "evening": 60.0,
+                "saturday": 30.0
+              },
+              "weekday_departures": 30,
+              "first": "06:35",
+              "last": "22:50"
+            },
+            {
+              "headsign": "ss Rotterdam",
+              "per_hour": {
+                "peak": 2.0,
+                "day": 2.0,
+                "evening": 1.0,
+                "saturday": 2.0
+              },
+              "headway_min": {
+                "peak": 30.0,
+                "day": 30.0,
+                "evening": 60.0,
+                "saturday": 30.0
+              },
+              "weekday_departures": 29,
+              "first": "07:13",
+              "last": "22:43"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stoparea:617806",
+      "name": "Valkeniersweg",
+      "full_names": [
+        "Rotterdam, Valkeniersweg"
+      ],
+      "lon": 4.498536,
+      "lat": 51.886451,
+      "n_platforms": 2,
+      "dist_to_study_area_m": 334,
+      "modes": [
+        "bus"
+      ],
+      "lines": [
+        {
+          "line": "76",
+          "name": "Zuidplein - Keizerswaard",
+          "mode": "bus",
+          "operator": "RET",
+          "colour": null,
+          "text_colour": null,
+          "per_hour": {
+            "peak": 5.0,
+            "day": 4.17,
+            "evening": 2.33,
+            "saturday": 4.0
+          },
+          "headway_min": {
+            "peak": 12.0,
+            "day": 14.4,
+            "evening": 25.8,
+            "saturday": 15.0
+          },
+          "directions": [
+            {
+              "headsign": "Keizerswaard",
+              "per_hour": {
+                "peak": 5.0,
+                "day": 4.17,
+                "evening": 2.0,
+                "saturday": 4.0
+              },
+              "headway_min": {
+                "peak": 12.0,
+                "day": 14.4,
+                "evening": 30.0,
+                "saturday": 15.0
+              },
+              "weekday_departures": 69,
+              "first": "06:06",
+              "last": "00:20"
+            },
+            {
+              "headsign": "Zuidplein",
+              "per_hour": {
+                "peak": 4.5,
+                "day": 4.0,
+                "evening": 2.33,
+                "saturday": 3.83
+              },
+              "headway_min": {
+                "peak": 13.3,
+                "day": 15.0,
+                "evening": 25.8,
+                "saturday": 15.7
+              },
+              "weekday_departures": 70,
+              "first": "06:22",
+              "last": "00:38"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stoparea:617767",
+      "name": "Polderlaan",
+      "full_names": [
+        "Rotterdam, Polderlaan"
+      ],
+      "lon": 4.50969,
+      "lat": 51.89734,
+      "n_platforms": 2,
+      "dist_to_study_area_m": 346,
+      "modes": [
+        "bus"
+      ],
+      "lines": [
+        {
+          "line": "66",
+          "name": "Zuidplein - Feijenoord",
+          "mode": "bus",
+          "operator": "RET",
+          "colour": null,
+          "text_colour": null,
+          "per_hour": {
+            "peak": 5.5,
+            "day": 6.0,
+            "evening": 2.0,
+            "saturday": 4.0
+          },
+          "headway_min": {
+            "peak": 10.9,
+            "day": 10.0,
+            "evening": 30.0,
+            "saturday": 15.0
+          },
+          "directions": [
+            {
+              "headsign": "Zuidplein",
+              "per_hour": {
+                "peak": 5.5,
+                "day": 6.0,
+                "evening": 2.0,
+                "saturday": 4.0
+              },
+              "headway_min": {
+                "peak": 10.9,
+                "day": 10.0,
+                "evening": 30.0,
+                "saturday": 15.0
+              },
+              "weekday_departures": 86,
+              "first": "06:10",
+              "last": "00:39"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stoparea:617515",
+      "name": "Breeplein",
+      "full_names": [
+        "Rotterdam, Breeplein"
+      ],
+      "lon": 4.513466,
+      "lat": 51.890658,
+      "n_platforms": 2,
+      "dist_to_study_area_m": 356,
+      "modes": [
+        "tram",
+        "bus"
+      ],
+      "lines": [
+        {
+          "line": "2",
+          "name": "Charlois - Keizerswaard",
+          "mode": "tram",
+          "operator": "RET",
+          "colour": "#f47b20",
+          "text_colour": "#000000",
+          "per_hour": {
+            "peak": 5.5,
+            "day": 6.0,
+            "evening": 4.67,
+            "saturday": 4.17
+          },
+          "headway_min": {
+            "peak": 10.9,
+            "day": 10.0,
+            "evening": 12.8,
+            "saturday": 14.4
+          },
+          "directions": [
+            {
+              "headsign": "Keizerswaard / Bredenoord",
+              "per_hour": {
+                "peak": 5.5,
+                "day": 6.0,
+                "evening": 4.67,
+                "saturday": 4.17
+              },
+              "headway_min": {
+                "peak": 10.9,
+                "day": 10.0,
+                "evening": 12.8,
+                "saturday": 14.4
+              },
+              "weekday_departures": 97,
+              "first": "06:03",
+              "last": "00:31"
+            }
+          ]
+        },
+        {
+          "line": "5",
+          "name": "Carnisselande - Rotterdam Centraal",
+          "mode": "tram",
+          "operator": "RET",
+          "colour": "#ed1944",
+          "text_colour": "#000000",
+          "per_hour": {
+            "peak": 7.0,
+            "day": 8.0,
+            "evening": 4.33,
+            "saturday": 5.5
+          },
+          "headway_min": {
+            "peak": 8.6,
+            "day": 7.5,
+            "evening": 13.9,
+            "saturday": 10.9
+          },
+          "directions": [
+            {
+              "headsign": "Carnisselande",
+              "per_hour": {
+                "peak": 7.0,
+                "day": 8.0,
+                "evening": 4.33,
+                "saturday": 5.5
+              },
+              "headway_min": {
+                "peak": 8.6,
+                "day": 7.5,
+                "evening": 13.9,
+                "saturday": 10.9
+              },
+              "weekday_departures": 122,
+              "first": "06:28",
+              "last": "00:43"
+            }
+          ]
+        },
+        {
+          "line": "75",
+          "name": "Zuidplein - Kralingse Zoom",
+          "mode": "bus",
+          "operator": "RET",
+          "colour": null,
+          "text_colour": null,
+          "per_hour": {
+            "peak": 1.5,
+            "day": 2.0,
+            "evening": 0.0,
+            "saturday": 0.0
+          },
+          "headway_min": {
+            "peak": 40.0,
+            "day": 30.0,
+            "evening": null,
+            "saturday": null
+          },
+          "directions": [
+            {
+              "headsign": "Zuidplein",
+              "per_hour": {
+                "peak": 1.5,
+                "day": 2.0,
+                "evening": 0.0,
+                "saturday": 0.0
+              },
+              "headway_min": {
+                "peak": 40.0,
+                "day": 30.0,
+                "evening": null,
+                "saturday": null
+              },
+              "weekday_departures": 23,
+              "first": "07:54",
+              "last": "18:57"
+            }
+          ]
+        },
+        {
+          "line": "77",
+          "name": "ss Rotterdam - Zuidplein",
+          "mode": "bus",
+          "operator": "RET",
+          "colour": null,
+          "text_colour": null,
+          "per_hour": {
+            "peak": 1.5,
+            "day": 2.0,
+            "evening": 1.0,
+            "saturday": 2.0
+          },
+          "headway_min": {
+            "peak": 40.0,
+            "day": 30.0,
+            "evening": 60.0,
+            "saturday": 30.0
+          },
+          "directions": [
+            {
+              "headsign": "Zuidplein",
+              "per_hour": {
+                "peak": 1.5,
+                "day": 2.0,
+                "evening": 1.0,
+                "saturday": 2.0
+              },
+              "headway_min": {
+                "peak": 40.0,
+                "day": 30.0,
+                "evening": 60.0,
+                "saturday": 30.0
+              },
+              "weekday_departures": 30,
+              "first": "06:48",
+              "last": "23:04"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stoparea:597088",
+      "name": "Zuidplein",
+      "full_names": [
+        "Rotterdam, Zuidplein",
+        "Rotterdam, Zuidplein (Perron G)",
+        "Rotterdam, Zuidplein (perron L)",
+        "Rotterdam, Zuidplein [ H ]",
+        "Rotterdam, Zuidplein [ J ]",
+        "Rotterdam, Zuidplein [ K ]",
+        "Rotterdam, Zuidplein [ L ]",
+        "Rotterdam, Zuidplein perron E",
+        "Rotterdam, Zuidplein perron F",
+        "Rotterdam, Zuidplein perron M",
+        "Rotterdam, Zuidplein perron N"
+      ],
+      "lon": 4.489141,
+      "lat": 51.887812,
+      "n_platforms": 12,
+      "dist_to_study_area_m": 357,
+      "modes": [
+        "metro",
+        "bus"
+      ],
+      "lines": [
+        {
+          "line": "D",
+          "name": "",
+          "mode": "metro",
+          "operator": "RET",
+          "colour": "#00acd9",
+          "text_colour": "#000000",
+          "per_hour": {
+            "peak": 6.0,
+            "day": 6.0,
+            "evening": 4.33,
+            "saturday": 6.17
+          },
+          "headway_min": {
+            "peak": 10.0,
+            "day": 10.0,
+            "evening": 13.9,
+            "saturday": 9.7
+          },
+          "directions": [
+            {
+              "headsign": "De Akkers / Slinge",
+              "per_hour": {
+                "peak": 6.0,
+                "day": 6.0,
+                "evening": 4.0,
+                "saturday": 6.0
+              },
+              "headway_min": {
+                "peak": 10.0,
+                "day": 10.0,
+                "evening": 15.0,
+                "saturday": 10.0
+              },
+              "weekday_departures": 104,
+              "first": "06:01",
+              "last": "01:16"
+            },
+            {
+              "headsign": "Rotterdam Centraal",
+              "per_hour": {
+                "peak": 6.0,
+                "day": 6.0,
+                "evening": 4.33,
+                "saturday": 6.17
+              },
+              "headway_min": {
+                "peak": 10.0,
+                "day": 10.0,
+                "evening": 13.9,
+                "saturday": 9.7
+              },
+              "weekday_departures": 104,
+              "first": "05:27",
+              "last": "00:44"
+            }
+          ]
+        },
+        {
+          "line": "E",
+          "name": "",
+          "mode": "metro",
+          "operator": "RET",
+          "colour": "#0f3f94",
+          "text_colour": "#ffffff",
+          "per_hour": {
+            "peak": 12.0,
+            "day": 12.5,
+            "evening": 4.0,
+            "saturday": 6.0
+          },
+          "headway_min": {
+            "peak": 5.0,
+            "day": 4.8,
+            "evening": 15.0,
+            "saturday": 10.0
+          },
+          "directions": [
+            {
+              "headsign": "Den Haag Centraal / Rotterdam Centraal",
+              "per_hour": {
+                "peak": 12.0,
+                "day": 12.5,
+                "evening": 4.0,
+                "saturday": 6.0
+              },
+              "headway_min": {
+                "peak": 5.0,
+                "day": 4.8,
+                "evening": 15.0,
+                "saturday": 10.0
+              },
+              "weekday_departures": 171,
+              "first": "05:12",
+              "last": "00:08"
+            },
+            {
+              "headsign": "Slinge",
+              "per_hour": {
+                "peak": 9.5,
+                "day": 12.0,
+                "evening": 4.0,
+                "saturday": 5.83
+              },
+              "headway_min": {
+                "peak": 6.3,
+                "day": 5.0,
+                "evening": 15.0,
+                "saturday": 10.3
+              },
+              "weekday_departures": 171,
+              "first": "06:24",
+              "last": "01:09"
+            }
+          ]
+        },
+        {
+          "line": "67",
+          "name": "Zuidplein - Pendrecht",
+          "mode": "bus",
+          "operator": "RET",
+          "colour": null,
+          "text_colour": null,
+          "per_hour": {
+            "peak": 1.5,
+            "day": 0.17,
+            "evening": 0.0,
+            "saturday": 0.0
+          },
+          "headway_min": {
+            "peak": 40.0,
+            "day": 352.9,
+            "evening": null,
+            "saturday": null
+          },
+          "directions": [
+            {
+              "headsign": "Pendrecht",
+              "per_hour": {
+                "peak": 1.5,
+                "day": 0.17,
+                "evening": 0.0,
+                "saturday": 0.0
+              },
+              "headway_min": {
+                "peak": 40.0,
+                "day": 352.9,
+                "evening": null,
+                "saturday": null
+              },
+              "weekday_departures": 11,
+              "first": "07:30",
+              "last": "18:30"
+            }
+          ]
+        },
+        {
+          "line": "68",
+          "name": "Zuidplein - Heijplaat RDM",
+          "mode": "bus",
+          "operator": "RET",
+          "colour": null,
+          "text_colour": null,
+          "per_hour": {
+            "peak": 6.0,
+            "day": 6.0,
+            "evening": 2.0,
+            "saturday": 2.83
+          },
+          "headway_min": {
+            "peak": 10.0,
+            "day": 10.0,
+            "evening": 30.0,
+            "saturday": 21.2
+          },
+          "directions": [
+            {
+              "headsign": "Heijplaat RDM Campus",
+              "per_hour": {
+                "peak": 6.0,
+                "day": 6.0,
+                "evening": 2.0,
+                "saturday": 2.83
+              },
+              "headway_min": {
+                "peak": 10.0,
+                "day": 10.0,
+                "evening": 30.0,
+                "saturday": 21.2
+              },
+              "weekday_departures": 83,
+              "first": "06:04",
+              "last": "00:16"
+            }
+          ]
+        },
+        {
+          "line": "69",
+          "name": "Zuidplein - Pernis",
+          "mode": "bus",
+          "operator": "RET",
+          "colour": null,
+          "text_colour": null,
+          "per_hour": {
+            "peak": 2.0,
+            "day": 0.67,
+            "evening": 0.0,
+            "saturday": 0.0
+          },
+          "headway_min": {
+            "peak": 30.0,
+            "day": 89.6,
+            "evening": null,
+            "saturday": null
+          },
+          "directions": [
+            {
+              "headsign": "Pernis Metro",
+              "per_hour": {
+                "peak": 2.0,
+                "day": 0.67,
+                "evening": 0.0,
+                "saturday": 0.0
+              },
+              "headway_min": {
+                "peak": 30.0,
+                "day": 89.6,
+                "evening": null,
+                "saturday": null
+              },
+              "weekday_departures": 13,
+              "first": "06:20",
+              "last": "17:25"
+            }
+          ]
+        },
+        {
+          "line": "70",
+          "name": "Charlois - Keizerswaard",
+          "mode": "bus",
+          "operator": "RET",
+          "colour": null,
+          "text_colour": null,
+          "per_hour": {
+            "peak": 6.5,
+            "day": 6.67,
+            "evening": 2.67,
+            "saturday": 4.0
+          },
+          "headway_min": {
+            "peak": 9.2,
+            "day": 9.0,
+            "evening": 22.5,
+            "saturday": 15.0
+          },
+          "directions": [
+            {
+              "headsign": "Keizerswaard",
+              "per_hour": {
+                "peak": 6.5,
+                "day": 6.67,
+                "evening": 2.67,
+                "saturday": 4.0
+              },
+              "headway_min": {
+                "peak": 9.2,
+                "day": 9.0,
+                "evening": 22.5,
+                "saturday": 15.0
+              },
+              "weekday_departures": 99,
+              "first": "05:58",
+              "last": "00:16"
+            }
+          ]
+        },
+        {
+          "line": "71",
+          "name": "Zuidplein - Sluisjesdijk",
+          "mode": "bus",
+          "operator": "RET",
+          "colour": null,
+          "text_colour": null,
+          "per_hour": {
+            "peak": 0.0,
+            "day": 1.67,
+            "evening": 0.0,
+            "saturday": 0.0
+          },
+          "headway_min": {
+            "peak": null,
+            "day": 35.9,
+            "evening": null,
+            "saturday": null
+          },
+          "directions": [
+            {
+              "headsign": "Charlois",
+              "per_hour": {
+                "peak": 0.0,
+                "day": 1.67,
+                "evening": 0.0,
+                "saturday": 0.0
+              },
+              "headway_min": {
+                "peak": null,
+                "day": 35.9,
+                "evening": null,
+                "saturday": null
+              },
+              "weekday_departures": 12,
+              "first": "09:00",
+              "last": "14:30"
+            }
+          ]
+        },
+        {
+          "line": "72",
+          "name": "Zuidplein - Sluisjesdijk",
+          "mode": "bus",
+          "operator": "RET",
+          "colour": null,
+          "text_colour": null,
+          "per_hour": {
+            "peak": 2.0,
+            "day": 0.33,
+            "evening": 0.0,
+            "saturday": 0.0
+          },
+          "headway_min": {
+            "peak": 30.0,
+            "day": 181.8,
+            "evening": null,
+            "saturday": null
+          },
+          "directions": [
+            {
+              "headsign": "Zuidplein",
+              "per_hour": {
+                "peak": 2.0,
+                "day": 0.33,
+                "evening": 0.0,
+                "saturday": 0.0
+              },
+              "headway_min": {
+                "peak": 30.0,
+                "day": 181.8,
+                "evening": null,
+                "saturday": null
+              },
+              "weekday_departures": 7,
+              "first": "06:25",
+              "last": "18:15"
+            }
+          ]
+        },
+        {
+          "line": "76",
+          "name": "Zuidplein - Keizerswaard",
+          "mode": "bus",
+          "operator": "RET",
+          "colour": null,
+          "text_colour": null,
+          "per_hour": {
+            "peak": 4.5,
+            "day": 4.33,
+            "evening": 2.0,
+            "saturday": 4.0
+          },
+          "headway_min": {
+            "peak": 13.3,
+            "day": 13.9,
+            "evening": 30.0,
+            "saturday": 15.0
+          },
+          "directions": [
+            {
+              "headsign": "Keizerswaard",
+              "per_hour": {
+                "peak": 4.5,
+                "day": 4.33,
+                "evening": 2.0,
+                "saturday": 4.0
+              },
+              "headway_min": {
+                "peak": 13.3,
+                "day": 13.9,
+                "evening": 30.0,
+                "saturday": 15.0
+              },
+              "weekday_departures": 69,
+              "first": "06:02",
+              "last": "00:16"
+            }
+          ]
+        },
+        {
+          "line": "92",
+          "name": "Rotterdam Zuidplein - H.I. Ambacht - Dordrecht",
+          "mode": "bus",
+          "operator": "Qbuzz",
+          "colour": "#50af46",
+          "text_colour": "#ffffff",
+          "per_hour": {
+            "peak": 1.5,
+            "day": 2.17,
+            "evening": 0.33,
+            "saturday": 2.0
+          },
+          "headway_min": {
+            "peak": 40.0,
+            "day": 27.6,
+            "evening": 181.8,
+            "saturday": 30.0
+          },
+          "directions": [
+            {
+              "headsign": "Dordrecht via",
+              "per_hour": {
+                "peak": 1.5,
+                "day": 2.17,
+                "evening": 0.33,
+                "saturday": 2.0
+              },
+              "headway_min": {
+                "peak": 40.0,
+                "day": 27.6,
+                "evening": 181.8,
+                "saturday": 30.0
+              },
+              "weekday_departures": 28,
+              "first": "06:28",
+              "last": "20:01"
+            }
+          ]
+        },
+        {
+          "line": "360",
+          "name": "Rotterdam via Bergen op Zoom - Putte",
+          "mode": "bus",
+          "operator": "Bravo (Arriva)",
+          "colour": "#00a6de",
+          "text_colour": "#000000",
+          "per_hour": {
+            "peak": 1.5,
+            "day": 2.0,
+            "evening": 1.0,
+            "saturday": 1.0
+          },
+          "headway_min": {
+            "peak": 40.0,
+            "day": 30.0,
+            "evening": 60.0,
+            "saturday": 60.0
+          },
+          "directions": [
+            {
+              "headsign": "Bergen op Zoom / Putte",
+              "per_hour": {
+                "peak": 1.5,
+                "day": 2.0,
+                "evening": 1.0,
+                "saturday": 1.0
+              },
+              "headway_min": {
+                "peak": 40.0,
+                "day": 30.0,
+                "evening": 60.0,
+                "saturday": 60.0
+              },
+              "weekday_departures": 32,
+              "first": "06:29",
+              "last": "00:08"
+            }
+          ]
+        },
+        {
+          "line": "395",
+          "name": "Zierikzee - Rotterdam Zuidplein",
+          "mode": "bus",
+          "operator": "Connexxion",
+          "colour": null,
+          "text_colour": null,
+          "per_hour": {
+            "peak": 1.5,
+            "day": 1.17,
+            "evening": 0.0,
+            "saturday": 0.0
+          },
+          "headway_min": {
+            "peak": 40.0,
+            "day": 51.3,
+            "evening": null,
+            "saturday": null
+          },
+          "directions": [
+            {
+              "headsign": "Zierikzee Busstation",
+              "per_hour": {
+                "peak": 1.5,
+                "day": 1.17,
+                "evening": 0.0,
+                "saturday": 0.0
+              },
+              "headway_min": {
+                "peak": 40.0,
+                "day": 51.3,
+                "evening": null,
+                "saturday": null
+              },
+              "weekday_departures": 17,
+              "first": "07:50",
+              "last": "18:20"
+            }
+          ]
+        },
+        {
+          "line": "436",
+          "name": "Stellendam Busstation - Rotterdam Zuidplein",
+          "mode": "bus",
+          "operator": "Transdev",
+          "colour": "#ff0000",
+          "text_colour": "#ffffff",
+          "per_hour": {
+            "peak": 4.0,
+            "day": 4.33,
+            "evening": 2.0,
+            "saturday": 2.0
+          },
+          "headway_min": {
+            "peak": 15.0,
+            "day": 13.9,
+            "evening": 30.0,
+            "saturday": 30.0
+          },
+          "directions": [
+            {
+              "headsign": "Stellendam / Dirksland",
+              "per_hour": {
+                "peak": 4.0,
+                "day": 4.33,
+                "evening": 2.0,
+                "saturday": 2.0
+              },
+              "headway_min": {
+                "peak": 15.0,
+                "day": 13.9,
+                "evening": 30.0,
+                "saturday": 30.0
+              },
+              "weekday_departures": 78,
+              "first": "06:06",
+              "last": "00:06"
+            }
+          ]
+        },
+        {
+          "line": "461",
+          "name": "Oud-Beijerland Zinkweg - Rotterdam Zuidplein",
+          "mode": "bus",
+          "operator": "Transdev",
+          "colour": "#ff0000",
+          "text_colour": "#ffffff",
+          "per_hour": {
+            "peak": 5.5,
+            "day": 2.67,
+            "evening": 0.0,
+            "saturday": 0.0
+          },
+          "headway_min": {
+            "peak": 10.9,
+            "day": 22.5,
+            "evening": null,
+            "saturday": null
+          },
+          "directions": [
+            {
+              "headsign": "Oud-B. Zinkweg / Heinenoord Busstation",
+              "per_hour": {
+                "peak": 5.5,
+                "day": 2.67,
+                "evening": 0.0,
+                "saturday": 0.0
+              },
+              "headway_min": {
+                "peak": 10.9,
+                "day": 22.5,
+                "evening": null,
+                "saturday": null
+              },
+              "weekday_departures": 49,
+              "first": "07:14",
+              "last": "18:45"
+            }
+          ]
+        },
+        {
+          "line": "462",
+          "name": "Goudswaard - Rotterdam Zuidplein",
+          "mode": "bus",
+          "operator": "Transdev",
+          "colour": "#ff0000",
+          "text_colour": "#ffffff",
+          "per_hour": {
+            "peak": 4.0,
+            "day": 4.5,
+            "evening": 2.0,
+            "saturday": 2.0
+          },
+          "headway_min": {
+            "peak": 15.0,
+            "day": 13.3,
+            "evening": 30.0,
+            "saturday": 30.0
+          },
+          "directions": [
+            {
+              "headsign": "Goudswaard Dorp / Heinenoord Busstation",
+              "per_hour": {
+                "peak": 4.0,
+                "day": 4.5,
+                "evening": 2.0,
+                "saturday": 2.0
+              },
+              "headway_min": {
+                "peak": 15.0,
+                "day": 13.3,
+                "evening": 30.0,
+                "saturday": 30.0
+              },
+              "weekday_departures": 69,
+              "first": "05:59",
+              "last": "00:45"
+            }
+          ]
+        },
+        {
+          "line": "471",
+          "name": "Oud-Beijerland Zinkweg - Rotterdam Zuidplein",
+          "mode": "bus",
+          "operator": "Transdev",
+          "colour": "#ff0000",
+          "text_colour": "#ffffff",
+          "per_hour": {
+            "peak": 4.0,
+            "day": 2.17,
+            "evening": 2.0,
+            "saturday": 2.0
+          },
+          "headway_min": {
+            "peak": 15.0,
+            "day": 27.6,
+            "evening": 30.0,
+            "saturday": 30.0
+          },
+          "directions": [
+            {
+              "headsign": "Oud-Beijerland Zinkweg",
+              "per_hour": {
+                "peak": 4.0,
+                "day": 2.17,
+                "evening": 2.0,
+                "saturday": 2.0
+              },
+              "headway_min": {
+                "peak": 15.0,
+                "day": 27.6,
+                "evening": 30.0,
+                "saturday": 30.0
+              },
+              "weekday_departures": 52,
+              "first": "05:54",
+              "last": "00:34"
+            }
+          ]
+        },
+        {
+          "line": "491",
+          "name": "Rotterdam Zuidplein - Papendrecht - Sliedrecht",
+          "mode": "bus",
+          "operator": "Qbuzz",
+          "colour": "#ff0000",
+          "text_colour": "#ffffff",
+          "per_hour": {
+            "peak": 4.0,
+            "day": 5.17,
+            "evening": 2.0,
+            "saturday": 2.0
+          },
+          "headway_min": {
+            "peak": 15.0,
+            "day": 11.6,
+            "evening": 30.0,
+            "saturday": 30.0
+          },
+          "directions": [
+            {
+              "headsign": "Sliedrecht / Sliedrecht Baanhoek",
+              "per_hour": {
+                "peak": 4.0,
+                "day": 5.17,
+                "evening": 2.0,
+                "saturday": 2.0
+              },
+              "headway_min": {
+                "peak": 15.0,
+                "day": 11.6,
+                "evening": 30.0,
+                "saturday": 30.0
+              },
+              "weekday_departures": 74,
+              "first": "06:07",
+              "last": "00:13"
+            }
+          ]
+        },
+        {
+          "line": "567",
+          "name": "Buurtbus Charlois",
+          "mode": "bus",
+          "operator": "RET",
+          "colour": null,
+          "text_colour": null,
+          "per_hour": {
+            "peak": 0.0,
+            "day": 0.83,
+            "evening": 0.0,
+            "saturday": 0.83
+          },
+          "headway_min": {
+            "peak": null,
+            "day": 72.3,
+            "evening": null,
+            "saturday": 72.3
+          },
+          "directions": [
+            {
+              "headsign": "Slinge Metro",
+              "per_hour": {
+                "peak": 0.0,
+                "day": 0.83,
+                "evening": 0.0,
+                "saturday": 0.83
+              },
+              "headway_min": {
+                "peak": null,
+                "day": 72.3,
+                "evening": null,
+                "saturday": 72.3
+              },
+              "weekday_departures": 8,
+              "first": "09:01",
+              "last": "17:01"
+            }
+          ]
+        },
+        {
+          "line": "668",
+          "name": "Zuidplein  Laag - Waalhaven S.T.C",
+          "mode": "bus",
+          "operator": "RET",
+          "colour": null,
+          "text_colour": null,
+          "per_hour": {
+            "peak": 3.0,
+            "day": 0.17,
+            "evening": 0.0,
+            "saturday": 0.0
+          },
+          "headway_min": {
+            "peak": 20.0,
+            "day": 352.9,
+            "evening": null,
+            "saturday": null
+          },
+          "directions": [
+            {
+              "headsign": "STC Campus Waalhaven",
+              "per_hour": {
+                "peak": 3.0,
+                "day": 0.17,
+                "evening": 0.0,
+                "saturday": 0.0
+              },
+              "headway_min": {
+                "peak": 20.0,
+                "day": 352.9,
+                "evening": null,
+                "saturday": null
+              },
+              "weekday_departures": 11,
+              "first": "07:42",
+              "last": "10:02"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stoparea:617849",
+      "name": "Beijerlandselaan",
+      "full_names": [
+        "Rotterdam, Beijerlandselaan"
+      ],
+      "lon": 4.51085,
+      "lat": 51.897056,
+      "n_platforms": 1,
+      "dist_to_study_area_m": 383,
+      "modes": [
+        "tram"
+      ],
+      "lines": [
+        {
+          "line": "5",
+          "name": "Carnisselande - Rotterdam Centraal",
+          "mode": "tram",
+          "operator": "RET",
+          "colour": "#ed1944",
+          "text_colour": "#000000",
+          "per_hour": {
+            "peak": 7.0,
+            "day": 8.0,
+            "evening": 4.33,
+            "saturday": 5.5
+          },
+          "headway_min": {
+            "peak": 8.6,
+            "day": 7.5,
+            "evening": 13.9,
+            "saturday": 10.9
+          },
+          "directions": [
+            {
+              "headsign": "Carnisselande / Randweg",
+              "per_hour": {
+                "peak": 7.0,
+                "day": 8.0,
+                "evening": 4.33,
+                "saturday": 5.5
+              },
+              "headway_min": {
+                "peak": 8.6,
+                "day": 7.5,
+                "evening": 13.9,
+                "saturday": 10.9
+              },
+              "weekday_departures": 123,
+              "first": "06:25",
+              "last": "00:54"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stoparea:502605",
+      "name": "Rijnhaven",
+      "full_names": [
+        "Rotterdam, Rijnhaven"
+      ],
+      "lon": 4.496836,
+      "lat": 51.903688,
+      "n_platforms": 2,
+      "dist_to_study_area_m": 580,
+      "modes": [
+        "metro"
+      ],
+      "lines": [
+        {
+          "line": "D",
+          "name": "",
+          "mode": "metro",
+          "operator": "RET",
+          "colour": "#00acd9",
+          "text_colour": "#000000",
+          "per_hour": {
+            "peak": 6.0,
+            "day": 6.0,
+            "evening": 4.0,
+            "saturday": 6.17
+          },
+          "headway_min": {
+            "peak": 10.0,
+            "day": 10.0,
+            "evening": 15.0,
+            "saturday": 9.7
+          },
+          "directions": [
+            {
+              "headsign": "De Akkers / Slinge",
+              "per_hour": {
+                "peak": 6.0,
+                "day": 6.0,
+                "evening": 4.0,
+                "saturday": 5.83
+              },
+              "headway_min": {
+                "peak": 10.0,
+                "day": 10.0,
+                "evening": 15.0,
+                "saturday": 10.3
+              },
+              "weekday_departures": 104,
+              "first": "05:57",
+              "last": "01:12"
+            },
+            {
+              "headsign": "Rotterdam Centraal",
+              "per_hour": {
+                "peak": 6.0,
+                "day": 6.0,
+                "evening": 4.0,
+                "saturday": 6.17
+              },
+              "headway_min": {
+                "peak": 10.0,
+                "day": 10.0,
+                "evening": 15.0,
+                "saturday": 9.7
+              },
+              "weekday_departures": 104,
+              "first": "05:31",
+              "last": "00:48"
+            }
+          ]
+        },
+        {
+          "line": "E",
+          "name": "",
+          "mode": "metro",
+          "operator": "RET",
+          "colour": "#0f3f94",
+          "text_colour": "#ffffff",
+          "per_hour": {
+            "peak": 12.0,
+            "day": 12.5,
+            "evening": 4.0,
+            "saturday": 6.0
+          },
+          "headway_min": {
+            "peak": 5.0,
+            "day": 4.8,
+            "evening": 15.0,
+            "saturday": 10.0
+          },
+          "directions": [
+            {
+              "headsign": "Den Haag Centraal / Rotterdam Centraal",
+              "per_hour": {
+                "peak": 12.0,
+                "day": 12.5,
+                "evening": 4.0,
+                "saturday": 6.0
+              },
+              "headway_min": {
+                "peak": 5.0,
+                "day": 4.8,
+                "evening": 15.0,
+                "saturday": 10.0
+              },
+              "weekday_departures": 171,
+              "first": "05:16",
+              "last": "00:12"
+            },
+            {
+              "headsign": "Slinge",
+              "per_hour": {
+                "peak": 10.0,
+                "day": 12.0,
+                "evening": 4.0,
+                "saturday": 5.83
+              },
+              "headway_min": {
+                "peak": 6.0,
+                "day": 5.0,
+                "evening": 15.0,
+                "saturday": 10.3
+              },
+              "weekday_departures": 171,
+              "first": "06:20",
+              "last": "01:05"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

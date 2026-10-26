@@ -78,7 +78,7 @@ html, body {
   z-index: 10;
   overflow: hidden;
 }
-.panel--left  { left: 12px; }
+.panel--left  { left: 12px; max-height: calc(100% - 32px - var(--status-h, 0px)); }  /*stop above the status chips, main.js sets --status-h*/
 .panel--right { right: 12px; width: 320px; }
 
 .panel--collapsed .panel__body,
@@ -246,7 +246,7 @@ table.kv tr:last-child td { border-bottom: none; }
 /* --------------------------------------------------------- narrow screens */
 @media (max-width: 900px) {
   .panel { width: calc(50% - 18px); }
-  .panel--right { width: calc(50% - 18px); }
+  .panel--right { width: calc(50% - 18px); max-height: calc(100% - 32px - var(--status-h, 0px)); }  /*chips span the full width here*/
   .status { max-width: calc(100% - 24px); }
 }
 

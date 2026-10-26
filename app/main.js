@@ -35,6 +35,7 @@ import { setup as setupCbs } from "./modules/cbs.js";
 import { setup as setupWindNoise } from "./modules/wind_noise.js";
 import { setup as setupLanduse } from "./modules/landuse.js";
 import { setup as setupRoads } from "./modules/roads.js";
+import { setup as setupTransit } from "./modules/transit.js";
 import { setup as setupScenarios } from "./modules/scenarios.js";
 import { setup as setupPhotos } from "./modules/photos.js";
 import { setup as setupFlood } from "./modules/flood.js";
@@ -54,6 +55,7 @@ const MODULES = [
   ["wind_noise", setupWindNoise],
   ["landuse", setupLanduse],
   ["roads", setupRoads],
+  ["transit", setupTransit],
   ["photos", setupPhotos],
   ["flood", setupFlood],
   // Last, so saved performance choices override defaults set by the others.
@@ -62,6 +64,14 @@ const MODULES = [
 
 const boot = document.getElementById("boot");
 const statusEl = document.getElementById("status");
+
+/* The status chips sit at the bottom-left over the layer panel and grow as
+ * modules add notes; publish their height so the panels can stop above them
+ * (--status-h in style.css) instead of hiding their last rows under the chips. */
+new ResizeObserver(() => {
+  const h = statusEl.childElementCount ? statusEl.offsetHeight : 0;
+  document.documentElement.style.setProperty("--status-h", `${h}px`);
+}).observe(statusEl);
 
 function fatal(msg, err) {
   console.error(msg, err || "");

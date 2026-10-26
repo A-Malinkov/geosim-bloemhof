@@ -91,7 +91,7 @@ export async function setup(ctx) {
     const handle = ctx.registerLayer({
       id: `roads-${scenario}`,
       label: `Walk network, betweenness (${scenario})`,
-      group: "Roads",
+      group: "Mobility",  //with the transit stops; there is no separate Roads group any more
       show: wanted.get(nets),  //start as the user last left it, so registering does not reset the choice
       target: ds,
       onToggle: remember(nets, scenario),
@@ -125,7 +125,7 @@ export async function setup(ctx) {
     const handle = ctx.registerLayer({
       id: `roads-links-${scenario}`,
       label: `Optimiser footpath links (${scenario})`,
-      group: "Roads",
+      group: "Mobility",  //with the walk network and the transit stops
       show: wanted.get(picks),  //start as the user last left it
       target: ds,
       onToggle: remember(picks, scenario),
