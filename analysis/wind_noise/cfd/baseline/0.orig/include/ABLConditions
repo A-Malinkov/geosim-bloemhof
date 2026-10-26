@@ -1,0 +1,27 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v2412                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+
+// Atmospheric boundary layer inlet, used by U, k, epsilon and the ground nut
+// wall function. Reference: Hargreaves & Wright (2007),
+// DOI 10.1016/j.jweia.2006.08.002.
+// Q1 z0 is the aerodynamic roughness length. Bloemhof is a dense, regularly
+//    built-up low-rise district, so z0 ~ 0.5 m (Davenport/Wieringa "regularly
+//    built-up urban area"), not the template's 0.0002 m (open sea).
+// Q2 Uref is the wind speed at height Zref; here 5 m/s at 10 m, a representative
+//    mean for Rotterdam. RANS is linear in the inlet speed, so results scale.
+kappa                0.40;
+Cmu                  0.09;
+flowDir              (1 0 0);           // +x, the SW wind baked into the STL
+zDir                 (0 0 1);
+Uref                 5.0;
+Zref                 10.0;
+z0                   uniform 0.5;
+d                    uniform 0.0;
+
+
+// ************************************************************************* //

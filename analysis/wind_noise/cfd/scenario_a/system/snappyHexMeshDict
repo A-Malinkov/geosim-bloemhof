@@ -1,0 +1,108 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v2412                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      snappyHexMeshDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+
+#includeEtc "caseDicts/mesh/generation/snappyHexMeshDict.cfg"
+
+castellatedMesh on;
+snap            on;
+addLayers       off;      // off for the server run; pedestrian layers would need more cells
+
+geometry
+{
+    b_orig.stl
+    {
+        type triSurfaceMesh;
+        name buildings;
+    }
+
+    // Ground refinement box (Blocken 2015, Section 5.2): the built area plus a
+    // little wake, up to ~2.5H, so the near-ground flow where people walk is
+    // resolved without refining the whole domain.
+    // Q1 min/max are the box corners in metres; it wraps the buildings + margin.
+    groundRefinementBox
+    {
+        type box;
+        min  ( -330 -250 -2 );
+        max  ( 350 180 100 );
+    }
+}
+
+castellatedMeshControls
+{
+    features
+    (
+      { file  "b_orig.eMesh"; level 1; }
+    );
+
+    refinementSurfaces
+    {
+        buildings
+        {
+            level (2 2);          // ~5 m cells on the facades; modest for the server
+            patchInfo { type wall; }
+        }
+    }
+
+    refinementRegions
+    {
+        // Q1 level 2 inside the box = base cell halved twice (~5 m), enough to
+        // carry the pedestrian-level flow around the blocks on the TU Delft server.
+        groundRefinementBox
+        {
+            mode inside;
+            levels ((1E15 2));
+        }
+    }
+
+    // Seed point in clear air, well upwind of every building and inside the domain.
+    locationInMesh (-450 300 120);
+}
+
+snapControls
+{
+    explicitFeatureSnap    true;
+    implicitFeatureSnap    false;
+}
+
+addLayersControls
+{
+    layers
+    {
+        "buildings"
+        {
+            nSurfaceLayers 2;
+        }
+    }
+
+    relativeSizes       true;
+    expansionRatio      1.2;
+    finalLayerThickness 0.5;
+    minThickness        1e-3;
+}
+
+meshQualityControls
+{}
+
+writeFlags
+(
+    noRefinement
+);
+
+mergeTolerance 1e-6;
+
+
+// ************************************************************************* //

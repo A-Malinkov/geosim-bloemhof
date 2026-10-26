@@ -39,9 +39,12 @@ import { setup as setupScenarios } from "./modules/scenarios.js";
 import { setup as setupPhotos } from "./modules/photos.js";
 import { setup as setupFlood } from "./modules/flood.js";
 import { setup as setupPerformance } from "./modules/performance.js";
+import { setup as setupCompass } from "./modules/compass.js";
 
 /* Load order only affects panel order when two panels share the same `order`. */
 const MODULES = [
+  // First: no network, so a hanging service in a later module cannot hold it back.
+  ["compass", setupCompass],
   ["layers", setupLayers],
   ["vegetation", setupVegetation],
   ["scenarios", setupScenarios],

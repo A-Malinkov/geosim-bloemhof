@@ -1,0 +1,22 @@
+#!/bin/sh
+cd "${0%/*}" || exit
+. ${WM_PROJECT_DIR:?}/bin/tools/RunFunctions
+#------------------------------------------------------------------------------
+
+mkdir -p constant/triSurface
+
+cp -f "./resources/geometry/b_orig.stl" "constant/triSurface/b_orig.stl"
+
+runApplication surfaceFeatureExtract
+
+runApplication blockMesh
+
+runApplication -s mesh decomposePar
+
+runParallel snappyHexMesh -overwrite
+
+runApplication reconstructParMesh -constant
+
+rm -rf processor*
+
+#------------------------------------------------------------------------------
