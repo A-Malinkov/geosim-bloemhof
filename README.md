@@ -281,11 +281,11 @@ numbers here still match `data/processed/`.
 | 4.4 | KNMI sensors + AI prediction | ✅ done — live feed, sensors, 5 y history, model comparison | Atanas |
 | 4.5 | Wind + noise simulation | 🟡 noise done (baseline, NoiseModelling 6.0.0) · scenario_a wired, not run · wind not started | — |
 | 4.6 | CBS socio-demographics | ❌ not started | — |
-| 4.7 | Agent-based land-use model | ✅ done — CA + RL, prefers `scenario_b` | Atanas |
+| 4.7 | Agent-based land-use model | ✅ done — CA + RL, prefers the `green` programme; Rhino options scored on the same objective | Atanas |
 | 4.8 | Road network optimization | ✅ done — walk network and walks to everyday destinations for baseline, scenario_a and scenario_b, footpath-link optimiser on both scenarios. Site grid 377.4 m today → 371.2 m in scenario_a, 378.0 m in scenario_b | Atanas |
-| 4.9 | Scenario comparison | ❌ not started | — |
+| 4.9 | Scenario comparison | ✅ done — indicator by indicator on the design site, no overall score (`analysis/comparison/`, six figures, app card). Wind, scenario noise and CBS shown as not computed | Atanas |
 
-**5 of 9 complete.** The remaining components carry the heaviest rubric
+**6 of 9 complete.** The remaining components carry the heaviest rubric
 weight, and 4.9 depends on all of them writing outputs keyed
 `baseline` / `scenario_a` / `scenario_b` — which the module contract already
 does, so do not build anything that cannot be re-run per scenario.
@@ -354,7 +354,7 @@ Other results:
 | SVF under a tree crown vs 15 m from any tree | **0.35 vs 0.70** — trees remove 50 % of visible sky |
 | Weather forecast (temperature, +6 h) | MAE 1.29 °C, 54 % better than assuming no change |
 | Weather forecast (wind, +6 h) | MAE 1.13 m/s — but it under-predicts strong winds by 0.5 m/s |
-| Land-use model | CA prefers **scenario_b** (mix 0.391); RL agent re-planning the design site reaches mix 0.779, but keeps only 30 of its 160 residential cells |
+| Land-use model | CA prefers the **green** programme (mix 0.391); RL agent re-planning the design site reaches mix 0.779, but keeps only 30 of its 160 residential cells |
 
 ### Figures (`docs/`)
 

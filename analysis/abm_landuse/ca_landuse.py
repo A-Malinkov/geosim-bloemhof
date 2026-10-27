@@ -53,6 +53,14 @@ USAGE
 OUTPUT
 ------
     data/processed/landuse_abm.json   grids per step, shares, scores, ranking
+
+PROGRAMMES, NOT THE RHINO SCENARIOS
+-----------------------------------
+The CA explores land-use PROGRAMMES over the whole buurt: "compact" and "green"
+against the "baseline" (no programme). Until 2026-10-27 they were keyed
+scenario_a and scenario_b, which clashed with the Rhino design options of the
+same names. They are unrelated to those. The Rhino options are scored on the
+same objective by score_scenarios.py.
 """
 from __future__ import annotations
 
@@ -449,21 +457,22 @@ def main() -> int:
     print(f"\n  development programme: {n_new} cells "
           f"({n_new * args.cell**2 / 10_000:.1f} ha)")
 
+    #land-use programmes, keyed by their own names so they never read as the Rhino scenario_a/scenario_b
     scenarios = {
         "baseline": dict(base),
-        "scenario_a": {**base, RESID: base[RESID] + n_new,
-                       RETAIL: base[RETAIL] + n_new // 4,
-                       AMENITY: base[AMENITY] + n_new // 6},
-        "scenario_b": {**base, RESID: base[RESID] + int(n_new * 0.7),
-                       GREEN: base[GREEN] + int(n_new * 0.5),
-                       AMENITY: base[AMENITY] + n_new // 6},
+        "compact": {**base, RESID: base[RESID] + n_new,
+                    RETAIL: base[RETAIL] + n_new // 4,
+                    AMENITY: base[AMENITY] + n_new // 6},  #was scenario_a until 2026-10-27
+        "green": {**base, RESID: base[RESID] + int(n_new * 0.7),
+                  GREEN: base[GREEN] + int(n_new * 0.5),
+                  AMENITY: base[AMENITY] + n_new // 6},  #was scenario_b until 2026-10-27
     }
     labels = {
         "baseline": "reference: no development programme. Demand equals the "
                     "current counts so nothing converts — this is the comparison "
                     "state, NOT a validation of the model.",
-        "scenario_a": "compact: maximum housing plus mixed ground floors",
-        "scenario_b": "green: less housing, more park and amenity",
+        "compact": "compact: maximum housing plus mixed ground floors",
+        "green": "green: less housing, more park and amenity",
     }
 
     out = {
@@ -487,6 +496,10 @@ def main() -> int:
         "caveat": "Demand is set by us, not derived from a regional model. This "
                   "explores the consequences of a development programme, it does "
                   "not forecast one.",
+        "_programmes_note": "The entries under 'scenarios' are land-use programmes "
+                            "(baseline, compact, green) over the whole buurt. They are "
+                            "NOT the Rhino design options scenario_a and scenario_b; those "
+                            "are scored on the same objective in landuse_scenarios.json.",
         "initial": {"shares": s0, "score": score(grid0, args.cell)},
         "scenarios": {},
     }

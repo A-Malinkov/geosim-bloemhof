@@ -10,10 +10,11 @@ Component 4.7 · Owner: **Atanas Malinkov** · study area: Bloemhof · feeds `ap
 | Script | What it does | Writes |
 |---|---|---|
 | `fetch_landcover.py` | OSM green, water and roads — the surface BAG cannot see | `data/raw/osm_landcover.geojson`, `osm_roads.geojson` |
-| `ca_landuse.py` | constrained cellular automaton, scenarios, validation | `data/processed/landuse_abm.json` + frame PNGs |
+| `ca_landuse.py` | constrained cellular automaton, land-use programmes, validation | `data/processed/landuse_abm.json` + frame PNGs |
 | `rl_landuse.py` | linear Q-learning agent that re-plans the design site, scored on the same formula | `data/processed/landuse_rl.json` (and `_keep_housing`) |
 | `rl_dqn.py` | deep Q-network on the same problem, for comparison | `data/processed/landuse_rl_dqn.json` (and `_keep_housing`) |
 | `weight_sensitivity.py` | re-scores the stored replicates across the weight simplex | `data/processed/landuse_weight_sensitivity.json` |
+| `score_scenarios.py` | scores the Rhino design options on the same objective | `data/processed/landuse_scenarios.json` |
 
 ```bash
 python analysis/morphology/fetch_landuse.py      # BAG units — needed first
@@ -26,6 +27,7 @@ python analysis/abm_landuse/rl_dqn.py --episodes 120 --keep-housing
 python analysis/abm_landuse/rl_dqn.py --action use --gamma 1.0 --n-step 5 --episodes 300 \
     --hill-climb 56400 --tag _use_g1_n5   # exploration, ~80 min; see 'Trying to make the DQN learn'
 python analysis/abm_landuse/weight_sensitivity.py --step 0.01  # ~2 s, no model re-run; 0.01 is the published lattice
+python analysis/abm_landuse/score_scenarios.py   # ~5 s, after analysis/scenarios/import_rhino.py
 ```
 
 ## Why two models
@@ -96,32 +98,38 @@ reconstructs well; strip half the city and it cannot know where things were.
 
 These numbers come from a corrected run. Until 2026-10-21 the regrow test
 measured road access from discrete road cells, the method rejected above, while
-the scenario runs used the road surface. With both on the road surface, κ rose
-from 0.715, 0.492 and 0.253. The scenarios were not affected. Those were over
+the programme runs used the road surface. With both on the road surface, κ rose
+from 0.715, 0.492 and 0.253. The programmes were not affected. Those were over
 Bloemhof and Hillesluis; over Bloemhof alone (since 2026-10-22) the grid is
 smaller and κ at 10 % is 0.668 against 0.740 over both buurten.
 
-## Scenario results
+## Programme results
+
+The CA explores land-use **programmes** over the whole buurt: `compact` and
+`green` against `baseline`, no programme. They are not the Rhino design options.
+Until 2026-10-27 they were keyed `scenario_a` and `scenario_b`, which made the
+app show them under the same names as the Rhino options. The Rhino options are
+scored on the same objective further down.
 
 Programme: 98 cells (6.1 ha, 6 % of the grid), 12 stochastic replicates each.
 
-| scenario | objective | land-use mix | green | home → amenity |
+| programme | objective | land-use mix | green | home → amenity |
 |---|---|---|---|---|
 | baseline | 1.215 | 0.340 | 5.3 % | 91 m |
-| scenario_a | 1.355 | 0.382 | 5.3 % | 54 m |
-| scenario_b **★** | 1.374 | 0.391 | 8.2 % | 67 m |
+| compact | 1.355 | 0.382 | 5.3 % | 54 m |
+| green **★** | 1.374 | 0.391 | 8.2 % | 67 m |
 
 ```
 objective = 1.6 · land-use mix + 1.0 · green share
           + 0.8 · max(0, 1 − mean home-to-amenity distance / 400 m)
 ```
 
-**scenario_b wins.** Trading some housing for park and amenity beats
+**The green programme wins.** Trading some housing for park and amenity beats
 maximising housing: it gains more on mix and green than it loses on walkability.
 
 ### How much of that is the weights?
 
-Those three weights are ours, and the gap between the top two scenarios is
+Those three weights are ours, and the gap between the top two programmes is
 0.0051 on a normalised scale, against a replicate spread of
 σ 0.0056 and 0.0051. So the ranking deserves a
 sensitivity check rather than a full stop.
@@ -132,19 +140,19 @@ w_mix + w_green + w_prox = 1, re-picking the best replicate at each point exactl
 as `ca_landuse.py` does. The CA is not re-run: each replicate already stores its
 three raw components, so the sweep is exact and takes seconds.
 
-| scenario | share of the weight space it wins |
+| programme | share of the weight space it wins |
 |---|---|
-| scenario_b **★** | 59 % |
-| scenario_a | 41 % |
+| green **★** | 59 % |
+| compact | 41 % |
 | baseline | 0 % |
 
-**scenario_b's win holds at the default but is close to a coin toss across
-the weight space.** It takes 59 % of the weight space, scenario_a takes the other 41 %, and
+**green's win holds at the default but is close to a coin toss across
+the weight space.** It takes 59 % of the weight space, compact takes the other 41 %, and
 baseline never wins under any positive weighting — that last part is
 the firm result. The nearest weights that flip the answer are
-0.45 · 0.22 · 0.33 (favouring scenario_a),
+0.45 · 0.22 · 0.33 (favouring compact),
 0.12 away on the simplex. The default is not on a knife edge, but it is
-closer to one than it was over both buurten (0.20 away, 71 % for scenario_b). Scenario_a wins when walkability is weighted heavily against
+closer to one than it was over both buurten (0.20 away, 71 % for green). Compact wins when walkability is weighted heavily against
 green space, which is exactly the trade it makes.
 
 Two lattices agree on the shares: 0.02 (59 / 41) and 0.01 (59 / 41). (Over
@@ -331,14 +339,14 @@ because nothing in the objective values homes.
   rules and is merely *scored* on it. RL scoring higher is expected by
   construction and is **not** evidence that RL models cities better.
 - The objective is a weighted sum of three terms we chose. The sweep above
-  shows the winner is weight-dependent: scenario_b takes 59 % of the weight
-  space and scenario_a the rest. Only "baseline never wins" holds regardless.
+  shows the winner is weight-dependent: green takes 59 % of the weight
+  space and compact the rest. Only "baseline never wins" holds regardless.
   Whether those three terms are the right three is still untested.
 - The RL agent re-plans the design site with **no housing requirement**, and
   loses 81 % of the site's residential cells doing so (above).
 - The land-use grid ends at the buurt bounding box, which cuts off the site's
   strip south of Strevelsweg: 12.20 of its 13.24 ha are modelled.
-- The RL run is one seed. The CA's scenarios are spread over replicates; the
+- The RL run is one seed. The CA's programmes are spread over replicates; the
   agent's best plan is not.
 - 25 m cells cannot represent a building. This allocates land use; turning that
   into massing is `analysis/scenarios/`.
@@ -347,14 +355,62 @@ because nothing in the objective values homes.
 
 ## For component 4.9
 
-The preferred configuration (scenario_b) is a land-use allocation, not a
-building design. `analysis/scenarios/` turns it into massing, which can then be
-fed back through the SVF, density and mix indicators to check the model was
-right.
+The preferred programme (green) is a land-use allocation, not a building
+design. The team's design is the two Rhino options, and those are what 4.9
+compares. `score_scenarios.py` puts them on the land-use objective.
 
-**The names clash.** The CA's `scenario_a` ("compact") and `scenario_b`
-("green") are land-use programmes over the whole study area. The design scenarios in
-`analysis/scenarios/` use the same keys for massing on the design site:
-design `scenario_a` is the team's Rhino OPTION 1. One scenario switch in the app
-drives both, so the land-use card and the massing show different things under
-the same name until the two are aligned.
+**The name clash is resolved (2026-10-27).** The CA's programmes used to be keyed
+`scenario_a` and `scenario_b`, the same keys as the Rhino options, and one
+scenario switch in the app drove both. They are now `compact` and `green`. The
+land-use card has its own programme selector and no longer follows the
+scenario switch. Only the Rhino-option table at its top does.
+
+### The Rhino options on the same objective
+
+`score_scenarios.py` burns each Rhino option into today's 25 m grid, inside the
+part of the site the option clears (`cleared_area()`), and scores it with the
+same objective. Pond is water, a new block on at least a quarter of a cell is
+residential, street surface on half a cell is road, proposed green on half a
+cell is green. Open ground the model leaves unprogrammed (courtyards, pavements,
+gardens) is labelled vacant, the rule `rasterise()` applies to today's grid, so
+the two are compared like with like. The baseline reproduces the CA's buurt
+objective (1.215) and the RL agent's site objective (1.000) exactly, which the
+script asserts.
+
+Over the design site, 189 cells:
+
+| | objective | land-use mix | green | residential cells | shop or amenity cells | home → amenity |
+|---|---|---|---|---|---|---|
+| baseline (today) | 1.000 | 0.229 | 3.2 % | 160 | 8 | 99 m |
+| scenario_a | 1.074 | 0.308 | 5.3 % | 99 | 4 | 135 m |
+| scenario_b | 1.737 | 0.532 | 32.8 % | 48 | 4 | 121 m |
+
+Over the whole buurt the objective is 1.215 today, 1.229 for scenario_a and
+1.360 for scenario_b, on the same grid and function as the CA programmes
+(compact 1.355, green 1.374).
+
+**Both options score above today, scenario_b by far, and for the wrong reason
+on mix.** The mix index counts green as one of its five uses. Housing replaced
+by green raises it even though services are lost: the site's 8 shop or amenity
+cells drop to the 4 of the kept school block, and the walk from a home to the
+nearest one grows from 99 m to 135 m (A) and 121 m (B). scenario_b's lead is
+mostly its 33 % green.
+
+**Residential cells measure land, not homes.** scenario_a has fewer residential
+cells than today (99 against 160) but about 1,920 estimated dwellings against
+1,027, because its blocks are taller. The objective does not count dwellings.
+
+**The open-ground rule matters.** Counted as green instead of vacant, the site
+objective is 1.75 for scenario_a and 1.96 for scenario_b
+(`open_ground_as_green` in the JSON). That is an upper bound: the model does
+not say the courtyards are planted.
+
+**With amenities on the ground floors.** `analysis/roads/place_amenities.py`
+puts 20 shops, 7 health practices and a school on the new blocks' ground floors
+where they shorten walks most (`with_amenities` in the JSON: each 25 m cell
+holding one becomes retail or amenity). The site objective rises to 1.762 for
+scenario_a and 2.256 for scenario_b, mix to 0.623 and 0.758, and the walk from a
+home to the nearest shop or amenity falls to 44 m (A) and 43 m (B), against
+99 m today. A cell holds one use, so a shop cell stops counting as housing even
+though the shop sits under flats: scenario_a's residential cells fall from 99
+to 84.

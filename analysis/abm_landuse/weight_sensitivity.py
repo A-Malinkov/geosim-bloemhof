@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-weight_sensitivity.py -- does scenario_b win because it is better, or because
-of the three weights we picked?
+weight_sensitivity.py -- does the green programme win because it is better, or
+because of the three weights we picked?
 
 THE PROBLEM
 -----------
@@ -9,10 +9,10 @@ ca_landuse.py ranks the scenarios on
 
     objective = 1.6*landuse_mix + 1.0*green_share + 0.8*max(0, 1 - d/400)
 
-and scenario_b wins. Those three weights were chosen by us. The README said so
+and the green programme wins. Those three weights were chosen by us. The README said so
 and called a sensitivity sweep "the obvious next step", which is this file.
 
-The margin is the reason it matters: scenario_b beats scenario_a by about 0.02
+The margin is the reason it matters: green beats compact by about 0.02
 while the spread between replicates of one scenario is about 0.003. A gap that
 small is not obviously larger than the arbitrariness in the weights.
 
@@ -28,7 +28,10 @@ matters. The sweep therefore walks the normalised simplex w_mix + w_green +
 w_prox = 1 on a triangular lattice. A grid over raw weights would spend most of
 its points re-testing the same three ratios.
 
-Reported: which scenario wins at each point, what share of the simplex each one
+The CA's programmes are baseline, compact and green (keyed scenario_a and
+scenario_b until 2026-10-27). They are not the Rhino design options.
+
+Reported: which programme wins at each point, what share of the simplex each one
 takes, where the default weights sit, and how far you have to move from them to
 change the answer.
 

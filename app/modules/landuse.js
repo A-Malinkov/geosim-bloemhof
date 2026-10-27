@@ -26,6 +26,13 @@
  * View Factor overlay. Python warps it; the browser just drapes it.
  *
  * Frames load lazily, one imagery layer per frame, cached after first use.
+ *
+ * PROGRAMMES, NOT SCENARIOS. The CA's runs are land-use programmes (baseline,
+ * compact, green) over the whole buurt, and the RL agents re-plan the site.
+ * Neither is a Rhino design option, so neither follows the scenario switch:
+ * the card has its own programme selector. What does follow the switch is the
+ * Rhino option scored on the same objective (score_scenarios.py ->
+ * landuse_scenarios.json).
  * ========================================================================== */
 
 export async function setup(ctx) {
@@ -50,6 +57,8 @@ export async function setup(ctx) {
                                  { quiet: true });
   const dqnKeep = await ctx.loadJson("../data/processed/landuse_rl_dqn_keep_housing.json",
                                      { quiet: true });
+  const rhino = await ctx.loadJson("../data/processed/landuse_scenarios.json",
+                                   { quiet: true });  //the Rhino options on the same objective, keyed by scenario
 
   if (!ca?.scenarios) {
     ctx.placeholder(body, {
@@ -109,7 +118,7 @@ export async function setup(ctx) {
 
   ctx.registerLayer({
     id: "landuseModel",
-    label: "Land-use simulation",
+    label: "Land-use programmes (CA, not the Rhino options)",  //programmes are not the scenario switch's options
     group: "Analysis",
     show: false,
     onToggle: async (v) => {
@@ -162,7 +171,7 @@ export async function setup(ctx) {
   if (Object.keys(plans).length) {
     ctx.registerLayer({
       id: "landuseRlPlan",
-      label: "Optimiser plan (RL)",
+      label: "RL site re-plan (not a Rhino option)",  //the agent's own plan for the site
       group: "Analysis",
       show: false,
       onToggle: async (v) => { planOn = v; await showPlan(); },
@@ -203,8 +212,8 @@ export async function setup(ctx) {
       },
     });
   }
-  planLayer("landuseRlKeepLinear", "RL plan, housing kept (linear)", rlKeep);  //linear Q-learning
-  planLayer("landuseRlKeepDqn", "RL plan, housing kept (DQN)", dqnKeep);  //convolutional DQN best episode
+  planLayer("landuseRlKeepLinear", "RL site re-plan, housing kept (linear)", rlKeep);  //linear Q-learning
+  planLayer("landuseRlKeepDqn", "RL site re-plan, housing kept (DQN)", dqnKeep);  //convolutional DQN best episode
 
   /* ---- panel ------------------------------------------------------------ */
   const names = Object.keys(ca.scenarios);
@@ -219,11 +228,15 @@ export async function setup(ctx) {
     <table class="kv"><tbody>
       <tr><td>model</td><td>${ca.model ?? ca.method}</td></tr>
       <tr><td>cells</td><td>${ca.grid.nx} × ${ca.grid.ny} at ${ca.cell_size_m} m</td></tr>
-      <tr><td>replicates</td><td>${ca.parameters.replicates} per scenario</td></tr>
+      <tr><td>replicates</td><td>${ca.parameters.replicates} per programme</td></tr>
     </tbody></table>
 
-    <h4>Scenario ranking</h4>
-    <table class="kv"><thead><tr><th>scenario</th><th>objective</th><th>mix</th></tr></thead>
+    <div id="luRhino"></div>
+
+    <h4>Land-use programmes (CA) — not the Rhino options</h4>
+    <p class="muted">Development programmes over the whole buurt, set by us. They do
+    not change with the scenario switch above.</p>
+    <table class="kv"><thead><tr><th>programme</th><th>objective</th><th>mix</th></tr></thead>
     <tbody>${ca.ranking.map((r) => {
       const win = r.scenario === ca.preferred;
       return `<tr><td>${win ? "★ " : ""}${r.scenario}</td>` +
@@ -233,10 +246,10 @@ export async function setup(ctx) {
 
     <div id="luSens"></div>
 
-    <h4>Watch it evolve</h4>
+    <h4>Watch a programme evolve</h4>
     <div class="seg" id="luScen">
       ${names.map((n, i) =>
-        `<button data-s="${n}" class="${i === 0 ? "on" : ""}">${n.replace("scenario_", "")}</button>`).join("")}
+        `<button data-s="${n}" class="${i === 0 ? "on" : ""}">${n}</button>`).join("")}
     </div>
     <label class="slider">
       <span>step <output id="luOut">0</output> of ${maxT}</span>
@@ -341,7 +354,7 @@ export async function setup(ctx) {
       `<p class="muted">Erase a share of developed cells, restore the original ` +
       `demand, and see how much of the real map the CA rebuilds. κ discounts ` +
       `chance agreement.</p>` : "") +
-    (rl ? `<h4>RL agent — design site only</h4>` +
+    (rl ? `<h4>RL agent — re-plans the design site, not a Rhino option</h4>` +
       `<table class="kv"><tbody>` +
       `<tr><td>algorithm</td><td>${rl.algorithm}</td></tr>` +
       `<tr><td>episodes</td><td>${rl.parameters.episodes}</td></tr>` +
@@ -390,7 +403,7 @@ export async function setup(ctx) {
       `${r.best_objective.toFixed(3)}, mix ${r.score.landuse_mix.toFixed(3)}, ` +
       `${(r.score.green_share * 100).toFixed(0)} % green, ` +
       `${r.score.residential_cells} housing cells. Switch on ` +
-      `<em>Optimiser plan (RL)</em> under Analysis to see it.`;
+      `<em>RL site re-plan</em> under Land use to see it.`;
   }
 
   function comparisonTable() {
@@ -433,15 +446,38 @@ export async function setup(ctx) {
   }));
   planInfo();
 
-  // the scenario switcher at the top of the dashboard drives this too
-  ctx.onScenarioChange((s) => {
-    if (names.includes(s)) {
-      active = s;
-      segs.forEach((x) => x.classList.toggle("on", x.dataset.s === s));
-      render();
+  /* ---- the Rhino option on the same objective --------------------------
+   * The only part of this card that follows the scenario switch: the team's
+   * design scored like the CA's programmes, over the site and the buurt. */
+  const rhinoEl = body.querySelector("#luRhino");
+  function renderRhino(sc) {
+    const runs = ["baseline", "scenario_a", "scenario_b"].filter((k) => rhino?.[k]?.open_ground_as_vacant);
+    if (!runs.length) {
+      rhinoEl.innerHTML = `<p class="muted">Rhino options not scored yet — ` +
+        `<code>analysis/abm_landuse/score_scenarios.py</code></p>`;
+      return;
     }
-  });
+    const f = (x, d = 3) => (x == null ? "—" : x.toFixed(d));
+    rhinoEl.innerHTML =
+      `<h4>The design options on this objective</h4>` +
+      `<table class="kv"><thead><tr><th>design site</th><th>objective</th><th>mix</th>` +
+      `<th>green</th><th>home → amenity</th></tr></thead><tbody>` +
+      runs.map((k) => {
+        const s = rhino[k].open_ground_as_vacant.site;
+        return `<tr${k === sc ? ' style="font-weight:600"' : ""}><td>${k === sc ? "▸ " : ""}${k}</td>` +  //the switch's scenario in bold
+          `<td>${f(s.objective)}</td><td>${f(s.landuse_mix)}</td>` +
+          `<td>${f(100 * s.green_share, 0)} %</td><td>${f(s.mean_distance_to_amenity_m, 0)} m</td></tr>`;
+      }).join("") +
+      `</tbody></table>` +
+      `<p class="muted">The Rhino options burned into today's 25 m grid and scored like the ` +
+      `programmes below. Mix counts green as a use, so housing replaced by green raises it ` +
+      `even with fewer shops. Open ground the model leaves unprogrammed counts as vacant; ` +
+      `counted as green the site objective would be ` +
+      runs.filter((k) => rhino[k].open_ground_as_green)
+        .map((k) => `${f(rhino[k].open_ground_as_green.site.objective)} (${k})`).join(", ") + `.</p>`;
+  }
+  ctx.onScenarioChange(renderRhino);  //the programmes below no longer follow the switch, this does
 
   render();
-  ctx.note(`Land use: CA + RL, best ${ca.preferred}`, "ok");
+  ctx.note(`Land use: CA + RL, best programme ${ca.preferred}`, "ok");
 }

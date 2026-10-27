@@ -41,6 +41,7 @@ import { setup as setupPhotos } from "./modules/photos.js";
 import { setup as setupFlood } from "./modules/flood.js";
 import { setup as setupPerformance } from "./modules/performance.js";
 import { setup as setupCompass } from "./modules/compass.js";
+import { setup as setupComparison } from "./modules/comparison.js";  //4.9 scenario comparison card
 
 /* Load order only affects panel order when two panels share the same `order`. */
 const MODULES = [
@@ -56,6 +57,7 @@ const MODULES = [
   ["landuse", setupLanduse],
   ["roads", setupRoads],
   ["transit", setupTransit],
+  ["comparison", setupComparison],  //reads the other components' outputs, so after them
   ["photos", setupPhotos],
   ["flood", setupFlood],
   // Last, so saved performance choices override defaults set by the others.

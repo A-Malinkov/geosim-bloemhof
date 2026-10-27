@@ -141,16 +141,16 @@ def main() -> int:
              f"{rl['score']['residential_cells']}", [ABM]),
         ]
     if ws:
-        b = 100 * ws["win_share"]["scenario_b"]
-        a = 100 * ws["win_share"]["scenario_a"]
+        b = 100 * ws["win_share"]["green"]
+        a = 100 * ws["win_share"]["compact"]
         checks += [
             # anchored on the two-column weight-space row only: the same row
             # label also opens the scenario results table, and matching both
             # would let the value sit on either line and still pass
-            ("weight sweep: scenario_b share",
-             r"^\| scenario_b \*\*★\*\* \| \d+ % \|$", f"{b:.0f} %", [ABM]),
-            ("weight sweep: scenario_a share",
-             r"^\| scenario_a \| \d+ % \|$", f"{a:.0f} %", [ABM]),
+            ("weight sweep: green share",
+             r"^\| green \*\*★\*\* \| \d+ % \|$", f"{b:.0f} %", [ABM]),
+            ("weight sweep: compact share",
+             r"^\| compact \| \d+ % \|$", f"{a:.0f} %", [ABM]),
             ("weight sweep: n vectors", r"weight vectors on the normalised simplex",
              f"{ws['parameters']['n_weight_vectors']:,}", [ABM]),
             ("weight sweep: default margin", r"on a normalised scale, against",
@@ -277,6 +277,64 @@ def main() -> int:
                 checks.append(("ABM: hill climbing best", r"^\| hill climbing", f"{d['hill_climb']['best_objective']:.3f}", [ABM]))
                 checks.append(("ABM: hill climbing evaluations", r"^\| hill climbing", f"{d['hill_climb']['evaluations']:,}", [ABM]))
 
+    lus = load("landuse_scenarios.json")  #the Rhino options on the land-use objective
+    if lus:
+        for sc in ("scenario_a", "scenario_b"):
+            st = lus[sc]["open_ground_as_vacant"]["site"]
+            checks += [(f"Rhino {sc} site objective", rf"^\| {sc} \| ", f"{st['objective']:.3f}", [ABM]),
+                       (f"Rhino {sc} site mix", rf"^\| {sc} \| ", f"{st['landuse_mix']:.3f}", [ABM]),
+                       (f"Rhino {sc} walk to amenity", rf"^\| {sc} \| ", f"{st['mean_distance_to_amenity_m']:.0f} m", [ABM])]
+        checks.append(("Rhino baseline site objective", r"^\| baseline \(today\) \| ",
+                       f"{lus['baseline']['open_ground_as_vacant']['site']['objective']:.3f}", [ABM]))
+        claims_rhino = [
+            ("ABM README: 'both Rhino options score above today on the site'",
+             all(lus[k]["open_ground_as_vacant"]["site"]["objective"] > lus["baseline"]["open_ground_as_vacant"]["site"]["objective"]
+                 for k in ("scenario_a", "scenario_b"))),
+            ("ABM README: 'the walk to services grows in both options'",
+             all(lus[k]["open_ground_as_vacant"]["site"]["mean_distance_to_amenity_m"]
+                 > lus["baseline"]["open_ground_as_vacant"]["site"]["mean_distance_to_amenity_m"] for k in ("scenario_a", "scenario_b"))),
+        ]
+
+    cmp_ = load("scenario_comparison.json")  #4.9 scenario comparison
+    CMP = ROOT / "analysis/comparison/README.md"
+    if cmp_:
+        #(row anchor, key, format) for the results table of the comparison README, one value per scenario
+        rows = [(r"^\| dwellings on the site \|", "dwellings", "{:,.0f}"),
+                (r"^\| FSI, floor area / site \|", "fsi", "{:.2f}"),
+                (r"^\| sky view factor, mean \|", "svf_mean", "{:.2f}"),
+                (r"^\| open ground under 2 h sun, equinox \|", "sun_under2h_0320", "pct"),
+                (r"^\| open ground under 2 h sun, 21 Dec \|", "sun_under2h_1221", "pct"),
+                (r"^\| street H/W, median \|", "hw_median", "{:.2f}"),
+                (r"^\| existing trees kept on the site \|", "trees_existing", "{:,.0f}"),
+                (r"^\| walk to 4 everyday places, site grid, housing only \|", "walk_grid_m", "{:.0f} m"),
+                (r"^\| walk to 4 everyday places, residents, housing only \|", "walk_dwellings_m", "{:.0f} m"),
+                (r"^\| residents, with the placed amenities \|", "walk_dwellings_amen_m", "{:.0f} m"),
+                (r"^\| site grid, with the placed amenities \|", "walk_grid_amen_m", "{:.0f} m"),
+                (r"^\| site grid, network only \|", "walk_grid_network_m", "{:.0f} m"),
+                (r"^\| land-use objective J, with the placed amenities \|", "lu_objective_amen", "{:.3f}"),
+                (r"^\| land-use objective J \|", "lu_objective", "{:.3f}")]
+        for pat, key, fm in rows:
+            for sc in ("baseline", "scenario_a", "scenario_b"):
+                v = cmp_[sc].get(key)
+                if v is None:
+                    continue
+                txt = f"{100 * v:.0f} %" if fm == "pct" else fm.format(v)
+                checks.append((f"comparison: {key} {sc}", pat, f"| {txt} |", [CMP]))
+
+    ap = load("amenity_placement.json")  #amenities placed on the new ground floors
+    if ap and ap.get("scenario_a", {}).get("shop"):
+        for sc, L in (("scenario_a", "A"), ("scenario_b", "B")):
+            for k, lab in (("shop", "shop"), ("health", "health care"), ("education", "education")):
+                r = ap[sc][k]
+                pat = rf"^\| {L}, {lab} \|"
+                checks += [(f"amenities {sc} {k} before", pat, f"{r['J_before_m']:.1f} m", [ROADS]),
+                           (f"amenities {sc} {k} optimised", pat, f"{r['J_after_m']:.1f} m", [ROADS]),
+                           (f"amenities {sc} {k} random", pat, f"{r['J_random_mean_m']:.1f} m", [ROADS])]
+        own = ap["baseline"]["today_with_own_amenities"]["mean_of_four"]
+        checks += [("amenities: today with its own", r"^services, a site resident walks", f"{own['site_dwellings_m']:.1f} m", [ROADS]),
+                   ("amenities: A placed", r"^placed amenities it is", f"{ap['scenario_a']['mean_of_four']['site_dwellings_after_m']:.1f} m", [ROADS]),
+                   ("amenities: B placed", r"^placed amenities it is", f"{ap['scenario_b']['mean_of_four']['site_dwellings_after_m']:.1f} m", [ROADS])]
+
     import re
 
     lines_of = {}
@@ -319,18 +377,18 @@ def main() -> int:
         claims += [
             ("ABM README: 'baseline never wins under any positive weighting'",
              ws["win_share"]["baseline"] == 0.0),
-            ("ABM README: 'scenario_b wins the majority of the weight space'",
-             ws["win_share"]["scenario_b"] > 0.5),
+            ("ABM README: 'green wins the majority of the weight space'",
+             ws["win_share"]["green"] > 0.5),
             ("ABM README: 'the default weights are not on a knife edge'",
              ws["nearest_flip"] is None
              or ws["nearest_flip"]["simplex_distance"] > 0.05),
             ("ABM README: 'the winner is weight-dependent, not unanimous'",
-             ws["win_share"]["scenario_b"] < 1.0),
+             ws["win_share"]["green"] < 1.0),
         ]
     #the 'Hillesluis is looser by buurt, denser by cell' claim went with Hillesluis on 2026-10-22
     if ca and rl:
         claims += [
-            ("ABM README: 'scenario_b is preferred'", ca["preferred"] == "scenario_b"),
+            ("ABM README: 'green is preferred'", ca["preferred"] == "green"),
             ("ABM README: 'the RL agent learns'",
              rl["objective_last_decile_mean"] > rl["objective_first_decile_mean"]),
             ("ABM README: 'retail avoids retail most of all'",
@@ -407,6 +465,20 @@ def main() -> int:
              hc > max(dx1["best_objective"], dx5["best_objective"], rl["best_objective"], dqn["best_objective"])),
             ("ABM README: 'every agent's best episode sits at about 2.48' (within 0.01)",
              max(d["best_objective"] for d in (dx1, dx5, rl, dqn)) - min(d["best_objective"] for d in (dx1, dx5, rl, dqn)) < 0.01),
+        ]
+    if lus:
+        claims += claims_rhino  #Rhino options on the land-use objective
+    if ap and ap.get("scenario_a", {}).get("shop"):
+        claims += [
+            ("roads README: 'the amenities beat random placement on every type'",
+             all(ap[s][k]["J_after_m"] < ap[s][k]["J_random_mean_m"] for s in ("scenario_a", "scenario_b")
+                 for k in ("shop", "health", "education"))),
+            ("roads README: 'with the placed amenities, site walks are shorter than today'",
+             all(ap[s]["mean_of_four"]["site_dwellings_after_m"] < ap["baseline"]["today_with_own_amenities"]["mean_of_four"]["site_dwellings_m"]
+                 for s in ("scenario_a", "scenario_b"))),
+            ("roads README: 'housing only, site walks are longer than today'",
+             all(ap[s]["mean_of_four"]["site_dwellings_before_m"] > ap["baseline"]["today_with_own_amenities"]["mean_of_four"]["site_dwellings_m"]
+                 for s in ("scenario_a", "scenario_b"))),
         ]
     broken = [c for c, ok in claims if not ok]
 

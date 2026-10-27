@@ -147,6 +147,51 @@ export async function setup(ctx) {
     }
   }
 
+  /* ---- ground-floor amenities placed by analysis/roads/place_amenities.py --- */
+  //shops, health practices and a school on the new blocks' ground floors, where they shorten walks most
+  const amenGeo = await ctx.loadJson("../data/processed/design_amenities.geojson", { quiet: true });  //optional file
+  const AMEN = { shop: ["#7b4fd0", "Shop"], health: ["#d63c7b", "Health care"], education: ["#1f2a44", "School"] };  //as in docs/fig_amenities.png
+  const amenBy = new Map();  //scenario name -> CustomDataSource of amenity points
+  for (const f of amenGeo?.features ?? []) {
+    const { scenario: name, type, rank, block, floor_m2 } = f.properties;
+    if (!amenBy.has(name)) {
+      const ds = new Cesium.CustomDataSource(`amenities-${name}`);
+      ds.show = false;  //shown with the massing
+      await viewer.dataSources.add(ds);
+      amenBy.set(name, ds);
+    }
+    const [col, label] = AMEN[type] ?? ["#888888", type];
+    amenBy.get(name).entities.add({
+      name: `${label} (optimised placement)`,
+      description: `<table><tr><td>use</td><td>${label}</td></tr><tr><td>block</td><td>${block}</td></tr>` +
+        `<tr><td>pick</td><td>${rank} of its type</td></tr><tr><td>floor area</td><td>${floor_m2} m² (today's median)</td></tr>` +
+        `<tr><td>source</td><td>place_amenities.py, p-median on walking distance</td></tr></table>`,
+      position: Cesium.Cartesian3.fromDegrees(...f.geometry.coordinates),
+      point: {
+        pixelSize: type === "education" ? 15 : 10,
+        color: Cesium.Color.fromCssColorString(col),
+        outlineColor: Cesium.Color.WHITE,
+        outlineWidth: 2,
+        heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+        disableDepthTestDistance: Number.POSITIVE_INFINITY,  //a ground-floor door, drawn over its own block
+      },
+    });
+  }
+  let amenOn = true;  //layer checkbox
+  const showAmen = () => {  //only the shown massing's amenities, and only if ticked
+    for (const [n, ds] of amenBy) ds.show = amenOn && shownMassing.has(n);
+    viewer.scene.requestRender();
+  };
+  if (amenBy.size) {
+    ctx.registerLayer({
+      id: "designAmenities",
+      label: "Ground-floor amenities (optimised, with the massing)",
+      group: "Design",
+      show: true,
+      onToggle: (v) => { amenOn = v; showAmen(); },
+    });
+  }
+
   const lift = config.napToEllipsoidM;
   // default base = the design site's measured ground level (see DESIGN_SITE in
   // analysis/common/project.py); 0 only if the site file is unavailable
@@ -207,6 +252,7 @@ export async function setup(ctx) {
         applyDemolition();
         const st = streetsByScenario.get(name);  //this scenario's new streets
         if (st) st.show = visible;  //streets follow the massing
+        showAmen();  //and so do the placed amenities
       },
     }));  //end of registerLayer, handle stored
   }

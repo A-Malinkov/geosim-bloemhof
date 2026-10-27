@@ -572,7 +572,7 @@ def outline_site(ax, mask, color=INK, lw=1.2):
 
 
 def fig_abm(ca, rl):
-    """The CA scenarios over the whole study area, design site outlined."""
+    """The CA land-use programmes over the whole study area, design site outlined."""
     import matplotlib.patches as mpatches
 
     classes, cols, cmap = lu_cmap(ca)
@@ -608,12 +608,13 @@ def fig_abm(ca, rl):
     for t in leg.get_texts():
         t.set_color(INK_2)
 
-    fig.suptitle("Land-use scenarios from the cellular automaton",
+    fig.suptitle("Land-use programmes from the cellular automaton",  #programmes, not the Rhino scenario_a/b
                  x=0.012, y=1.0, ha="left", fontsize=11, fontweight="bold",
                  color=INK)
     fig.text(0.012, 0.915,
              f"{STUDY_AREA.name}, 25 m cells · rules are assumed, "  #study-area name from project.py
-             "best of the replicates shown · * = preferred by the objective",
+             "best of the replicates shown · * = preferred by the objective · "
+             "not the Rhino design options",  #say it on the figure too
              fontsize=8.5, color=INK_2, ha="left")
     save(fig, "fig_landuse_abm.png")
 

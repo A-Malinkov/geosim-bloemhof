@@ -3,16 +3,20 @@
 Component 8 · owner: Atanas Malinkov (built 2026-10-21) · feeds `app/modules/roads.js`
 
 The walking network per scenario, how far homes are from everyday destinations,
-and which new footpaths through the design site would shorten those walks most.
+which new footpaths through the design site would shorten those walks most,
+and where on the new blocks' ground floors shops, health practices and a school
+shorten them most.
 
 | script | does | writes |
 |---|---|---|
 | `road_network.py` | network metrics and walking distances per scenario | `data/processed/road_metrics.json`, `roads_<scenario>.geojson` |
 | `optimise_links.py` | greedy choice of new footpaths on the site | `data/processed/road_links.json`, `road_links_<scenario>.geojson` |
+| `place_amenities.py` | p-median placement of shops, health and a school on the new ground floors | `data/processed/amenity_placement.json`, `design_amenities.geojson`, `docs/fig_amenities.png` |
 
 ```bash
 python analysis/roads/road_network.py      # first run fetches OSM into cache/roads/, about 3 min
 python analysis/roads/optimise_links.py    # needs road_network.py's output, about 15 s
+python analysis/roads/place_amenities.py   # about 10 s
 ```
 
 Both have one case dict per scenario in `CASES`: baseline, scenario_a and
@@ -188,6 +192,58 @@ show where they land. Both layouts leave little for footpaths to add once their
 streets are joined up properly: the ceilings are 0.81 m (A) and 0.75 m (B) below J.
 The optimiser could not have found the path through the school green in A: a
 candidate must join two street junctions, and that green had none.
+
+## Amenities on the new ground floors
+
+Both Rhino options are housing only. The ground they clear holds 20 shops, 7
+health practices and 1 school today (BAG), and none come back. The kept block
+in the east of the site, the community centre with its school (1,791 m²) and
+halls, stays and stays a destination. The school that goes is a different one,
+2,183 m² on Strevelsweg, 212 m west of it. Four community and assembly halls on
+the cleared ground go too and are not a destination type here, so the kept
+block is the site's only community centre in both options.
+
+`place_amenities.py` puts the shops, health practices and school back where
+they shorten walks most. Per type it solves a p-median problem (Hakimi 1964):
+choose p sites to minimise the dwelling-weighted mean walk from every dwelling
+in the buurt to the nearest destination of that type, existing or new.
+Candidates are points every 15 m along the new blocks' outlines with a street or
+path within 40 m, snapped to the walk network like the homes (382 in A, 151 in
+B; B's blocks stand 11–36 m back in green, so a tighter limit shut most of them
+out). p is like-for-like: what the cleared ground holds today. Greedy picks,
+then vertex substitution (Teitz and Bart 1968). Education is placed first, then
+health, then shops, each from the spots still free. The distances were checked
+against a fresh multi-source route to the existing plus the placed amenities:
+identical to 0.1 m for every type in both options.
+
+Mean walk from every dwelling in the buurt to the nearest of each type.
+
+| | p | before | optimised | random placement, mean of 200 | site grid before → after |
+|---|---|---|---|---|---|
+| A, shop | 20 | 150.2 m | 101.4 m | 114.0 m | 216 → 88 m |
+| A, health care | 7 | 346.9 m | 233.7 m | 259.0 m | 421 → 124 m |
+| A, education | 1 | 247.6 m | 224.4 m | 235.2 m | 254 → 201 m |
+| B, shop | 20 | 138.5 m | 113.7 m | 120.0 m | 218 → 107 m |
+| B, health care | 7 | 334.3 m | 252.6 m | 275.6 m | 416 → 136 m |
+| B, education | 1 | 249.5 m | 223.4 m | 240.9 m | 280 → 204 m |
+
+**Placed where it counts, the amenities beat random placement on every type**,
+by 6 to 25 m across the whole buurt. The curves in `docs/fig_amenities.png`
+show the diminishing returns: in B, shops after the 10th gain under 0.5 m
+between them, because B's blocks offer few well-placed spots.
+
+**On the site, walks become shorter than today.** Today, with its own shops and
+services, a site resident walks 316.9 m to the nearest of the four types (site
+grid 314.3 m). Housing only, that is 394.8 m in A and 390.6 m in B. With the
+placed amenities it is 253.2 m in A and 263.2 m in B.
+
+The ground floors this takes are worth about 52 dwellings of floor area per
+option (today's median unit per type: shop 69 m², health 33 m², school
+2,183 m²), not subtracted from the dwelling estimates.
+
+What this cannot tell you: whether a shop survives at a spot (footfall, rent,
+clustering, which the objective punishes rather than rewards), or whether a
+block's ground floor can hold a school. It places points by walking distance.
 
 ## What it cannot tell you
 
