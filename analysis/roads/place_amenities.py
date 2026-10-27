@@ -399,8 +399,12 @@ def figure(out, feats):
         ax.set_xlabel(f"{TYPE_STYLE[k][2]} placed in the new blocks")
         ax.set_ylabel("mean walk, every dwelling in the buurt (m)" if c == 0 else "")
         ax.set_title(f"{TYPE_STYLE[k][2].capitalize()}, as many as today = dashed line")
-        if c == 0:
-            ax.legend(fontsize=9, loc="upper right")
+        if c == 0:  #lines per scenario, plus what the dot and the cross mean
+            from matplotlib.lines import Line2D
+            h, _ = ax.get_legend_handles_labels()
+            h += [Line2D([], [], ls="", marker="o", color=INK2, label="optimised, as many as today"),
+                  Line2D([], [], ls="", marker="x", color=INK2, label="random placement, same number (mean of 200)")]
+            ax.legend(handles=h, fontsize=9, loc="upper right")
     fig.suptitle("Amenities on the site today and in each option. Shops, health care and the second school placed to "
                  "shorten walks (p-median); the kept block's school and halls stay where they are",
                  x=0.01, ha="left", fontweight="bold", fontsize=12)
