@@ -251,7 +251,7 @@ INDICATORS = [
     ("walk_dwellings_amen_m", "Walking", "Residents, with placed amenities", " m", "lower", 0, "amenity_placement.json"),
     ("walk_grid_amen_m", "Walking", "Site grid, with placed amenities", " m", "lower", 0, "amenity_placement.json"),
     ("walk_grid_network_m", "Walking", "Site grid, network only", " m", "lower", 0, "road_metrics.json"),
-    ("walk_grid_after_links_m", "Walking", "Network only, with optimiser footpaths", " m", "lower", 0, "road_links.json"),
+    ("walk_grid_after_links_m", "Walking", "Site grid, amenities + optimiser footpaths", " m", "lower", 0, "road_links.json"),  #the optimiser walks to the placed amenities since 2026-10-27
     ("intersections_km2", "Walking", "Intersection density", " /km²", "higher", 0, "road_metrics.json"),
     ("lu_objective", "Land use", "Land-use objective J", "", "higher", 3, "landuse_scenarios.json"),
     ("lu_mix", "Land use", "Land-use mix", "", "higher", 3, "landuse_scenarios.json"),

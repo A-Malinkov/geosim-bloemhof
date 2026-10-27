@@ -178,8 +178,18 @@ export async function setup(ctx) {
                                    site[k]?.within_5min_frac)).join("") +
       row("<b>mean of the four</b>", site.mean_of_types_m, siteB.mean_of_types_m,
           grid.mean_of_types_m, gridB.mean_of_types_m, null) +
+      (data[sc].with_amenities && data.baseline.with_amenities  //as lived: today's own amenities, or the placed ones
+        ? row(sc === "baseline" ? "<b>with today's own amenities</b>" : "<b>with the placed amenities</b>",
+              data[sc].with_amenities.areas.design_site.mean_of_types_m,
+              data.baseline.with_amenities.areas.design_site.mean_of_types_m,
+              data[sc].with_amenities.site_grid.mean_of_types_m,
+              data.baseline.with_amenities.site_grid.mean_of_types_m, null)
+        : "") +
       `</tbody></table>` +
-      `<p class="muted">Mean network walk to the nearest of each. <em>Dwellings</em>: ` +
+      `<p class="muted">Mean network walk to the nearest of each. The rows per type leave the site's own amenities ` +
+      `out in every scenario, today included, so they show the network alone. The last row is as lived: today with ` +
+      `its own 20 shops, 7 health practices and school, an option with the ones placed on its ground floors ` +
+      `(Amenities layer). <em>Dwellings</em>: ` +  //two measures since 2026-10-27
       `${fmt(site.dwellings)} on the site` +
       (sc === "baseline" ? " (BAG)" : `, ${fmt(data[sc].network.new_block_dwellings_est)} of them estimated for the new blocks`) +
       `, so it moves with who lives there. <em>Site grid</em>: the same ${fmt(grid.grid_points)} points ` +
@@ -199,12 +209,13 @@ export async function setup(ctx) {
         `<td>${fmt(x.site_dwellings_m, 0, " m")}</td><td>${fmt(100 * x.share_of_ceiling, 0, " %")}</td></tr>`).join("") +
       `</tbody></table>` +
       `<p class="muted">Objective J: mean walk from a dwelling to the nearest shop, education, health care and ` +
-      `rail stop, over all ${fmt(data[sc].areas.study_area.dwellings)} dwellings, now ${fmt(L.J_before_m, 2, " m")}. ` +
+      `rail stop, ${L.destinations === "with the placed amenities" ? "the placed ones included, " : ""}` +  //the option as proposed
+      `over all ${fmt(data[sc].areas.study_area.dwellings)} dwellings, now ${fmt(L.J_before_m, 2, " m")}. ` +
       `Greedy, one straight footpath at a time, from ${L.n_candidates} candidates that cross no block or water, ` +
       `start or end on the design's own streets and save a detour of at least ${L.candidate_rule.detour_min}×; ` +
       `it stops when no link saves 1 mm any more. All candidates together would reach ` +  //rules since 2026-10-23
       `${fmt(L.J_ceiling_m, 2, " m")} (the ceiling). Site dwellings start at ${fmt(L.site_dwellings_before_m, 0, " m")}, ` +
-      `today's layout gives ${fmt(data.baseline.areas.design_site.mean_of_types_m, 0, " m")}. ` +
+      `today gives ${fmt((data.baseline.with_amenities ?? data.baseline).areas.design_site.mean_of_types_m, 0, " m")}. ` +  //today with its own amenities
       `${L.steps.length} links, ${fmt(total, 0, " m")} in all. ` +
       `Assumes the ground between blocks is public. Dashed green on the map, numbered by rank.</p>`;
   }

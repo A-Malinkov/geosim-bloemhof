@@ -82,7 +82,7 @@ a row that says so. Flood vulnerability is today only.
 | residents, with the placed amenities | 317 m | 254 m | 263 m | lower |
 | site grid, with the placed amenities | 314 m | 252 m | 261 m | lower |
 | site grid, network only | 377 m | 371 m | 378 m | lower |
-| network only, with the optimiser's footpaths | n/a | 370 m | 375 m | lower |
+| site grid, with the placed amenities and the optimiser's footpaths | n/a | 248 m | 258 m | lower |
 | intersection density | 423 /km² | 589 /km² | 287 /km² | higher |
 | land-use objective J | 1.000 | 1.074 | 1.737 | higher |
 | land-use mix | 0.229 | 0.308 | 0.532 | higher |

@@ -439,7 +439,7 @@ def main() -> int:
         ]
     if rlinks and rlinks.get("scenario_b", {}).get("steps"):
         stb = rlinks["scenario_b"]["steps"]
-        claims.append(("roads README: 'B: three links reach the ceiling'", len(stb) == 3 and stb[-1]["share_of_ceiling"] == 1.0))
+        claims.append(("roads README: 'B: two links reach the ceiling'", len(stb) == 2 and stb[-1]["share_of_ceiling"] == 1.0))
     #morphology scenario table, the sentences under it
     g = lambda s, d="": (load(f"shadow_summary{s}{d}.json") or {}).get("design_site", {}).get("open_ground_sunlit_hours")
     v = lambda s: (load(f"svf_summary{s}.json") or {}).get("design_site", {}).get("open_ground")

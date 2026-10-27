@@ -213,9 +213,15 @@ def main() -> int:
                       "rail stop, equal weights over the four types, dwelling-weighted over the study area and "
                       "the design site. Minimised by adding straight footpaths through the site, greedily.",
         "_method": "analysis/roads/optimise_links.py",
+        "_destinations": "the existing destinations plus the shops, health practices and school that "
+                         "place_amenities.py puts on the option's ground floors; the kept school is in both",
     }
+    #today with its own amenities: the reference the links are judged against, as in the comparison
+    ref = (metrics["baseline"].get("with_amenities") or metrics["baseline"])["site_grid"]["mean_of_types_m"]
     for case in CASES:  #one scenario per case
-        out[case["scenario"]] = run(case, p, dest, dwelling_m2, metrics["baseline"]["site_grid"]["mean_of_types_m"])
+        dw = rn.dest_with_amenities(dest, case["scenario"])  #the option as proposed: its placed shops, health and school
+        out[case["scenario"]] = run(case, p, dw if dw is not None else dest, dwelling_m2, ref)
+        out[case["scenario"]]["destinations"] = "with the placed amenities" if dw is not None else "housing only"
     for sc in ("baseline", "scenario_a", "scenario_b"):
         if sc not in out:
             out[sc] = {"_status": "not_computed_yet",

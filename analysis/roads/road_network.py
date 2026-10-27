@@ -93,11 +93,9 @@ HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 sys.path.insert(0, str(HERE.parent / "scenarios"))
 from common.project import (PROCESSED, RAW, ROOT, STUDY_AREA, buurt_polygons,  # noqa: E402
-                            design_site_polygon, study_area_polygon, to_wgs, write_processed)
+                            design_site_polygon, study_area_polygon, to_rd, to_wgs, write_processed)
 
 CACHE = ROOT / "cache" / "roads"  #gitignored
-WALK = CACHE / "walk_osm.graphml"  #OSM walk network, buffered
-STOPS = CACHE / "pt_stops.geojson"  #OSM public-transport stops, buffered
 
 PARAMS = {
     "buffer_m": 500,  #network fetched this far beyond the buurten
@@ -111,6 +109,16 @@ PARAMS = {
     "storey_m": 3.0,  #storey height for the new blocks' dwelling estimate
     "net_to_gross": 0.8,  #usable floor area / gross floor area, assumed
 }
+
+def extent_key(buffer_m):
+    #short key of the area the OSM cache covers: a changed study area gets a fresh download, not the old network
+    import hashlib
+    b = study_area_polygon().buffer(buffer_m).bounds
+    return hashlib.sha1(",".join(f"{v:.0f}" for v in b).encode()).hexdigest()[:8]
+
+
+WALK = CACHE / f"walk_osm_{extent_key(PARAMS['buffer_m'])}.graphml"  #OSM walk network, buffered, for this study area
+STOPS = CACHE / f"pt_stops_{extent_key(PARAMS['buffer_m'])}.geojson"  #OSM public-transport stops, same area
 
 DEST = {  #destination type -> BAG gebruiksdoel, or "rail" for OSM stops
     "shop": "winkelfunctie",
@@ -184,6 +192,24 @@ def destinations():
     print("  destinations " + ", ".join(f"{k} {len(v)}" for k, v in out.items())
           + " (site excluded: " + ", ".join(f"{k} {v}" for k, v in removed.items()) + ")")
     return out, removed, float(bag[on_site & bag["gebruiksdoel"].str.contains("woonfunctie")]["area_m2"].median())
+
+
+def dest_with_amenities(dest, scenario):
+    #destinations as the scenario is lived: today with its own site amenities, an option with those placed on its
+    #ground floors by place_amenities.py; None if that has not run
+    import geopandas as gpd
+    from shapely.geometry import Point
+    path = PROCESSED / "design_amenities.geojson"
+    if not path.exists():
+        return None
+    want = "demolished" if scenario == "baseline" else "placed"  #today's own on cleared ground / the option's placed ones
+    feats = [f for f in json.loads(path.read_text())["features"]
+             if f["properties"]["scenario"] == scenario and f["properties"].get("status") == want]
+    out = {}
+    for k, pts in dest.items():
+        add = [Point(*to_rd(*f["geometry"]["coordinates"])) for f in feats if f["properties"]["type"] == k]
+        out[k] = gpd.GeoSeries(list(pts.values) + add, crs=28992) if add else pts  #the kept block is already in dest
+    return out
 
 
 def homes_for_scenario(scenario, dwelling_m2, p):
@@ -531,6 +557,20 @@ def run(case, p, dest, dwelling_m2):
     g = access(dist_grid, grid, np.ones(len(grid), bool), p)  #same origins in every scenario: the network's effect alone
     g["grid_points"] = g.pop("dwellings")
     res["site_grid"] = g
+    dw = dest_with_amenities(dest, sc)
+    if dw is not None:  #the same walks with the scenario's amenities: today's own, or the placed ones
+        D2 = {k: dist_from(net, G, snap(net, pts.values)) for k, pts in dw.items()}
+        d2 = {k: to_points(net, d, hs) for k, d in D2.items()}
+        g2 = access({k: to_points(net, d, gs) for k, d in D2.items()}, grid, np.ones(len(grid), bool), p)
+        g2["grid_points"] = g2.pop("dwellings")
+        res["with_amenities"] = {
+            "_note": "today with its own shops, health and schools on the site; an option with the ones "
+                     "place_amenities.py puts on its ground floors (the kept school is in both)",
+            "areas": {name: access(d2, homes, shapely.within(hp, poly), p) for name, poly in areas().items()},
+            "site_grid": g2}
+        wa = res["with_amenities"]
+        print(f"  with amenities: site dwellings {wa['areas']['design_site']['mean_of_types_m']} m, "
+              f"site grid {g2['mean_of_types_m']} m, study area {wa['areas']['study_area']['mean_of_types_m']} m")
     res["metrics"] = {k: res["areas"]["study_area"][k] for k in
                       ("n_nodes", "n_edges", "avg_street_length_m", "intersection_density_km2",
                        "circuity", "betweenness_max", "walk_15min_reach_frac")}  #the stub's shape, for the card

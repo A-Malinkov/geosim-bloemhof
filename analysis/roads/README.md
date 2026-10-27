@@ -77,6 +77,13 @@ the homes and not from shops the design removes. That ground holds 20 shops, 1
 education and 7 health care addresses today. The block Scenario A keeps (added
 to the site on 2026-10-21) stays a destination, school included.
 
+**As lived.** Each scenario also gets a `with_amenities` block in
+`road_metrics.json`: the same walks with today's own shops, health practices
+and schools on the site (baseline), or with the ones `place_amenities.py` puts
+on the option's ground floors. Those are the numbers to quote for residents; the
+per-type tables below leave the site's amenities out everywhere and show the
+network alone. The footpath optimiser walks to the "as lived" destinations.
+
 **Distance.** Each home and destination is snapped to the nearest point on the
 nearest edge. Walking distance is the access leg plus the network distance, by
 one Dijkstra per destination type from all its destinations at once (scipy).
@@ -155,43 +162,52 @@ study area reaches all four types within 15 min (1,200 m) in every scenario. The
 5-minute share (400 m) is what varies. On the site no dwelling has a rail stop
 within 5 min in either scenario, 2 % do today.
 
-### Footpath links, Scenario A
+### Footpath links, with the placed amenities
 
-23 candidates. J starts at 301.45 m, the ceiling is 300.64 m.
+The optimiser walks to the options as proposed: the existing destinations plus
+the shops, health practices and school `place_amenities.py` puts on their ground
+floors (the kept school is in both). Housing only, the same runs found 4 links
+(123 m) in A and 3 (135 m) in B, saving 0.81 m and 0.75 m of J; with the
+amenities there is less to gain, because the new shops sit inside the blocks.
 
-| # | length | J saved | J | site dwellings | site grid | of ceiling |
-|---|---|---|---|---|---|---|
-| 1 | 46 m | 0.60 m | 300.86 m | 392.5 m | 370.7 m | 74 % |
-| 2 | 14 m | 0.18 m | 300.67 m | 391.9 m | 370.2 m | 96 % |
-| 3 | 35 m | 0.02 m | 300.65 m | 391.8 m | 370.0 m | 99 % |
-| 4 | 28 m | 0.01 m | 300.64 m | 391.7 m | 370.0 m | 100 % |
+#### Scenario A
 
-**Two links, 59 m of footpath, take 96 % of what all 23 candidates could
-give.** Link 1 cuts diagonally across the south-west corner park to Strevelsweg.
-Link 2 is a crossing of Strevelsweg in line with Jagerslaan: the road is a dual
-carriageway and OSM has no crossing near there. After link 2 each link saves
-under 0.03 m of J. The optimiser stops after four, when no candidate saves 1 mm.
-
-### Footpath links, Scenario B
-
-10 candidates. J starts at 290.82 m, the ceiling is 290.07 m.
+23 candidates. J starts at 255.18 m, the ceiling is 254.91 m.
 
 | # | length | J saved | J | site dwellings | site grid | of ceiling |
 |---|---|---|---|---|---|---|
-| 1 | 48 m | 0.53 m | 290.29 m | 387.9 m | 376.9 m | 71 % |
-| 2 | 71 m | 0.16 m | 290.13 m | 387.0 m | 375.7 m | 93 % |
-| 3 | 17 m | 0.06 m | 290.07 m | 386.7 m | 375.0 m | 100 % |
+| 1 | 14 m | 0.19 m | 254.99 m | 252.8 m | 248.7 m | 70 % |
+| 2 | 32 m | 0.07 m | 254.92 m | 252.6 m | 248.4 m | 96 % |
+| 3 | 28 m | 0.01 m | 254.91 m | 252.5 m | 248.4 m | 99 % |
+| 4 | 35 m | 0.00 m | 254.91 m | 252.5 m | 248.3 m | 100 % |
 
-**Three links reach the ceiling.** Link 1 joins the end of a new street to the
-north-east edge street. Link 2 is a park path from the central junction across
-the green towards the kept school block. Link 3 crosses Strevelsweg from the
-south corner, now that it is joined to it, to Jagerslaan.
+**Two links, 46 m of footpath, take 96 % of what all 23 candidates could
+give.** Link 1 is a crossing of Strevelsweg in line with Jagerslaan: the road is
+a dual carriageway and OSM has no crossing near there. Link 2 is new with the
+amenities: it joins two east-west streets near the north-east edge, between a
+placed shop and a placed health practice. The diagonal across the south-west
+park that led the housing-only run is no longer picked. The optimiser stops
+after four, when no candidate saves 1 mm.
+
+#### Scenario B
+
+10 candidates. J starts at 257.65 m, the ceiling is 257.54 m.
+
+| # | length | J saved | J | site dwellings | site grid | of ceiling |
+|---|---|---|---|---|---|---|
+| 1 | 17 m | 0.06 m | 257.59 m | 262.9 m | 258.7 m | 53 % |
+| 2 | 48 m | 0.05 m | 257.54 m | 262.7 m | 258.2 m | 100 % |
+
+**Two links reach the ceiling.** Link 1 crosses Strevelsweg from the south
+corner to Jagerslaan. Link 2 joins the end of a new street to the north-east
+edge street. The park path towards the kept school block that the housing-only
+run picked is not needed once the amenities are placed.
 
 J is over the whole study area, so its changes look small. The site columns
-show where they land. Both layouts leave little for footpaths to add once their
-streets are joined up properly: the ceilings are 0.81 m (A) and 0.75 m (B) below J.
-The optimiser could not have found the path through the school green in A: a
-candidate must join two street junctions, and that green had none.
+show where they land. With the amenities placed, footpaths add little: the
+ceilings are 0.27 m (A) and 0.11 m (B) below J. The optimiser could not have
+found the path through the school green in A: a candidate must join two street
+junctions, and that green had none.
 
 ## Amenities on the new ground floors
 
