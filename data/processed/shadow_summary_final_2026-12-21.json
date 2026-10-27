@@ -1,0 +1,5 @@
+{
+  "_status": "not_computed_yet",
+  "_note": "Placeholder for the final scenario, imported 2026-10-28. The app treats _status=not_computed_yet as 'no data'. Overwrite with real output.",
+  "_written_by": "analysis/morphology/shadows.py --scenario final --date 2026-12-21"
+}

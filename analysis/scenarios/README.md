@@ -19,12 +19,28 @@ The app treats a stub as "no data" and shows a placeholder until you overwrite i
 - To make the other components respond to your scenarios, write per-scenario outputs with matching keys (`baseline`, `scenario_a`, `scenario_b`). Every module already listens for the switch.
 - For SVF and wind per scenario, burn the massing into a copy of the AHN DSM and re-run the morphology and wind scripts.
 
-## Scenarios A and B come from the team's Rhino model
+## Scenarios A, B and final come from the team's Rhino model
 
-`import_rhino.py` reads the `OPTION 1` and `OPTION 2` layer trees of
-`Group Project Q1 - Proposal Modelling_23.10.26.3dm` (from Modelling on the
-shared drive, copied to `data/raw/`, gitignored) and writes them as `scenario_a`
-and `scenario_b`. OPTION 1 comes out of 23.10 exactly as it did out of 16.10.
+`import_rhino.py` reads the `OPTION 1`, `OPTION 2` and `Final Model` layer trees of
+`Group Project Q1 - Proposal Modelling_27.10.26.3dm` (OneDrive zip from the team,
+copied to `data/raw/`, gitignored) and writes them as `scenario_a`, `scenario_b`
+and `final`. OPTION 2 comes out of 27.10 exactly as it did out of 23.10. OPTION 1's
+18 boxes are saved without render meshes in 27.10 and are read from their
+extrusion profiles instead, which moves each footprint by at most 2 m². The
+shared pond shrank from 1,082 to 671 m² in 27.10.
+
+### The final design
+
+The `Final Model` is built from named Rhino blocks rather than plain solids: 155
+terraced houses, 8 semi-detached pairs and 8 detached houses, 31 shop podiums (4 m) each with
+a block of flats on top (to 16 m), 38 terraced houses with a ground-floor shop,
+two elderly homes and a student building, 284 volumes in all. The block names
+give each volume its use (`BLOCK_USE` in `import_rhino.py`), so here and only
+here the massing says where the shops are. Its streets, one-way roads,
+pedestrian paths, bike paths and parking come in as separate surface kinds, its
+92 trees, 104 solid bushes and the house gardens as planting. It keeps the same
+school block as A and B. No analysis has been run on it yet: every
+`*_final.json` is a stub.
 
 ```bash
 python analysis/scenarios/import_rhino.py

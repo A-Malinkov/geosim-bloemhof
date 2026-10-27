@@ -270,6 +270,7 @@ export const CONFIG = {
     { id: "baseline",   label: "Baseline (current situation)" },
     { id: "scenario_a", label: "Scenario A" },
     { id: "scenario_b", label: "Scenario B" },
+    { id: "final",      label: "Final design" },  //the Rhino "Final Model" (27.10), imported 2026-10-28; analyses not re-run yet
   ],
 
   // Turn on to log layer height probes to the console.

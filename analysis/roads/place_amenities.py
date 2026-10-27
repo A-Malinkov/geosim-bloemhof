@@ -9,6 +9,12 @@ road_network.py.
 USAGE
 -----
     python analysis/roads/place_amenities.py
+    python analysis/roads/place_amenities.py --labelled-only   #only the final design's shops from the Rhino
+                                                               #block names, A and B left as written
+
+The final design (Rhino "Final Model") names its shop blocks, so its shops are
+not placed: they are read from design_massing.geojson (use "shop" or "mixed"),
+one marker per shop volume, plus the kept block's school and halls.
 
 WHY
 ---
@@ -86,6 +92,7 @@ CASES = [
     {"scenario": "scenario_a"},
     {"scenario": "scenario_b"},
 ]
+LABELLED = ["final"]  #scenarios whose shops the Rhino model labels: read, not placed
 
 PARAMS = {
     "spacing_m": 15.0,  #candidate every 15 m along a block outline
@@ -166,6 +173,47 @@ def point_feature(scenario, row, **props):
     return {"type": "Feature",
             "properties": {"scenario": scenario, "type": row["type"], "floor_m2": round(row["floor_m2"]), **props},
             "geometry": {"type": "Point", "coordinates": [round(lon, 7), round(lat, 7)]}}
+
+
+def labelled_shops(scenario):
+    #shops the Rhino model labels (import_rhino.py BLOCK_USE) -> one amenity point per shop volume, inside it
+    from shapely.geometry import shape
+    from shapely.ops import transform
+    from common.project import to_rd
+    massing = json.loads((PROCESSED / "design_massing.geojson").read_text())
+    rows = []
+    for f in massing["features"]:
+        q = f["properties"]
+        if q["scenario"] != scenario or q.get("use") not in ("shop", "mixed"):
+            continue  #housing, or another scenario
+        g = transform(lambda x, y, z=None: to_rd(x, y), shape(f["geometry"])).representative_point()  #inside the footprint
+        rows.append(({"type": "shop", "floor_m2": q["footprint_m2"], "x": g.x, "y": g.y},
+                     q.get("rhino_block", q["name"])))
+    return rows
+
+
+def labelled_features(today):
+    #the LABELLED scenarios' amenity features: their labelled shops plus the kept block's school and halls
+    feats = []
+    for sc in LABELLED:
+        shops = labelled_shops(sc)
+        feats += [point_feature(sc, r, rank=0, block=block, status="labelled", fixed=False) for r, block in shops]
+        feats += [point_feature(sc, r, rank=0, block="kept community centre and school", status="kept",
+                                fixed=True) for r in today if r["kept"]]  #the kept block, never moved
+        print(f"  {sc}: {len(shops)} shops labelled in the Rhino model, {sum(r['kept'] for r in today)} kept in the school block")
+    return feats
+
+
+def labelled_only():
+    #add the LABELLED scenarios to design_amenities.geojson, leaving the placed scenarios as they are
+    path = PROCESSED / "design_amenities.geojson"
+    old = json.loads(path.read_text())
+    keep = [f for f in old["features"] if f["properties"]["scenario"] not in LABELLED]  #baseline, A, B untouched
+    feats = keep + labelled_features(today_on_site())
+    path.write_text(json.dumps({**{k: v for k, v in old.items() if k != "features"}, "features": feats},
+                               separators=(",", ":")) + "\n")
+    print(f"  wrote {path.relative_to(ROOT)} ({len(feats)} amenities, {len(feats) - len(keep)} for {', '.join(LABELLED)})")
+    return 0
 
 
 def fixed_school(p):
@@ -434,6 +482,7 @@ def main() -> int:
         feats += f
         feats += [point_feature(case["scenario"], r, rank=0, block="kept community centre and school", status="kept",
                                 fixed=True) for r in today if r["kept"]]  #the kept block's school and halls, never moved
+    feats += labelled_features(today)  #the final design: its own labelled shops, nothing placed
     #how many of each type stand on the site: today, and each option (placed + kept)
     out["counts_on_site"] = {sc: {k: sum(1 for f in feats if f["properties"]["scenario"] == sc
                                          and f["properties"]["type"] == k) for k in SHOWN}
@@ -450,4 +499,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(labelled_only() if "--labelled-only" in sys.argv else main())
