@@ -23,6 +23,9 @@ const ROWS = [  //key, label, digits, as a percentage
   ["hw_median", "Street H/W, median", 2, false],
   ["trees_existing", "Existing trees kept", 0, false],  //today's trees still standing on the site
   ["trees_proposed", "Proposed trees", 0, false],  //new planting from the Rhino model
+  ["n_shop", "Shops on the site", 0, false],  //today from BAG; options placed (p-median) + kept
+  ["n_education", "Schools on the site", 0, false],  //the kept school stays fixed
+  ["n_community", "Community halls on the site", 0, false],
   ["walk_dwellings_m", "Walk to 4 places, residents, housing only (m)", 0, false],
   ["walk_grid_m", "Walk to 4 places, site grid, housing only (m)", 0, false],
   ["walk_dwellings_amen_m", "… with placed amenities (m)", 0, false],  //place_amenities.py: shops, health, school on the ground floors

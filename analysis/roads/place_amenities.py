@@ -30,16 +30,21 @@ one per BAG dwelling and the estimated dwellings for each new block. One
 candidate holds one amenity.
 
   candidates  points every 15 m along the outline of each new block, kept only
-              where a street or path is within 40 m, snapped to the walk
+              where a street or path is within 40 m, outside the kept block
+              (never touched), snapped to the walk
               network like the homes, so the walk from the door to the path
               counts. B's blocks stand 11-36 m back from their paths (median
               per block), A's 3-18 m; a tighter limit shuts B out.
   budget      p_k = what the cleared ground holds today: shop 20, health 7,
-              education 1. Like-for-like replacement, a choice we state.
+              school 1. Like-for-like replacement, a choice we state.
+  school      today the site has two schools. The one in the kept community
+              centre stays exactly where it is, untouched, and is never moved
+              (Atanas, 2026-10-27); it is an existing destination. The other,
+              demolished, is replaced by one placed school like any other type.
   method      greedy (each pick the candidate that lowers J_k most), then
               vertex substitution (Teitz and Bart 1968): swap a chosen site for
               an unchosen one while that lowers J_k. Types are placed in the
-              order education, health, shop, each taking only free candidates.
+              order health, shop, each taking only free candidates.
   floor area  each amenity takes the median ground-floor area of its type on
               the cleared ground today (BAG), lost to housing at 73 m2 per
               dwelling and 0.8 usable/gross. Reported, not fed back into the
@@ -86,6 +91,7 @@ PARAMS = {
     "spacing_m": 15.0,  #candidate every 15 m along a block outline
     "street_m": 40.0,  #a candidate needs a path this close; B's blocks stand 11-36 m back in green, the walk to the path is counted anyway
     "order": ["education", "health", "shop"],  #placed in this order, each from the candidates still free
+    "fixed": {"education": "0599100000623494"},  #BAG pand of the kept school: stays where it is, never moved, never counted as placed
     "curve_factor": 2,  #report J for p = 0 .. 2 * budget
     "dwelling_m2": 73.0,  #usable floor per dwelling, the site's BAG median (as road_network.py)
     "random_draws": 200,  #random placements of the same number, the bar the optimiser has to clear
@@ -115,20 +121,61 @@ def candidates(scenario, net, p):
     #points along the new blocks' outlines that face a street -> GeoDataFrame with the block name
     import geopandas as gpd
     import shapely
-    from scenario_world import load_scenario
+    from scenario_world import cleared_area, load_scenario
     blocks, _ = load_scenario(scenario)
+    kept = design_site_polygon().difference(cleared_area(scenario))  #the kept community centre and school: never touched
     streets = shapely.STRtree(net["lines"].geometry.values)
     rows = []
     for name, g in zip(blocks["name"], blocks.geometry):
         ring = g.exterior if g.geom_type == "Polygon" else max(g.geoms, key=lambda q: q.area).exterior
         for d in np.arange(p["spacing_m"] / 2, ring.length, p["spacing_m"]):  #evenly along the facade
             pt = ring.interpolate(d)
+            if kept.buffer(0.5).contains(pt):
+                continue  #a block reaching into the kept block gets no amenity there
             near = streets.query_nearest(pt, max_distance=p["street_m"], all_matches=False)  #a single point gives a flat index array
             if len(near):  #a street within reach: a door can open onto it
                 rows.append({"block": name, "geometry": pt})
     c = gpd.GeoDataFrame(rows, crs=28992)
     print(f"  {scenario}: {len(c)} candidate ground-floor spots on {c['block'].nunique()} blocks")
     return c
+
+
+SHOWN = {"shop": "winkelfunctie", "health": "gezondheidszorgfunctie", "education": "onderwijsfunctie",
+         "community": "bijeenkomstfunctie"}  #amenity types drawn on the maps; community halls are shown, never placed
+
+
+def today_on_site():
+    #today's amenities on the design site (BAG): each with its type and whether the kept block keeps it
+    import geopandas as gpd
+    from scenario_world import cleared_area
+    site = design_site_polygon()
+    kept = site.difference(cleared_area(CASES[0]["scenario"]))  #the kept block, the same in both options
+    bag = gpd.read_file(RAW / "bag_verblijfsobjecten.geojson").to_crs(28992)
+    bag = bag[bag["gebruiksdoel"].notna() & bag.within(site)]
+    rows = []
+    for k, doel in SHOWN.items():
+        for _, r in bag[bag["gebruiksdoel"].str.contains(doel)].iterrows():
+            rows.append({"type": k, "kept": bool(r.geometry.within(kept)), "floor_m2": float(r["area_m2"]),
+                         "street": str(r["street"]), "x": r.geometry.x, "y": r.geometry.y})
+    return rows
+
+
+def point_feature(scenario, row, **props):
+    #one amenity as a GeoJSON point feature
+    lon, lat = to_wgs(row["x"], row["y"])
+    return {"type": "Feature",
+            "properties": {"scenario": scenario, "type": row["type"], "floor_m2": round(row["floor_m2"]), **props},
+            "geometry": {"type": "Point", "coordinates": [round(lon, 7), round(lat, 7)]}}
+
+
+def fixed_school(p):
+    #RD location of the kept school: its BAG education address, never moved
+    import geopandas as gpd
+    bag = gpd.read_file(RAW / "bag_verblijfsobjecten.geojson").to_crs(28992)
+    x = bag[(bag["pand_id"].astype(str) == p["fixed"]["education"]) & bag["gebruiksdoel"].fillna("").str.contains("onderwijs")]
+    assert len(x), "the kept school is not in BAG"  #never place it anywhere else
+    g = x.geometry.iloc[0]
+    return g.x, g.y
 
 
 # ------------------------------------------------------------ the p-median
@@ -232,11 +279,14 @@ def run(case, p, dest, bud, dwelling_m2, rp):
             lon, lat = to_wgs(x, y)
             feats.append({"type": "Feature",
                           "properties": {"scenario": sc, "type": k, "rank": r, "block": cand["block"].values[j],
-                                         "floor_m2": round(bud[k]["median_m2"])},
+                                         "floor_m2": round(bud[k]["median_m2"]), "status": "placed"},
                           "geometry": {"type": "Point", "coordinates": [round(lon, 7), round(lat, 7)]}})
     #the four-type mean the rest of the project uses (rail stops unchanged)
     Dr = rn.dist_from(net, G, rn.snap(net, dest["rail_stop"].values))
     rail_h, rail_g = rn.to_points(net, Dr, hs), rn.to_points(net, Dr, gs)
+    fixed_school(p)  #asserts the kept school is in BAG; main() draws it with the other kept amenities
+    print(f"  education fixed at the kept school: buurt {res['education']['J_after_m']} m, "
+          f"site dwellings {res['education']['site_dwellings_after_m']} m")
     four = lambda key, rail: round(float(np.mean([res[k][key] for k in p["order"]] + [rail])), 1)
     res["mean_of_four"] = {
         "site_dwellings_before_m": four("site_dwellings_before_m", mean_dist(rail_h[site], w[site])),
@@ -284,11 +334,11 @@ def today_with_own(dest, dwelling_m2, rp):
 
 # ------------------------------------------------------------------ figure
 TYPE_STYLE = {"shop": ("#7b4fd0", "o", "shop"), "health": ("#d63c7b", "P", "health care"),
-              "education": ("#1f2a44", "*", "education")}  #colour, marker, label per amenity type
+              "education": ("#1f2a44", "*", "school"), "community": ("#b8860b", "s", "community hall")}  #colour, marker, label
 
 
 def figure(out, feats):
-    #maps of the placed amenities per scenario, and the walk against the number placed
+    #today's amenities and each option's, on three maps, and the walk against the number placed
     sys.path.insert(0, str(HERE.parent / "comparison"))
     import matplotlib.pyplot as plt
     from shapely.geometry import shape
@@ -298,15 +348,16 @@ def figure(out, feats):
     style()
     site = design_site_polygon()
     massing = J("design_massing.geojson")
-    fig = plt.figure(figsize=(14, 10))
-    gs = fig.add_gridspec(2, 6, height_ratios=[1.2, 1])  #two equal maps on top, three curves below
+    fig = plt.figure(figsize=(16, 10.5))
+    gs = fig.add_gridspec(2, 6, height_ratios=[1.15, 1])  #three maps on top, two curves below
     x0, y0, x1, y1 = site.bounds
     rd = lambda g: shp_t(lambda x, y, z=None: to_rd(x, y), shape(g))  #lon/lat -> RD
-    for c, sc in enumerate(["scenario_a", "scenario_b"]):
-        ax = fig.add_subplot(gs[0, 3 * c:3 * c + 3])  #same width, same scale for both
+    titles = {"baseline": "Today", "scenario_a": "Scenario A: placed + kept", "scenario_b": "Scenario B: placed + kept"}
+    for c, sc in enumerate(["baseline", "scenario_a", "scenario_b"]):
+        ax = fig.add_subplot(gs[0, 2 * c:2 * c + 2])  #same width, same scale for all three
         for f in J(f"roads_{sc}.geojson")["features"]:  #the walk network the distances run on
             xy = np.array([to_rd(*q) for q in f["geometry"]["coordinates"]])
-            ax.plot(*xy.T, color="#d3d1ca", lw=0.8, zorder=1)
+            ax.plot(*xy.T, color="#d3d1ca", lw=0.7, zorder=1)
         for f in massing["features"]:
             if f["properties"]["scenario"] == sc:
                 g = rd(f["geometry"])
@@ -314,16 +365,26 @@ def figure(out, feats):
                     ax.fill(*q.exterior.xy, color="#c9c8c3", lw=0); ax.plot(*q.exterior.xy, color=INK2, lw=0.5)
         ax.plot(*site.exterior.xy, color=INK, lw=1)
         for k, (col, mk, lab) in TYPE_STYLE.items():
-            pts = [to_rd(*f["geometry"]["coordinates"]) for f in feats if f["properties"]["scenario"] == sc and f["properties"]["type"] == k]
-            if pts:
-                ax.scatter(*np.array(pts).T, s=150 if mk == "*" else 55, c=col, marker=mk, edgecolors="white",
-                           linewidths=0.8, zorder=5, label=f"{lab} ({len(pts)})")
+            mine = [f for f in feats if f["properties"]["scenario"] == sc and f["properties"]["type"] == k]
+            for gone in (False, True):  #solid: stands in this scenario; hollow: today's, demolished in the options
+                pts = [to_rd(*f["geometry"]["coordinates"]) for f in mine
+                       if (f["properties"].get("status") == "demolished") == gone]
+                if pts:
+                    ax.scatter(*np.array(pts).T, s=170 if mk == "*" else 45, marker=mk, zorder=5, linewidths=1.2,
+                               facecolors="none" if gone else col, edgecolors=col if gone else "white")
         ax.set_xlim(x0 - 10, x1 + 10); ax.set_ylim(y0 - 10, y1 + 10); ax.set_aspect("equal")
         ax.set_xticks([]); ax.set_yticks([]); ax.grid(False)
         for sp in ax.spines.values():
             sp.set_visible(False)
-        ax.set_title(f"{NAME[sc]}: where the amenities go")
-        ax.legend(loc="lower right", fontsize=9)
+        n = {k: sum(1 for f in feats if f["properties"]["scenario"] == sc and f["properties"]["type"] == k) for k in TYPE_STYLE}
+        ax.set_title(f"{titles[sc]}\n{n['shop']} shops, {n['health']} health, {n['education']} school"
+                     f"{'s' if n['education'] != 1 else ''}, {n['community']} community halls", fontsize=11)  #the counts per map
+    from matplotlib.lines import Line2D  #one legend for the three maps, off the maps
+    handles = [Line2D([], [], ls="", marker=mk, markersize=11 if mk == "*" else 7, markerfacecolor=col,
+                      markeredgecolor="white", label=lab) for col, mk, lab in TYPE_STYLE.values()]
+    handles.append(Line2D([], [], ls="", marker="o", markersize=7, markerfacecolor="none", markeredgecolor=INK2,
+                          label="hollow: today's, demolished in A and B"))
+    fig.legend(handles=handles, loc="upper center", ncol=5, bbox_to_anchor=(0.5, 0.955), fontsize=10)
     res = json.loads((PROCESSED / "amenity_placement.json").read_text())
     for c, k in enumerate(["shop", "health", "education"]):
         ax = fig.add_subplot(gs[1, 2 * c:2 * c + 2])
@@ -340,8 +401,8 @@ def figure(out, feats):
         ax.set_title(f"{TYPE_STYLE[k][2].capitalize()}, as many as today = dashed line")
         if c == 0:
             ax.legend(fontsize=9, loc="upper right")
-    fig.suptitle("Amenities on the new ground floors, placed to shorten walks (p-median). "
-                 "Dot = optimised, cross = random placement of the same number",
+    fig.suptitle("Amenities on the site today and in each option. Shops, health care and the second school placed to "
+                 "shorten walks (p-median); the kept block's school and halls stay where they are",
                  x=0.01, ha="left", fontweight="bold", fontsize=12)
     fig.tight_layout()
     save(fig, out)
@@ -360,10 +421,21 @@ def main() -> int:
            "_params": p, "budgets": bud,
            "baseline": {"today_with_own_amenities": today_with_own(dest, dwelling_m2, rp),  #the fair reference
                         "_note": "no new blocks today; these are today's walks with the site's own shops, health and schools"}}
-    feats = []
+    today = today_on_site()
+    #today: every amenity on the site, marked kept or demolished in the options
+    feats = [point_feature("baseline", r, rank=0, block=r["street"], status="kept" if r["kept"] else "demolished",
+                           fixed=r["kept"]) for r in today]
     for case in CASES:  #one scenario per case
         out[case["scenario"]], f = run(case, p, dest, bud, dwelling_m2, rp)
         feats += f
+        feats += [point_feature(case["scenario"], r, rank=0, block="kept community centre and school", status="kept",
+                                fixed=True) for r in today if r["kept"]]  #the kept block's school and halls, never moved
+    #how many of each type stand on the site: today, and each option (placed + kept)
+    out["counts_on_site"] = {sc: {k: sum(1 for f in feats if f["properties"]["scenario"] == sc
+                                         and f["properties"]["type"] == k) for k in SHOWN}
+                             for sc in ["baseline"] + [c["scenario"] for c in CASES]}
+    print("  amenities on the site: " + "; ".join(f"{sc} " + ", ".join(f"{k} {n}" for k, n in c.items())
+                                                 for sc, c in out["counts_on_site"].items()))
     write_processed("amenity_placement.json", out)
     path = PROCESSED / "design_amenities.geojson"
     path.write_text(json.dumps({"type": "FeatureCollection", "_written_by": "analysis/roads/place_amenities.py",

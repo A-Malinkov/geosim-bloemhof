@@ -406,11 +406,13 @@ objective is 1.75 for scenario_a and 1.96 for scenario_b
 not say the courtyards are planted.
 
 **With amenities on the ground floors.** `analysis/roads/place_amenities.py`
-puts 20 shops, 7 health practices and a school on the new blocks' ground floors
-where they shorten walks most (`with_amenities` in the JSON: each 25 m cell
-holding one becomes retail or amenity). The site objective rises to 1.762 for
-scenario_a and 2.256 for scenario_b, mix to 0.623 and 0.758, and the walk from a
-home to the nearest shop or amenity falls to 44 m (A) and 43 m (B), against
+puts 20 shops, 7 health practices and a second school on the new blocks'
+ground floors where they shorten walks most; the kept school stays fixed in the
+kept block, already amenity on today's grid (`with_amenities` in the JSON: each
+25 m cell holding a placed one becomes retail or amenity). The site objective
+rises to 1.745 for scenario_a and 2.256 for scenario_b, mix to 0.612 and 0.758,
+and the walk from a home to the nearest shop or amenity falls to 43.8 m (A) and
+42.6 m (B), against
 99 m today. A cell holds one use, so a shop cell stops counting as housing even
 though the shop sits under flats: scenario_a's residential cells fall from 99
-to 84.
+to 85.

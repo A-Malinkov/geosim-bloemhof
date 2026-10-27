@@ -160,7 +160,7 @@ def add_amenities(g, transform, scenario):
     inv = ~transform  #RD -> (col, row)
     for f in json.loads(path.read_text())["features"]:
         pr = f["properties"]
-        if pr["scenario"] != scenario:
+        if pr["scenario"] != scenario or pr.get("fixed"):  #the kept school is already in today's grid
             continue
         col, row = inv * to_rd(*f["geometry"]["coordinates"])
         r, c = int(row), int(col)

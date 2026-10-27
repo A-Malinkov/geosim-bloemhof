@@ -150,10 +150,12 @@ export async function setup(ctx) {
   /* ---- ground-floor amenities placed by analysis/roads/place_amenities.py --- */
   //shops, health practices and a school on the new blocks' ground floors, where they shorten walks most
   const amenGeo = await ctx.loadJson("../data/processed/design_amenities.geojson", { quiet: true });  //optional file
-  const AMEN = { shop: ["#7b4fd0", "Shop"], health: ["#d63c7b", "Health care"], education: ["#1f2a44", "School"] };  //as in docs/fig_amenities.png
+  const AMEN = { shop: ["#7b4fd0", "Shop"], health: ["#d63c7b", "Health care"], education: ["#1f2a44", "School"],
+                 community: ["#b8860b", "Community hall"] };  //as in docs/fig_amenities.png
   const amenBy = new Map();  //scenario name -> CustomDataSource of amenity points
   for (const f of amenGeo?.features ?? []) {
-    const { scenario: name, type, rank, block, floor_m2 } = f.properties;
+    const { scenario: name, type, rank, block, floor_m2, status } = f.properties;
+    const gone = status === "demolished";  //today's amenity that A and B demolish: drawn hollow
     if (!amenBy.has(name)) {
       const ds = new Cesium.CustomDataSource(`amenities-${name}`);
       ds.show = false;  //shown with the massing
@@ -162,30 +164,33 @@ export async function setup(ctx) {
     }
     const [col, label] = AMEN[type] ?? ["#888888", type];
     amenBy.get(name).entities.add({
-      name: `${label} (optimised placement)`,
-      description: `<table><tr><td>use</td><td>${label}</td></tr><tr><td>block</td><td>${block}</td></tr>` +
-        `<tr><td>pick</td><td>${rank} of its type</td></tr><tr><td>floor area</td><td>${floor_m2} m² (today's median)</td></tr>` +
-        `<tr><td>source</td><td>place_amenities.py, p-median on walking distance</td></tr></table>`,
+      name: status === "placed" ? `${label} (optimised placement)`  //placed by the p-median
+        : name === "baseline" ? `${label} today${gone ? ", demolished in A and B" : ", kept"}`  //today's, from BAG
+        : `${label} (kept community centre and school, fixed)`,  //the kept block, never moved
+      description: `<table><tr><td>use</td><td>${label}</td></tr><tr><td>where</td><td>${block}</td></tr>` +
+        (status === "placed" ? `<tr><td>pick</td><td>${rank} of its type</td></tr>` : "") +
+        `<tr><td>floor area</td><td>${floor_m2} m²${status === "placed" ? " (today's median)" : " (BAG)"}</td></tr>` +
+        `<tr><td>source</td><td>${status === "placed" ? "place_amenities.py, p-median on walking distance" : "BAG"}</td></tr></table>`,
       position: Cesium.Cartesian3.fromDegrees(...f.geometry.coordinates),
       point: {
         pixelSize: type === "education" ? 15 : 10,
-        color: Cesium.Color.fromCssColorString(col),
-        outlineColor: Cesium.Color.WHITE,
-        outlineWidth: 2,
+        color: gone ? Cesium.Color.WHITE.withAlpha(0.15) : Cesium.Color.fromCssColorString(col),  //hollow when demolished
+        outlineColor: gone ? Cesium.Color.fromCssColorString(col) : Cesium.Color.WHITE,
+        outlineWidth: gone ? 3 : 2,
         heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
         disableDepthTestDistance: Number.POSITIVE_INFINITY,  //a ground-floor door, drawn over its own block
       },
     });
   }
   let amenOn = true;  //layer checkbox
-  const showAmen = () => {  //only the shown massing's amenities, and only if ticked
-    for (const [n, ds] of amenBy) ds.show = amenOn && shownMassing.has(n);
+  const showAmen = () => {  //the current scenario's amenities only, if ticked; an option's only while its massing shows
+    for (const [n, ds] of amenBy) ds.show = amenOn && n === ctx.scenario() && (n === "baseline" || shownMassing.has(n));
     viewer.scene.requestRender();
   };
   if (amenBy.size) {
     ctx.registerLayer({
       id: "designAmenities",
-      label: "Ground-floor amenities (optimised, with the massing)",
+      label: "Amenities: today's, kept and optimised",
       group: "Design",
       show: true,
       onToggle: (v) => { amenOn = v; showAmen(); },
@@ -262,6 +267,7 @@ export async function setup(ctx) {
   body.appendChild(summary);
 
   function render(scenario) {
+    queueMicrotask(showAmen);  //after the massing switch below, so the amenities follow the scenario
     // show only the active scenario's massing
     for (const [name] of byScenario) layerHandles.get(name)?.setVisible(name === scenario);  //shows the massing and ticks its checkbox
 

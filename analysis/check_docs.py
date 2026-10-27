@@ -312,6 +312,9 @@ def main() -> int:
                 (r"^\| site grid, with the placed amenities \|", "walk_grid_amen_m", "{:.0f} m"),
                 (r"^\| site grid, network only \|", "walk_grid_network_m", "{:.0f} m"),
                 (r"^\| land-use objective J, with the placed amenities \|", "lu_objective_amen", "{:.3f}"),
+                (r"^\| shops on the site \|", "n_shop", "{:.0f}"),
+                (r"^\| schools on the site \|", "n_education", "{:.0f}"),
+                (r"^\| community halls on the site \|", "n_community", "{:.0f}"),
                 (r"^\| land-use objective J \|", "lu_objective", "{:.3f}")]
         for pat, key, fm in rows:
             for sc in ("baseline", "scenario_a", "scenario_b"):
@@ -324,7 +327,7 @@ def main() -> int:
     ap = load("amenity_placement.json")  #amenities placed on the new ground floors
     if ap and ap.get("scenario_a", {}).get("shop"):
         for sc, L in (("scenario_a", "A"), ("scenario_b", "B")):
-            for k, lab in (("shop", "shop"), ("health", "health care"), ("education", "education")):
+            for k, lab in (("shop", "shop"), ("health", "health care"), ("education", "education")):  #the kept school is fixed, one more placed
                 r = ap[sc][k]
                 pat = rf"^\| {L}, {lab} \|"
                 checks += [(f"amenities {sc} {k} before", pat, f"{r['J_before_m']:.1f} m", [ROADS]),
@@ -332,8 +335,8 @@ def main() -> int:
                            (f"amenities {sc} {k} random", pat, f"{r['J_random_mean_m']:.1f} m", [ROADS])]
         own = ap["baseline"]["today_with_own_amenities"]["mean_of_four"]
         checks += [("amenities: today with its own", r"^services, a site resident walks", f"{own['site_dwellings_m']:.1f} m", [ROADS]),
-                   ("amenities: A placed", r"^placed amenities it is", f"{ap['scenario_a']['mean_of_four']['site_dwellings_after_m']:.1f} m", [ROADS]),
-                   ("amenities: B placed", r"^placed amenities it is", f"{ap['scenario_b']['mean_of_four']['site_dwellings_after_m']:.1f} m", [ROADS])]
+                   ("amenities: A placed", r"^With the placed shops and health practices", f"{ap['scenario_a']['mean_of_four']['site_dwellings_after_m']:.1f} m", [ROADS]),
+                   ("amenities: B placed", r"^With the placed shops and health practices", f"{ap['scenario_b']['mean_of_four']['site_dwellings_after_m']:.1f} m", [ROADS])]
 
     import re
 
@@ -473,6 +476,8 @@ def main() -> int:
             ("roads README: 'the amenities beat random placement on every type'",
              all(ap[s][k]["J_after_m"] < ap[s][k]["J_random_mean_m"] for s in ("scenario_a", "scenario_b")
                  for k in ("shop", "health", "education"))),
+            ("comparison README: 'two schools in each option, the kept one and one placed'",
+             all(ap["counts_on_site"][s]["education"] == 2 for s in ("scenario_a", "scenario_b"))),
             ("roads README: 'with the placed amenities, site walks are shorter than today'",
              all(ap[s]["mean_of_four"]["site_dwellings_after_m"] < ap["baseline"]["today_with_own_amenities"]["mean_of_four"]["site_dwellings_m"]
                  for s in ("scenario_a", "scenario_b"))),

@@ -210,6 +210,12 @@ def landuse(sc):
     return out
 
 
+def amenities(sc):
+    #shops, health practices, schools and community halls on the site: today's (BAG), the options' placed + kept
+    c = ((J("amenity_placement.json") or {}).get("counts_on_site") or {}).get(sc) or {}
+    return {f"n_{k}": v for k, v in c.items()}
+
+
 def flood(sc):
     #Cyrille's flood vulnerability, today only
     d = J("flood_summary.json")
@@ -236,6 +242,10 @@ INDICATORS = [
     ("trees_proposed", "Green and water", "Proposed trees", "", "higher", 0, "design_planting.geojson"),  #new planting, not seen by SVF or sun
     ("green_area_m2", "Green and water", "Proposed green area", " m²", "higher", 0, "design_planting.geojson"),
     ("water_area_m2", "Green and water", "Proposed water area", " m²", "higher", 0, "design_planting.geojson"),
+    ("n_shop", "Amenities", "Shops on the site", "", "higher", 0, "amenity_placement.json"),
+    ("n_health", "Amenities", "Health practices on the site", "", "higher", 0, "amenity_placement.json"),
+    ("n_education", "Amenities", "Schools on the site", "", "higher", 0, "amenity_placement.json"),
+    ("n_community", "Amenities", "Community halls on the site", "", "higher", 0, "amenity_placement.json"),
     ("walk_dwellings_m", "Walking", "Walk to 4 places, residents, housing only", " m", "lower", 0, "road_metrics.json + amenity_placement.json"),
     ("walk_grid_m", "Walking", "Walk to 4 places, site grid, housing only", " m", "lower", 0, "road_metrics.json + amenity_placement.json"),
     ("walk_dwellings_amen_m", "Walking", "Residents, with placed amenities", " m", "lower", 0, "amenity_placement.json"),
@@ -263,7 +273,7 @@ def collect():
     out = {}
     for sc in SCEN:
         v = {}
-        for f in (programme, daylight, green, mobility, landuse, flood):
+        for f in (programme, daylight, green, mobility, amenities, landuse, flood):
             v.update(f(sc))
         out[sc] = v
         print(f"  {sc}: {len(v)} values")

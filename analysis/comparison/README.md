@@ -43,8 +43,9 @@ scenario, so it moves with the network alone (`analysis/roads/`).
 **Today counts its own shops.** Today's walks include the 20 shops, 7 health
 practices and the school standing on the cleared ground, where they are. The
 options are walked as modelled (housing only, those amenities gone), and again
-with the shops, health practices and school that
-`analysis/roads/place_amenities.py` puts back on their ground floors. A third
+with the shops, health practices and second school that
+`analysis/roads/place_amenities.py` puts back on their ground floors. The
+community centre and school in the kept block stays fixed where it is. A third
 measure, *network only*, leaves the site's own amenities out of every scenario,
 today included, so only the street network differs: that is what
 `analysis/roads/` reports.
@@ -72,9 +73,13 @@ a row that says so. Flood vulnerability is today only.
 | proposed trees | n/a | 64 | 99 | higher |
 | proposed green area | n/a | 21,135 m² | 41,499 m² | higher |
 | proposed water area | n/a | 1,082 m² | 1,082 m² | higher |
+| shops on the site | 20 | 20 | 20 | higher |
+| health practices on the site | 7 | 7 | 7 | higher |
+| schools on the site | 2 | 2 | 2 | higher |
+| community halls on the site | 7 | 3 | 3 | higher |
 | walk to 4 everyday places, residents, housing only | 317 m | 395 m | 391 m | lower |
 | walk to 4 everyday places, site grid, housing only | 314 m | 371 m | 378 m | lower |
-| residents, with the placed amenities | 317 m | 253 m | 263 m | lower |
+| residents, with the placed amenities | 317 m | 254 m | 263 m | lower |
 | site grid, with the placed amenities | 314 m | 252 m | 261 m | lower |
 | site grid, network only | 377 m | 371 m | 378 m | lower |
 | network only, with the optimiser's footpaths | n/a | 370 m | 375 m | lower |
@@ -82,8 +87,8 @@ a row that says so. Flood vulnerability is today only.
 | land-use objective J | 1.000 | 1.074 | 1.737 | higher |
 | land-use mix | 0.229 | 0.308 | 0.532 | higher |
 | green share of 25 m cells | 3 % | 5 % | 33 % | higher |
-| land-use objective J, with the placed amenities | n/a | 1.762 | 2.256 | higher |
-| land-use mix, with the placed amenities | n/a | 0.623 | 0.758 | higher |
+| land-use objective J, with the placed amenities | n/a | 1.745 | 2.256 | higher |
+| land-use mix, with the placed amenities | n/a | 0.612 | 0.758 | higher |
 | flood vulnerability high or very high | 61 % | not run | not run | lower |
 
 Sources: dwellings from `road_metrics.json` (BAG today, the road network's
@@ -110,9 +115,9 @@ buildings to gain about 220 dwellings.
 them shorter than today.** Today a resident of the site walks 317 m on average
 to the nearest shop, school, health practice and rail stop. With the site's
 shops and services demolished and not replaced, that becomes 395 m in A and
-391 m in B. With 20 shops, 7 health practices and one school placed on the new
-ground floors where they shorten walks most, it falls to 253 m in A and 263 m
-in B. The street network alone barely matters: on the network-only measure A's
+391 m in B. With 20 shops, 7 health practices and a second school placed on the
+new ground floors where they shorten walks most, and the kept school, it falls
+to 254 m in A and 263 m in B. The street network alone barely matters: on the network-only measure A's
 denser grid (589 junctions per km² against 423) saves 6 m and B's open layout
 (287) changes nothing.
 
@@ -125,6 +130,16 @@ green plan with fewer, taller homes scores well by construction.
 **Both demolish everything on the cleared part of the site**, 1,150 buildings,
 1,027 homes, most of them built 1919–1940.
 
+**Amenities: shops, health and the second school come back, four halls do
+not.** Today's site holds 20 shops, 7 health practices, 2 schools and 7
+community halls (BAG). The options keep the community centre and school block
+(1 school, 3 halls, fixed) and get 20 shops, 7 health practices and 1 school
+placed on their ground floors (`analysis/roads/place_amenities.py`). Four
+halls are gone. Today's shops line Strevelsweg, the site's
+shopping street. The placement spreads them through the blocks instead,
+because it minimises walking distance and knows nothing of footfall.
+`docs/fig_amenities.png` maps all three.
+
 ## Figures
 
 | file | shows |
@@ -135,6 +150,7 @@ green plan with fewer, taller homes scores well by construction.
 | `fig_compare_difference_maps.png` | scenario minus today, cell by cell, sun hours (equinox, 21 Dec) and SVF, new blocks drawn |
 | `fig_compare_walking.png` | mean walk to each destination type, residents and site grid, today with its own amenities, the options housing only and with the placed amenities |
 | `fig_compare_canyon.png` | canyon street length by H/W class |
+| `fig_amenities.png` (from `analysis/roads/place_amenities.py`) | today's amenities on the site, demolished ones hollow, and each option's placed and kept ones |
 
 ## What it cannot tell you
 
