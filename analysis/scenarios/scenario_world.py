@@ -79,7 +79,8 @@ def load_scenario(scenario: str):
                  "Run analysis/scenarios/import_rhino.py, or add the scenario there.")
     new = gpd.GeoDataFrame.from_features(feats, crs="EPSG:4326").to_crs(28992)
     new["height_m"] = new["building_height_m"].astype(float)  #above ground, like 3DBAG heights here
-    return new[["name", "height_m", "geometry"]], set(d.get("demolishes", {}).get(scenario, []))
+    new["use"] = new["use"].fillna("residential") if "use" in new else "residential"  #shop, mixed, ... in the final design
+    return new[["name", "height_m", "use", "geometry"]], set(d.get("demolishes", {}).get(scenario, []))
 
 
 def cleared_area(scenario: str):
@@ -153,7 +154,8 @@ def centrelines(poly, step: float = 1.0, prune_m: float = 6.0):
     lines = [e for e in shapely.get_parts(edges) if inner.contains(e)]
     if not lines:
         return []
-    merged = list(shapely.get_parts(linemerge(shapely.union_all(lines))))  #join the short Voronoi edges into runs
+    u = shapely.union_all(lines)
+    merged = [u] if u.geom_type == "LineString" else list(shapely.get_parts(linemerge(u)))  #join the short Voronoi edges into runs; one edge needs no merge
     #count how many runs meet at each end point; a run with a free end is a spur
     ends = [tuple(np.round(g.coords[k], 3)) for g in merged for k in (0, -1)]
     degree = {e: ends.count(e) for e in ends}
@@ -240,5 +242,8 @@ def streets_for_scenario(roads, scenario: str, paths: bool = False):
         names += [f"{scenario} path"] * len(drawn)
         if drawn:
             print(f"  {scenario}: {len(drawn)} hand-drawn paths ({sum(g.length for g in drawn):.0f} m) added")
+        #the final design's pedestrian and bike surfaces are not walked separately: every one runs within 5 m of
+        #a street (sidewalks and bike lanes, 2 m wide), so the street centreline already carries that walk, and
+        #tracing them only snapped homes onto strips joined at their ends (2026-10-28)
     new = gpd.GeoDataFrame({"name": names}, geometry=lines, crs=roads.crs)
     return gpd.GeoDataFrame(pd.concat([kept, new], ignore_index=True), crs=roads.crs)

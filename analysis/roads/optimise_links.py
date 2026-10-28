@@ -9,6 +9,7 @@ road_network.py, so run that first.
 USAGE
 -----
     python analysis/roads/optimise_links.py
+    python analysis/roads/optimise_links.py --scenario final   #only these cases, the rest kept as written
 
 OBJECTIVE
 ---------
@@ -65,6 +66,7 @@ from common.project import PROCESSED, ROOT, design_site_polygon, to_wgs, write_p
 CASES = [
     {"scenario": "scenario_a", "budget": 10, "min_m": 10.0, "max_m": 150.0, "detour_min": 1.5, "reach_m": 20.0},
     {"scenario": "scenario_b", "budget": 10, "min_m": 10.0, "max_m": 150.0, "detour_min": 1.5, "reach_m": 20.0},
+    {"scenario": "final", "budget": 10, "min_m": 10.0, "max_m": 150.0, "detour_min": 1.5, "reach_m": 20.0},  #Final Model, 2026-10-28
     #baseline: not run, its open land is private back gardens
 ]
 
@@ -202,6 +204,7 @@ def run(case, p, dest, dwelling_m2, baseline_grid):
 
 
 def main() -> int:
+    only = sys.argv[sys.argv.index("--scenario") + 1:] if "--scenario" in sys.argv else None  #run only these cases
     p = rn.PARAMS
     print("Footpath link optimisation")
     metrics = json.loads((PROCESSED / "road_metrics.json").read_text())
@@ -218,11 +221,16 @@ def main() -> int:
     }
     #today with its own amenities: the reference the links are judged against, as in the comparison
     ref = (metrics["baseline"].get("with_amenities") or metrics["baseline"])["site_grid"]["mean_of_types_m"]
+    old = json.loads((PROCESSED / "road_links.json").read_text()) if only else {}
     for case in CASES:  #one scenario per case
+        if only and case["scenario"] not in only:
+            out[case["scenario"]] = old.get(case["scenario"], {"_status": "not_computed_yet"})  #kept as written
+            continue
         dw = rn.dest_with_amenities(dest, case["scenario"])  #the option as proposed: its placed shops, health and school
         out[case["scenario"]] = run(case, p, dw if dw is not None else dest, dwelling_m2, ref)
-        out[case["scenario"]]["destinations"] = "with the placed amenities" if dw is not None else "housing only"
-    for sc in ("baseline", "scenario_a", "scenario_b"):
+        out[case["scenario"]]["destinations"] = ("with the shops the Rhino model labels" if case["scenario"] == "final"
+                                                 else "with the placed amenities") if dw is not None else "housing only"
+    for sc in ("baseline", "scenario_a", "scenario_b", "final"):
         if sc not in out:
             out[sc] = {"_status": "not_computed_yet",
                        "_note": "baseline: open land is private gardens" if sc == "baseline" else f"{sc} has no massing yet"}

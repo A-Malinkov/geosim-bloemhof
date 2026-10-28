@@ -209,6 +209,26 @@ ceilings are 0.27 m (A) and 0.11 m (B) below J. The optimiser could not have
 found the path through the school green in A: a candidate must join two street
 junctions, and that green had none.
 
+### Final design
+
+Run 2026-10-28 with `road_network.py --scenario final` and `optimise_links.py
+--scenario final`. Baseline, A and B were left as written: the 27.10 model
+shrank the shared pond, which may move their street networks slightly, and
+they have not been re-run on it.
+
+Nothing is placed in the final design. Its destinations are its own 70 shops
+from the Rhino block names (31 podiums, 38 terraced houses with a shop, the
+shopping centre) and the kept school; it adds no health practice and no
+second school. Shop floor holds no dwellings in the estimate, and a terraced
+house with a shop loses its ground floor: 798 dwellings on the site.
+
+Site residents walk 364 m on the mean of the four types on the network alone,
+336 m with the labelled shops, against 317 m today with today's own
+amenities. Shops are close (113 m); health care is the long walk (365 m).
+The pedestrian and bike surfaces are not walked separately: all of them run
+within 5 m of a street. The optimiser's 10 links (350 m) lower J from
+275.94 to 275.57 m and the site residents' walk from 335.7 to 333.0 m.
+
 ## Amenities on the new ground floors
 
 The Rhino model gives the new blocks no use, and the importer assumes housing.

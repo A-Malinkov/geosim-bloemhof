@@ -9,6 +9,7 @@ USAGE
 -----
     python analysis/roads/road_network.py               # every case in CASES
     python analysis/roads/road_network.py --refresh     # re-fetch the OSM network and stops
+    python analysis/roads/road_network.py --scenario final   # only these cases, the rest kept as written
 
 The first run fetches the OSM walk network and the public-transport stops
 (about three minutes) into cache/roads/ (gitignored).
@@ -131,6 +132,7 @@ CASES = [
     {"scenario": "baseline"},
     {"scenario": "scenario_a"},
     {"scenario": "scenario_b"},  #OPTION 2, imported 2026-10-23
+    {"scenario": "final"},  #the Rhino Final Model, imported 2026-10-28
 ]
 
 
@@ -202,9 +204,9 @@ def dest_with_amenities(dest, scenario):
     path = PROCESSED / "design_amenities.geojson"
     if not path.exists():
         return None
-    want = "demolished" if scenario == "baseline" else "placed"  #today's own on cleared ground / the option's placed ones
+    want = ("demolished",) if scenario == "baseline" else ("placed", "labelled")  #today's own on cleared ground / the option's placed or labelled ones
     feats = [f for f in json.loads(path.read_text())["features"]
-             if f["properties"]["scenario"] == scenario and f["properties"].get("status") == want]
+             if f["properties"]["scenario"] == scenario and f["properties"].get("status") in want]
     out = {}
     for k, pts in dest.items():
         add = [Point(*to_rd(*f["geometry"]["coordinates"])) for f in feats if f["properties"]["type"] == k]
@@ -228,6 +230,9 @@ def homes_for_scenario(scenario, dwelling_m2, p):
         gone = {g.rsplit(".", 1)[-1] for g in gone}  #NL.IMBAG.Pand.<id> -> <id>, BAG's pand_id
         h = h[~bag["pand_id"].astype(str).isin(gone).values]
         storeys = np.maximum(1, np.round(new["height_m"].to_numpy() / p["storey_m"]))
+        use = new["use"].to_numpy()
+        storeys = np.where(np.isin(use, ["shop", "shopping centre"]), 0, storeys)  #shop space holds no dwellings
+        storeys = np.where(use == "mixed", storeys - 1, storeys)  #a shop on the ground floor
         n = new.geometry.area.to_numpy() * storeys * p["net_to_gross"] / dwelling_m2  #estimated dwellings per block
         nb = gpd.GeoDataFrame({"w": n, "new": True}, geometry=new.geometry.centroid.values, crs=28992)
         print(f"  {scenario}: {len(bag) - len(h)} dwellings demolished, {n.sum():.0f} estimated in "
@@ -592,6 +597,7 @@ def run(case, p, dest, dwelling_m2):
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--refresh", action="store_true", help="re-fetch the OSM walk network and stops")
+    ap.add_argument("--scenario", nargs="+", help="run only these cases; the others stay as in road_metrics.json")
     args = ap.parse_args()
     p = PARAMS
     print(f"Walking network — {STUDY_AREA.name}")
@@ -606,9 +612,13 @@ def main() -> int:
         "destinations_on_site_today": removed,
         "dwelling_m2_site_median": dwelling_m2,
     }
+    old = json.loads((PROCESSED / "road_metrics.json").read_text()) if args.scenario else {}
     for case in CASES:  #one scenario per case
+        if args.scenario and case["scenario"] not in args.scenario:
+            out[case["scenario"]] = old.get(case["scenario"], {"_status": "not_computed_yet"})  #kept as written
+            continue
         out[case["scenario"]] = run(case, p, dest, dwelling_m2)
-    for sc in ("baseline", "scenario_a", "scenario_b"):
+    for sc in ("baseline", "scenario_a", "scenario_b", "final"):
         if sc not in out:
             out[sc] = {"_status": "not_computed_yet", "_note": f"{sc} has no massing yet"}  #keyed for 4.9 all the same
     write_processed("road_metrics.json", out)

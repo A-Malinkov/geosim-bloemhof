@@ -928,5 +928,308 @@
       "new_street_length_m": 1170.6,
       "new_block_dwellings_est": 1250
     }
+  },
+  "final": {
+    "areas": {
+      "Bloemhof": {
+        "n_nodes": 393,
+        "n_edges": 651,
+        "avg_street_length_m": 40.7,
+        "intersection_density_km2": 421.1,
+        "circuity": 1.018,
+        "betweenness_max": 0.1173,
+        "street_length_km": 26.5,
+        "dwellings": 6102,
+        "shop": {
+          "mean_m": 129.8,
+          "within_15min_frac": 1.0,
+          "within_5min_frac": 0.999
+        },
+        "education": {
+          "mean_m": 240.7,
+          "within_15min_frac": 1.0,
+          "within_5min_frac": 0.919
+        },
+        "health": {
+          "mean_m": 321.9,
+          "within_15min_frac": 1.0,
+          "within_5min_frac": 0.751
+        },
+        "rail_stop": {
+          "mean_m": 427.2,
+          "within_15min_frac": 1.0,
+          "within_5min_frac": 0.521
+        },
+        "mean_of_types_m": 279.9,
+        "walk_15min_reach_frac": 1.0
+      },
+      "study_area": {
+        "n_nodes": 393,
+        "n_edges": 651,
+        "avg_street_length_m": 40.7,
+        "intersection_density_km2": 421.1,
+        "circuity": 1.018,
+        "betweenness_max": 0.1173,
+        "street_length_km": 26.5,
+        "dwellings": 6102,
+        "shop": {
+          "mean_m": 129.8,
+          "within_15min_frac": 1.0,
+          "within_5min_frac": 0.999
+        },
+        "education": {
+          "mean_m": 240.7,
+          "within_15min_frac": 1.0,
+          "within_5min_frac": 0.919
+        },
+        "health": {
+          "mean_m": 321.9,
+          "within_15min_frac": 1.0,
+          "within_5min_frac": 0.751
+        },
+        "rail_stop": {
+          "mean_m": 427.2,
+          "within_15min_frac": 1.0,
+          "within_5min_frac": 0.521
+        },
+        "mean_of_types_m": 279.9,
+        "walk_15min_reach_frac": 1.0
+      },
+      "outside_site": {
+        "n_nodes": 293,
+        "n_edges": 470,
+        "avg_street_length_m": 47.2,
+        "intersection_density_km2": 409.8,
+        "circuity": 1.021,
+        "betweenness_max": 0.1173,
+        "street_length_km": 22.19,
+        "dwellings": 5304,
+        "shop": {
+          "mean_m": 115.6,
+          "within_15min_frac": 1.0,
+          "within_5min_frac": 1.0
+        },
+        "education": {
+          "mean_m": 235.1,
+          "within_15min_frac": 1.0,
+          "within_5min_frac": 0.908
+        },
+        "health": {
+          "mean_m": 315.5,
+          "within_15min_frac": 1.0,
+          "within_5min_frac": 0.779
+        },
+        "rail_stop": {
+          "mean_m": 403.1,
+          "within_15min_frac": 1.0,
+          "within_5min_frac": 0.599
+        },
+        "mean_of_types_m": 267.3,
+        "walk_15min_reach_frac": 1.0
+      },
+      "design_site": {
+        "n_nodes": 124,
+        "n_edges": 209,
+        "avg_street_length_m": 26.1,
+        "intersection_density_km2": 543.8,
+        "circuity": 1.005,
+        "betweenness_max": 0.1079,
+        "street_length_km": 5.45,
+        "dwellings": 798,
+        "shop": {
+          "mean_m": 224.1,
+          "within_15min_frac": 1.0,
+          "within_5min_frac": 0.995
+        },
+        "education": {
+          "mean_m": 277.4,
+          "within_15min_frac": 1.0,
+          "within_5min_frac": 0.99
+        },
+        "health": {
+          "mean_m": 365.0,
+          "within_15min_frac": 1.0,
+          "within_5min_frac": 0.562
+        },
+        "rail_stop": {
+          "mean_m": 587.6,
+          "within_15min_frac": 1.0,
+          "within_5min_frac": 0.003
+        },
+        "mean_of_types_m": 363.5,
+        "walk_15min_reach_frac": 1.0
+      }
+    },
+    "geojson": "../data/processed/roads_final.geojson",
+    "site_grid": {
+      "shop": {
+        "mean_m": 217.4,
+        "within_15min_frac": 1.0,
+        "within_5min_frac": 0.997
+      },
+      "education": {
+        "mean_m": 259.5,
+        "within_15min_frac": 1.0,
+        "within_5min_frac": 0.994
+      },
+      "health": {
+        "mean_m": 423.3,
+        "within_15min_frac": 1.0,
+        "within_5min_frac": 0.364
+      },
+      "rail_stop": {
+        "mean_m": 595.8,
+        "within_15min_frac": 1.0,
+        "within_5min_frac": 0.039
+      },
+      "mean_of_types_m": 374.0,
+      "walk_15min_reach_frac": 1.0,
+      "grid_points": 332
+    },
+    "with_amenities": {
+      "_note": "today with its own shops, health and schools on the site; an option with the ones place_amenities.py puts on its ground floors (the kept school is in both)",
+      "areas": {
+        "Bloemhof": {
+          "dwellings": 6102,
+          "shop": {
+            "mean_m": 114.0,
+            "within_15min_frac": 1.0,
+            "within_5min_frac": 1.0
+          },
+          "education": {
+            "mean_m": 240.7,
+            "within_15min_frac": 1.0,
+            "within_5min_frac": 0.919
+          },
+          "health": {
+            "mean_m": 321.9,
+            "within_15min_frac": 1.0,
+            "within_5min_frac": 0.751
+          },
+          "rail_stop": {
+            "mean_m": 427.2,
+            "within_15min_frac": 1.0,
+            "within_5min_frac": 0.521
+          },
+          "mean_of_types_m": 275.9,
+          "walk_15min_reach_frac": 1.0
+        },
+        "study_area": {
+          "dwellings": 6102,
+          "shop": {
+            "mean_m": 114.0,
+            "within_15min_frac": 1.0,
+            "within_5min_frac": 1.0
+          },
+          "education": {
+            "mean_m": 240.7,
+            "within_15min_frac": 1.0,
+            "within_5min_frac": 0.919
+          },
+          "health": {
+            "mean_m": 321.9,
+            "within_15min_frac": 1.0,
+            "within_5min_frac": 0.751
+          },
+          "rail_stop": {
+            "mean_m": 427.2,
+            "within_15min_frac": 1.0,
+            "within_5min_frac": 0.521
+          },
+          "mean_of_types_m": 275.9,
+          "walk_15min_reach_frac": 1.0
+        },
+        "outside_site": {
+          "dwellings": 5304,
+          "shop": {
+            "mean_m": 114.1,
+            "within_15min_frac": 1.0,
+            "within_5min_frac": 1.0
+          },
+          "education": {
+            "mean_m": 235.1,
+            "within_15min_frac": 1.0,
+            "within_5min_frac": 0.908
+          },
+          "health": {
+            "mean_m": 315.5,
+            "within_15min_frac": 1.0,
+            "within_5min_frac": 0.779
+          },
+          "rail_stop": {
+            "mean_m": 403.1,
+            "within_15min_frac": 1.0,
+            "within_5min_frac": 0.599
+          },
+          "mean_of_types_m": 267.0,
+          "walk_15min_reach_frac": 1.0
+        },
+        "design_site": {
+          "dwellings": 798,
+          "shop": {
+            "mean_m": 113.0,
+            "within_15min_frac": 1.0,
+            "within_5min_frac": 1.0
+          },
+          "education": {
+            "mean_m": 277.4,
+            "within_15min_frac": 1.0,
+            "within_5min_frac": 0.99
+          },
+          "health": {
+            "mean_m": 365.0,
+            "within_15min_frac": 1.0,
+            "within_5min_frac": 0.562
+          },
+          "rail_stop": {
+            "mean_m": 587.6,
+            "within_15min_frac": 1.0,
+            "within_5min_frac": 0.003
+          },
+          "mean_of_types_m": 335.8,
+          "walk_15min_reach_frac": 1.0
+        }
+      },
+      "site_grid": {
+        "shop": {
+          "mean_m": 113.9,
+          "within_15min_frac": 1.0,
+          "within_5min_frac": 0.997
+        },
+        "education": {
+          "mean_m": 259.5,
+          "within_15min_frac": 1.0,
+          "within_5min_frac": 0.994
+        },
+        "health": {
+          "mean_m": 423.3,
+          "within_15min_frac": 1.0,
+          "within_5min_frac": 0.364
+        },
+        "rail_stop": {
+          "mean_m": 595.8,
+          "within_15min_frac": 1.0,
+          "within_5min_frac": 0.039
+        },
+        "mean_of_types_m": 348.1,
+        "walk_15min_reach_frac": 1.0,
+        "grid_points": 332
+      }
+    },
+    "metrics": {
+      "n_nodes": 393,
+      "n_edges": 651,
+      "avg_street_length_m": 40.7,
+      "intersection_density_km2": 421.1,
+      "circuity": 1.018,
+      "betweenness_max": 0.1173,
+      "walk_15min_reach_frac": 1.0
+    },
+    "network": {
+      "connectors": 49,
+      "connector_length_m": 235.7,
+      "new_street_length_m": 2738.0,
+      "new_block_dwellings_est": 798
+    }
   }
 }

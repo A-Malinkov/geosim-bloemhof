@@ -96,6 +96,116 @@
     "geojson": "../data/processed/road_links_scenario_b.geojson",
     "destinations": "with the placed amenities"
   },
+  "final": {
+    "budget": 10,
+    "candidate_rule": {
+      "min_m": 10.0,
+      "max_m": 150.0,
+      "detour_min": 1.5,
+      "reach_m": 20.0
+    },
+    "n_candidates": 41,
+    "J_before_m": 275.94,
+    "site_dwellings_before_m": 335.7,
+    "site_grid_before_m": 348.1,
+    "J_ceiling_m": 275.51,
+    "site_grid_ceiling_m": 343.9,
+    "site_grid_baseline_m": 314.3,
+    "steps": [
+      {
+        "rank": 1,
+        "length_m": 48.3,
+        "gain_m": 0.118,
+        "J_m": 275.83,
+        "site_dwellings_m": 335.0,
+        "site_grid_m": 347.5,
+        "share_of_ceiling": 0.27
+      },
+      {
+        "rank": 2,
+        "length_m": 19.3,
+        "gain_m": 0.081,
+        "J_m": 275.74,
+        "site_dwellings_m": 334.4,
+        "site_grid_m": 347.2,
+        "share_of_ceiling": 0.454
+      },
+      {
+        "rank": 3,
+        "length_m": 24.0,
+        "gain_m": 0.075,
+        "J_m": 275.67,
+        "site_dwellings_m": 333.8,
+        "site_grid_m": 347.0,
+        "share_of_ceiling": 0.626
+      },
+      {
+        "rank": 4,
+        "length_m": 29.8,
+        "gain_m": 0.04,
+        "J_m": 275.63,
+        "site_dwellings_m": 333.5,
+        "site_grid_m": 346.8,
+        "share_of_ceiling": 0.716
+      },
+      {
+        "rank": 5,
+        "length_m": 60.9,
+        "gain_m": 0.022,
+        "J_m": 275.61,
+        "site_dwellings_m": 333.3,
+        "site_grid_m": 346.5,
+        "share_of_ceiling": 0.767
+      },
+      {
+        "rank": 6,
+        "length_m": 14.7,
+        "gain_m": 0.014,
+        "J_m": 275.59,
+        "site_dwellings_m": 333.2,
+        "site_grid_m": 345.0,
+        "share_of_ceiling": 0.8
+      },
+      {
+        "rank": 7,
+        "length_m": 17.1,
+        "gain_m": 0.01,
+        "J_m": 275.58,
+        "site_dwellings_m": 333.1,
+        "site_grid_m": 344.9,
+        "share_of_ceiling": 0.822
+      },
+      {
+        "rank": 8,
+        "length_m": 56.8,
+        "gain_m": 0.006,
+        "J_m": 275.58,
+        "site_dwellings_m": 333.1,
+        "site_grid_m": 344.8,
+        "share_of_ceiling": 0.836
+      },
+      {
+        "rank": 9,
+        "length_m": 56.1,
+        "gain_m": 0.005,
+        "J_m": 275.57,
+        "site_dwellings_m": 333.0,
+        "site_grid_m": 344.8,
+        "share_of_ceiling": 0.847
+      },
+      {
+        "rank": 10,
+        "length_m": 22.8,
+        "gain_m": 0.004,
+        "J_m": 275.57,
+        "site_dwellings_m": 333.0,
+        "site_grid_m": 344.8,
+        "share_of_ceiling": 0.856
+      }
+    ],
+    "geojson": "../data/processed/road_links_final.geojson",
+    "destinations": "with the shops the Rhino model labels"
+  },
   "baseline": {
     "_status": "not_computed_yet",
     "_note": "baseline: open land is private gardens"

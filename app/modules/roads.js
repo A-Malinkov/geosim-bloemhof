@@ -179,7 +179,8 @@ export async function setup(ctx) {
       row("<b>mean of the four</b>", site.mean_of_types_m, siteB.mean_of_types_m,
           grid.mean_of_types_m, gridB.mean_of_types_m, null) +
       (data[sc].with_amenities && data.baseline.with_amenities  //as lived: today's own amenities, or the placed ones
-        ? row(sc === "baseline" ? "<b>with today's own amenities</b>" : "<b>with the placed amenities</b>",
+        ? row(sc === "baseline" ? "<b>with today's own amenities</b>"
+              : sc === "final" ? "<b>with its labelled shops</b>" : "<b>with the placed amenities</b>",  //final: shops from the Rhino block names
               data[sc].with_amenities.areas.design_site.mean_of_types_m,
               data.baseline.with_amenities.areas.design_site.mean_of_types_m,
               data[sc].with_amenities.site_grid.mean_of_types_m,
@@ -188,7 +189,8 @@ export async function setup(ctx) {
       `</tbody></table>` +
       `<p class="muted">Mean network walk to the nearest of each. The rows per type leave the site's own amenities ` +
       `out in every scenario, today included, so they show the network alone. The last row is as lived: today with ` +
-      `its own 20 shops, 7 health practices and school, an option with the ones placed on its ground floors ` +
+      `its own 20 shops, 7 health practices and school, A and B with the ones placed on their ground floors, ` +
+      `the final design with the shops its Rhino model labels and no new health practice or school ` +  //final: nothing placed
       `(Amenities layer). <em>Dwellings</em>: ` +  //two measures since 2026-10-27
       `${fmt(site.dwellings)} on the site` +
       (sc === "baseline" ? " (BAG)" : `, ${fmt(data[sc].network.new_block_dwellings_est)} of them estimated for the new blocks`) +
@@ -209,7 +211,8 @@ export async function setup(ctx) {
         `<td>${fmt(x.site_dwellings_m, 0, " m")}</td><td>${fmt(100 * x.share_of_ceiling, 0, " %")}</td></tr>`).join("") +
       `</tbody></table>` +
       `<p class="muted">Objective J: mean walk from a dwelling to the nearest shop, education, health care and ` +
-      `rail stop, ${L.destinations === "with the placed amenities" ? "the placed ones included, " : ""}` +  //the option as proposed
+      `rail stop, ${L.destinations === "with the placed amenities" ? "the placed ones included, "
+        : L.destinations === "with the shops the Rhino model labels" ? "the labelled shops included, " : ""}` +  //the option as proposed
       `over all ${fmt(data[sc].areas.study_area.dwellings)} dwellings, now ${fmt(L.J_before_m, 2, " m")}. ` +
       `Greedy, one straight footpath at a time, from ${L.n_candidates} candidates that cross no block or water, ` +
       `start or end on the design's own streets and save a detour of at least ${L.candidate_rule.detour_min}×; ` +
