@@ -40,6 +40,7 @@ const COLOURS = {
 const USE_COLOURS = {
   shop:  ["#7b4fd0", "shop (ground-floor podium)"],  //the amenity layer's shop purple
   mixed: ["#b39ddb", "terraced house, shop on the ground floor"],
+  "shopping centre": ["#5e35b1", "shopping centre"],  //the large south-west building of the final design
 };
 //paved surfaces other than streets, Final Model only (import_rhino.py surface_layers)
 const SURFACE_COLOURS = { street: "#4a4f57", link: "#4a4f57", pedestrian: "#c9b79c", bike: "#b5524a", parking: "#6f7680" };
@@ -164,6 +165,7 @@ export async function setup(ctx) {
   const amenBy = new Map();  //scenario name -> CustomDataSource of amenity points
   for (const f of amenGeo?.features ?? []) {
     const { scenario: name, type, rank, block, floor_m2, status } = f.properties;
+    const named = f.properties.label;  //a marker with its own name, e.g. the final design's shopping centre
     const gone = status === "demolished";  //today's amenity that A and B demolish: drawn hollow
     if (!amenBy.has(name)) {
       const ds = new Cesium.CustomDataSource(`amenities-${name}`);
@@ -171,7 +173,8 @@ export async function setup(ctx) {
       await viewer.dataSources.add(ds);
       amenBy.set(name, ds);
     }
-    const [col, label] = AMEN[type] ?? ["#888888", type];
+    const [col, typeLabel] = AMEN[type] ?? ["#888888", type];
+    const label = named ?? typeLabel;  //"Shopping centre" rather than "Shop"
     amenBy.get(name).entities.add({
       name: status === "placed" ? `${label} (optimised placement)`  //placed by the p-median
         : status === "labelled" ? `${label} (labelled in the Rhino model)`  //final design: a shop block, not placed
@@ -183,8 +186,19 @@ export async function setup(ctx) {
         `<tr><td>source</td><td>${status === "placed" ? "place_amenities.py, p-median on walking distance"
           : status === "labelled" ? "Rhino block name (Final Model)" : "BAG"}</td></tr></table>`,
       position: Cesium.Cartesian3.fromDegrees(...f.geometry.coordinates),
+      label: named ? {  //the shopping centre carries its name on the map
+        text: named,
+        font: "600 14px sans-serif",
+        fillColor: Cesium.Color.WHITE,
+        outlineColor: Cesium.Color.BLACK,
+        outlineWidth: 3,
+        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+        pixelOffset: new Cesium.Cartesian2(0, -18),
+        heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+        disableDepthTestDistance: Number.POSITIVE_INFINITY,
+      } : undefined,
       point: {
-        pixelSize: type === "education" ? 15 : 10,
+        pixelSize: type === "education" || named ? 15 : 10,  //a school or the shopping centre: a bigger dot
         color: gone ? Cesium.Color.WHITE.withAlpha(0.15) : Cesium.Color.fromCssColorString(col),  //hollow when demolished
         outlineColor: gone ? Cesium.Color.fromCssColorString(col) : Cesium.Color.WHITE,
         outlineWidth: gone ? 3 : 2,

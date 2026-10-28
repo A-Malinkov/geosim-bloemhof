@@ -142,6 +142,9 @@ CASES = [
      "keep_rd": KEEP_RD,  #same kept block as scenario_a and scenario_b
      "planting_model": PLANTING_MODEL,  #"Proposed Vegetation - Copy - Copy" sublayer, plus the house gardens
      "surface_layers": {"Pedestrian Paths": "pedestrian", "Bike Paths": "bike", "Parking Spaces": "parking"},  #own kinds, drawn not walked
+     #uses the model does not name, by an RD point inside the solid: the large south-west building is the
+     #shopping centre (Atanas, 2026-10-28)
+     "use_at_rd": [((93749.0, 433853.0), "shopping centre")],
      "water_layer": "Water feature?"},
 ]
 
@@ -307,13 +310,14 @@ def import_option(c):
             n_by_class[cls] = n_by_class.get(cls, 0) + 1
             name = f"{c['scenario']} {cls} {n_by_class[cls]}"  #e.g. "scenario_a tall 1"
         raised = block is not None and base > 0.5  #a block standing on another (flats on the shop podium)
+        use = next((u for pt, u in c.get("use_at_rd", []) if fp.contains(Point(pt))), use)  #a use set by location
         cut = fp.area - fp.intersection(site).area  #m2 lost at the site edge
         if block:
             n_block.setdefault(block, [0, 0.0, set()])
             n_block[block][0] += 1; n_block[block][1] += fp.intersection(site).area
             n_block[block][2].update(f"{z - (0 if raised else base):.1f} m" for _, z in parts)  #roof above the ground
         else:
-            print(f"  {name:22} {fp.intersection(site).area:7.0f} m2  roofs "
+            print(f"  {name:22} {fp.intersection(site).area:7.0f} m2  {use:16} roofs "
                 + ", ".join(f"{z - base:.1f} m" for _, z in parts)
                 + (f"  clipped {cut:.0f} m2 at site edge" if cut > 0.5 else "")
                 + (f"  {slope:.0f} m2 sloping roof skipped" if slope > 0.5 else "")

@@ -184,11 +184,11 @@ def labelled_shops(scenario):
     rows = []
     for f in massing["features"]:
         q = f["properties"]
-        if q["scenario"] != scenario or q.get("use") not in ("shop", "mixed"):
+        if q["scenario"] != scenario or q.get("use") not in ("shop", "mixed", "shopping centre"):
             continue  #housing, or another scenario
         g = transform(lambda x, y, z=None: to_rd(x, y), shape(f["geometry"])).representative_point()  #inside the footprint
         rows.append(({"type": "shop", "floor_m2": q["footprint_m2"], "x": g.x, "y": g.y},
-                     q.get("rhino_block", q["name"])))
+                     "shopping centre" if q["use"] == "shopping centre" else q.get("rhino_block", q["name"])))
     return rows
 
 
@@ -197,7 +197,9 @@ def labelled_features(today):
     feats = []
     for sc in LABELLED:
         shops = labelled_shops(sc)
-        feats += [point_feature(sc, r, rank=0, block=block, status="labelled", fixed=False) for r, block in shops]
+        feats += [point_feature(sc, r, rank=0, block=block, status="labelled", fixed=False,
+                                **({"label": "Shopping centre"} if block == "shopping centre" else {}))  #named in the app
+                  for r, block in shops]
         feats += [point_feature(sc, r, rank=0, block="kept community centre and school", status="kept",
                                 fixed=True) for r in today if r["kept"]]  #the kept block, never moved
         print(f"  {sc}: {len(shops)} shops labelled in the Rhino model, {sum(r['kept'] for r in today)} kept in the school block")
