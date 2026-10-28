@@ -103,6 +103,7 @@ PARAMS = {
     "snap_tol_m": 35.0,  #free ends of new streets joined to a street this close
     "join_tol_m": 5.0,  #an old street end this close to a new street (or the reverse) is joined to it
     "node_tol_m": 0.5,  #graph nodes closer than this are one junction
+    "kerb_gap_m": 8.0,  #an OSM footway ending this close to a street, on or near the site, is joined to it
     "walk_m_per_min": 80.0,  #4.8 km/h
     "reach_min": 15,  #the 15-minute walk
     "near_min": 5,  #a short walk, 400 m: every home reaches everything within 15 min, so this is what varies
@@ -251,6 +252,7 @@ def lines_for_scenario(edges, scenario, p):
     from scenario_world import load_scenario, streets_for_scenario
     s = streets_for_scenario(edges, scenario, paths=True).explode(index_parts=False).reset_index(drop=True)  #with hand-drawn paths
     s["kind"] = np.where(s["name"].astype(str).str.endswith(("new street", " path", " link")), "new", "osm")  #design streets, paths, links
+    s = join_kerb_gaps(s, edges, scenario, p)  #pavements OSM stops at the kerb, every scenario alike
     if scenario == "baseline":
         return s
     blocks = shapely.union_all(load_scenario(scenario)[0].geometry.values).buffer(-0.5)  #a connector may touch a wall
@@ -292,7 +294,104 @@ def lines_for_scenario(edges, scenario, p):
              for g in conn]
     out = gpd.GeoDataFrame(rows, crs=s.crs)
     print(f"  {scenario}: {len(conn)} connectors, {sum(g.length for g in conn):.0f} m, join the new streets' free ends")
+    out = close_cut_ends(out, edges, blocks, scenario, p)  #old streets the design's water or blocks cut short
     return node_scenario_lines(out, blocks, scenario, p)
+
+
+def join_kerb_gaps(lines, edges, scenario, p):
+    #OSM maps a pavement as a footway that stops at the kerb, 6-7 m short of the road's centreline: six such ends
+    #round the site (Strevelsweg, Weimanspad, Lange Hilleweg) led nowhere in every scenario, today included
+    #(2026-10-28). Join each footway end that is a dead end in OSM, on or near the site, to the nearest other
+    #line within kerb_gap_m, and split that line there so the join is a junction
+    import geopandas as gpd
+    import pandas as pd
+    import shapely
+    key = lambda c: (round(c[0], 1), round(c[1], 1))
+    osm_deg = pd.Series([key(c) for g in edges.geometry for c in (g.coords[0], g.coords[-1])]).value_counts()
+    geoms = list(lines.geometry.values)
+    hw = lines["highway"].astype(str).to_numpy() if "highway" in lines else np.array([""] * len(lines))
+    tree = shapely.STRtree(geoms)
+    site = design_site_polygon().buffer(25)
+    cuts, joins = {}, []
+    for i, g in enumerate(geoms):
+        if lines["kind"].iat[i] != "osm" or not any(t in hw[i] for t in ("footway", "path", "pedestrian")):
+            continue  #OSM footways only; a street that ends is a cul-de-sac
+        for c in (g.coords[0], g.coords[-1]):
+            pt = shapely.Point(c)
+            if osm_deg.get(key(c), 0) != 1 or not pt.within(site):
+                continue  #a junction in OSM, or off the site
+            near = [j for j in tree.query(pt.buffer(p["kerb_gap_m"])) if j != i
+                    and geoms[j].distance(pt) <= p["kerb_gap_m"]]
+            if not near or any(geoms[j].distance(pt) < p["node_tol_m"] for j in near):
+                continue  #nothing close, or it already meets a line
+            j = min(near, key=lambda j: geoms[j].distance(pt))
+            d = geoms[j].project(pt)
+            joins.append(shapely.LineString([c, geoms[j].interpolate(d).coords[0]]))
+            cuts.setdefault(j, []).append(d)
+    rows = []
+    for i, g in enumerate(geoms):  #the joined lines split where a footway now meets them
+        for piece in split_at(g, cuts.get(i, [])):
+            rows.append({**lines.iloc[i].drop("geometry").to_dict(), "geometry": piece})
+    rows += [{"highway": "footway", "name": f"{scenario} kerb join", "kind": "osm", "geometry": g}
+             for g in joins]  #today's pavement OSM leaves out, so OSM-kind: not the design's network, the optimiser starts no link on it
+    print(f"  {scenario}: {len(joins)} footway ends joined across the kerb ({sum(g.length for g in joins):.0f} m)")
+    return gpd.GeoDataFrame(rows, geometry="geometry", crs=lines.crs)
+
+
+def close_cut_ends(lines, edges, blocks, scenario, p):
+    #ends of old streets that the scenario cut (not an end in OSM) and that lead nowhere: join each to the
+    #nearest other line within snap_tol_m by a straight connector clear of new blocks and water, or drop the
+    #piece. The shared pond and the blocks cut Dubbelstraat, Oudelandstraat and Heer Danielstraat round the
+    #kept block and left their pieces ending at the water's edge or a wall (2026-10-28)
+    import geopandas as gpd
+    import pandas as pd
+    import shapely
+    from scenario_world import water_for
+    key = lambda c: (round(c[0], 1), round(c[1], 1))
+    osm_deg = pd.Series([key(c) for g in edges.geometry for c in (g.coords[0], g.coords[-1])]).value_counts()  #lines meeting at each OSM end
+    geoms = list(lines.geometry.values)
+    water = shapely.union_all(water_for(scenario)) if water_for(scenario) else shapely.Point()
+    tree = shapely.STRtree(geoms)
+    site = design_site_polygon().buffer(25)
+    drop = {i for i, g in enumerate(geoms) if lines["kind"].iat[i] == "osm" and g.length < 2.0 and g.within(site)
+            and any(key(c) not in osm_deg for c in (g.coords[0], g.coords[-1]))}  #slivers the cut left on the site, never a real OSM edge
+    while True:  #until no piece is dropped: a join must not lead to a piece that goes
+        live = [i for i in range(len(geoms)) if i not in drop]
+        ends = pd.Series([key(geoms[i].coords[k]) for i in live for k in (0, -1)]).value_counts()  #ends shared are junctions
+        joins, more = [], set()
+        for i in live:
+            g = geoms[i]
+            if lines["kind"].iat[i] != "osm":
+                continue  #the design's own lines get their connectors in lines_for_scenario
+            for k in (0, -1):
+                c = g.coords[k]
+                pt = shapely.Point(c)
+                if ends[key(c)] > 1 or osm_deg.get(key(c), 0) == 1 or not pt.within(site):
+                    continue  #a junction, an end that is a dead end in OSM too, or off the site
+                if any(geoms[j].distance(pt) < p["node_tol_m"] for j in tree.query(pt.buffer(p["node_tol_m"]))
+                       if j != i and j not in drop):
+                    continue  #already on another line: node_scenario_lines makes it a junction
+                best = None
+                for j in tree.query(pt.buffer(p["snap_tol_m"])):  #nearest live line whose straight join stays dry and clear
+                    if j == i or j in drop:
+                        continue
+                    q = geoms[j].interpolate(geoms[j].project(pt))
+                    seg = shapely.LineString([c, q.coords[0]])
+                    if seg.length <= p["snap_tol_m"] and not seg.intersects(blocks) and not seg.crosses(water) \
+                            and not seg.within(water) and (best is None or seg.length < best.length):
+                        best = seg
+                if best is not None:
+                    joins.append(best)
+                else:
+                    more.add(i)  #nowhere to go: the piece goes, rather than end in the pond or at a wall
+        if not more:
+            break
+        drop |= more
+    rows = [r for i, r in enumerate(lines.to_dict("records")) if i not in drop]
+    rows += [{"highway": "connector", "name": f"{scenario} cut join", "kind": "connector", "geometry": g} for g in joins]
+    print(f"  {scenario}: {len(joins)} cut old-street ends joined ({sum(g.length for g in joins):.0f} m), "
+          f"{len(drop)} cut pieces with nowhere to go dropped")
+    return gpd.GeoDataFrame(rows, geometry="geometry", crs=lines.crs)
 
 
 def split_at(g, ds):

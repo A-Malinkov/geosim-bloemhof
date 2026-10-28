@@ -64,18 +64,32 @@ import road_network as rn  # noqa: E402
 from common.project import PROCESSED, ROOT, design_site_polygon, to_wgs, write_processed  # noqa: E402
 
 CASES = [
-    {"scenario": "scenario_a", "budget": 10, "min_m": 10.0, "max_m": 150.0, "detour_min": 1.5, "reach_m": 20.0},
-    {"scenario": "scenario_b", "budget": 10, "min_m": 10.0, "max_m": 150.0, "detour_min": 1.5, "reach_m": 20.0},
-    {"scenario": "final", "budget": 10, "min_m": 10.0, "max_m": 150.0, "detour_min": 1.5, "reach_m": 20.0},  #Final Model, 2026-10-28
+    {"scenario": "scenario_a", "budget": 10, "min_m": 10.0, "max_m": 150.0, "detour_min": 1.5, "reach_m": 20.0, "along_m": 6.0},
+    {"scenario": "scenario_b", "budget": 10, "min_m": 10.0, "max_m": 150.0, "detour_min": 1.5, "reach_m": 20.0, "along_m": 6.0},
+    {"scenario": "final", "budget": 10, "min_m": 10.0, "max_m": 150.0, "detour_min": 1.5, "reach_m": 20.0, "along_m": 6.0},  #Final Model, 2026-10-28
     #baseline: not run, its open land is private back gardens
 ]
 
 
 # --------------------------------------------------------------- candidates
+def alongside(mid, street, along_m, max_deg=30.0):
+    #True if the link runs within along_m of this street, near parallel to it, for over half its length;
+    #a square crossing of a dual carriageway is near both carriageways too, but at a steep angle
+    import math
+    if mid.intersection(street.buffer(along_m)).length <= 0.5 * mid.length:
+        return False
+    d = street.project(mid.interpolate(0.5, normalized=True))  #the street's direction where the link passes
+    a, b = street.interpolate(max(d - 2.0, 0.0)), street.interpolate(min(d + 2.0, street.length))
+    (x0, y0), (x1, y1) = mid.coords[0], mid.coords[-1]
+    t = abs(math.degrees(math.atan2(y1 - y0, x1 - x0) - math.atan2(b.y - a.y, b.x - a.x))) % 180
+    return min(t, 180 - t) < max_deg
+
+
 def candidates(net, scenario, c):
     #straight links between site nodes that cross no building and save a detour -> array (i, j, length)
     import geopandas as gpd
     import shapely
+    import shapely.ops  #substring, for the alongside-a-street rule
     from scipy.sparse.csgraph import dijkstra
     from scenario_world import buildings_for_scenario, site_footprints, water_for  #water_for: the scenario's pond
     site = design_site_polygon()
@@ -112,6 +126,11 @@ def candidates(net, scenario, c):
             hit = streets.query(seg, predicate="intersects")
             if any(not ends.contains(seg.intersection(net["lines"].geometry.values[h])) for h in hit):
                 continue  #crosses or runs along an existing street away from its own two nodes
+            mid = shapely.ops.substring(seg, min(10.0, L / 4), L - min(10.0, L / 4))  #the link less its ends
+            if any(alongside(mid, net["lines"].geometry.values[h], c["along_m"])
+                   for h in streets.query(mid.buffer(c["along_m"]))):
+                continue  #runs mostly alongside a street, as the 144-150 m picks down Strevelsweg's central
+                #reservation did once the kerb joins gave its south carriageway a node (2026-10-28): no new route
             out.append((on[a], on[b_], L))
     print(f"  {len(on)} site nodes, {len(out)} candidate links")
     return np.array(out)

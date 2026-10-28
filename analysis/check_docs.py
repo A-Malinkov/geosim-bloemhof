@@ -435,7 +435,7 @@ def main() -> int:
         st = rlinks["scenario_a"]["steps"]
         claims += [
             ("roads README: 'after link 2 each link saves under 0.03 m of J'", all(x["gain_m"] < 0.03 for x in st[2:])),
-            ("roads README: 'A stops after four links'", len(st) == 4),
+            ("roads README: 'A stops after three links'", len(st) == 3),  #four before the dead-end fixes of 2026-10-28
         ]
     if rlinks and rlinks.get("scenario_b", {}).get("steps"):
         stb = rlinks["scenario_b"]["steps"]

@@ -78,29 +78,19 @@ a row that says so. Flood vulnerability is today only.
 | health practices on the site | 7 | 7 | 7 | 7 | higher |
 | schools on the site | 2 | 2 | 2 | 1 | higher |
 | community halls on the site | 7 | 3 | 3 | 3 | higher |
-| walk to 4 everyday places, residents, housing only | 317 m | 395 m | 391 m | 356 m | lower |
-| walk to 4 everyday places, site grid, housing only | 314 m | 371 m | 378 m | 369 m | lower |
-| residents, with the placed amenities | 317 m | 253 m | 263 m | 269 m | lower |
-| site grid, with the placed amenities | 314 m | 252 m | 261 m | 276 m | lower |
-| site grid, network only | 377 m | 371 m | 378 m | 369 m | lower |
+| walk to 4 everyday places, residents, housing only | 317 m | 394 m | 391 m | 356 m | lower |
+| walk to 4 everyday places, site grid, housing only | 314 m | 371 m | 377 m | 368 m | lower |
+| residents, with the placed amenities | 317 m | 254 m | 263 m | 269 m | lower |
+| site grid, with the placed amenities | 314 m | 251 m | 260 m | 274 m | lower |
+| site grid, network only | 376 m | 371 m | 377 m | 368 m | lower |
 | site grid, with the placed amenities and the optimiser's footpaths | n/a | 248 m | 258 m | 271 m | lower |
-| intersection density | 423 /km² | 597 /km² | 287 /km² | 687 /km² | higher |
+| intersection density | 446 /km² | 582 /km² | 310 /km² | 702 /km² | higher |
 | land-use objective J | 1.000 | 1.096 | 1.740 | 2.054 | higher |
 | land-use mix | 0.229 | 0.318 | 0.530 | 0.739 | higher |
 | green share of 25 m cells | 3 % | 6 % | 33 % | 23 % | higher |
-| land-use objective J, with the placed amenities | n/a | 1.776 | 2.257 | 2.195 | higher |
-| land-use mix, with the placed amenities | n/a | 0.627 | 0.755 | 0.818 | higher |
+| land-use objective J, with the placed amenities | n/a | 1.765 | 2.257 | 2.195 | higher |
+| land-use mix, with the placed amenities | n/a | 0.623 | 0.755 | 0.818 | higher |
 | flood vulnerability high or very high | 61 % | not run | not run | not run | lower |
-
-**Green area counts gardens and the final design's walkway.** Today's green is
-the BGT's planted surfaces plus its `erf`, the private plots round the houses
-(`fetch_bgt_green.py`, 7,210 m² public and 33,019 m² gardens on the site). A
-design keeps today's green in the school block it keeps and the public verges in
-the 15 m edge-street band, less what it builds or paves there, and adds its own
-green, house gardens included, and in the final design the walkway, every
-overlap counted once. B and the final design end up 15 % above today, A 35 %
-below. An erf is the whole plot, paving and sheds included, and the final
-design's gardens are drawn as whole plots too: both overstate what is planted.
 
 Sources: dwellings from `road_metrics.json` (BAG today, the road network's
 estimate in the scenarios), demolition and heights from `design_massing.geojson`,
@@ -136,12 +126,12 @@ places, 48 m less than today.
 **Housing only makes everyday walks longer. Putting the amenities back makes
 them shorter than today.** Today a resident of the site walks 317 m on average
 to the nearest shop, school, health practice and rail stop. With the site's
-shops and services demolished and not replaced, that becomes 395 m in A and
+shops and services demolished and not replaced, that becomes 394 m in A and
 391 m in B. With 20 shops, 7 health practices and a second school placed on the
 new ground floors where they shorten walks most, and the kept school, it falls
-to 253 m in A and 263 m in B. The street network alone barely matters: on the network-only measure A's
-denser grid (597 junctions per km² against 423) saves 6 m and B's open layout
-(287) changes nothing.
+to 254 m in A and 263 m in B. The street network alone barely matters: on the network-only measure A's
+denser grid (582 junctions per km² against 446) saves 5 m and B's open layout
+(310) changes nothing.
 
 **B scores far higher on the land-use objective, for a reason to read with
 care.** The objective (`analysis/abm_landuse/`) rewards mix and green and has no
