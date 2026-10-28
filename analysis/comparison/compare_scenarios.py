@@ -61,11 +61,13 @@ sys.path.insert(0, str(HERE.parent / "morphology"))
 from common.project import PROCESSED, RAW, ROOT, design_site_polygon, to_rd  # noqa: E402
 
 DOCS = ROOT / "docs"
-SCEN = ["baseline", "scenario_a", "scenario_b"]
-NAME = {"baseline": "Today", "scenario_a": "Scenario A", "scenario_b": "Scenario B"}
+SCEN = ["baseline", "scenario_a", "scenario_b", "final"]  #final: the Rhino Final Model, 2026-10-28
+NAME = {"baseline": "Today", "scenario_a": "Scenario A", "scenario_b": "Scenario B", "final": "Final design"}
+SHORT = {"baseline": "Today", "scenario_a": "A", "scenario_b": "B", "final": "Final"}  #column heads and dot labels
 
-#reference palette of the dataviz skill: categorical slots 1-3 (validated all-pairs), diverging blue/red, ink
-COL = {"baseline": "#2a78d6", "scenario_a": "#eb6834", "scenario_b": "#1baf7a"}
+#reference palette of the dataviz skill: categorical slots 1-4 (validated, contrast WARN for 3 and 4: every mark is
+#labelled by name), diverging blue/red, ink
+COL = {"baseline": "#2a78d6", "scenario_a": "#eb6834", "scenario_b": "#1baf7a", "final": "#eda100"}
 INK, INK2, MUTED, SURFACE, GRID = "#0b0b0b", "#52514e", "#8a8984", "#fcfcfb", "#e4e3df"
 BETTER, WORSE, MID = "#2a78d6", "#e34948", "#f0efec"
 
@@ -191,6 +193,12 @@ def mobility(sc):
         for t in ("shop", "education", "health"):
             out[f"walk_{t}_amen_m"], out[f"walk_grid_{t}_amen_m"] = am[t]["site_dwellings_after_m"], am[t]["site_grid_after_m"]
         out["walk_rail_stop_amen_m"], out["walk_grid_rail_stop_amen_m"] = out["walk_rail_stop_m"], out["walk_grid_rail_stop_m"]  #no new stops
+    elif sc != "baseline" and rm.get("with_amenities"):  #final: nothing placed, its labelled shops walked by road_network.py
+        wa = rm["with_amenities"]
+        a2, g2 = wa["areas"]["design_site"], wa["site_grid"]
+        out["walk_dwellings_amen_m"], out["walk_grid_amen_m"] = a2["mean_of_types_m"], g2["mean_of_types_m"]
+        for t in ("shop", "education", "health", "rail_stop"):
+            out[f"walk_{t}_amen_m"], out[f"walk_grid_{t}_amen_m"] = a2[t]["mean_m"], g2[t]["mean_m"]
     return out
 
 
@@ -213,6 +221,11 @@ def landuse(sc):
 def amenities(sc):
     #shops, health practices, schools and community halls on the site: today's (BAG), the options' placed + kept
     c = ((J("amenity_placement.json") or {}).get("counts_on_site") or {}).get(sc) or {}
+    if not c:  #final: not placed, counted from its markers (labelled shops plus the kept block)
+        feats = [f["properties"] for f in (J("design_amenities.geojson") or {}).get("features", [])
+                 if f["properties"]["scenario"] == sc]
+        if feats:
+            c = {k: sum(1 for f in feats if f["type"] == k) for k in ("shop", "health", "education", "community")}
     return {f"n_{k}": v for k, v in c.items()}
 
 
@@ -368,11 +381,12 @@ def fig_scorecard(c, data):
             lines += [("ind", r) for r in rows if r[1] == t]
     fig, ax = plt.subplots(figsize=(c["w"], 0.34 * len(lines) + 1.2))
     ax.set_xlim(0, 10); ax.set_ylim(len(lines), -1.2); ax.axis("off")
-    cx = {"label": 0.0, "baseline": 5.0, "scenario_a": 6.6, "scenario_b": 8.2, "better": 9.3}
-    for k, s in (("baseline", "Today"), ("scenario_a", "Scenario A"), ("scenario_b", "Scenario B")):
-        ax.add_patch(plt.Rectangle((cx[k] - 0.75, -1.15), 1.5, 0.12, color=COL[k], lw=0))  #identity bar above each column
-        ax.text(cx[k], -0.65, s, ha="center", va="center", fontweight="bold")
-    ax.text(cx["better"] + 0.35, -0.65, "better", ha="center", va="center", color=INK2)
+    cx = {"label": 0.0, "baseline": 4.7, "scenario_a": 5.95, "scenario_b": 7.2, "final": 8.45, "better": 9.55}
+    hw = 0.6  #half a column's width
+    for k in SCEN:
+        ax.add_patch(plt.Rectangle((cx[k] - hw, -1.15), 2 * hw, 0.12, color=COL[k], lw=0))  #identity bar above each column
+        ax.text(cx[k], -0.65, SHORT[k], ha="center", va="center", fontweight="bold")
+    ax.text(cx["better"] + 0.2, -0.65, "better", ha="center", va="center", color=INK2)
     blend = lambda a, b, t: tuple((1 - t) * x + t * y for x, y in zip(to_rgb(a), to_rgb(b)))
     for y, (kind, p) in enumerate(lines):
         if kind == "theme":
@@ -381,7 +395,7 @@ def fig_scorecard(c, data):
         if kind == "notrun":
             name, what, why = p
             ax.text(cx["label"] + 0.2, y + 0.1, f"{name}, {what}", va="center")
-            ax.text(cx["scenario_a"], y + 0.1, why, ha="center", va="center", color=MUTED, style="italic")
+            ax.text((cx["scenario_a"] + cx["scenario_b"]) / 2, y + 0.1, why, ha="center", va="center", color=MUTED, style="italic")
             continue
         key, _, label, unit, better, d, _ = p
         ax.text(cx["label"] + 0.2, y + 0.1, label, va="center")
@@ -395,17 +409,17 @@ def fig_scorecard(c, data):
                 rel = sign * (v - base) / abs(base) if base else sign * np.sign(v) * 10.0
                 t = min(1.0, abs(rel) / c["full_at"])  #full colour at this relative change
                 fill = blend(MID, BETTER if rel > 0 else WORSE, 0.15 + 0.6 * t) if abs(rel) >= c["min_change"] else MID
-            ax.add_patch(plt.Rectangle((cx[s] - 0.75, y - 0.36), 1.5, 0.92, color=fill, lw=0))
-            ax.add_patch(plt.Rectangle((cx[s] - 0.75, y - 0.36), 1.5, 0.92, fill=False, ec=SURFACE, lw=2))  #2 px gap
+            ax.add_patch(plt.Rectangle((cx[s] - hw, y - 0.36), 2 * hw, 0.92, color=fill, lw=0))
+            ax.add_patch(plt.Rectangle((cx[s] - hw, y - 0.36), 2 * hw, 0.92, fill=False, ec=SURFACE, lw=2))  #2 px gap
             ax.text(cx[s], y + 0.1, "n/a" if v is None and s == "baseline" and key in NOT_TODAY else fmt(v, key, unit, d),
                     ha="center", va="center", color=MUTED if v is None else INK)
-        ax.text(cx["better"] + 0.35, y + 0.1, {"higher": "↑ higher", "lower": "↓ lower"}.get(better, "context"),
+        ax.text(cx["better"] + 0.2, y + 0.1, {"higher": "↑ higher", "lower": "↓ lower"}.get(better, "context"),
                 ha="center", va="center", color=INK2 if better else MUTED, fontsize=9.5)
     ax.text(0, len(lines) + 0.2, "Shading against today: blue better, red worse, darker = bigger change "
             f"(full at ±{100 * c['full_at']:.0f} %). Grey = today, a change under {100 * c['min_change']:.0f} %, "
             "or an indicator with no better direction. "
             "All values over the 13.24 ha design site.", fontsize=9, color=INK2, va="top", wrap=True)
-    ax.set_title("Today against the two Rhino options, indicator by indicator", loc="left", pad=4)
+    ax.set_title("Today against the Rhino options and the final design, indicator by indicator", loc="left", pad=4)
     save(fig, c["out"])
     plt.close(fig)
 
@@ -418,14 +432,20 @@ def fig_tradeoff(c, data):
         for s in SCEN:
             x, y = data[s]["dwellings"], data[s][key] * (100 if pct else 1)
             ax.scatter(x, y, s=110, color=COL[s], edgecolor=SURFACE, linewidth=2, zorder=3)
-            ax.annotate(NAME[s].replace("Scenario ", "") + (", housing only" if c.get("then") and s != "baseline" else ""), (x, y),  #short, so A's and B's labels do not collide
-                        xytext=(8, 6), textcoords="offset points", color=INK, fontsize=10.5)
+            arrow = bool((c.get("then") or {}).get(key))  #this panel draws the arrow to the option with its amenities
+            then = "" if s == "baseline" or not c.get("then") or (s == "final" and arrow) \
+                else ", without its shops" if s == "final" else ", housing only"  #walking panel: "Final" alone, B's label sits close
+            below = (s == "final" and not arrow) or (s == "baseline" and arrow)  #clear of each other: final below on the shade panel, today below on the walking panel
+            flip = s == "baseline" and arrow  #walking panel: today's label below-left, clear of B's arrow
+            ax.annotate(SHORT[s] + then, (x, y), xytext=(-8 if flip else 8, -16 if below else 6), ha="right" if flip else "left",
+                        textcoords="offset points", color=INK, fontsize=10.5)
             k2 = (c.get("then") or {}).get(key)  #the same option with the placed amenities, as a hollow dot
             if k2 and s != "baseline" and data[s].get(k2) is not None:
                 y2 = data[s][k2]
                 ax.annotate("", (x, y2), (x, y), arrowprops=dict(arrowstyle="->", color=COL[s], lw=1.4))
                 ax.scatter(x, y2, s=110, facecolor=SURFACE, edgecolor=COL[s], linewidth=2, zorder=3)
-                ax.annotate("with amenities", (x, y2), xytext=(8, -14), textcoords="offset points", color=INK2, fontsize=10)
+                ax.annotate("with its shops" if s == "final" else "with amenities", (x, y2), xytext=(10, -4) if s == "final" else (8, -14),
+                            textcoords="offset points", color=INK2, fontsize=10)  #final: level with its dot, clear of today's line
         b = data["baseline"]
         ax.axhline(b[key] * (100 if pct else 1), color=MUTED, lw=1, ls=(0, (4, 3)), zorder=1)  #today's level
         ax.set_xlabel("Dwellings on the design site")
@@ -433,7 +453,7 @@ def fig_tradeoff(c, data):
         ax.set_title(title)
         ax.set_ylim(0, max(data[s][key] * (100 if pct else 1) for s in SCEN) * 1.2)  #from zero, so a small change looks small
         lo, hi = ax.get_xlim(); ax.set_xlim(lo - 80, hi + 220)
-    fig.suptitle("More homes cost daylight in A but not in B. Housing only lengthens walks, placed amenities shorten them", x=0.01, ha="left",
+    fig.suptitle("More homes cost daylight in A, not in B or the final design. Shops on the ground floors shorten walks", x=0.01, ha="left",
                  fontweight="bold", fontsize=13)
     fig.tight_layout()
     save(fig, c["out"])
@@ -471,9 +491,10 @@ def fig_difference(c, rasters):
     massing = J("design_massing.geojson")
     cols = [("sun", "Sun hours, equinox", 6, " h"), ("sun_2026-12-21", "Sun hours, 21 Dec", 3, " h"),
             ("svf", "Sky view factor", 0.4, "")]
-    fig, axs = plt.subplots(2, 3, figsize=(c["w"], 8.6))
+    designs = [s for s in SCEN if s != "baseline"]
+    fig, axs = plt.subplots(len(designs), 3, figsize=(c["w"], 4.3 * len(designs)))
     x0, y0, x1, y1 = site.bounds
-    for r, s in enumerate(["scenario_a", "scenario_b"]):
+    for r, s in enumerate(designs):  #one row per design
         for k, (key, title, lim, unit) in enumerate(cols):
             ax = axs[r, k]
             a, b = rasters[key][s], rasters[key]["baseline"]
@@ -511,7 +532,8 @@ def fig_walking(c, data):
         x = np.arange(len(types))
         series = [("baseline", "", "Today (its own amenities)"), ("scenario_a", "", "A, housing only"),
                   ("scenario_a", "_amen", "A, with placed amenities"), ("scenario_b", "", "B, housing only"),
-                  ("scenario_b", "_amen", "B, with placed amenities")]  #housing only solid, with amenities hatched
+                  ("scenario_b", "_amen", "B, with placed amenities"), ("final", "", "Final, without its shops"),
+                  ("final", "_amen", "Final, with its labelled shops")]  #housing only solid, with amenities hatched
         series = [q for q in series if all(data[q[0]].get(f"{pre}{t}{q[1]}_m") is not None for t, _ in types)]
         w = 0.8 / len(series)
         for i, (s, suf, lab) in enumerate(series):
@@ -521,9 +543,10 @@ def fig_walking(c, data):
         ax.set_xticks(x, [l for _, l in types])
         ax.set_title(title); ax.grid(axis="x", visible=False)
     axs[0].set_ylabel("Mean walk to the nearest (m)")
-    axs[0].legend(loc="upper left")
+    h, l = axs[0].get_legend_handles_labels()
     fig.suptitle("Walking distance to everyday places, lower is better", x=0.01, ha="left", fontweight="bold", fontsize=13)
-    fig.tight_layout()
+    fig.tight_layout(rect=(0, 0.13, 1, 1))  #room below for the legend
+    fig.legend(h, l, loc="lower center", ncol=4, fontsize=10)  #below the bars, so it covers none
     save(fig, c["out"])
     plt.close(fig)
 
@@ -533,7 +556,7 @@ def fig_canyon(c, data):
     import matplotlib.pyplot as plt
     classes = list(data["baseline"]["_hw_classes"])
     ramp = ["#cde2fb", "#86b6ef", "#3987e5", "#1c5cab", "#0d366b"]  #sequential blue, open -> deep
-    fig, ax = plt.subplots(figsize=(c["w"], 2.8))
+    fig, ax = plt.subplots(figsize=(c["w"], 0.7 * len(SCEN) + 0.7))
     for i, s in enumerate(SCEN):
         left = 0
         for k, cl in enumerate(classes):
@@ -544,7 +567,7 @@ def fig_canyon(c, data):
                 ax.text(left + v / 2, i, f"{v:.0f}", ha="center", va="center", fontsize=9.5,
                         color=INK if k < 2 else SURFACE)
             left += v
-    ax.set_yticks(range(3), [f"{NAME[s]}  (median {data[s]['hw_median']:.2f})" for s in SCEN])
+    ax.set_yticks(range(len(SCEN)), [f"{NAME[s]}  (median {data[s]['hw_median']:.2f})" for s in SCEN])
     ax.invert_yaxis(); ax.set_xlim(0, 100); ax.grid(axis="y", visible=False)
     ax.set_xlabel("Share of canyon street length on the site (%)")
     ax.legend(title="H/W", ncol=5, loc="upper center", bbox_to_anchor=(0.5, -0.32), fontsize=9.5)

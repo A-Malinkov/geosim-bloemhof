@@ -278,18 +278,18 @@ Open ground only for SVF and sun hours, street length for H/W. Generated from
 `svf_summary*.json`, `shadow_summary*.json` and `canyon_hw*.json`; checked by
 `analysis/check_docs.py`.
 
-| | baseline | Scenario A | Scenario B |
-|---|---|---|---|
-| SVF, mean | 0.714 | 0.647 | 0.784 |
-| SVF, median | 0.744 | 0.646 | 0.825 |
-| sun 20 Mar, mean | 4.30 h | 3.78 h | 5.97 h |
-| sun 21 Jun, mean | 8.61 h | 8.80 h | 10.19 h |
-| sun 21 Dec, mean | 0.53 h | 0.49 h | 1.32 h |
-| sun 20 Mar, share < 2 h | 22 % | 40 % | 13 % |
-| sun 21 Dec, share < 2 h | 87 % | 87 % | 67 % |
-| street H/W, median | 0.39 | 0.48 | 0.28 |
-| street length that is canyon | 76 % | 74 % | 47 % |
-| street width W, median | 22.9 m | 24.6 m | 47.1 m |
+| | baseline | Scenario A | Scenario B | Final design |
+|---|---|---|---|---|
+| SVF, mean | 0.714 | 0.647 | 0.784 | 0.763 |
+| SVF, median | 0.744 | 0.646 | 0.825 | 0.807 |
+| sun 20 Mar, mean | 4.30 h | 3.78 h | 5.97 h | 5.79 h |
+| sun 21 Jun, mean | 8.61 h | 8.81 h | 10.19 h | 10.25 h |
+| sun 21 Dec, mean | 0.53 h | 0.49 h | 1.32 h | 1.09 h |
+| sun 20 Mar, share < 2 h | 22 % | 40 % | 13 % | 22 % |
+| sun 21 Dec, share < 2 h | 87 % | 87 % | 67 % | 72 % |
+| street H/W, median | 0.39 | 0.48 | 0.28 | 0.29 |
+| street length that is canyon | 76 % | 74 % | 47 % | 60 % |
+| street width W, median | 22.9 m | 24.6 m | 47.1 m | 38.1 m |
 
 Demolition opens ground, so the open-ground means cover different areas in
 each column: quote the shares next to the means (CLAUDE.md). Scenario A's

@@ -56,40 +56,40 @@ a row that says so. Flood vulnerability is today only.
 
 ## Results
 
-| | Today | Scenario A | Scenario B | better |
-|---|---|---|---|---|
-| dwellings on the site | 1,027 | 1,920 | 1,250 | higher |
-| buildings demolished | 0 | 1,150 | 1,150 | lower |
-| FSI, floor area / site | 0.88 | 1.37 | 0.91 | context |
-| GSI, footprint / site | 0.32 | 0.27 | 0.17 | context |
-| tallest building | 30 m | 40 m | 27 m | context |
-| sky view factor, mean | 0.71 | 0.65 | 0.78 | higher |
-| sun at the equinox, mean | 4.3 h | 3.8 h | 6.0 h | higher |
-| open ground under 2 h sun, equinox | 22 % | 40 % | 13 % | lower |
-| open ground under 2 h sun, 21 Dec | 87 % | 87 % | 67 % | lower |
-| sun on 21 Jun, mean | 8.6 h | 8.8 h | 10.2 h | context |
-| street H/W, median | 0.39 | 0.48 | 0.28 | context |
-| existing trees kept on the site | 104 | 86 | 93 | higher |
-| proposed trees | n/a | 64 | 99 | higher |
-| proposed green area | n/a | 21,135 m² | 41,499 m² | higher |
-| proposed water area | n/a | 1,082 m² | 1,082 m² | higher |
-| shops on the site | 20 | 20 | 20 | higher |
-| health practices on the site | 7 | 7 | 7 | higher |
-| schools on the site | 2 | 2 | 2 | higher |
-| community halls on the site | 7 | 3 | 3 | higher |
-| walk to 4 everyday places, residents, housing only | 317 m | 395 m | 391 m | lower |
-| walk to 4 everyday places, site grid, housing only | 314 m | 371 m | 378 m | lower |
-| residents, with the placed amenities | 317 m | 254 m | 263 m | lower |
-| site grid, with the placed amenities | 314 m | 252 m | 261 m | lower |
-| site grid, network only | 377 m | 371 m | 378 m | lower |
-| site grid, with the placed amenities and the optimiser's footpaths | n/a | 248 m | 258 m | lower |
-| intersection density | 423 /km² | 589 /km² | 287 /km² | higher |
-| land-use objective J | 1.000 | 1.074 | 1.737 | higher |
-| land-use mix | 0.229 | 0.308 | 0.532 | higher |
-| green share of 25 m cells | 3 % | 5 % | 33 % | higher |
-| land-use objective J, with the placed amenities | n/a | 1.745 | 2.256 | higher |
-| land-use mix, with the placed amenities | n/a | 0.612 | 0.758 | higher |
-| flood vulnerability high or very high | 61 % | not run | not run | lower |
+| | Today | Scenario A | Scenario B | Final design | better |
+|---|---|---|---|---|---|
+| dwellings on the site | 1,027 | 1,920 | 1,250 | 768 | higher |
+| buildings demolished | 0 | 1,150 | 1,150 | 1,150 | lower |
+| FSI, floor area / site | 0.88 | 1.37 | 0.91 | 0.77 | context |
+| GSI, footprint / site | 0.32 | 0.27 | 0.17 | 0.19 | context |
+| tallest building | 30 m | 40 m | 27 m | 25 m | context |
+| sky view factor, mean | 0.71 | 0.65 | 0.78 | 0.76 | higher |
+| sun at the equinox, mean | 4.3 h | 3.8 h | 6.0 h | 5.8 h | higher |
+| open ground under 2 h sun, equinox | 22 % | 40 % | 13 % | 22 % | lower |
+| open ground under 2 h sun, 21 Dec | 87 % | 87 % | 67 % | 72 % | lower |
+| sun on 21 Jun, mean | 8.6 h | 8.8 h | 10.2 h | 10.2 h | context |
+| street H/W, median | 0.39 | 0.48 | 0.28 | 0.29 | context |
+| existing trees kept on the site | 104 | 86 | 93 | 82 | higher |
+| proposed trees | n/a | 64 | 98 | 92 | higher |
+| proposed green area | n/a | 21,545 m² | 41,910 m² | 37,716 m² | higher |
+| proposed water area | n/a | 671 m² | 671 m² | 671 m² | higher |
+| shops on the site | 20 | 20 | 20 | 70 | higher |
+| health practices on the site | 7 | 7 | 7 | 0 | higher |
+| schools on the site | 2 | 2 | 2 | 1 | higher |
+| community halls on the site | 7 | 3 | 3 | 3 | higher |
+| walk to 4 everyday places, residents, housing only | 317 m | 395 m | 391 m | 356 m | lower |
+| walk to 4 everyday places, site grid, housing only | 314 m | 371 m | 378 m | 369 m | lower |
+| residents, with the placed amenities | 317 m | 253 m | 263 m | 327 m | lower |
+| site grid, with the placed amenities | 314 m | 252 m | 261 m | 343 m | lower |
+| site grid, network only | 377 m | 371 m | 378 m | 369 m | lower |
+| site grid, with the placed amenities and the optimiser's footpaths | n/a | 248 m | 258 m | 340 m | lower |
+| intersection density | 423 /km² | 597 /km² | 287 /km² | 687 /km² | higher |
+| land-use objective J | 1.000 | 1.096 | 1.740 | 2.054 | higher |
+| land-use mix | 0.229 | 0.318 | 0.530 | 0.739 | higher |
+| green share of 25 m cells | 3 % | 6 % | 33 % | 23 % | higher |
+| land-use objective J, with the placed amenities | n/a | 1.776 | 2.257 | 2.121 | higher |
+| land-use mix, with the placed amenities | n/a | 0.627 | 0.755 | 0.772 | higher |
+| flood vulnerability high or very high | 61 % | not run | not run | not run | lower |
 
 Sources: dwellings from `road_metrics.json` (BAG today, the road network's
 estimate in the scenarios), demolition and heights from `design_massing.geojson`,
@@ -111,14 +111,25 @@ falls to 13 % at the equinox and from 87 % to 67 % on 21 December, and it has
 the most trees and twice A's proposed green. It demolishes the same 1,150
 buildings to gain about 220 dwellings.
 
+**The final design keeps today's sun at the equinox, with fewer homes than today.**
+It estimates 768 dwellings, fewer than today's 1,027, on terraced and
+semi-detached houses up to 25 m. Open ground under 2 h of sun at the equinox
+stays at today's 22 % and falls from 87 % to 72 % on 21 December; mean sky view
+rises from 0.71 to 0.76. It is the only design that names its shops: 70 shop
+volumes from the Rhino block names, against today's 20, but no health practice
+and one school (the kept one). Its residents walk 327 m to the four everyday
+places, 10 m more than today, because health care is 363 m away against 253 m.
+Nothing is placed by the optimiser here, so the design as drawn is what is
+measured.
+
 **Housing only makes everyday walks longer. Putting the amenities back makes
 them shorter than today.** Today a resident of the site walks 317 m on average
 to the nearest shop, school, health practice and rail stop. With the site's
 shops and services demolished and not replaced, that becomes 395 m in A and
 391 m in B. With 20 shops, 7 health practices and a second school placed on the
 new ground floors where they shorten walks most, and the kept school, it falls
-to 254 m in A and 263 m in B. The street network alone barely matters: on the network-only measure A's
-denser grid (589 junctions per km² against 423) saves 6 m and B's open layout
+to 253 m in A and 263 m in B. The street network alone barely matters: on the network-only measure A's
+denser grid (597 junctions per km² against 423) saves 6 m and B's open layout
 (287) changes nothing.
 
 **B scores far higher on the land-use objective, for a reason to read with

@@ -382,11 +382,12 @@ Over the design site, 189 cells:
 | | objective | land-use mix | green | residential cells | shop or amenity cells | home → amenity |
 |---|---|---|---|---|---|---|
 | baseline (today) | 1.000 | 0.229 | 3.2 % | 160 | 8 | 99 m |
-| scenario_a | 1.074 | 0.308 | 5.3 % | 99 | 4 | 135 m |
-| scenario_b | 1.737 | 0.532 | 32.8 % | 48 | 4 | 121 m |
+| scenario_a | 1.096 | 0.318 | 5.8 % | 99 | 4 | 135 m |
+| scenario_b | 1.740 | 0.530 | 33.3 % | 48 | 4 | 121 m |
+| final | 2.054 | 0.739 | 22.8 % | 43 | 21 | 78 m |
 
-Over the whole buurt the objective is 1.215 today, 1.229 for scenario_a and
-1.360 for scenario_b, on the same grid and function as the CA programmes
+Over the whole buurt the objective is 1.215 today, 1.231 for scenario_a,
+1.361 for scenario_b and 1.379 for the final design, on the same grid and function as the CA programmes
 (compact 1.355, green 1.374).
 
 **Both options score above today, scenario_b by far, and for the wrong reason
@@ -410,8 +411,8 @@ puts 20 shops, 7 health practices and a second school on the new blocks'
 ground floors where they shorten walks most; the kept school stays fixed in the
 kept block, already amenity on today's grid (`with_amenities` in the JSON: each
 25 m cell holding a placed one becomes retail or amenity). The site objective
-rises to 1.745 for scenario_a and 2.256 for scenario_b, mix to 0.612 and 0.758,
-and the walk from a home to the nearest shop or amenity falls to 43.8 m (A) and
+rises to 1.776 for scenario_a and 2.257 for scenario_b, mix to 0.627 and 0.755,
+and the walk from a home to the nearest shop or amenity falls to 42.9 m (A) and
 42.6 m (B), against
 99 m today. A cell holds one use, so a shop cell stops counting as housing even
 though the shop sits under flats: scenario_a's residential cells fall from 99

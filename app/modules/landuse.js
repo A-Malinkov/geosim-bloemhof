@@ -451,7 +451,7 @@ export async function setup(ctx) {
    * design scored like the CA's programmes, over the site and the buurt. */
   const rhinoEl = body.querySelector("#luRhino");
   function renderRhino(sc) {
-    const runs = ["baseline", "scenario_a", "scenario_b"].filter((k) => rhino?.[k]?.open_ground_as_vacant);
+    const runs = ["baseline", "scenario_a", "scenario_b", "final"].filter((k) => rhino?.[k]?.open_ground_as_vacant);  //final: its shop blocks burn in as retail
     if (!runs.length) {
       rhinoEl.innerHTML = `<p class="muted">Rhino options not scored yet — ` +
         `<code>analysis/abm_landuse/score_scenarios.py</code></p>`;

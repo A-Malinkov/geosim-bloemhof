@@ -10,47 +10,47 @@
       "detour_min": 1.5,
       "reach_m": 20.0
     },
-    "n_candidates": 23,
-    "J_before_m": 255.18,
-    "site_dwellings_before_m": 253.5,
+    "n_candidates": 32,
+    "J_before_m": 255.16,
+    "site_dwellings_before_m": 253.3,
     "site_grid_before_m": 251.7,
-    "J_ceiling_m": 254.91,
-    "site_grid_ceiling_m": 245.5,
+    "J_ceiling_m": 254.9,
+    "site_grid_ceiling_m": 244.8,
     "site_grid_baseline_m": 314.3,
     "steps": [
       {
         "rank": 1,
         "length_m": 13.9,
         "gain_m": 0.185,
-        "J_m": 254.99,
-        "site_dwellings_m": 252.8,
+        "J_m": 254.98,
+        "site_dwellings_m": 252.6,
         "site_grid_m": 248.7,
-        "share_of_ceiling": 0.697
+        "share_of_ceiling": 0.698
       },
       {
         "rank": 2,
         "length_m": 31.9,
         "gain_m": 0.07,
-        "J_m": 254.92,
-        "site_dwellings_m": 252.6,
-        "site_grid_m": 248.4,
+        "J_m": 254.91,
+        "site_dwellings_m": 252.3,
+        "site_grid_m": 248.3,
         "share_of_ceiling": 0.96
       },
       {
         "rank": 3,
         "length_m": 28.3,
         "gain_m": 0.007,
-        "J_m": 254.91,
-        "site_dwellings_m": 252.5,
-        "site_grid_m": 248.4,
+        "J_m": 254.9,
+        "site_dwellings_m": 252.3,
+        "site_grid_m": 248.3,
         "share_of_ceiling": 0.986
       },
       {
         "rank": 4,
         "length_m": 35.2,
         "gain_m": 0.004,
-        "J_m": 254.91,
-        "site_dwellings_m": 252.5,
+        "J_m": 254.9,
+        "site_dwellings_m": 252.3,
         "site_grid_m": 248.3,
         "share_of_ceiling": 1.0
       }
@@ -66,12 +66,12 @@
       "detour_min": 1.5,
       "reach_m": 20.0
     },
-    "n_candidates": 10,
+    "n_candidates": 11,
     "J_before_m": 257.65,
     "site_dwellings_before_m": 263.2,
-    "site_grid_before_m": 261.1,
+    "site_grid_before_m": 261.2,
     "J_ceiling_m": 257.54,
-    "site_grid_ceiling_m": 257.2,
+    "site_grid_ceiling_m": 257.4,
     "site_grid_baseline_m": 314.3,
     "steps": [
       {
@@ -80,7 +80,7 @@
         "gain_m": 0.056,
         "J_m": 257.59,
         "site_dwellings_m": 262.9,
-        "site_grid_m": 258.7,
+        "site_grid_m": 258.8,
         "share_of_ceiling": 0.533
       },
       {
@@ -89,7 +89,7 @@
         "gain_m": 0.049,
         "J_m": 257.54,
         "site_dwellings_m": 262.7,
-        "site_grid_m": 258.2,
+        "site_grid_m": 258.3,
         "share_of_ceiling": 1.0
       }
     ],

@@ -17,6 +17,7 @@ where d is the mean distance from a home to the nearest shop or amenity.
 USAGE
 -----
     python analysis/abm_landuse/score_scenarios.py
+    python analysis/abm_landuse/score_scenarios.py --scenario final   #only these cases, the rest kept as written
 
 Reads data/processed/design_massing.geojson, design_streets.geojson and
 design_planting.geojson (written by analysis/scenarios/import_rhino.py).
@@ -88,7 +89,9 @@ CASES = [
     {"scenario": "baseline"},
     {"scenario": "scenario_a"},
     {"scenario": "scenario_b"},
+    {"scenario": "final"},  #the Rhino Final Model, 2026-10-28: its shop blocks are named, so they burn in as retail
 ]
+SHOP_USES = ("shop", "shopping centre")  #import_rhino.py uses that make a cell retail, not residential
 
 
 # ------------------------------------------------------------------ inputs
@@ -105,6 +108,7 @@ def scenario_shapes(scenario):
         return unary_union(gs) if gs else None
     return {
         "block": load("design_massing.geojson", lambda p: True),
+        "shop": load("design_massing.geojson", lambda p: p.get("use") in SHOP_USES),  #final design only; None for A and B
         "road": load("design_streets.geojson", lambda p: p.get("kind", "street") in ("street", "link")),  #paths are lines, too narrow for a cell
         "green": load("design_planting.geojson", lambda p: p.get("kind") == "green"),
         "water": load("design_planting.geojson", lambda p: p.get("kind") == "water"),
@@ -146,6 +150,8 @@ def burn_scenario(grid0, transform, scenario, p, open_as=VACANT):
                                (RESID, p["block_min"], "block")):  #lowest priority first, so higher ones overwrite
         f = fraction(sh[key], g.shape, transform, p)
         g[cleared & (f >= frac_min)] = cls
+    f = fraction(sh["shop"], g.shape, transform, p)  #shop podiums and the shopping centre, by the same block rule
+    g[cleared & (f >= p["block_min"])] = RETAIL  #a no-op for A and B, whose blocks carry no use
     g[cleared & centre_mask(sh["water"], g.shape, transform)] = WATER  #the pond wins, as water does in rasterise()
     return g, cleared
 
@@ -221,7 +227,10 @@ def main() -> int:
     grid0, transform, _, _ = rasterise(p["cell_m"])  #today's grid, exactly as the CA builds it
     site = centre_mask(design_site_polygon(), grid0.shape, transform)
     print(f"  grid {grid0.shape[1]} x {grid0.shape[0]}, design site {int(site.sum())} cells")
-    res = {c["scenario"]: run(c, p, grid0, transform, site) for c in CASES}  #one entry per scenario
+    only = sys.argv[sys.argv.index("--scenario") + 1:] if "--scenario" in sys.argv else None  #run only these cases
+    old = json.loads((PROCESSED / "landuse_scenarios.json").read_text()) if only else {}
+    res = {c["scenario"]: run(c, p, grid0, transform, site) if not only or c["scenario"] in only or c["scenario"] == "baseline"
+           else old[c["scenario"]] for c in CASES}  #one entry per scenario; baseline always, it is the check below
 
     #baseline must reproduce the CA's and the RL agent's own baseline scores, same grid and same functions
     abm = json.loads((PROCESSED / "landuse_abm.json").read_text())

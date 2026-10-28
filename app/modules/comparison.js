@@ -12,7 +12,7 @@
  * ========================================================================== */
 
 const PATH = "../data/processed/scenario_comparison.json";
-const SCEN = [["baseline", "Today"], ["scenario_a", "A"], ["scenario_b", "B"]];
+const SCEN = [["baseline", "Today"], ["scenario_a", "A"], ["scenario_b", "B"], ["final", "Final"]];  //final: the Rhino Final Model
 const ROWS = [  //key, label, digits, as a percentage
   ["dwellings", "Dwellings", 0, false],
   ["buildings_demolished", "Buildings demolished", 0, false],
@@ -76,7 +76,7 @@ export async function setup(ctx) {
       rows.map(([k, label, d, pct]) => {
         const b = data.baseline[k];
         return `<tr><td>${label}</td>` + SCEN.map(([s]) =>
-          `<td${hl(s)}>${fmt(data[s][k], d, pct)}${s === "baseline" ? "" : delta(k, data[s][k], b, d, pct)}</td>`).join("") + `</tr>`;
+          `<td${hl(s)}>${fmt(data[s]?.[k], d, pct)}${s === "baseline" ? "" : delta(k, data[s]?.[k], b, d, pct)}</td>`).join("") + `</tr>`;  //a scenario missing from an older file shows a dash
       }).join("") +
       `</tbody></table>` +
       `<p class="muted">Over the 13.24 ha design site. Change against today, green where it is better by the ` +

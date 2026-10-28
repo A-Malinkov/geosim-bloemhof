@@ -79,7 +79,7 @@ from each block after its instance transform) and 16 green patches, 2.11 ha. All
 of it lies on the site and none of it on a new block or street. Both options draw
 green over the buildings they keep (about 2,000 m², mostly over the school); that
 is cut away, and a plant standing in a kept building is dropped. The one surface
-on the top-level `Water feature?` layer (1,082 m², in the central green by
+on the top-level `Water feature?` layer (671 m² since 27.10, 1,082 m² before, in the central green by
 Dubbelstraat) is imported as water and cut out of the green. It is under
 neither option. The same pond is scenario_b's: it lies wholly in OPTION 2's green,
 12 m clear of its blocks, so both scenarios carry it. For scenario_b the layer
