@@ -143,8 +143,8 @@ CASES = [
      "planting_model": PLANTING_MODEL,  #"Proposed Vegetation - Copy - Copy" sublayer, plus the house gardens
      "surface_layers": {"Pedestrian Paths": "pedestrian", "Bike Paths": "bike", "Parking Spaces": "parking"},  #own kinds, drawn not walked
      #uses the model does not name, by an RD point inside the solid: the large south-west building is the
-     #shopping centre (Atanas, 2026-10-28)
-     "use_at_rd": [((93749.0, 433853.0), "shopping centre")],
+     #shopping centre, and so is the 12 m building joined to its north side (Atanas, 2026-10-28)
+     "use_at_rd": [((93749.0, 433853.0), "shopping centre"), ((93719.0, 433865.0), "shopping centre")],
      "water_layer": "Water feature?"},
 ]
 

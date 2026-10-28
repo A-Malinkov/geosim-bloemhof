@@ -37,8 +37,9 @@ a block of flats on top (to 16 m), 38 terraced houses with a ground-floor shop,
 two elderly homes and a student building, 284 volumes in all. The block names
 give each volume its use (`BLOCK_USE` in `import_rhino.py`), so here and only
 here the massing says where the shops are. The large unnamed building in the
-south-west corner (2,714 m², sloping roof averaged to 19 m) is the shopping
-centre, set by location in CASES `use_at_rd` (team decision 2026-10-28). Its streets, one-way roads,
+south-west corner (2,714 m², sloping roof averaged to 19 m) and the 12 m
+building joined to its north side (679 m²) are the shopping centre, set by
+location in CASES `use_at_rd` (team decision 2026-10-28). Its streets, one-way roads,
 pedestrian paths, bike paths and parking come in as separate surface kinds, its
 92 trees, 104 solid bushes and the house gardens as planting. It keeps the same
 school block as A and B. No analysis has been run on it yet: every

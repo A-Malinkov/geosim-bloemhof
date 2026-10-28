@@ -180,15 +180,22 @@ def labelled_shops(scenario):
     from shapely.geometry import shape
     from shapely.ops import transform
     from common.project import to_rd
+    from shapely.ops import unary_union
     massing = json.loads((PROCESSED / "design_massing.geojson").read_text())
-    rows = []
+    rows, centre = [], []  #centre: the shopping centre's volumes, one marker for all of them
     for f in massing["features"]:
         q = f["properties"]
         if q["scenario"] != scenario or q.get("use") not in ("shop", "mixed", "shopping centre"):
             continue  #housing, or another scenario
-        g = transform(lambda x, y, z=None: to_rd(x, y), shape(f["geometry"])).representative_point()  #inside the footprint
-        rows.append(({"type": "shop", "floor_m2": q["footprint_m2"], "x": g.x, "y": g.y},
-                     "shopping centre" if q["use"] == "shopping centre" else q.get("rhino_block", q["name"])))
+        fp = transform(lambda x, y, z=None: to_rd(x, y), shape(f["geometry"]))
+        if q["use"] == "shopping centre":
+            centre.append((fp, q["footprint_m2"]))
+            continue  #marked once below
+        g = fp.representative_point()  #inside the footprint
+        rows.append(({"type": "shop", "floor_m2": q["footprint_m2"], "x": g.x, "y": g.y}, q.get("rhino_block", q["name"])))
+    if centre:
+        g = max((fp for fp, _ in centre), key=lambda fp: fp.area).representative_point()  #in its largest volume
+        rows.insert(0, ({"type": "shop", "floor_m2": sum(a for _, a in centre), "x": g.x, "y": g.y}, "shopping centre"))
     return rows
 
 

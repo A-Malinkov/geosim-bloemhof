@@ -7691,7 +7691,7 @@
    "properties": {
     "scenario": "final",
     "name": "final tall 1",
-    "use": "residential",
+    "use": "shopping centre",
     "height_class": "tall",
     "height_m": 11.07,
     "building_height_m": 12.0,

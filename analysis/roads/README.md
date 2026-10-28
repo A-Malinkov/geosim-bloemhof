@@ -218,16 +218,16 @@ they have not been re-run on it.
 
 Nothing is placed in the final design. Its destinations are its own 70 shops
 from the Rhino block names (31 podiums, 38 terraced houses with a shop, the
-shopping centre) and the kept school; it adds no health practice and no
+shopping centre, two joined buildings, one marker) and the kept school; it adds no health practice and no
 second school. Shop floor holds no dwellings in the estimate, and a terraced
-house with a shop loses its ground floor: 798 dwellings on the site.
+house with a shop loses its ground floor: 768 dwellings on the site.
 
-Site residents walk 364 m on the mean of the four types on the network alone,
-336 m with the labelled shops, against 317 m today with today's own
-amenities. Shops are close (113 m); health care is the long walk (365 m).
+Site residents walk 361 m on the mean of the four types on the network alone,
+333 m with the labelled shops, against 317 m today with today's own
+amenities. Shops are close (111 m); health care is the long walk (363 m).
 The pedestrian and bike surfaces are not walked separately: all of them run
 within 5 m of a street. The optimiser's 10 links (350 m) lower J from
-275.94 to 275.57 m and the site residents' walk from 335.7 to 333.0 m.
+275.29 to 274.92 m and the site residents' walk from 332.9 to 330.1 m.
 
 ## Amenities on the new ground floors
 
