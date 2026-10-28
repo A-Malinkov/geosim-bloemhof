@@ -73,22 +73,22 @@ a row that says so. Flood vulnerability is today only.
 | proposed trees | n/a | 64 | 98 | 92 | higher |
 | proposed green area | n/a | 21,545 m² | 41,910 m² | 37,716 m² | higher |
 | proposed water area | n/a | 671 m² | 671 m² | 671 m² | higher |
-| shops on the site | 20 | 20 | 20 | 70 | higher |
-| health practices on the site | 7 | 7 | 7 | 0 | higher |
+| shops on the site | 20 | 20 | 20 | 63 | higher |
+| health practices on the site | 7 | 7 | 7 | 7 | higher |
 | schools on the site | 2 | 2 | 2 | 1 | higher |
 | community halls on the site | 7 | 3 | 3 | 3 | higher |
 | walk to 4 everyday places, residents, housing only | 317 m | 395 m | 391 m | 356 m | lower |
 | walk to 4 everyday places, site grid, housing only | 314 m | 371 m | 378 m | 369 m | lower |
-| residents, with the placed amenities | 317 m | 253 m | 263 m | 327 m | lower |
-| site grid, with the placed amenities | 314 m | 252 m | 261 m | 343 m | lower |
+| residents, with the placed amenities | 317 m | 253 m | 263 m | 269 m | lower |
+| site grid, with the placed amenities | 314 m | 252 m | 261 m | 276 m | lower |
 | site grid, network only | 377 m | 371 m | 378 m | 369 m | lower |
-| site grid, with the placed amenities and the optimiser's footpaths | n/a | 248 m | 258 m | 340 m | lower |
+| site grid, with the placed amenities and the optimiser's footpaths | n/a | 248 m | 258 m | 271 m | lower |
 | intersection density | 423 /km² | 597 /km² | 287 /km² | 687 /km² | higher |
 | land-use objective J | 1.000 | 1.096 | 1.740 | 2.054 | higher |
 | land-use mix | 0.229 | 0.318 | 0.530 | 0.739 | higher |
 | green share of 25 m cells | 3 % | 6 % | 33 % | 23 % | higher |
-| land-use objective J, with the placed amenities | n/a | 1.776 | 2.257 | 2.121 | higher |
-| land-use mix, with the placed amenities | n/a | 0.627 | 0.755 | 0.772 | higher |
+| land-use objective J, with the placed amenities | n/a | 1.776 | 2.257 | 2.195 | higher |
+| land-use mix, with the placed amenities | n/a | 0.627 | 0.755 | 0.818 | higher |
 | flood vulnerability high or very high | 61 % | not run | not run | not run | lower |
 
 Sources: dwellings from `road_metrics.json` (BAG today, the road network's
@@ -116,11 +116,11 @@ It estimates 768 dwellings, fewer than today's 1,027, on terraced and
 semi-detached houses up to 25 m. Open ground under 2 h of sun at the equinox
 stays at today's 22 % and falls from 87 % to 72 % on 21 December; mean sky view
 rises from 0.71 to 0.76. It is the only design that names its shops: 70 shop
-volumes from the Rhino block names, against today's 20, but no health practice
-and one school (the kept one). Its residents walk 327 m to the four everyday
-places, 10 m more than today, because health care is 363 m away against 253 m.
-Nothing is placed by the optimiser here, so the design as drawn is what is
-measured.
+units from the Rhino block names, against today's 20. The model has no health
+practice, so 7 of those units become one, picked by the same optimiser as A and
+B use but only among the model's own shop units: 63 shops, 7 health practices
+and one school (the kept one). Its residents walk 269 m to the four everyday
+places, 48 m less than today.
 
 **Housing only makes everyday walks longer. Putting the amenities back makes
 them shorter than today.** Today a resident of the site walks 317 m on average

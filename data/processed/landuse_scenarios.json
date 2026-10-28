@@ -359,35 +359,35 @@
   },
   "with_amenities": {
    "site": {
-    "landuse_mix": 0.7722,
+    "landuse_mix": 0.8182,
     "green_share": 0.2275,
     "residential_cells": 36,
     "mean_distance_to_amenity_m": 71.0,
-    "objective": 2.121,
+    "objective": 2.1945,
     "class_cells": {
      "water": 0,
      "road": 0,
      "green": 43,
      "residential": 36,
-     "retail": 31,
-     "amenity": 4,
+     "retail": 25,
+     "amenity": 10,
      "industry": 1,
      "vacant": 74
     }
    },
    "buurt": {
-    "landuse_mix": 0.4471,
+    "landuse_mix": 0.447,
     "green_share": 0.0751,
     "residential_cells": 965,
     "mean_distance_to_amenity_m": 87.7,
-    "objective": 1.4151,
+    "objective": 1.4149,
     "shares": {
      "water": 0.0256,
      "road": 0.058,
      "green": 0.0751,
      "residential": 0.5891,
-     "retail": 0.0275,
-     "amenity": 0.025,
+     "retail": 0.0238,
+     "amenity": 0.0287,
      "industry": 0.0134,
      "vacant": 0.1862
     }

@@ -1092,7 +1092,7 @@
         "Bloemhof": {
           "dwellings": 6072,
           "shop": {
-            "mean_m": 113.7,
+            "mean_m": 114.8,
             "within_15min_frac": 1.0,
             "within_5min_frac": 1.0
           },
@@ -1102,22 +1102,22 @@
             "within_5min_frac": 0.915
           },
           "health": {
-            "mean_m": 321.4,
+            "mean_m": 267.9,
             "within_15min_frac": 1.0,
-            "within_5min_frac": 0.754
+            "within_5min_frac": 0.872
           },
           "rail_stop": {
             "mean_m": 425.0,
             "within_15min_frac": 1.0,
             "within_5min_frac": 0.523
           },
-          "mean_of_types_m": 274.9,
+          "mean_of_types_m": 261.8,
           "walk_15min_reach_frac": 1.0
         },
         "study_area": {
           "dwellings": 6072,
           "shop": {
-            "mean_m": 113.7,
+            "mean_m": 114.8,
             "within_15min_frac": 1.0,
             "within_5min_frac": 1.0
           },
@@ -1127,22 +1127,22 @@
             "within_5min_frac": 0.915
           },
           "health": {
-            "mean_m": 321.4,
+            "mean_m": 267.9,
             "within_15min_frac": 1.0,
-            "within_5min_frac": 0.754
+            "within_5min_frac": 0.872
           },
           "rail_stop": {
             "mean_m": 425.0,
             "within_15min_frac": 1.0,
             "within_5min_frac": 0.523
           },
-          "mean_of_types_m": 274.9,
+          "mean_of_types_m": 261.8,
           "walk_15min_reach_frac": 1.0
         },
         "outside_site": {
           "dwellings": 5304,
           "shop": {
-            "mean_m": 114.1,
+            "mean_m": 114.7,
             "within_15min_frac": 1.0,
             "within_5min_frac": 1.0
           },
@@ -1152,22 +1152,22 @@
             "within_5min_frac": 0.903
           },
           "health": {
-            "mean_m": 315.5,
+            "mean_m": 288.7,
             "within_15min_frac": 1.0,
-            "within_5min_frac": 0.779
+            "within_5min_frac": 0.854
           },
           "rail_stop": {
             "mean_m": 403.1,
             "within_15min_frac": 1.0,
             "within_5min_frac": 0.599
           },
-          "mean_of_types_m": 267.3,
+          "mean_of_types_m": 260.8,
           "walk_15min_reach_frac": 1.0
         },
         "design_site": {
           "dwellings": 768,
           "shop": {
-            "mean_m": 110.9,
+            "mean_m": 115.5,
             "within_15min_frac": 1.0,
             "within_5min_frac": 1.0
           },
@@ -1177,22 +1177,22 @@
             "within_5min_frac": 1.0
           },
           "health": {
-            "mean_m": 362.6,
+            "mean_m": 124.1,
             "within_15min_frac": 1.0,
-            "within_5min_frac": 0.584
+            "within_5min_frac": 1.0
           },
           "rail_stop": {
             "mean_m": 576.7,
             "within_15min_frac": 1.0,
             "within_5min_frac": 0.003
           },
-          "mean_of_types_m": 327.3,
+          "mean_of_types_m": 268.9,
           "walk_15min_reach_frac": 1.0
         }
       },
       "site_grid": {
         "shop": {
-          "mean_m": 113.2,
+          "mean_m": 118.8,
           "within_15min_frac": 1.0,
           "within_5min_frac": 0.997
         },
@@ -1202,16 +1202,16 @@
           "within_5min_frac": 0.994
         },
         "health": {
-          "mean_m": 419.7,
+          "mean_m": 144.3,
           "within_15min_frac": 1.0,
-          "within_5min_frac": 0.38
+          "within_5min_frac": 0.991
         },
         "rail_stop": {
           "mean_m": 595.3,
           "within_15min_frac": 1.0,
           "within_5min_frac": 0.039
         },
-        "mean_of_types_m": 343.2,
+        "mean_of_types_m": 275.7,
         "walk_15min_reach_frac": 1.0,
         "grid_points": 332
       }

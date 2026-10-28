@@ -93,6 +93,9 @@ CASES = [
     {"scenario": "scenario_b"},
 ]
 LABELLED = ["final"]  #scenarios whose shops the Rhino model labels: read, not placed
+#labelled shop units that become another type, chosen by the same p-median among those units: the final design
+#names 69 shop units and no health practice, today the site has 7 (Atanas, 2026-10-28); the shopping centre stays a shop
+CONVERT = {"final": {"health": 7}}
 
 PARAMS = {
     "spacing_m": 15.0,  #candidate every 15 m along a block outline
@@ -199,18 +202,62 @@ def labelled_shops(scenario):
     return rows
 
 
-def labelled_features(today):
-    #the LABELLED scenarios' amenity features: their labelled shops plus the kept block's school and halls
-    feats = []
+def convert_units(sc, shops, k, n, dest, dwelling_m2, rp):
+    #pick n of the labelled shop units to become type k, the p-median on the walk to k -> (indices into shops, result)
+    from shapely.geometry import Point
+    import geopandas as gpd
+    net = rn.network_for(sc, rp)
+    G = rn.csr(net)
+    homes = rn.homes_for_scenario(sc, dwelling_m2, rp)
+    w, site = homes["w"].to_numpy(), homes["site"].to_numpy()
+    hs = rn.snap(net, homes.geometry.values)
+    units = [i for i, (_, block) in enumerate(shops) if block != "shopping centre"]  #the centre stays a shop
+    pts = gpd.GeoSeries([Point(shops[i][0]["x"], shops[i][0]["y"]) for i in units], crs=28992)
+    cs = rn.snap(net, pts.values)
+    CH = np.empty((len(homes), len(units)))
+    for j in range(len(units)):  #one Dijkstra per unit
+        CH[:, j] = rn.to_points(net, rn.dist_from(net, G, (cs[0][j:j + 1], cs[1][j:j + 1], cs[2][j:j + 1])), hs)
+    base = rn.to_points(net, rn.dist_from(net, G, rn.snap(net, dest[k].values)), hs)  #today's practices off the site
+    free = np.arange(len(units))
+    chosen, best = substitute(base, CH, w, greedy(base, CH, w, n, free.copy()), free.copy())
+    rng = np.random.default_rng(PARAMS["seed"])
+    rand = [mean_dist(np.minimum(base, CH[:, rng.choice(free, n, replace=False)].min(axis=1)), w)
+            for _ in range(PARAMS["random_draws"])]  #the bar: n random units
+    after = np.minimum(base, CH[:, chosen].min(axis=1))
+    res = {"p": n, "from": "labelled shop units", "n_candidates": len(units),
+           "J_before_m": round(mean_dist(base, w), 1), "J_after_m": round(best, 1),
+           "J_random_mean_m": round(float(np.mean(rand)), 1), "J_random_best_m": round(float(np.min(rand)), 1),
+           "site_dwellings_before_m": round(mean_dist(base[site], w[site]), 1),
+           "site_dwellings_after_m": round(mean_dist(after[site], w[site]), 1)}
+    print(f"  {sc}: {n} of {len(units)} shop units become {k}: buurt {res['J_before_m']} -> {res['J_after_m']} m "
+          f"(random mean {res['J_random_mean_m']}), site dwellings {res['site_dwellings_before_m']} -> {res['site_dwellings_after_m']} m")
+    return [units[j] for j in chosen], res
+
+
+def labelled_features(today, dest=None, dwelling_m2=None, rp=None):
+    #the LABELLED scenarios' amenity features: their labelled shops, some turned into CONVERT types by the
+    #p-median, plus the kept block's school and halls; -> (features, per-scenario conversion results)
+    feats, results = [], {}
     for sc in LABELLED:
         shops = labelled_shops(sc)
+        for k, n in CONVERT.get(sc, {}).items():
+            if dest is None:
+                dest, _, dwelling_m2 = rn.destinations()
+                rp = rn.PARAMS
+            picked, results.setdefault(sc, {})[k] = convert_units(sc, shops, k, n, dest, dwelling_m2, rp)
+            for i in picked:
+                shops[i][0]["type"] = k  #this unit's ground floor is a practice, not a shop
+                shops[i][0]["converted"] = True  #picked by the p-median, written to the marker
         feats += [point_feature(sc, r, rank=0, block=block, status="labelled", fixed=False,
+                                **({"converted": True} if r.get("converted") else {}),  #a shop unit the p-median made this type
                                 **({"label": "Shopping centre"} if block == "shopping centre" else {}))  #named in the app
                   for r, block in shops]
         feats += [point_feature(sc, r, rank=0, block="kept community centre and school", status="kept",
                                 fixed=True) for r in today if r["kept"]]  #the kept block, never moved
-        print(f"  {sc}: {len(shops)} shops labelled in the Rhino model, {sum(r['kept'] for r in today)} kept in the school block")
-    return feats
+        n = {t: sum(r["type"] == t for r, _ in shops) for t in ("shop", "health")}
+        print(f"  {sc}: {len(shops)} labelled shop units ({n['shop']} shops, {n['health']} health), "
+              f"{sum(r['kept'] for r in today)} kept in the school block")
+    return feats, results
 
 
 def labelled_only():
@@ -218,7 +265,11 @@ def labelled_only():
     path = PROCESSED / "design_amenities.geojson"
     old = json.loads(path.read_text())
     keep = [f for f in old["features"] if f["properties"]["scenario"] not in LABELLED]  #baseline, A, B untouched
-    feats = keep + labelled_features(today_on_site())
+    new, results = labelled_features(today_on_site())
+    feats = keep + new
+    ap = json.loads((PROCESSED / "amenity_placement.json").read_text())
+    ap.update({sc: {"converted": r} for sc, r in results.items()})  #the conversion's result, A and B untouched
+    write_processed("amenity_placement.json", ap)
     path.write_text(json.dumps({**{k: v for k, v in old.items() if k != "features"}, "features": feats},
                                separators=(",", ":")) + "\n")
     print(f"  wrote {path.relative_to(ROOT)} ({len(feats)} amenities, {len(feats) - len(keep)} for {', '.join(LABELLED)})")
@@ -491,7 +542,9 @@ def main() -> int:
         feats += f
         feats += [point_feature(case["scenario"], r, rank=0, block="kept community centre and school", status="kept",
                                 fixed=True) for r in today if r["kept"]]  #the kept block's school and halls, never moved
-    feats += labelled_features(today)  #the final design: its own labelled shops, nothing placed
+    new, results = labelled_features(today, dest, dwelling_m2, rp)  #the final design: its labelled shops, 7 turned health
+    feats += new
+    out.update({sc: {"converted": r} for sc, r in results.items()})
     #how many of each type stand on the site: today, and each option (placed + kept)
     out["counts_on_site"] = {sc: {k: sum(1 for f in feats if f["properties"]["scenario"] == sc
                                          and f["properties"]["type"] == k) for k in SHOWN}

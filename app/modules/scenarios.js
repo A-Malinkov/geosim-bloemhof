@@ -178,6 +178,7 @@ export async function setup(ctx) {
     const label = named ?? typeLabel;  //"Shopping centre" rather than "Shop"
     amenBy.get(name).entities.add({
       name: status === "placed" ? `${label} (optimised placement)`  //placed by the p-median
+        : status === "labelled" && f.properties.converted ? `${label} (optimised among the model's shop units)`  //final: p-median pick
         : status === "labelled" ? `${label} (labelled in the Rhino model)`  //final design: a shop block, not placed
         : name === "baseline" ? `${label} today${gone ? ", demolished in A and B" : ", kept"}`  //today's, from BAG
         : `${label} (kept community centre and school, fixed)`,  //the kept block, never moved
@@ -185,6 +186,7 @@ export async function setup(ctx) {
         (status === "placed" ? `<tr><td>pick</td><td>${rank} of its type</td></tr>` : "") +
         `<tr><td>floor area</td><td>${floor_m2} m²${status === "placed" ? " (today's median)" : status === "labelled" ? " (block footprint)" : " (BAG)"}</td></tr>` +
         `<tr><td>source</td><td>${status === "placed" ? "place_amenities.py, p-median on walking distance"
+          : status === "labelled" && f.properties.converted ? "a Rhino shop unit, made this use by place_amenities.py (p-median)"
           : status === "labelled" ? "Rhino block name (Final Model)" : "BAG"}</td></tr></table>`,
       position: Cesium.Cartesian3.fromDegrees(...f.geometry.coordinates),
       label: named ? {  //the shopping centre carries its name on the map
