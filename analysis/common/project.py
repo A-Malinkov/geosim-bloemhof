@@ -323,6 +323,7 @@ SERVICES = {
     "knmi_open_data": "https://api.dataplatform.knmi.nl/open-data/v1",
     "knmi_daily":     "https://www.daggegevens.knmi.nl/klimatologie/daggegevens",
     "pdok_locatie":   "https://api.pdok.nl/bzk/locatieserver/search/v3_1",
+    "bgt_ogc":        "https://api.pdok.nl/lv/bgt/ogc/v1",  # BGT land cover; verified reachable 2026-10-28
 }
 
 # The public anonymous KNMI key (valid to 2027-08-01 per KNMI's docs).

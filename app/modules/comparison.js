@@ -22,6 +22,7 @@ const ROWS = [  //key, label, digits, as a percentage
   ["sun_under2h_1221", "Under 2 h sun, 21 Dec", 0, true],
   ["hw_median", "Street H/W, median", 2, false],
   ["trees_existing", "Existing trees kept", 0, false],  //today's trees still standing on the site
+  ["green_total_m2", "Green area, gardens incl. (m²)", 0, false],  //BGT today, kept + proposed green (+ walkway) in a design
   ["trees_proposed", "Proposed trees", 0, false],  //new planting from the Rhino model
   ["n_shop", "Shops on the site", 0, false],  //today from BAG; options placed (p-median) + kept
   ["n_education", "Schools on the site", 0, false],  //the kept school stays fixed

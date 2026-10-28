@@ -71,6 +71,7 @@ a row that says so. Flood vulnerability is today only.
 | street H/W, median | 0.39 | 0.48 | 0.28 | 0.29 | context |
 | existing trees kept on the site | 104 | 86 | 93 | 82 | higher |
 | proposed trees | n/a | 64 | 98 | 92 | higher |
+| green area, total, gardens included | 40,229 m² | 26,054 m² | 46,454 m² | 46,437 m² | higher |
 | proposed green area | n/a | 21,545 m² | 41,910 m² | 37,716 m² | higher |
 | proposed water area | n/a | 671 m² | 671 m² | 671 m² | higher |
 | shops on the site | 20 | 20 | 20 | 63 | higher |
@@ -90,6 +91,16 @@ a row that says so. Flood vulnerability is today only.
 | land-use objective J, with the placed amenities | n/a | 1.776 | 2.257 | 2.195 | higher |
 | land-use mix, with the placed amenities | n/a | 0.627 | 0.755 | 0.818 | higher |
 | flood vulnerability high or very high | 61 % | not run | not run | not run | lower |
+
+**Green area counts gardens and the final design's walkway.** Today's green is
+the BGT's planted surfaces plus its `erf`, the private plots round the houses
+(`fetch_bgt_green.py`, 7,210 m² public and 33,019 m² gardens on the site). A
+design keeps today's green in the school block it keeps and the public verges in
+the 15 m edge-street band, less what it builds or paves there, and adds its own
+green, house gardens included, and in the final design the walkway, every
+overlap counted once. B and the final design end up 15 % above today, A 35 %
+below. An erf is the whole plot, paving and sheds included, and the final
+design's gardens are drawn as whole plots too: both overstate what is planted.
 
 Sources: dwellings from `road_metrics.json` (BAG today, the road network's
 estimate in the scenarios), demolition and heights from `design_massing.geojson`,

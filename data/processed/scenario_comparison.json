@@ -108,6 +108,14 @@
    "source": "design_planting.geojson"
   },
   {
+   "key": "green_total_m2",
+   "theme": "Green and water",
+   "label": "Green area, total, gardens included",
+   "unit": " m\u00b2",
+   "better": "higher",
+   "source": "BGT + design_planting.geojson"
+  },
+  {
    "key": "green_area_m2",
    "theme": "Green and water",
    "label": "Proposed green area",
@@ -302,6 +310,7 @@
   "street_km": 4.39,
   "trees_existing": 104,
   "trees_total": 104,
+  "green_total_m2": 40229,
   "walk_dwellings_m": 316.9,
   "walk_grid_m": 314.3,
   "intersections_km2": 422.9,
@@ -372,6 +381,7 @@
   "street_km": 5.77,
   "trees_existing": 86,
   "trees_total": 150,
+  "green_total_m2": 26054,
   "trees_proposed": 64,
   "shrubs_proposed": 124,
   "green_area_m2": 21545,
@@ -451,6 +461,7 @@
   "street_km": 3.62,
   "trees_existing": 93,
   "trees_total": 191,
+  "green_total_m2": 46454,
   "trees_proposed": 98,
   "shrubs_proposed": 85,
   "green_area_m2": 41910,
@@ -530,6 +541,7 @@
   "street_km": 5.21,
   "trees_existing": 82,
   "trees_total": 174,
+  "green_total_m2": 46437,
   "trees_proposed": 92,
   "shrubs_proposed": 104,
   "green_area_m2": 37716,

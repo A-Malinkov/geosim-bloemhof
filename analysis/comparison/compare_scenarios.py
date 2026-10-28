@@ -154,12 +154,48 @@ def green(sc):
     area = lambda kind: round(sum(rd(shape(p["geometry"])).intersection(site).area
                                   for p in plant if p["properties"]["kind"] == kind))
     new_trees = sum(1 for p in plant if p["properties"]["kind"] == "tree")
-    out = {"trees_existing": kept, "trees_total": kept + new_trees}
+    out = {"trees_existing": kept, "trees_total": kept + new_trees, "green_total_m2": green_total(sc)}
     if sc != "baseline":  #proposed planting only exists in the designs, today's gardens are not in this count
         out.update({"trees_proposed": new_trees,  #n/a today, like the green and water areas
                     "shrubs_proposed": sum(1 for p in plant if p["properties"]["kind"] == "shrub"),
                     "green_area_m2": area("green"), "water_area_m2": area("water")})
     return out
+
+
+def green_total(sc):
+    #all green on the site, public and gardens in one number (Atanas, 2026-10-28), overlaps counted once:
+    #today the BGT's planted surfaces plus its erf (gardens, fetch_bgt_green.py); a design keeps today's green
+    #in the block it keeps and the public verges in the edge-street band, less what it builds or paves there,
+    #and adds its own green patches (the final design's house gardens among them) and its walkway
+    import geopandas as gpd
+    from shapely.geometry import shape
+    from shapely.ops import transform, unary_union
+    from scenario_world import EDGE_BAND_M, cleared_area
+    path = RAW / "bgt_green_site.geojson"
+    if not path.exists():
+        print("  ! data/raw/bgt_green_site.geojson missing: run analysis/comparison/fetch_bgt_green.py")
+        return None
+    site = design_site_polygon()
+    bgt = gpd.read_file(path)
+    if sc == "baseline":
+        return round(unary_union(bgt.geometry.values).intersection(site).area)
+    rd = lambda g: transform(lambda x, y, z=None: to_rd(x, y), g)  #lon/lat -> RD
+    keep = site.difference(cleared_area(sc))  #the block the design leaves standing
+    band = site.difference(site.buffer(-EDGE_BAND_M)).intersection(cleared_area(sc))  #edge streets and their verges
+    kept = unary_union([unary_union(bgt.geometry.values).intersection(keep),
+                        unary_union(bgt[bgt["kind"] == "green"].geometry.values).intersection(band)])  #no demolished house's garden
+    built = [rd(shape(f["geometry"])) for f in (J("design_massing.geojson") or {}).get("features", [])
+             if f["properties"]["scenario"] == sc]
+    paved = [rd(shape(f["geometry"])) for f in (J("design_streets.geojson") or {}).get("features", [])
+             if f["properties"]["scenario"] == sc and f["geometry"]["type"] in ("Polygon", "MultiPolygon")
+             and f["properties"]["kind"] != "walkway"]
+    plant = [p for p in (J("design_planting.geojson") or {}).get("features", []) if p["properties"]["scenario"] == sc]
+    water = [rd(shape(p["geometry"])) for p in plant if p["properties"]["kind"] == "water"]
+    kept = kept.difference(unary_union([g.buffer(0) for g in built + paved + water]))  #what the design puts on it
+    new = [rd(shape(p["geometry"])) for p in plant if p["properties"]["kind"] == "green"]
+    walk = [rd(shape(f["geometry"])) for f in (J("design_streets.geojson") or {}).get("features", [])
+            if f["properties"]["scenario"] == sc and f["properties"]["kind"] == "walkway"]  #the final design's path, counted green
+    return round(unary_union([kept] + [g.buffer(0) for g in new + walk]).intersection(site).area)
 
 
 def mobility(sc):
@@ -253,6 +289,7 @@ INDICATORS = [
     ("hw_median", "Daylight", "Street H/W, median", "", None, 2, "canyon_hw_*.json"),
     ("trees_existing", "Green and water", "Existing trees kept", "", "higher", 0, "trees*.geojson"),  #today's trees still standing
     ("trees_proposed", "Green and water", "Proposed trees", "", "higher", 0, "design_planting.geojson"),  #new planting, not seen by SVF or sun
+    ("green_total_m2", "Green and water", "Green area, total, gardens included", " m²", "higher", 0, "BGT + design_planting.geojson"),
     ("green_area_m2", "Green and water", "Proposed green area", " m²", "higher", 0, "design_planting.geojson"),
     ("water_area_m2", "Green and water", "Proposed water area", " m²", "higher", 0, "design_planting.geojson"),
     ("n_shop", "Amenities", "Shops on the site", "", "higher", 0, "amenity_placement.json"),
