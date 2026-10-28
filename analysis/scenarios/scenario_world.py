@@ -78,9 +78,11 @@ def load_scenario(scenario: str):
         sys.exit(f"No massing for {scenario} in {path.relative_to(ROOT)}. "
                  "Run analysis/scenarios/import_rhino.py, or add the scenario there.")
     new = gpd.GeoDataFrame.from_features(feats, crs="EPSG:4326").to_crs(28992)
-    new["height_m"] = new["building_height_m"].astype(float)  #above ground, like 3DBAG heights here
+    new["own_height_m"] = new["building_height_m"].astype(float)  #the block itself, base to roof
+    lift = (new["base_height_m"].astype(float) - DESIGN_SITE["ground_nap_m"]).fillna(0.0) if "base_height_m" in new else 0.0
+    new["height_m"] = new["own_height_m"] + lift  #roof above ground, like 3DBAG heights here; flats on a shop podium reach 16 m, not 12
     new["use"] = new["use"].fillna("residential") if "use" in new else "residential"  #shop, mixed, ... in the final design
-    return new[["name", "height_m", "use", "geometry"]], set(d.get("demolishes", {}).get(scenario, []))
+    return new[["name", "height_m", "own_height_m", "use", "geometry"]], set(d.get("demolishes", {}).get(scenario, []))
 
 
 def cleared_area(scenario: str):

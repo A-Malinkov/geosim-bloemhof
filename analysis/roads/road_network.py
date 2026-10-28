@@ -229,7 +229,7 @@ def homes_for_scenario(scenario, dwelling_m2, p):
         new, gone = load_scenario(scenario)
         gone = {g.rsplit(".", 1)[-1] for g in gone}  #NL.IMBAG.Pand.<id> -> <id>, BAG's pand_id
         h = h[~bag["pand_id"].astype(str).isin(gone).values]
-        storeys = np.maximum(1, np.round(new["height_m"].to_numpy() / p["storey_m"]))
+        storeys = np.maximum(1, np.round(new["own_height_m"].to_numpy() / p["storey_m"]))  #its own storeys, a podium below not counted
         use = new["use"].to_numpy()
         storeys = np.where(np.isin(use, ["shop", "shopping centre"]), 0, storeys)  #shop space holds no dwellings
         storeys = np.where(use == "mixed", storeys - 1, storeys)  #a shop on the ground floor
