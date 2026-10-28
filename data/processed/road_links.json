@@ -104,103 +104,103 @@
       "detour_min": 1.5,
       "reach_m": 20.0
     },
-    "n_candidates": 41,
-    "J_before_m": 275.29,
-    "site_dwellings_before_m": 332.9,
-    "site_grid_before_m": 348.1,
-    "J_ceiling_m": 274.85,
-    "site_grid_ceiling_m": 343.9,
+    "n_candidates": 60,
+    "J_before_m": 274.89,
+    "site_dwellings_before_m": 327.3,
+    "site_grid_before_m": 343.2,
+    "J_ceiling_m": 274.17,
+    "site_grid_ceiling_m": 337.2,
     "site_grid_baseline_m": 314.3,
     "steps": [
       {
         "rank": 1,
-        "length_m": 48.3,
-        "gain_m": 0.119,
-        "J_m": 275.18,
-        "site_dwellings_m": 332.1,
-        "site_grid_m": 347.5,
-        "share_of_ceiling": 0.27
+        "length_m": 55.8,
+        "gain_m": 0.13,
+        "J_m": 274.76,
+        "site_dwellings_m": 327.3,
+        "site_grid_m": 343.0,
+        "share_of_ceiling": 0.182
       },
       {
         "rank": 2,
-        "length_m": 19.3,
-        "gain_m": 0.081,
-        "J_m": 275.09,
-        "site_dwellings_m": 331.5,
-        "site_grid_m": 347.2,
-        "share_of_ceiling": 0.454
+        "length_m": 39.9,
+        "gain_m": 0.096,
+        "J_m": 274.66,
+        "site_dwellings_m": 326.5,
+        "site_grid_m": 342.7,
+        "share_of_ceiling": 0.316
       },
       {
         "rank": 3,
-        "length_m": 24.0,
-        "gain_m": 0.076,
-        "J_m": 275.02,
-        "site_dwellings_m": 330.9,
-        "site_grid_m": 347.0,
-        "share_of_ceiling": 0.626
+        "length_m": 44.4,
+        "gain_m": 0.066,
+        "J_m": 274.59,
+        "site_dwellings_m": 326.2,
+        "site_grid_m": 342.4,
+        "share_of_ceiling": 0.409
       },
       {
         "rank": 4,
-        "length_m": 29.8,
-        "gain_m": 0.04,
-        "J_m": 274.98,
-        "site_dwellings_m": 330.6,
-        "site_grid_m": 346.8,
-        "share_of_ceiling": 0.716
+        "length_m": 19.3,
+        "gain_m": 0.054,
+        "J_m": 274.54,
+        "site_dwellings_m": 325.8,
+        "site_grid_m": 342.1,
+        "share_of_ceiling": 0.484
       },
       {
         "rank": 5,
-        "length_m": 60.9,
-        "gain_m": 0.022,
-        "J_m": 274.96,
-        "site_dwellings_m": 330.4,
-        "site_grid_m": 346.5,
-        "share_of_ceiling": 0.767
+        "length_m": 29.8,
+        "gain_m": 0.04,
+        "J_m": 274.5,
+        "site_dwellings_m": 325.5,
+        "site_grid_m": 341.9,
+        "share_of_ceiling": 0.54
       },
       {
         "rank": 6,
-        "length_m": 14.7,
-        "gain_m": 0.015,
-        "J_m": 274.94,
-        "site_dwellings_m": 330.3,
-        "site_grid_m": 345.0,
-        "share_of_ceiling": 0.8
+        "length_m": 60.9,
+        "gain_m": 0.022,
+        "J_m": 274.48,
+        "site_dwellings_m": 325.3,
+        "site_grid_m": 341.7,
+        "share_of_ceiling": 0.571
       },
       {
         "rank": 7,
-        "length_m": 17.1,
-        "gain_m": 0.01,
-        "J_m": 274.93,
-        "site_dwellings_m": 330.2,
-        "site_grid_m": 344.9,
-        "share_of_ceiling": 0.822
+        "length_m": 14.7,
+        "gain_m": 0.014,
+        "J_m": 274.46,
+        "site_dwellings_m": 325.2,
+        "site_grid_m": 340.2,
+        "share_of_ceiling": 0.59
       },
       {
         "rank": 8,
-        "length_m": 56.8,
-        "gain_m": 0.006,
-        "J_m": 274.93,
-        "site_dwellings_m": 330.2,
-        "site_grid_m": 344.8,
-        "share_of_ceiling": 0.836
+        "length_m": 24.0,
+        "gain_m": 0.014,
+        "J_m": 274.45,
+        "site_dwellings_m": 325.1,
+        "site_grid_m": 340.1,
+        "share_of_ceiling": 0.609
       },
       {
         "rank": 9,
-        "length_m": 56.1,
-        "gain_m": 0.005,
-        "J_m": 274.92,
-        "site_dwellings_m": 330.1,
-        "site_grid_m": 344.8,
-        "share_of_ceiling": 0.847
+        "length_m": 17.1,
+        "gain_m": 0.009,
+        "J_m": 274.44,
+        "site_dwellings_m": 325.0,
+        "site_grid_m": 340.1,
+        "share_of_ceiling": 0.621
       },
       {
         "rank": 10,
-        "length_m": 22.8,
-        "gain_m": 0.004,
-        "J_m": 274.92,
-        "site_dwellings_m": 330.1,
-        "site_grid_m": 344.8,
-        "share_of_ceiling": 0.856
+        "length_m": 56.8,
+        "gain_m": 0.005,
+        "J_m": 274.44,
+        "site_dwellings_m": 325.0,
+        "site_grid_m": 340.0,
+        "share_of_ceiling": 0.628
       }
     ],
     "geojson": "../data/processed/road_links_final.geojson",

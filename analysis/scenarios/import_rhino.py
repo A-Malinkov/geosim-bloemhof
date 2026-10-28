@@ -145,6 +145,9 @@ CASES = [
      #uses the model does not name, by an RD point inside the solid: the large south-west building is the
      #shopping centre, and so is the 12 m building joined to its north side (Atanas, 2026-10-28)
      "use_at_rd": [((93749.0, 433853.0), "shopping centre"), ((93719.0, 433865.0), "shopping centre")],
+     #the curvy strip on the vegetation layer (6,362 m2, ~9.5 m wide) is a walking path, not green (Atanas,
+     #2026-10-28): drawn as kind "walkway", its centreline walked like a hand-drawn path; Rhino object id
+     "path_surfaces": ["260987cd-4912-4f8a-acf9-ab85c75fe7f6"],
      "water_layer": "Water feature?"},
 ]
 
@@ -364,12 +367,14 @@ def import_streets(c):
             continue  #only this option's layer tree
         sub = layer.split("::")[-1]
         kind = "street" if "roads" in sub.lower() else kinds.get(sub)  #the road sublayers, or a named paved one
+        if str(obj.Attributes.Id) in c.get("path_surfaces", []):
+            kind = "walkway"  #a surface the team drew as planting but means as a walking path
         if kind and isinstance(obj.Geometry, rhino3dm.Brep):  #surfaces only, the curves are outlines
             fp, _, _, _ = roof_parts(obj.Geometry)  #a flat surface projects to itself
             if fp is not None:
                 surfaces.setdefault(kind, []).append(fp)
     out, taken = [], None  #taken: area already drawn by an earlier kind, so no two drapes overlap
-    for kind in ["street", "pedestrian", "bike", "parking"]:  #the street surface stays whole, it is traced for centrelines
+    for kind in ["street", "walkway", "pedestrian", "bike", "parking"]:  #the street surface stays whole, it is traced for centrelines
         if kind not in surfaces:
             continue
         merged = unary_union(surfaces[kind])  #duplicates and overlaps counted once
@@ -453,10 +458,31 @@ def street_links(c, surface_rd, blocks_rd):
                                      "kind": "link", "area_m2": round(merged.area), "axes": axes_wgs})]
 
 
-def design_paths(c):
+def design_paths(c, kept_rd=None):
     #a case's hand-drawn paths (paths_rd) -> GeoJSON lines, kind "path", drawn and walked like the streets
+    #plus the centrelines of its path_surfaces (walkways), cut out of the buildings it keeps (kept_rd)
     from shapely.geometry import LineString
     out = []
+    if c.get("path_surfaces"):
+        from scenario_world import centrelines
+        model = rhino3dm.File3dm.Read(str(c["model"]))
+        for oid in c["path_surfaces"]:
+            obj = model.Objects.FindId(oid)
+            assert obj is not None, f"path surface {oid} is not in {c['model'].name}"  #the id moved: say so, never skip it
+            fp = roof_parts(obj.Geometry)[0].intersection(design_site_polygon())
+            lines = [g for part in getattr(fp, "geoms", [fp]) for g in centrelines(part, prune_m=15.0)]  #~1.5 widths: no fan of spurs where it widens
+            if kept_rd is not None:
+                lines = [p for g in lines for p in getattr(g.difference(kept_rd), "geoms", [g.difference(kept_rd)])
+                         if not p.is_empty]  #no walking through a kept building
+            for k, g in enumerate(lines, 1):
+                out.append(_to_wgs_feature(g, {
+                    "scenario": c["scenario"],
+                    "name": f"{c['scenario']} walkway path {k}",
+                    "kind": "path",
+                    "length_m": round(g.length, 1),
+                    "source": "centreline of the walkway surface (import_rhino.py CASES path_surfaces)",
+                }))
+            print(f"  walkway: {len(lines)} centreline pieces, {sum(g.length for g in lines):.0f} m, walked as paths")
     for k, pts in enumerate(c.get("paths_rd", []), 1):
         g = LineString(pts)
         out.append(_to_wgs_feature(g, {
@@ -466,8 +492,9 @@ def design_paths(c):
             "length_m": round(g.length, 1),
             "source": "added by the team, not in the Rhino model (import_rhino.py CASES paths_rd)",
         }))
-    if out:
-        print(f"  paths: {len(out)} added by hand, {sum(f['properties']['length_m'] for f in out):.0f} m")
+    drawn = [f for f in out if f["properties"]["source"].startswith("added by the team")]  #paths_rd only
+    if drawn:
+        print(f"  paths: {len(drawn)} added by hand, {sum(f['properties']['length_m'] for f in drawn):.0f} m")
     return out
 
 
@@ -508,6 +535,8 @@ def import_planting(c, streets_rd=None, kept_rd=None):
             continue
         if not layer.startswith(c["layer_prefix"] + "::Proposed Vegetation"):
             continue  #only this option's planting; OPTION 2's layer is "Proposed Vegetation - Copy"
+        if str(obj.Attributes.Id) in c.get("path_surfaces", []):
+            continue  #a walkway, read by import_streets() and design_paths()
         if isinstance(geom, rhino3dm.InstanceReference):
             name, parts = defs.get(str(geom.ParentIdefId), ("?", []))
             if name in BLOCK_USE:
@@ -679,7 +708,8 @@ def main():
         blocks_rd = [transform(lambda x, y, z=None: to_rd(x, y), shape(f["geometry"])) for f in feats]  #massing back to RD
         for f in [f for f in new_streets if f["properties"]["kind"] == "street"]:  #paths and parking get no links
             streets += street_links(c, transform(lambda x, y, z=None: to_rd(x, y), shape(f["geometry"])), blocks_rd)  #to the edge streets
-        streets += design_paths(c)  #paths the team added by hand
+        kept_c = unary_union([g for i, g in footprints if i in set(keeps[c["scenario"]])]) if keeps[c["scenario"]] else None
+        streets += design_paths(c, kept_c)  #paths the team added by hand, and walkway centrelines
     write_processed("design_massing.geojson", {
         "type": "FeatureCollection",
         "_written_by": "analysis/scenarios/import_rhino.py",

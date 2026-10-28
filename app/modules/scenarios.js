@@ -43,7 +43,7 @@ const USE_COLOURS = {
   "shopping centre": ["#5e35b1", "shopping centre"],  //the large south-west building of the final design
 };
 //paved surfaces other than streets, Final Model only (import_rhino.py surface_layers)
-const SURFACE_COLOURS = { street: "#4a4f57", link: "#4a4f57", pedestrian: "#c9b79c", bike: "#b5524a", parking: "#6f7680" };
+const SURFACE_COLOURS = { street: "#4a4f57", link: "#4a4f57", walkway: "#d9c39a", pedestrian: "#c9b79c", bike: "#b5524a", parking: "#6f7680" };  //walkway: the gravel of the drawn paths
 
 export async function setup(ctx) {
   const { Cesium, viewer, config } = ctx;
@@ -125,7 +125,8 @@ export async function setup(ctx) {
       streetsByScenario.set(name, ds);
     }
     //hand-drawn footpaths (kind "path", import_rhino.py paths_rd): a line on the ground, either geometry type
-    const paths = f.geometry?.type === "LineString" ? [f.geometry.coordinates]
+    const traced = f.properties.source?.startsWith("centreline");  //a walkway's walked centreline: its surface is drawn instead
+    const paths = traced ? [] : f.geometry?.type === "LineString" ? [f.geometry.coordinates]
       : f.geometry?.type === "MultiLineString" ? f.geometry.coordinates : [];
     for (const line of paths) {
       streetsByScenario.get(name).entities.add({
