@@ -58,44 +58,45 @@ a row that says so. Flood vulnerability is today only.
 
 | | Today | Scenario A | Scenario B | Final design | better |
 |---|---|---|---|---|---|
-| dwellings on the site | 1,027 | 1,920 | 1,250 | 768 | higher |
+| dwellings on the site | 1,027 | 1,920 | 1,250 | 766 | higher |
 | buildings demolished | 0 | 1,150 | 1,150 | 1,150 | lower |
-| FSI, floor area / site | 0.88 | 1.37 | 0.91 | 0.77 | context |
-| GSI, footprint / site | 0.32 | 0.27 | 0.17 | 0.19 | context |
+| FSI, floor area / site | 0.88 | 1.37 | 0.91 | 0.75 | context |
+| GSI, footprint / site | 0.32 | 0.27 | 0.17 | 0.17 | context |
 | tallest building | 30 m | 40 m | 27 m | 25 m | context |
-| sky view factor, mean | 0.71 | 0.65 | 0.78 | 0.76 | higher |
+| sky view factor, mean | 0.71 | 0.65 | 0.78 | 0.77 | higher |
 | sun at the equinox, mean | 4.3 h | 3.8 h | 6.0 h | 5.8 h | higher |
 | open ground under 2 h sun, equinox | 22 % | 40 % | 13 % | 22 % | lower |
-| open ground under 2 h sun, 21 Dec | 87 % | 87 % | 67 % | 72 % | lower |
-| sun on 21 Jun, mean | 8.6 h | 8.8 h | 10.2 h | 10.2 h | context |
-| street H/W, median | 0.39 | 0.48 | 0.28 | 0.29 | context |
+| open ground under 2 h sun, 21 Dec | 87 % | 87 % | 67 % | 71 % | lower |
+| sun on 21 Jun, mean | 8.6 h | 8.8 h | 10.2 h | 10.3 h | context |
+| street H/W, median | 0.39 | 0.48 | 0.28 | 0.28 | context |
 | existing trees kept on the site | 104 | 86 | 93 | 82 | higher |
 | proposed trees | n/a | 64 | 98 | 92 | higher |
-| green area, total, gardens included | 40,229 m² | 26,054 m² | 46,454 m² | 46,437 m² | higher |
-| proposed green area | n/a | 21,545 m² | 41,910 m² | 37,716 m² | higher |
+| green area, total, gardens included | 40,229 m² | 26,054 m² | 46,454 m² | 48,423 m² | higher |
+| proposed green area | n/a | 21,545 m² | 41,910 m² | 38,411 m² | higher |
 | proposed water area | n/a | 671 m² | 671 m² | 671 m² | higher |
 | shops on the site | 20 | 20 | 20 | 63 | higher |
 | health practices on the site | 7 | 7 | 7 | 7 | higher |
 | schools on the site | 2 | 2 | 2 | 1 | higher |
 | community halls on the site | 7 | 3 | 3 | 3 | higher |
-| walk to 4 everyday places, residents, housing only | 317 m | 394 m | 391 m | 356 m | lower |
+| walk to 4 everyday places, residents, housing only | 317 m | 394 m | 391 m | 355 m | lower |
 | walk to 4 everyday places, site grid, housing only | 314 m | 371 m | 377 m | 368 m | lower |
 | residents, with the placed amenities | 317 m | 254 m | 263 m | 269 m | lower |
 | site grid, with the placed amenities | 314 m | 251 m | 260 m | 274 m | lower |
 | site grid, network only | 376 m | 371 m | 377 m | 368 m | lower |
 | site grid, with the placed amenities and the optimiser's footpaths | n/a | 248 m | 258 m | 271 m | lower |
 | intersection density | 446 /km² | 582 /km² | 310 /km² | 702 /km² | higher |
-| land-use objective J | 1.000 | 1.096 | 1.740 | 2.054 | higher |
-| land-use mix | 0.229 | 0.318 | 0.530 | 0.739 | higher |
-| green share of 25 m cells | 3 % | 6 % | 33 % | 23 % | higher |
-| land-use objective J, with the placed amenities | n/a | 1.765 | 2.257 | 2.195 | higher |
-| land-use mix, with the placed amenities | n/a | 0.623 | 0.755 | 0.818 | higher |
+| land-use objective J | 2.100 | 2.196 | 2.840 | 2.943 | higher |
+| land-use mix | 0.229 | 0.318 | 0.530 | 0.728 | higher |
+| green share of 25 m cells | 3 % | 6 % | 33 % | 30 % | higher |
+| land-use objective J, with the placed amenities | n/a | 2.865 | 3.357 | 3.042 | higher |
+| land-use mix, with the placed amenities | n/a | 0.623 | 0.755 | 0.792 | higher |
 | flood vulnerability high or very high | 61 % | not run | not run | not run | lower |
 
 Sources: dwellings from `road_metrics.json` (BAG today, the road network's
 estimate in the scenarios), demolition and heights from `design_massing.geojson`,
 FSI and GSI from the 3DBAG footprints on the site plus the new blocks with
-storeys = round(height above ground / 3 m), sky and sun from `svf_summary*.json`
+storeys = round(height above ground / 3 m) (flats stood on a shop podium: their own
+height, and no ground cover of their own), sky and sun from `svf_summary*.json`
 and `shadow_summary*.json`, H/W from `canyon_hw_*.json`, trees from
 `trees.geojson` / `trees_<scenario>.geojson` plus the proposed trees in
 `design_planting.geojson`, walking from `road_metrics.json`, `road_links.json` and
@@ -113,10 +114,10 @@ the most trees and twice A's proposed green. It demolishes the same 1,150
 buildings to gain about 220 dwellings.
 
 **The final design keeps today's sun at the equinox, with fewer homes than today.**
-It estimates 768 dwellings, fewer than today's 1,027, on terraced and
+It estimates 766 dwellings, fewer than today's 1,027, on terraced and
 semi-detached houses up to 25 m. Open ground under 2 h of sun at the equinox
-stays at today's 22 % and falls from 87 % to 72 % on 21 December; mean sky view
-rises from 0.71 to 0.76. It is the only design that names its shops: 70 shop
+stays at today's 22 % and falls from 87 % to 71 % on 21 December; mean sky view
+rises from 0.71 to 0.77. It is the only design that names its shops: 70 shop
 units from the Rhino block names, against today's 20. The model has no health
 practice, so 7 of those units become one, picked by the same optimiser as A and
 B use but only among the model's own shop units: 63 shops, 7 health practices
@@ -134,10 +135,13 @@ denser grid (582 junctions per km² against 446) saves 5 m and B's open layout
 (310) changes nothing.
 
 **B scores far higher on the land-use objective, for a reason to read with
-care.** The objective (`analysis/abm_landuse/`) rewards mix and green and has no
-term for homes. On its 25 m cells B keeps 48 residential cells against 160
-today and A 99, because cells count ground covered, not dwellings. A low-rise
-green plan with fewer, taller homes scores well by construction.
+care.** The objective (`analysis/abm_landuse/`) rewards mix and green, and since
+2026-10-30 homes against today's, capped at today. A and B both build more homes
+than they demolish, so both get the full housing term and A's extra homes earn
+nothing. The gap is mix and green: B has 33 % green against A's 6 %. On its 25 m
+cells B keeps 48 residential cells against 160 today and A 99, because cells
+count ground covered, not dwellings. The final design scores highest even
+though the housing term costs it: 766 homes against today's 1,027.
 
 **Both demolish everything on the cleared part of the site**, 1,150 buildings,
 1,027 homes, most of them built 1919–1940.

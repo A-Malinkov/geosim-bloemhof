@@ -67,7 +67,6 @@ def main() -> int:
     den, lu = load("density_summary.json"), load("landuse_summary.json")
     ca, rl, fc = load("landuse_abm.json"), load("landuse_rl.json"), load("knmi_forecast.json")
     ws = load("landuse_weight_sensitivity.json")
-    rlk = load("landuse_rl_keep_housing.json")
     dqn = load("landuse_rl_dqn.json")
     rm, rlinks = load("road_metrics.json"), load("road_links.json")  #4.8 road network
 
@@ -136,8 +135,8 @@ def main() -> int:
             ("RL best objective", r"^Best [\d.]+ against", f"{rl['best_objective']:.3f}", [ABM]),
             ("RL homes kept", r"Land-use model \| CA prefers", f"only {rl['score']['residential_cells']} of", [MAIN]),
             ("RL homes today", r"Land-use model \| CA prefers", f"of its {rl['baseline_score']['residential_cells']} residential", [MAIN]),
-            ("RL homes in the ABM README", r"^\*\*It gets there by demolishing",
-             f"{rl['baseline_score']['residential_cells']} residential cells become "
+            ("RL homes in the ABM README", r"^\*\*It still gives up housing",
+             f"{rl['baseline_score']['residential_cells']} housing cells become "
              f"{rl['score']['residential_cells']}", [ABM]),
         ]
     if ws:
@@ -265,17 +264,18 @@ def main() -> int:
                            (f"morph: canyon share {k}", r"^\| street length that is canyon \|", f"{100 * h['canyon_share']:.0f} %", [MORPH]),
                            (f"morph: W median {k}", r"^\| street width W, median \|", f"{h['w_m_median']:.1f} m", [MORPH])]
 
-    #numbers in the DQN exploration table (analysis/abm_landuse/README.md)
-    for f, row in (("landuse_rl_dqn_use_g1_n1.json", r"^\| DQN, choose use, γ 1, one-step \|"),
-                   ("landuse_rl_dqn_use_g1_n5.json", r"^\| DQN, choose use, γ 1, 5-step \|")):
-        d = load(f)
-        if d:
-            for key in ("best_objective", "greedy_objective", "objective_last_decile_mean"):
-                checks.append((f"ABM: {f} {key}", row, f"{d[key]:.3f}", [ABM]))
-            checks.append((f"ABM: {f} random mean", row, f"{d['random_policy']['mean']:.3f}", [ABM]))
-            if d.get("hill_climb"):
-                checks.append(("ABM: hill climbing best", r"^\| hill climbing", f"{d['hill_climb']['best_objective']:.3f}", [ABM]))
-                checks.append(("ABM: hill climbing evaluations", r"^\| hill climbing", f"{d['hill_climb']['evaluations']:,}", [ABM]))
+    #numbers in the agent table (analysis/abm_landuse/README.md), one run each since 2026-10-30
+    if rl and dqn:
+        checks += [("ABM: random policy mean", r"^\| random policy, mean \|", f"{dqn['random_policy']['mean']:.3f}", [ABM]),
+                   ("ABM: linear best", r"^\| linear agent, best episode \|", f"{rl['best_objective']:.3f}", [ABM]),
+                   ("ABM: linear housing cells", r"^\| linear agent, best episode \|", f"| {rl['score']['residential_cells']} |", [ABM]),
+                   ("ABM: DQN best", r"^\| DQN, best episode \|", f"{dqn['best_objective']:.3f}", [ABM]),
+                   ("ABM: DQN housing cells", r"^\| DQN, best episode \|", f"| {dqn['score']['residential_cells']} |", [ABM]),
+                   ("ABM: DQN learned policy", r"^\| DQN, learned policy \|", f"{dqn['greedy_objective']:.3f}", [ABM])]
+        if dqn.get("hill_climb"):
+            h = dqn["hill_climb"]
+            checks += [("ABM: hill climbing best", r"^\| hill climbing", f"{h['best_objective']:.3f}", [ABM]),
+                       ("ABM: hill climbing housing cells", r"^\| hill climbing", f"| {h['score']['residential_cells']} |", [ABM])]
 
     lus = load("landuse_scenarios.json")  #the Rhino options on the land-use objective
     if lus:
@@ -396,23 +396,19 @@ def main() -> int:
              rl["objective_last_decile_mean"] > rl["objective_first_decile_mean"]),
             ("ABM README: 'retail avoids retail most of all'",
              min(rl["learned_weights"]["retail"].items(), key=lambda kv: kv[1])[0] == "retail"),
-            ("ABM README: 'the agent demolishes housing'",
-             rl["score"]["residential_cells"] < rl["baseline_score"]["residential_cells"]),
-        ]
-    if rlk:
-        claims += [
-            ("ABM README: 'with housing kept, the agent does not learn'",
-             rlk["objective_last_decile_mean"] <= rlk["objective_first_decile_mean"]),
-            ("ABM README: 'keep-housing keeps exactly today's homes'",
-             rlk["score"]["residential_cells"] == rlk["baseline_score"]["residential_cells"]),
+            ("ABM README: 'it still gives up housing cells, about half' (40-60 % kept)",
+             0.4 <= rl["score"]["residential_cells"] / rl["baseline_score"]["residential_cells"] <= 0.6),
         ]
     if dqn and rl:
         claims += [
             ("ABM README: 'the DQN does not do better'",
              dqn["best_objective"] <= rl["best_objective"]),
-            ("ABM README: 'its greedy policy scores below the random policy'",
-             dqn["greedy_objective"] < dqn["random_policy"]["mean"]),
+            ("ABM README: 'its learned policy is no better than the random policy' (within 0.01)",
+             dqn["greedy_objective"] < dqn["random_policy"]["mean"] + 0.01),
         ]
+        if dqn.get("hill_climb"):
+            claims.append(("ABM README: 'hill climbing beats both agents'",
+                           dqn["hill_climb"]["best_objective"] > max(rl["best_objective"], dqn["best_objective"])))
     if rm and rm.get("scenario_b", {}).get("areas"):
         b, a, bb = rm["baseline"], rm["scenario_a"], rm["scenario_b"]
         g = lambda x: x["site_grid"]["mean_of_types_m"]
@@ -454,20 +450,6 @@ def main() -> int:
              and all(g("_scenario_b", d)["share_under_2h"] < g("", d)["share_under_2h"] for d in ("", "_2026-12-21"))),
             ("morph README: 'B: about half its street length is not a canyon' (40-60 % canyon)",
              bool(hwx and hwx.get("design_site")) and 0.4 <= hwx["design_site"]["canyon_share"] <= 0.6),
-        ]
-    #DQN exploration runs (rl_dqn.py --action use) and the hill-climbing baseline
-    dx1, dx5 = load("landuse_rl_dqn_use_g1_n1.json"), load("landuse_rl_dqn_use_g1_n5.json")
-    if dx1 and dx5 and dx5.get("hill_climb") and rl and dqn:
-        hc = dx5["hill_climb"]["best_objective"]
-        claims += [
-            ("ABM README: 'neither variant learns a policy better than random'",
-             all(d["greedy_objective"] < d["random_policy"]["mean"] for d in (dx1, dx5))),
-            ("ABM README: 'five-step returns are worse' (greedy and last decile below one-step)",
-             dx5["greedy_objective"] < dx1["greedy_objective"] and dx5["objective_last_decile_mean"] < dx1["objective_last_decile_mean"]),
-            ("ABM README: 'hill climbing beats all of them'",
-             hc > max(dx1["best_objective"], dx5["best_objective"], rl["best_objective"], dqn["best_objective"])),
-            ("ABM README: 'every agent's best episode sits at about 2.48' (within 0.01)",
-             max(d["best_objective"] for d in (dx1, dx5, rl, dqn)) - min(d["best_objective"] for d in (dx1, dx5, rl, dqn)) < 0.01),
         ]
     if lus:
         claims += claims_rhino  #Rhino options on the land-use objective

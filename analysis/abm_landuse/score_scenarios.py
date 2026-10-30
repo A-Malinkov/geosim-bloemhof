@@ -11,8 +11,13 @@ takes the design itself, the Rhino options scenario_a and scenario_b, puts it on
 the same 25 m grid and scores it with the same objective
 
     1.6 * land-use mix + 1.0 * green share + 0.8 * max(0, 1 - d / 400 m)
+    + 1.1 * min(1, dwellings / dwellings today)
 
-where d is the mean distance from a home to the nearest shop or amenity.
+where d is the mean distance from a home to the nearest shop or amenity. The
+housing term (2026-10-30) counts DWELLINGS here, from road_network.py's
+estimate (BAG today, storeys of the new blocks for the designs), so storeys
+count. The CA and RL count housing cells instead, the only thing a grid model
+knows; the two families are never compared with each other.
 
 USAGE
 -----
@@ -110,7 +115,9 @@ def scenario_shapes(scenario):
         "block": load("design_massing.geojson", lambda p: True),
         "shop": load("design_massing.geojson", lambda p: p.get("use") in SHOP_USES),  #final design only; None for A and B
         "road": load("design_streets.geojson", lambda p: p.get("kind", "street") in ("street", "link")),  #paths are lines, too narrow for a cell
-        "green": load("design_planting.geojson", lambda p: p.get("kind") == "green"),
+        "green": unary_union([g for g in (load("design_planting.geojson", lambda p: p.get("kind") == "green"),
+                                          load("design_streets.geojson", lambda p: p.get("kind") == "walkway"))
+                              if g is not None]) or None,  #the final design's walkway counts as green (Atanas, 2026-10-30)
         "water": load("design_planting.geojson", lambda p: p.get("kind") == "water"),
     }
 
@@ -176,9 +183,15 @@ def add_amenities(g, transform, scenario):
     return g, n
 
 
-def objective_of(sc):
-    #the CA objective from a score dict, via weight_sensitivity.components so the formula lives in one place
-    return float(np.dot(DEFAULT_W, components(sc)))
+def objective_of(sc, homes, homes_today):
+    #the objective from a score dict, via weight_sensitivity.components so the formula lives in one place
+    return float(np.dot(DEFAULT_W, components(sc, homes, homes_today)))
+
+
+def dwellings(scenario):
+    #(site, buurt) dwellings: BAG today, road_network.py's estimate with the new blocks in a design
+    a = json.loads((PROCESSED / "road_metrics.json").read_text())[scenario]["areas"]
+    return a["design_site"]["dwellings"], a["study_area"]["dwellings"]
 
 
 # --------------------------------------------------------------------- run
@@ -186,6 +199,9 @@ def run(case, p, grid0, transform, site):
     #one scenario: burn in, score over the site and the buurt, both open-ground rules
     sc = case["scenario"]
     out = {}
+    (h_site, h_buurt), (h_site0, h_buurt0) = dwellings(sc), dwellings("baseline")  #the housing term's homes and today's
+    site_obj = lambda g: round(site_objective(g, p["cell_m"], site, h_site0, homes=h_site), 4)  #dwellings, not housing cells
+    buurt_obj = lambda b: round(objective_of(b, h_buurt, h_buurt0), 4)
     for rule, open_as in (("open_ground_as_vacant", VACANT), ("open_ground_as_green", GREEN)):
         if sc == "baseline" and rule == "open_ground_as_green":
             continue  #nothing is cleared, so the rule changes nothing
@@ -193,9 +209,10 @@ def run(case, p, grid0, transform, site):
         buurt = ca_score(g, p["cell_m"])
         cells = g[site]
         out[rule] = {
-            "site": {**site_score(g, p["cell_m"], site), "objective": round(site_objective(g, p["cell_m"], site), 4),
+            "site": {**site_score(g, p["cell_m"], site), "objective": site_obj(g), "dwellings": h_site,
+                     "housing_term": round(min(1.0, h_site / h_site0), 4),
                      "class_cells": {CLASSES[k]: int((cells == k).sum()) for k in range(len(CLASSES))}},
-            "buurt": {**buurt, "objective": round(objective_of(buurt), 4), "shares": shares(g)},
+            "buurt": {**buurt, "objective": buurt_obj(buurt), "dwellings": h_buurt, "shares": shares(g)},
             "cleared_cells": int(cleared.sum()),
         }
     if sc != "baseline":  #the same, with the optimised ground-floor amenities in their cells
@@ -204,14 +221,16 @@ def run(case, p, grid0, transform, site):
         buurt = ca_score(g, p["cell_m"])
         cells = g[site]
         out["with_amenities"] = {
-            "site": {**site_score(g, p["cell_m"], site), "objective": round(site_objective(g, p["cell_m"], site), 4),
+            "site": {**site_score(g, p["cell_m"], site), "objective": site_obj(g), "dwellings": h_site,
+                     "housing_term": round(min(1.0, h_site / h_site0), 4),
                      "class_cells": {CLASSES[k]: int((cells == k).sum()) for k in range(len(CLASSES))}},
-            "buurt": {**buurt, "objective": round(objective_of(buurt), 4), "shares": shares(g)},
+            "buurt": {**buurt, "objective": buurt_obj(buurt), "dwellings": h_buurt, "shares": shares(g)},
             "amenities_placed": n, "_rule": "open ground as vacant, plus place_amenities.py's amenities",
         }
     r = out["open_ground_as_vacant"]
     print(f"  {sc:10s} site: objective {r['site']['objective']:.3f}, mix {r['site']['landuse_mix']:.3f}, "
           f"green {100 * r['site']['green_share']:.1f} %, {r['site']['residential_cells']} homes cells, "
+          f"{h_site} dwellings (housing {r['site']['housing_term']:.3f}), "
           f"amenity {r['site']['mean_distance_to_amenity_m']} m | buurt objective {r['buurt']['objective']:.3f}")
     if "with_amenities" in out:  #the amenity variant next to it
         a = out["with_amenities"]
@@ -238,7 +257,7 @@ def main() -> int:
     b = res["baseline"]["open_ground_as_vacant"]
     assert b["buurt"]["objective"] == abm["scenarios"]["baseline"]["objective_best"], \
         (b["buurt"]["objective"], abm["scenarios"]["baseline"]["objective_best"])
-    assert {k: b["buurt"][k] for k in abm["initial"]["score"]} == abm["initial"]["score"]
+    assert {k: b["buurt"][k] for k in abm["initial"]["score"]} == abm["initial"]["score"]  #dwellings is extra, the CA's keys must match
     assert b["site"]["objective"] == round(rl["baseline_objective"], 4), (b["site"]["objective"], rl["baseline_objective"])
     print(f"  baseline reproduces the CA's buurt objective {abm['scenarios']['baseline']['objective_best']} "
           f"and the RL agent's site objective {rl['baseline_objective']}")
@@ -248,15 +267,17 @@ def main() -> int:
         "_method": "Today's 25 m land-use grid (ca_landuse.rasterise) with each Rhino option burned into "
                    "cleared_area(scenario): pond -> water, new block on >= 25 % of a cell -> residential, "
                    "street surface on >= 50 % -> road, proposed green on >= 50 % -> green, else vacant. "
-                   "Scored with the CA objective 1.6*mix + 1.0*green + 0.8*max(0, 1 - d/400) over the "
-                   "design site and over the buurt.",
+                   "Scored with the objective 1.6*mix + 1.0*green + 0.8*max(0, 1 - d/400) + "
+                   "1.1*min(1, dwellings / dwellings today) over the design site and over the buurt. "
+                   "Dwellings from road_metrics.json: BAG today, road_network.py's estimate for a design.",
         "_open_ground": "open_ground_as_vacant labels unprogrammed open ground between blocks vacant, "
                         "the same rule rasterise() applies to today's grid. open_ground_as_green counts it "
                         "as green: an upper bound on the green share.",
         "_not_the_ca": "These are the team's design options. The CA's programmes (baseline, compact, "
                        "green in landuse_abm.json) are a different thing.",
         "parameters": p,
-        "objective_weights": {"w_mix": DEFAULT_W[0], "w_green": DEFAULT_W[1], "w_prox": DEFAULT_W[2]},
+        "objective_weights": {"w_mix": DEFAULT_W[0], "w_green": DEFAULT_W[1], "w_prox": DEFAULT_W[2],
+                              "w_housing": DEFAULT_W[3]},
         **res,
     }
     path = PROCESSED / "landuse_scenarios.json"

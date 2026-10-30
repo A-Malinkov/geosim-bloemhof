@@ -296,9 +296,9 @@
         "from": "labelled shop units",
         "n_candidates": 69,
         "J_before_m": 321.4,
-        "J_after_m": 267.9,
-        "J_random_mean_m": 283.1,
-        "J_random_best_m": 273.5,
+        "J_after_m": 268.0,
+        "J_random_mean_m": 282.9,
+        "J_random_best_m": 272.8,
         "site_dwellings_before_m": 362.6,
         "site_dwellings_after_m": 124.1
       }

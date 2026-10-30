@@ -354,7 +354,7 @@ Other results:
 | SVF under a tree crown vs 15 m from any tree | **0.35 vs 0.70** — trees remove 50 % of visible sky |
 | Weather forecast (temperature, +6 h) | MAE 1.29 °C, 54 % better than assuming no change |
 | Weather forecast (wind, +6 h) | MAE 1.13 m/s — but it under-predicts strong winds by 0.5 m/s |
-| Land-use model | CA prefers the **green** programme (mix 0.391); RL agent re-planning the design site reaches mix 0.779, but keeps only 30 of its 160 residential cells |
+| Land-use model | CA prefers the **green** programme (mix 0.390); RL agent re-planning the design site reaches mix 0.777, but keeps only 84 of its 160 residential cells, even with homes in the objective |
 
 ### Figures (`docs/`)
 

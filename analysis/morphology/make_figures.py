@@ -689,6 +689,8 @@ def fig_rl_comparison(runs):
                 ("DQN, end of training", dqn["objective_last_decile_mean"], SERIES_2),
                 ("DQN, best episode", dqn["best_objective"], SERIES_2),
                 ("DQN, greedy policy", dqn["greedy_objective"], SERIES_2)]
+        if dqn.get("hill_climb"):  #the baseline both agents should beat: direct optimisation
+            rows.append(("hill climbing", dqn["hill_climb"]["best_objective"], INK))
         y = np.arange(len(rows))
         vals = [v for _, v, _ in rows]
         lo, hi = min(vals), max(vals)
@@ -721,14 +723,6 @@ def fig_rl_comparison(runs):
              "the random policy is the baseline to beat", fontsize=8.5, color=INK_2,
              ha="left", va="top")
     save(fig, "fig_landuse_rl_comparison.png")
-
-
-def fig_rl_keep_housing(ca, rl):
-    """The same agent with today's number of residential cells kept."""
-    n = rl["baseline_score"]["residential_cells"]
-    fig_rl_site(ca, rl, out="fig_landuse_rl_keep_housing.png",
-                heading=f"The RL agent re-plans the site, keeping all {n} housing cells",
-                plan_label=f"Plan with {n} housing cells kept")
 
 
 def fig_rl_site(ca, rl, out="fig_landuse_rl_site.png",
@@ -896,12 +890,8 @@ def main() -> int:
             fig_abm(abm, rl)
             if rl and rl.get("site_mask"):
                 fig_rl_site(abm, rl)
-            keep_path = PROCESSED / "landuse_rl_keep_housing.json"
-            if keep_path.exists():
-                fig_rl_keep_housing(abm, json.loads(keep_path.read_text()))
-            names = {"No housing rule": ("landuse_rl.json", "landuse_rl_dqn.json"),
-                     "Today's housing kept": ("landuse_rl_keep_housing.json",
-                                              "landuse_rl_dqn_keep_housing.json")}
+            #one run per agent since the housing term went into the objective (2026-10-30)
+            names = {"Objective with housing": ("landuse_rl.json", "landuse_rl_dqn.json")}
             if all((PROCESSED / f).exists() for pair in names.values() for f in pair):
                 fig_rl_comparison({k: tuple(json.loads((PROCESSED / f).read_text())
                                             for f in pair) for k, pair in names.items()})

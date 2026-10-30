@@ -8,8 +8,11 @@ THE PROBLEM
 ca_landuse.py ranks the scenarios on
 
     objective = 1.6*landuse_mix + 1.0*green_share + 0.8*max(0, 1 - d/400)
+              + 1.1*min(1, homes / homes today)
 
-and the green programme wins. Those three weights were chosen by us. The README said so
+and the green programme wins. The housing term (since 2026-10-30) is 1 for all
+three programmes, because each keeps or adds housing, so it adds the same 1.1
+to each and cannot change the ranking: the sweep varies the other three. Those three weights were chosen by us. The README said so
 and called a sensitivity sweep "the obvious next step", which is this file.
 
 The margin is the reason it matters: green beats compact by about 0.02
@@ -61,22 +64,28 @@ import numpy as np
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 PROCESSED = ROOT / "data" / "processed"
 
-#: The weights ca_landuse.py uses, and the distance normaliser in its objective.
-DEFAULT_W = (1.6, 1.0, 0.8)
+#: The objective's weights: mix, green, walkability, housing; every model scores with these via components().
+DEFAULT_W = (1.6, 1.0, 0.8, 1.1)  #housing added 2026-10-30, a bit above green and below mix (Atanas)
 D_NORM = 400.0
 
 
-def components(rep: dict) -> tuple[float, float, float]:
-    """The three terms of the objective, before weighting.
+def components(rep: dict, homes: float, homes_today: float) -> tuple[float, float, float, float]:
+    """The four terms of the objective, before weighting.
 
-    Mirrors ca_landuse.py exactly, including the fallback when a replicate has
-    no residential cell to measure from -- a missing distance must score as the
-    worst case, not be dropped, or scenarios get compared on different terms.
+    The one place the objective is defined: ca_landuse.py, rl_landuse.py and
+    score_scenarios.py all score through it. A missing distance (no residential
+    cell to measure from) scores as the worst case, not dropped, or scenarios get
+    compared on different terms. Housing is homes against today, capped at 1: no
+    net loss scores full marks, more homes earn nothing extra. Homes are housing
+    cells for the grid models (CA, RL) and dwellings for the Rhino designs; each
+    caller passes its own unit and its own today.
     """
-    d = rep.get("mean_distance_to_amenity_m") or D_NORM
+    d = rep.get("mean_distance_to_amenity_m")
+    d = D_NORM if d is None else d
     return (float(rep["landuse_mix"]),
             float(rep["green_share"]),
-            max(0.0, 1.0 - d / D_NORM))
+            max(0.0, 1.0 - d / D_NORM),
+            min(1.0, homes / homes_today))  #no net loss of homes = 1
 
 
 def simplex(step: float) -> np.ndarray:
@@ -108,16 +117,17 @@ def main() -> int:
         return 2
 
     names = list(abm["scenarios"])
-    # components of every replicate, per scenario: (n_replicates, 3)
-    comp = {k: np.array([components(r) for r in abm["scenarios"][k]["replicates"]])
-            for k in names}
-    n_rep = {k: len(v) for k, v in comp.items()}
+    homes_today = abm["initial"]["score"]["residential_cells"]  #the CA counts housing cells
+    # components of every replicate, per scenario: (n_replicates, 4)
+    comp4 = {k: np.array([components(r, r["residential_cells"], homes_today) for r in abm["scenarios"][k]["replicates"]])
+             for k in names}
+    n_rep = {k: len(v) for k, v in comp4.items()}
     print(f"re-scoring {sum(n_rep.values())} stored replicates "
           f"({', '.join(f'{k} {v}' for k, v in n_rep.items())})")
 
     # --- reproduce the published ranking, as a check on this script ----------
-    w0 = np.array(DEFAULT_W)
-    best0 = {k: float((comp[k] @ w0).max()) for k in names}
+    w04 = np.array(DEFAULT_W)
+    best0 = {k: float((comp4[k] @ w04).max()) for k in names}
     published = {r["scenario"]: r["objective_best"] for r in abm["ranking"]}
     drift = {k: abs(best0[k] - published[k]) for k in names}
     worst = max(drift.values())
@@ -131,6 +141,17 @@ def main() -> int:
             print(f"    {k:12} here {best0[k]:.4f}  published {published[k]:.4f}")
         return 1
     print(f"  reproduced the published objectives (max drift {worst:.2e})")
+
+    #the housing term is the same for every replicate, so it shifts every programme equally and the sweep can drop it
+    housing = np.concatenate([comp4[k][:, 3] for k in names])
+    if np.ptp(housing) > 1e-9:
+        print("! the housing term differs between programmes; a sweep over the other three terms "
+              "does not cover it -- extend the sweep to four weights")
+        return 1
+    print(f"  housing term {housing[0]:.3f} for every programme: it cannot change the ranking, "
+          "the sweep varies the other three weights")
+    comp = {k: v[:, :3] for k, v in comp4.items()}
+    w0 = w04[:3]
 
     # --- sweep ---------------------------------------------------------------
     W = simplex(args.step)
@@ -160,7 +181,7 @@ def main() -> int:
     else:
         flip_pt, flip_to, flip_dist = None, None, None
 
-    print(f"\n  default weights {DEFAULT_W} normalise to "
+    print(f"\n  default weights {DEFAULT_W[:3]} (housing not swept) normalise to "
           f"({', '.join(f'{v:.3f}' for v in w0n)}) -> {default_winner} wins "
           f"by {margin[i0]:.4f}")
     if flip_to:
@@ -191,9 +212,14 @@ def main() -> int:
                  "replicates and re-picks the best one, exactly as ca_landuse.py "
                  "does. Verified against the published ranking before sweeping.",
         "objective": "w_mix*landuse_mix + w_green*green_share + "
-                     "w_prox*max(0, 1 - mean_home_to_amenity_m/400)",
+                     "w_prox*max(0, 1 - mean_home_to_amenity_m/400) + "
+                     "w_housing*min(1, housing cells / housing cells today)",
         "default_weights": {"w_mix": DEFAULT_W[0], "w_green": DEFAULT_W[1],
-                            "w_prox": DEFAULT_W[2]},
+                            "w_prox": DEFAULT_W[2], "w_housing": DEFAULT_W[3]},
+        "housing_term": round(float(housing[0]), 4),  #the same for every programme, so it is not swept
+        "_housing_note": "The housing term is equal for every programme and replicate, so it adds the "
+                         "same amount to each and cannot change the ranking. The sweep varies the other "
+                         "three weights on their normalised simplex.",
         "default_weights_normalised": [round(float(v), 4) for v in w0n],
         "parameters": {
             "simplex_step": args.step,

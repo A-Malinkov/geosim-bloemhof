@@ -227,27 +227,28 @@ junctions, and that green had none.
 
 ### Final design
 
-Run 2026-10-28 with `road_network.py --scenario final` and `optimise_links.py
---scenario final`, on the 27.10 model like A and B.
+Run 2026-10-30 with `road_network.py --scenario final` and `optimise_links.py
+--scenario final`, on the 30.10 model. A and B are on 27.10, which 30.10 leaves unchanged.
 
 Its destinations are its own 70 shop units from the Rhino block names (31
-podiums, 38 terraced houses with a shop, the shopping centre: two joined
+podiums, 38 terraced houses with a shop (20 drawn as one solid, 18 as a shop with
+flats on it), the shopping centre: two joined
 buildings, one marker) and the kept school. The model names no health practice,
 so `place_amenities.py` turns 7 of the 69 shop units (the shopping centre stays
 a shop) into health practices, picked by the same p-median as A and B use,
 among those units only (`CONVERT`). That leaves 63 shops. Shop floor holds no
 dwellings in the estimate, and a terraced house with a shop loses its ground
-floor: 768 dwellings on the site.
+floor: 766 dwellings on the site.
 
 Site residents walk 356 m on the mean of the four types on the network alone,
 269 m with its shops and health practices, against 317 m today with today's own
 amenities. Shops are 116 m away, health care 124 m (363 m before the 7
 practices). The 7 picked units bring the buurt-wide walk to health care from
-321.4 to 267.9 m; 7 units picked at random do 283.1 m on average.
+321.4 to 268.0 m; 7 units picked at random do 282.9 m on average.
 The curvy walkway the model draws on its vegetation layer is walked along its
 centreline (670 m). The other pedestrian and bike surfaces are not walked separately:
-all of them run within 5 m of a street. The optimiser's 10 links (339 m) lower J from
-261.78 to 261.29 m and the site residents' walk from 268.8 to 266.3 m.
+all of them run within 5 m of a street. The optimiser's 9 links (368 m) lower J from
+261.78 to 261.41 m and the site residents' walk from 268.8 to 267.2 m.
 
 ## Amenities on the new ground floors
 

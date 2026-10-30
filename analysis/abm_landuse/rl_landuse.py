@@ -8,13 +8,13 @@ WHY BOTH A CA AND AN RL AGENT
 -----------------------------
 They answer different questions, and running both is the point.
 
-    ca_landuse.py   rules are ASSUMED. The influence matrix says shops like
-                    streets and industry repels housing, because we said so.
+    ca_landuse.py   rules are ASSUMED. Its neighbour rules say shops go on
+                    streets next to homes and parks grow out of parks, because we said so.
                     It shows what follows FROM those assumptions.
 
     rl_landuse.py   rules are LEARNED. The agent is told only the objective and
                     has to discover where to put things. Its learned weights can
-                    be read off and compared with the CA's hand-set matrix —
+                    be read off and compared with the CA's hand-set rules —
                     where they agree, the assumption is supported; where they
                     disagree, one of them is worth arguing about.
 
@@ -34,6 +34,8 @@ as it is: it is context, not something the agent may change or is scored on.
               + 1.0 * green share                  over the site's cells
               + 0.8 * walkability (1 - mean home-to-amenity distance / 400 m)
                       for homes inside the site; amenities outside count too
+              + 1.1 * housing, min(1, housing cells / housing cells today)
+                      on the site: no net loss scores full marks (2026-10-30)
 
     the same formula the CA is scored on, but over the site, not both buurten,
     so the two values are NOT directly comparable.
@@ -57,18 +59,14 @@ USAGE
     python analysis/abm_landuse/ca_landuse.py     # first — builds the raster
     python analysis/abm_landuse/rl_landuse.py
     python analysis/abm_landuse/rl_landuse.py --episodes 400
-    python analysis/abm_landuse/rl_landuse.py --episodes 120 --keep-housing
 
---keep-housing adds one constraint: the plan must contain exactly as many
-residential cells as the site has today. Actions that would break it are masked
-(no more homes once the quota is met; only homes once the remaining cells are
-all needed to reach it). The objective is unchanged, so the two runs differ
-only in that rule. It writes landuse_rl_keep_housing.json instead.
+Until 2026-10-30 the objective had no housing term, so every optimiser traded
+homes for green and shops, and a --keep-housing option forced today's count of
+housing cells as a hard rule. The housing term replaces that rule.
 
 OUTPUT
 ------
     data/processed/landuse_rl.json                learning curve, learned weights, best plan
-    data/processed/landuse_rl_keep_housing.json   the same with --keep-housing
 """
 from __future__ import annotations
 
@@ -83,6 +81,7 @@ import numpy as np
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 from common.project import PROCESSED, STUDY_AREA, design_site_polygon  # noqa: E402
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from weight_sensitivity import DEFAULT_W, components  # noqa: E402  #the objective, defined once
 from ca_landuse import (  # noqa: E402
     AMENITY, CLASSES, COLOURS, FIXED, GREEN, RESID, RETAIL, VACANT, WATER,
     accessibility, export_grid_png, rasterise, shannon_mix,
@@ -110,10 +109,13 @@ def site_terms(grid, cell_m, site):
     return shannon_mix(cells), float((cells == GREEN).sum()) / cells.size, d
 
 
-def objective(grid, cell_m, site):
+def objective(grid, cell_m, site, homes_today, homes=None):
+    #the planning objective over the site; homes default to the site's housing cells, score_scenarios.py passes dwellings
     mix, green, d = site_terms(grid, cell_m, site)
-    walk = max(0.0, 1 - (d if d is not None else 400.0) / 400.0)  #1 at the door, 0 at 400 m or with no homes
-    return 1.6 * mix + 1.0 * green + 0.8 * walk  #the same weights the CA is scored with
+    if homes is None:
+        homes = int((grid[site] == RESID).sum())
+    terms = {"landuse_mix": mix, "green_share": green, "mean_distance_to_amenity_m": d}
+    return float(np.dot(DEFAULT_W, components(terms, homes, homes_today)))  #the same function the CA is scored with
 
 
 def site_score(grid, cell_m, site):
@@ -160,10 +162,8 @@ def main() -> int:
     ap.add_argument("--candidates", type=int, default=40,
                     help="cells sampled per decision — the full grid is too many")
     ap.add_argument("--seed", type=int, default=0)
-    ap.add_argument("--keep-housing", action="store_true",
-                    help="plan exactly as many residential cells as the site has today")
     args = ap.parse_args()
-    tag = "_keep_housing" if args.keep_housing else ""
+    tag = ""  #one run since the housing rule went into the objective
 
     from scipy.ndimage import distance_transform_edt
 
@@ -184,25 +184,11 @@ def main() -> int:
 
     dw = distance_transform_edt(grid0 != WATER).astype("float32")
     dist_water = np.clip(dw / 20.0, 0, 1)  #distance to water in cells, capped at 20 and scaled to 0..1
-    base_obj = objective(grid_now, args.cell, site)
+    homes_today = int((grid_now[site] == RESID).sum())  #housing cells on the site today, the housing term's reference
+    base_obj = objective(grid_now, args.cell, site, homes_today)
     base_score = site_score(grid_now, args.cell, site)
-    cleared_obj = objective(grid0, args.cell, site)
-    print(f"  objective of the site today: {base_obj:.4f}")
-    quota = base_score["residential_cells"] if args.keep_housing else None
-    if quota is not None:
-        print(f"  housing rule: exactly {quota} residential cells, as today")
-
-    def allowed(n_resid: int, n_free: int) -> np.ndarray:
-        """Mask over PLACEABLE: which classes keep the housing rule satisfiable."""
-        ok = np.ones(len(PLACEABLE), dtype=bool)
-        if quota is not None:
-            need = quota - n_resid
-            if need <= 0:
-                ok[PLACEABLE.index(RESID)] = False          # quota met: no more homes
-            elif need >= n_free:
-                ok[:] = False                               # every cell left must be a home
-                ok[PLACEABLE.index(RESID)] = True
-        return ok
+    cleared_obj = objective(grid0, args.cell, site, homes_today)
+    print(f"  objective of the site today: {base_obj:.4f} ({homes_today} housing cells)")
 
     rng = np.random.default_rng(args.seed)
     W = np.zeros((len(PLACEABLE), len(FEATURES)), dtype="float64")  #the whole model: one weight per use and feature
@@ -217,7 +203,6 @@ def main() -> int:
         prev_obj = cleared_obj
         # only the cleared cells inside the design site may be built on
         free = site & (g == VACANT)
-        n_resid = 0
 
         #one placement per step until the site is full
         for _ in range(n_new):
@@ -230,13 +215,9 @@ def main() -> int:
             Fc = F.reshape(F.shape[0], -1)[:, cand]              # (f, ncand)
             #linear Q for every (use, candidate) pair
             Q = W @ Fc                                            # (nclass, ncand)
-            ok = allowed(n_resid, idx.size)
-            Q[~ok] = -np.inf  #uses that would break the housing rule are never picked
 
             if rng.random() < eps:
-                # unconstrained runs draw exactly as before, so they reproduce
-                ai = (int(rng.integers(len(PLACEABLE))) if quota is None
-                      else int(rng.choice(np.flatnonzero(ok))))
+                ai = int(rng.integers(len(PLACEABLE)))  #explore: a random use on a random candidate
                 ci = int(rng.integers(cand.size))
             else:
                 ai, ci = np.unravel_index(int(np.argmax(Q)), Q.shape)
@@ -246,9 +227,8 @@ def main() -> int:
             r_, c_ = np.unravel_index(cell, g.shape)
             g[r_, c_] = klass
             free[r_, c_] = False
-            n_resid += klass == RESID
 
-            new_obj = objective(g, args.cell, site)
+            new_obj = objective(g, args.cell, site, homes_today)
             reward = (new_obj - prev_obj) * 100.0     # scale: deltas are tiny
             prev_obj = new_obj
 
@@ -258,14 +238,14 @@ def main() -> int:
                 samp = rng.choice(nxt, size=int(min(args.candidates, nxt.size)),
                                   replace=False)
                 F2 = features(g, acc, dist_water).reshape(F.shape[0], -1)[:, samp]
-                q_next = float((W @ F2)[allowed(n_resid, nxt.size)].max())
+                q_next = float((W @ F2).max())
             else:
                 q_next = 0.0
             target = reward + args.gamma * q_next  #TD(0) target: reward now plus discounted best Q next
             W[ai] += args.alpha * (target - float(W[ai] @ phi)) * phi  #gradient step on the chosen use's weights only
             np.clip(W, -50, 50, out=W)  #keep weights bounded so a bad step cannot run away
 
-        final = objective(g, args.cell, site)
+        final = objective(g, args.cell, site, homes_today)
         curve.append(round(final, 4))  #objective at the end of each episode = the learning curve
         if final > best_obj:
             best_obj, best_grid = final, g.copy()
@@ -298,9 +278,8 @@ def main() -> int:
                        "gamma": args.gamma, "eps_start": args.eps_start,
                        "eps_end": args.eps_end,
                        "candidates_per_decision": args.candidates,
-                       "programme_cells": n_new,
-                       "housing_rule": (f"exactly {quota} residential cells (as today)"
-                                        if quota is not None else "none")},
+                       "programme_cells": n_new},
+        "homes_today_cells": homes_today,  #the housing term's reference
         "scope": "design_site",
         "scope_note": "The agent re-plans every non-road, non-water cell of "
                       "the design site; the rest of the study area is fixed "
@@ -308,7 +287,8 @@ def main() -> int:
                       "they are not comparable with the CA's study-area scores.",
         "site_cells": int(site.sum()),
         "objective": "over the design site: 1.6*landuse_mix + 1.0*green_share + "
-                     "0.8*max(0, 1 - mean_home_to_amenity_m/400)",
+                     "0.8*max(0, 1 - mean_home_to_amenity_m/400) + "
+                     "1.1*min(1, housing cells / housing cells today)",
         "baseline_objective": round(base_obj, 4),
         "baseline_score": base_score,
         "learning_curve": curve,
@@ -330,8 +310,6 @@ def main() -> int:
         "today_grid": grid_now.tolist(),
         "site_mask": site.astype(int).tolist(),
     }
-    if quota is not None:
-        assert score["residential_cells"] == quota, score   # the rule held
     (PROCESSED / f"landuse_rl{tag}.json").write_text(json.dumps(out) + "\n")
 
     print(f"\n  learning: {first:.4f} (first 10% of episodes) -> "

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-ca_landuse.py — constrained cellular automaton for land-use configuration.
+ca_landuse.py — a simple constrained cellular automaton for land-use configuration.
 
 Component 4.7. Owner: Atanas Malinkov
 
@@ -15,28 +15,26 @@ configurations" asks for.
 
 THE MODEL
 ---------
-A constrained CA in the White & Engelen tradition (White, Engelen & Uljee 1997,
-*The use of constrained cellular automata for high-resolution modelling of urban
-dynamics*). Each cell has one state. Each step, every convertible cell gets a
-transition potential for every state:
+A neighbour-rule CA, constrained by demand. Each cell has one state. Only
+VACANT cells change: nothing that stands is demolished. Each step, a vacant
+cell can take a use that one of its 8 neighbours supports (RULES):
 
-    P(i,k) = N(i,k) * S(i,k) * A(i,k) * v
+    green        next to green
+    residential  next to residential
+    retail       next to residential, and the cell is on a street
+    amenity      next to residential
+    industry     does not grow
 
-    N  neighbourhood effect — the sum over neighbours within RADIUS of an
-       influence weight for (candidate class k, neighbour class m), decayed by
-       distance. This is where the spatial logic lives: shops want to be near
-       streets and homes, industry repels housing, green begets green.
-    S  suitability — hard physical limits. Water is never developable.
-    A  accessibility — distance decay from the road network. Nothing gets built
-       far from a street.
-    v  stochastic perturbation, v = 1 + (-ln u)^alpha, u ~ U(0,1]. Without it a
-       deterministic CA produces implausibly regular blocks and the same answer
-       every run; with it, repeated runs sample a distribution of configurations.
+A cell's score for a use is the number of its 8 neighbours that support it.
+The classes the programme asks for (demand) take the highest-scoring vacant
+cells first, at most their growth spread evenly over the steps, so a run grows
+outwards from what exists. A random tie-break orders cells with the same score,
+so repeated runs give different maps. Water and roads never convert.
 
-Cells are then allocated to the classes with unmet demand, highest potential
-first. Water and roads never convert. Existing uses resist conversion by an
-inertia factor, so the model does not bulldoze a working neighbourhood to chase
-a marginal gain.
+Until 2026-10-30 this was a constrained CA after White, Engelen & Uljee (1997):
+a 64-weight influence matrix over a radius of 4 cells, times suitability, road
+access, a stochastic term and inertia. It ranked the programmes the same way
+but was hard to explain and every weight was an assumption to defend.
 
 WHAT IT IS NOT
 --------------
@@ -74,6 +72,8 @@ import numpy as np
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 from common.project import PROCESSED, RAW, STUDY_AREA, bbox_rd  # noqa: E402
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from weight_sensitivity import DEFAULT_W, components  # noqa: E402  #the objective, defined once
 
 # ---------------------------------------------------------------- the states
 WATER, ROAD, GREEN, RESID, RETAIL, AMENITY, INDUSTRY, VACANT = range(8)
@@ -82,25 +82,14 @@ CLASSES = ["water", "road", "green", "residential", "retail",
 FIXED = {WATER, ROAD}                    # never convert
 ACTIVE = [GREEN, RESID, RETAIL, AMENITY, INDUSTRY]   # classes demand applies to
 
-#: Influence of a NEIGHBOUR of class m (column) on the potential of a cell
-#: becoming class k (row). Positive attracts, negative repels. These are the
-#: model's assumptions and the report should defend them, not hide them.
-INFLUENCE = np.array([
-    #  water  road  green  resid retail amenity indus vacant
-    [   0.0,  0.0,  0.0,   0.0,  0.0,   0.0,   0.0,  0.0],   # water (fixed)
-    [   0.0,  0.0,  0.0,   0.0,  0.0,   0.0,   0.0,  0.0],   # road  (fixed)
-    [   0.3,  0.0,  1.0,   0.5,  0.0,   0.2,  -0.8,  0.2],   # green
-    [   0.2,  0.5,  0.8,   1.0,  0.5,   0.6,  -1.2,  0.1],   # residential
-    [   0.0,  1.2,  0.0,   0.9,  0.8,   0.4,  -0.3,  0.1],   # retail
-    [   0.0,  0.8,  0.3,   1.0,  0.4,   0.3,  -0.4,  0.1],   # amenity
-    [   0.6,  0.7, -0.6,  -1.2, -0.2,  -0.3,   1.2,  0.2],   # industry
-    [   0.0,  0.0,  0.0,   0.0,  0.0,   0.0,   0.0,  0.0],   # vacant
-])
-
-RADIUS_CELLS = 4          # neighbourhood radius, in cells
-DECAY = 2.0               # distance decay length, in cells
-INERTIA = 1.6             # how strongly a cell resists leaving its current use
-ALPHA = 0.6               # stochastic perturbation exponent
+#the model's rules: which neighbours support each use, and whether it needs a street; industry has none, so it never grows
+RULES = {
+    GREEN:   {"next_to": [GREEN], "street": False},  #parks grow out of parks
+    RESID:   {"next_to": [RESID], "street": False},  #housing grows out of housing
+    RETAIL:  {"next_to": [RESID], "street": True},   #a shop needs customers next door and a street
+    AMENITY: {"next_to": [RESID], "street": False},  #a school or health practice serves the homes around it
+}
+STREET_FRAC = 0.2  #a cell is on a street if at least this share of it is carriageway
 
 
 # ------------------------------------------------------------ initial raster
@@ -201,29 +190,15 @@ def rasterise(cell_m: float):
 
 
 # -------------------------------------------------------------- CA machinery
-def neighbourhood_stack(grid):
-    """
-    For each class, the distance-decayed count of neighbours of that class.
-
-    Done with one convolution per class rather than a per-cell loop; on a
-    48x48 grid the difference is seconds versus minutes over many replicates.
-    """
-    from scipy.signal import fftconvolve
-
-    r = RADIUS_CELLS
-    yy, xx = np.mgrid[-r:r + 1, -r:r + 1]
-    d = np.hypot(yy, xx)
-    kern = np.exp(-d / DECAY)  #influence falls off with distance
-    kern[r, r] = 0.0                      # a cell does not influence itself
-    kern[d > r] = 0.0
-
-    out = np.zeros((len(CLASSES), *grid.shape), dtype="float32")
-    for k in range(len(CLASSES)):
-        out[k] = fftconvolve((grid == k).astype("float32"), kern, mode="same")
-    return out
+def neighbour_counts(grid):
+    #for each class, how many of a cell's 8 neighbours have it (Moore neighbourhood)
+    from scipy.ndimage import convolve
+    kern = np.ones((3, 3), dtype="int16")
+    kern[1, 1] = 0  #a cell is not its own neighbour
+    return np.stack([convolve((grid == k).astype("int16"), kern, mode="constant") for k in range(len(CLASSES))])
 
 
-def accessibility(grid, road_frac=None, threshold=0.2):
+def accessibility(grid, road_frac=None, threshold=0.2):  #not used by the CA any more; the RL agents use it as a feature
     """
     Distance decay from the road SURFACE — nothing is built far from a street.
 
@@ -243,44 +218,32 @@ def accessibility(grid, road_frac=None, threshold=0.2):
     return np.exp(-d / 6.0)               # ~150 m e-folding at 25 m cells
 
 
-def step(grid, demand, rng, suitability, road_frac=None):
-    """One CA iteration: score every convertible cell, then allocate by demand."""
-    nb = neighbourhood_stack(grid)
-    acc = accessibility(grid, road_frac)
-    convertible = ~np.isin(grid, list(FIXED))  #water and road never change
+def growth_rates(grid, demand, steps):
+    #cells each class may take per step: its growth spread evenly over the run, so the map grows step by step
+    return {k: math.ceil(max(0, demand.get(k, 0) - int((grid == k).sum())) / steps) for k in RULES}
 
-    pot = np.zeros((len(CLASSES), *grid.shape), dtype="float32")
-    #transition potential P = N * S * A * v for every class and cell
-    for k in ACTIVE:
-        n = np.tensordot(INFLUENCE[k], nb, axes=(0, 0))      # neighbourhood effect
-        v = 1.0 + (-np.log(rng.uniform(1e-9, 1.0, grid.shape))) ** ALPHA  #stochastic term v, so replicates differ
-        p = (1.0 + np.maximum(n, 0.0)) * suitability[k] * acc * v  #negative neighbourhood effects floor at 0
-        p[grid == k] *= INERTIA                              # incumbency
-        pot[k] = p
-    pot[:, ~convertible] = -np.inf  #fixed cells can never be chosen
 
+def step(grid, demand, rng, street, rate):
+    """One CA step: vacant cells take the uses their neighbours support, until demand is met."""
+    nb = neighbour_counts(grid)
     new = grid.copy()
-    counts = {k: int((grid == k).sum()) for k in ACTIVE}
-    # classes that want to grow, largest shortfall first
-    wants = sorted(((k, demand.get(k, counts[k]) - counts[k]) for k in ACTIVE),
-                   key=lambda t: -t[1])
-    taken = np.zeros(grid.shape, dtype=bool)
+    taken = np.zeros(grid.shape, dtype=bool)  #one conversion per cell per step
+    #classes still short of demand, largest shortfall first
+    wants = sorted(((k, demand.get(k, 0) - int((grid == k).sum())) for k in RULES), key=lambda t: -t[1])
     for k, deficit in wants:
-        if deficit <= 0:
-            continue
-        cand = pot[k].copy()
-        cand[grid == k] = -np.inf         # already this class
-        cand[taken] = -np.inf             # one conversion per cell per step
-        # never convert a cell whose own class is already short of its demand
-        for other, od in wants:
-            if other != k and od > 0:
-                cand[grid == other] = -np.inf
-        flat = cand.ravel()
-        n_take = int(min(deficit, np.isfinite(flat).sum()))
+        n_take = min(deficit, rate.get(k, 0))
         if n_take <= 0:
             continue
-        idx = np.argpartition(flat, -n_take)[-n_take:]  #the n_take highest-potential cells convert
-        idx = idx[np.isfinite(flat[idx])]
+        rule = RULES[k]
+        score = sum(nb[m] for m in rule["next_to"]).astype("float32")  #how many neighbours support this use
+        ok = (grid == VACANT) & ~taken & (score >= 1)  #only vacant land, and only next to a supporting neighbour
+        if rule["street"]:
+            ok &= street  #shops only on a street
+        cand = np.where(ok, score + rng.uniform(0, 1, grid.shape), -np.inf).ravel()  #random tie-break within a score
+        n_take = int(min(n_take, np.isfinite(cand).sum()))
+        if n_take <= 0:
+            continue
+        idx = np.argpartition(cand, -n_take)[-n_take:]  #the best-supported cells convert
         rr, cc = np.unravel_index(idx, grid.shape)
         new[rr, cc] = k
         taken[rr, cc] = True
@@ -373,8 +336,7 @@ def export_grid_png(grid, transform, crs, path):
 
 
 # ------------------------------------------------------------- validation
-def validate_regrow(grid0, suitability, cell_m, steps, frac, seed,
-                    road_frac=None, rng_reps=5):
+def validate_regrow(grid0, street, cell_m, steps, frac, seed, rng_reps=5):
     """
     Can the CA put back what we take away?
 
@@ -397,8 +359,9 @@ def validate_regrow(grid0, suitability, cell_m, steps, frac, seed,
         g.ravel()[erase] = VACANT  #wipe a random share of the developed cells
 
         demand = {k: int((grid0 == k).sum()) for k in ACTIVE}  #ask for exactly what was there before
+        rate = growth_rates(g, demand, steps)  #the erased cells come back over the run
         for _ in range(steps):
-            g = step(g, demand, rng, suitability, road_frac)  #same road-surface access as the scenario runs; it was left out, so validation used the old discrete-road access
+            g = step(g, demand, rng, street, rate)  #the same rules as the programme runs
 
         cmp_mask = np.isin(grid0, ACTIVE) | np.isin(g, ACTIVE)  #compare only cells developed before or after
         a, b = grid0[cmp_mask], g[cmp_mask]
@@ -433,7 +396,7 @@ def main() -> int:
     print(f"Cellular automaton land use — {STUDY_AREA.name}")
     grid0, transform, (nx, ny), road_frac = rasterise(args.cell)
     print(f"  grid {nx} x {ny} of {args.cell:.0f} m = {nx*ny:,} cells")
-    served = (road_frac >= 0.2)
+    served = (road_frac >= STREET_FRAC)
     print(f"  street-served cells: {served.sum():,} "
           f"({100*served.mean():.0f}%) — carriageway covers "
           f"{100*road_frac.mean():.0f}% of the area")
@@ -443,16 +406,10 @@ def main() -> int:
         if v > 0:
             print(f"     {k:12} {100*v:5.1f}%  ({int(v*grid0.size):,} cells)")
 
-    # suitability: water is never developable, everything else is allowed
-    developable = (grid0 != WATER).astype("float32")
-    suitability = {k: developable.copy() for k in ACTIVE}
-    # keep industry off the residential core: only near existing industry/water
-    from scipy.ndimage import binary_dilation
-    ind_ok = binary_dilation(np.isin(grid0, [INDUSTRY, WATER]),
-                             iterations=int(200 / args.cell))
-    suitability[INDUSTRY] *= ind_ok.astype("float32")
+    street = road_frac >= STREET_FRAC  #cells a shop may take
 
     base = {k: int((grid0 == k).sum()) for k in ACTIVE}
+    homes_today = base[RESID]  #housing cells today, the reference of the objective's housing term
     n_new = int(0.06 * grid0.size)            # the development programme
     print(f"\n  development programme: {n_new} cells "
           f"({n_new * args.cell**2 / 10_000:.1f} ha)")
@@ -478,7 +435,7 @@ def main() -> int:
     out = {
         "method": "cellular_automata",
         "colours": COLOURS,
-        "model": "constrained CA after White, Engelen & Uljee (1997)",
+        "model": "neighbour-rule CA: vacant cells take the uses their 8 neighbours support, until demand is met",
         "cell_size_m": args.cell,
         "bbox_rd": [round(v, 1) for v in bbox_rd()],
         "grid": {"nx": nx, "ny": ny, "origin_rd": [bbox_rd()[0], bbox_rd()[1]]},
@@ -486,12 +443,12 @@ def main() -> int:
         "fixed_classes": ["water", "road"],
         "parameters": {
             "steps": args.steps, "replicates": args.replicates,
-            "neighbourhood_radius_cells": RADIUS_CELLS,
-            "distance_decay_cells": DECAY, "inertia": INERTIA,
-            "stochastic_alpha": ALPHA,
-            "influence_matrix": INFLUENCE.tolist(),
-            "influence_rows_are": "candidate class", 
-            "influence_cols_are": "neighbour class",
+            "neighbourhood": "Moore, the 8 surrounding cells",
+            "rules": {CLASSES[k]: {"next_to": [CLASSES[m] for m in r["next_to"]], "street": r["street"]}
+                      for k, r in RULES.items()},  #industry has no rule: it never grows
+            "street_frac": STREET_FRAC,
+            "converts": "vacant cells only",
+            "growth": "each class's growth spread evenly over the steps, best-supported cells first, random tie-break",
         },
         "caveat": "Demand is set by us, not derived from a regional model. This "
                   "explores the consequences of a development programme, it does "
@@ -512,16 +469,14 @@ def main() -> int:
             g = grid0.copy()
             traj = [{"t": 0, "shares": s0}]
             keep_grids = [g.copy()]
+            rate = growth_rates(g, demand, args.steps)  #cells per step per class
             for t in range(1, args.steps + 1):
-                g = step(g, demand, rng, suitability, road_frac)
+                g = step(g, demand, rng, street, rate)
                 traj.append({"t": t, "shares": shares(g)})
                 keep_grids.append(g.copy())
             sc = score(g, args.cell)
-            # the objective the search is optimising: a mixed, green, walkable
-            # outcome, with distance to amenity normalised to roughly 0..1
-            d = sc["mean_distance_to_amenity_m"] or 400.0
-            obj = (1.6 * sc["landuse_mix"] + 1.0 * sc["green_share"]
-                   + 0.8 * max(0.0, 1 - d / 400.0))
+            #the objective: mixed, green, walkable, and no net loss of housing cells against today
+            obj = float(np.dot(DEFAULT_W, components(sc, sc["residential_cells"], homes_today)))
             runs.append({"replicate": rep, "objective": round(obj, 4), **sc})
             if obj > best_obj:
                 best_obj, best = obj, (g, traj, keep_grids)
@@ -533,6 +488,9 @@ def main() -> int:
               f"mean {objs.mean():.3f}  best {objs.max():.3f}  sd {objs.std():.3f}")
         print(f"     land-use mix: {mixes.mean():.3f} +/- {mixes.std():.3f}")
         sc = score(g, args.cell)
+        unmet = {CLASSES[k]: demand[k] - int((g == k).sum()) for k in RULES if demand[k] > int((g == k).sum())}  #demand the rules could not place
+        if unmet:
+            print(f"     unmet demand in the best run: {unmet} cells")
         print(f"     best run -> mix {sc['landuse_mix']:.3f}, "
               f"green {100*sc['green_share']:.1f}%, "
               f"amenity {sc['mean_distance_to_amenity_m']} m")
@@ -554,6 +512,7 @@ def main() -> int:
             "objective_best": round(float(objs.max()), 4),
             "objective_sd": round(float(objs.std()), 4),
             "score": sc,
+            "unmet_demand_cells": unmet,  #empty when every class got its cells
             "shares_final": shares(g),
             "trajectory": traj,
             "steps": [{"t": int(i), "grid": keep_grids[i].tolist()} for i in idx],
@@ -562,8 +521,8 @@ def main() -> int:
     print("\n  === validation: erase and regrow ===")
     out["validation"] = {}
     for frac in (0.1, 0.25, 0.5):
-        v = validate_regrow(grid0, suitability, args.cell, args.steps,
-                            frac, args.seed, road_frac)
+        v = validate_regrow(grid0, street, args.cell, args.steps,
+                            frac, args.seed)
         out["validation"][f"erase_{int(frac*100)}pct"] = v
         print(f"     erased {int(frac*100):2d}% of developed cells -> "
               f"agreement {100*v['agreement_mean']:.1f}%  "

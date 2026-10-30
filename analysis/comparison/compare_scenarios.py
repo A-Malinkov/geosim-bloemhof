@@ -106,19 +106,22 @@ def programme(sc):
     b = buildings_for_scenario(b, sc)  #demolished out, new blocks in
     b = b[b.geometry.representative_point().within(site)]
     h = b["height_m"].astype(float).fillna(STOREY_M)  #a record without a height counts as one storey
-    storeys = np.maximum(1, np.round(h / STOREY_M))
-    foot = b.geometry.area
     massing = J("design_massing.geojson") or {}
     new = [f["properties"] for f in massing.get("features", []) if f["properties"]["scenario"] == sc]
+    own = {q["name"]: q["building_height_m"] for q in new if "base_height_m" in q}  #flats stood on a shop podium
+    raised = b["identificatie"].isin(own).to_numpy()  #they add floors, not ground cover
+    h_own = np.where(raised, b["identificatie"].map(own).astype(float), h)  #their own height, not the roof above the ground
+    storeys = np.maximum(1, np.round(h_own / STOREY_M))
+    foot = b.geometry.area
     rm = J("road_metrics.json")
     return {
         "buildings_demolished": len((massing.get("demolishes") or {}).get(sc, [])),
-        "buildings_on_site": int(len(b)),
+        "buildings_on_site": int((~raised).sum()),  #a podium and the flats on it are one building
         "new_volumes": len(new),
         "max_height_m": round(float(h.max()), 1),  #tallest building standing on the site, kept ones included
-        "footprint_m2": round(float(foot.sum())),
+        "footprint_m2": round(float(foot[~raised].sum())),  #ground cover only
         "gfa_m2": round(float((foot * storeys).sum())),
-        "gsi": round(float(foot.sum()) / site.area, 3),
+        "gsi": round(float(foot[~raised].sum()) / site.area, 3),  #ground cover only
         "fsi": round(float((foot * storeys).sum()) / site.area, 3),
         "dwellings": rm[sc]["areas"]["design_site"]["dwellings"],  #BAG today, road_network.py estimate in the scenarios
         "_n_today": n_today,

@@ -15,8 +15,8 @@ data/processed/design_planting.geojson, drawn by app/modules/vegetation.js.
 INPUT
 -----
 The Rhino model is ~105 MB and stays out of git (data/raw/*.3dm). Get it from
-the shared drive (27.10 came as a OneDrive zip):
-    Group Project Q1 - Proposal Modelling_27.10.26.3dm  ->  data/raw/
+the shared drive (30.10 came as a OneDrive zip):
+    Group Project Q1 - Proposal Modelling_30.10.26.3dm  ->  data/raw/
 The model is in RD New (EPSG:28992), in MILLIMETRES, with z = 0 at NAP 0.
 
 FIXES APPLIED ON THE WAY IN
@@ -66,8 +66,11 @@ WHAT IT CANNOT TELL YOU
   (a 4 m podium, with a "flats over shops" block stood on it via
   base_height_m), "Terraced House (4 storey) WITH SHOPS" (use "mixed",
   ground_floor "shop", one 12 m solid, not split by floor) and plain houses.
-  BLOCK_USE maps block names to uses, NAME_USE the two named solids
-  (Elderly Home, Student accom building).
+  In 30.10, 18 of those are split into a 4 m "ground Floor shops" block with
+  an 8 m "(3 storey) above shops" block on it, and many houses are renamed
+  copies ("Terraced House (4 storey) 12", "... copy copy"): block_use() strips
+  the copy suffix before looking the name up. BLOCK_USE maps block names to
+  uses, NAME_USE the two named solids (Elderly Home, Student accom building).
 * OPTION 1's 18 boxes are Extrusions saved without render meshes in 25.10 and
   27.10. They are read from their profile and path instead (exact), which
   moves their footprints by at most 2 m2 against the meshed 23.10 import.
@@ -95,6 +98,7 @@ WHAT IT CANNOT TELL YOU
 from __future__ import annotations
 
 import pathlib
+import re  #copy suffixes on Rhino block names
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
@@ -108,10 +112,11 @@ from scenario_world import site_footprints  #3DBAG footprints over the site, sha
 import json  #tree register
 from common.project import PROCESSED  #where trees.geojson lives
 
-MODEL = RAW / "Group Project Q1 - Proposal Modelling_27.10.26.3dm"  #newest version: both options plus the Final Model
+MODEL = RAW / "Group Project Q1 - Proposal Modelling_30.10.26.3dm"  #newest version: both options plus the Final Model
 #the first 22.10 copy on the shared drive had OPTION 1's short buildings as mesh-less block instances (5 volumes
 #instead of 22); 23.10 is solids again and gives OPTION 1 the same 22 volumes as 16.10
 #27.10 adds the "Final Model" layer tree, built from named Rhino blocks (houses, shops), see BLOCK_USE
+#30.10 changes only the Final Model: split shop terraces, renamed house copies, more paths, walkway merged into green
 PLANTING_MODEL = MODEL
 
 #one dict per scenario: which Rhino layer tree becomes which app scenario
@@ -145,9 +150,11 @@ CASES = [
      #uses the model does not name, by an RD point inside the solid: the large south-west building is the
      #shopping centre, and so is the 12 m building joined to its north side (Atanas, 2026-10-28)
      "use_at_rd": [((93749.0, 433853.0), "shopping centre"), ((93719.0, 433865.0), "shopping centre")],
-     #the curvy strip on the vegetation layer (6,362 m2, ~9.5 m wide) is a walking path, not green (Atanas,
-     #2026-10-28): drawn as kind "walkway", its centreline walked like a hand-drawn path; Rhino object id
-     "path_surfaces": ["260987cd-4912-4f8a-acf9-ab85c75fe7f6"],
+     #the curvy strip on the vegetation layer (6,362 m2, ~9.5 m wide) is a walking path (Atanas, 2026-10-28):
+     #drawn as kind "walkway", its centreline walked like a hand-drawn path; 30.10 merges it into one surface
+     #with the green beside it, so its 27.10 outline is kept in a file (RD) and cut out of that green; it still
+     #counts as green area (Atanas, 2026-10-30), see compare_scenarios.py and score_scenarios.py
+     "walkway_rd": RAW / "walkway_final_rd.geojson",
      "water_layer": "Water feature?"},
 ]
 
@@ -157,11 +164,23 @@ BLOCK_USE = {
     "flats over shops (4 stories)": "residential",  #flats on top of the shop podium, 4 to 16 m
     "Flats above shops (4 floors)": "residential",  #defined in the model, never placed
     "Terraced House (4 storey) WITH SHOPS": "mixed",  #one 12 m solid, shop on the ground floor; not split, the model draws no floor
+    "Terraced House (4 storey) ground Floor shops": "shop",  #30.10: 4 m ground floor of a split shop terrace
+    "Terraced House (3 storey) above shops": "residential",  #30.10: 8 m of flats stood on that ground floor
     "Terraced House (4 storey)": "residential",
     "Semi-Detached House": "residential",
     "Detached House": "residential",
     "A house": "residential",
 }
+
+
+def block_use(name):
+    #Rhino block name -> its BLOCK_USE name, or None; 30.10 copies blocks as "<name> 12", "<name>16", "<name> copy copy"
+    if name in BLOCK_USE:
+        return name
+    base = re.sub(r"( copy)*( ?\d+)?$", "", name)  #strip the copy suffix Rhino adds
+    return base if base in BLOCK_USE else None
+
+
 #object name -> use, for the solids the Final Model draws directly and names
 NAME_USE = {"Elderly Home": "elderly housing", "Student accom building": "student housing"}
 
@@ -271,6 +290,7 @@ def import_option(c):
     feats, n_by_class, n_block = [], {}, {}
     members = {str(i) for d in model.InstanceDefinitions for i in d.GetObjectIds()}  #solids that belong to a block definition
     solids = []  #(layer, geometry, instance transform or None, Rhino block name or None, use)
+    placed, n_dup = set(), 0  #block placements seen; 30.10 places 3 "above shops" blocks twice on the same spot
     for obj in model.Objects:
         layer = model.Layers[obj.Attributes.LayerIndex].FullPath
         if not layer.startswith(c["layer_prefix"] + "::"):
@@ -279,13 +299,20 @@ def import_option(c):
         if isinstance(geom, rhino3dm.InstanceReference):
             #a placed block (Final Model): its building solids, wherever the instance itself sits in the layers
             d = model.InstanceDefinitions.FindId(geom.ParentIdefId)
-            if d is None or d.Name not in BLOCK_USE:
+            base = block_use(d.Name) if d is not None else None  #a copied block counts as its original
+            if base is None:
                 continue  #trees and bushes, read by import_planting()
+            x = geom.Xform
+            at = (base, *(round(v, 3) for v in (x.M00, x.M01, x.M10, x.M11)), *(round(v) for v in (x.M03, x.M13, x.M23)))  #rotation and mm position
+            if at in placed:
+                n_dup += 1
+                continue  #the same block placed twice at the same spot: one building, not two
+            placed.add(at)
             for i in d.GetObjectIds():
                 m = model.Objects.FindId(i)
                 if m and "building" in model.Layers[m.Attributes.LayerIndex].FullPath.lower() \
                         and isinstance(m.Geometry, (rhino3dm.Brep, rhino3dm.Extrusion)):
-                    solids.append((model.Layers[m.Attributes.LayerIndex].FullPath, m.Geometry, geom.Xform, d.Name, BLOCK_USE[d.Name]))
+                    solids.append((model.Layers[m.Attributes.LayerIndex].FullPath, m.Geometry, geom.Xform, d.Name, BLOCK_USE[base]))
             continue
         if "building" not in layer.lower() or str(obj.Attributes.Id) in members:
             continue  #only the building sublayers, and not the block definitions' own solids at the origin
@@ -306,7 +333,7 @@ def import_option(c):
         peak = max((p.Z / MM for m in meshes(geom, xform) for p in m.Vertices),
                    default=max((z for _, z in parts), default=base))  #true top from the mesh; the bounding box is loose; a mesh-less box: its roof
         if block:  #a placed block: named after it, one summary line per block name below
-            key = block.lower().replace(" (4 storey)", "").replace(" (4 stories)", "")  #e.g. "terraced house with shops"
+            key = block_use(block).lower().replace(" (4 storey)", "").replace(" (3 storey)", "").replace(" (4 stories)", "")  #e.g. "terraced house with shops", copies counted with their original
             n_by_class[key] = n_by_class.get(key, 0) + 1
             name = f"{c['scenario']} {key} {n_by_class[key]}"
         else:
@@ -316,9 +343,10 @@ def import_option(c):
         use = next((u for pt, u in c.get("use_at_rd", []) if fp.contains(Point(pt))), use)  #a use set by location
         cut = fp.area - fp.intersection(site).area  #m2 lost at the site edge
         if block:
-            n_block.setdefault(block, [0, 0.0, set()])
-            n_block[block][0] += 1; n_block[block][1] += fp.intersection(site).area
-            n_block[block][2].update(f"{z - (0 if raised else base):.1f} m" for _, z in parts)  #roof above the ground
+            b = block_use(block)  #copies summed under their original name
+            n_block.setdefault(b, [0, 0.0, set()])
+            n_block[b][0] += 1; n_block[b][1] += fp.intersection(site).area
+            n_block[b][2].update(f"{z - (0 if raised else base):.1f} m" for _, z in parts)  #roof above the ground
         else:
             print(f"  {name:22} {fp.intersection(site).area:7.0f} m2  {use:16} roofs "
                 + ", ".join(f"{z - base:.1f} m" for _, z in parts)
@@ -349,6 +377,8 @@ def import_option(c):
             if raised:
                 props["base_height_m"] = round(ground + base, 2)  #underside in m NAP: stands on the podium below
             feats.append({"type": "Feature", "geometry": mapping(wgs), "properties": props})
+    if n_dup:
+        print(f"  {n_dup} block placements dropped: a second copy of the same block at the same spot")
     for block, (n, a, roofs) in sorted(n_block.items()):  #one line per placed block name
         print(f"  {n:4} x {block:38} {a:7.0f} m2  roofs {', '.join(sorted(roofs))}  use {BLOCK_USE[block]}")
     return feats
@@ -367,12 +397,12 @@ def import_streets(c):
             continue  #only this option's layer tree
         sub = layer.split("::")[-1]
         kind = "street" if "roads" in sub.lower() else kinds.get(sub)  #the road sublayers, or a named paved one
-        if str(obj.Attributes.Id) in c.get("path_surfaces", []):
-            kind = "walkway"  #a surface the team drew as planting but means as a walking path
         if kind and isinstance(obj.Geometry, rhino3dm.Brep):  #surfaces only, the curves are outlines
             fp, _, _, _ = roof_parts(obj.Geometry)  #a flat surface projects to itself
             if fp is not None:
                 surfaces.setdefault(kind, []).append(fp)
+    if c.get("walkway_rd"):
+        surfaces["walkway"] = [walkway(c)]  #the walking path drawn on the green, outline from its file
     out, taken = [], None  #taken: area already drawn by an earlier kind, so no two drapes overlap
     for kind in ["street", "walkway", "pedestrian", "bike", "parking"]:  #the street surface stays whole, it is traced for centrelines
         if kind not in surfaces:
@@ -460,16 +490,12 @@ def street_links(c, surface_rd, blocks_rd):
 
 def design_paths(c, kept_rd=None):
     #a case's hand-drawn paths (paths_rd) -> GeoJSON lines, kind "path", drawn and walked like the streets
-    #plus the centrelines of its path_surfaces (walkways), cut out of the buildings it keeps (kept_rd)
+    #plus the centreline of its walkway (walkway_rd), cut out of the buildings it keeps (kept_rd)
     from shapely.geometry import LineString
     out = []
-    if c.get("path_surfaces"):
+    if c.get("walkway_rd"):
         from scenario_world import centrelines
-        model = rhino3dm.File3dm.Read(str(c["model"]))
-        for oid in c["path_surfaces"]:
-            obj = model.Objects.FindId(oid)
-            assert obj is not None, f"path surface {oid} is not in {c['model'].name}"  #the id moved: say so, never skip it
-            fp = roof_parts(obj.Geometry)[0].intersection(design_site_polygon())
+        for fp in [walkway(c).intersection(design_site_polygon())]:  #one walkway; the loop keeps the old layout
             lines = [g for part in getattr(fp, "geoms", [fp]) for g in centrelines(part, prune_m=15.0)]  #~1.5 widths: no fan of spurs where it widens
             if kept_rd is not None:
                 lines = [p for g in lines for p in getattr(g.difference(kept_rd), "geoms", [g.difference(kept_rd)])
@@ -480,7 +506,7 @@ def design_paths(c, kept_rd=None):
                     "name": f"{c['scenario']} walkway path {k}",
                     "kind": "path",
                     "length_m": round(g.length, 1),
-                    "source": "centreline of the walkway surface (import_rhino.py CASES path_surfaces)",
+                    "source": "centreline of the walkway surface (import_rhino.py CASES walkway_rd)",
                 }))
             print(f"  walkway: {len(lines)} centreline pieces, {sum(g.length for g in lines):.0f} m, walked as paths")
     for k, pts in enumerate(c.get("paths_rd", []), 1):
@@ -496,6 +522,12 @@ def design_paths(c, kept_rd=None):
     if drawn:
         print(f"  paths: {len(drawn)} added by hand, {sum(f['properties']['length_m'] for f in drawn):.0f} m")
     return out
+
+
+def walkway(c):
+    #a case's walkway outline (RD polygon) from its walkway_rd file
+    d = json.loads(pathlib.Path(c["walkway_rd"]).read_text())
+    return unary_union([shape(f["geometry"]) for f in d["features"]])
 
 
 def _to_wgs_feature(geom_rd, props):
@@ -535,11 +567,9 @@ def import_planting(c, streets_rd=None, kept_rd=None):
             continue
         if not layer.startswith(c["layer_prefix"] + "::Proposed Vegetation"):
             continue  #only this option's planting; OPTION 2's layer is "Proposed Vegetation - Copy"
-        if str(obj.Attributes.Id) in c.get("path_surfaces", []):
-            continue  #a walkway, read by import_streets() and design_paths()
         if isinstance(geom, rhino3dm.InstanceReference):
             name, parts = defs.get(str(geom.ParentIdefId), ("?", []))
-            if name in BLOCK_USE:
+            if block_use(name):  #copied house blocks too
                 #a house or shop block (Final Model): its garden, the flat surface on the vegetation layer, is green
                 d = model.InstanceDefinitions.FindId(geom.ParentIdefId)
                 for i in d.GetObjectIds():
@@ -548,7 +578,7 @@ def import_planting(c, streets_rd=None, kept_rd=None):
                         fp, _, _, _ = roof_parts(m.Geometry, geom.Xform)  #placed by the instance transform
                         if fp is not None and fp.intersects(site):
                             green.append(fp.intersection(site))
-                            n_kind["garden of " + name] = n_kind.get("garden of " + name, 0) + 1
+                            n_kind["garden of " + block_use(name)] = n_kind.get("garden of " + block_use(name), 0) + 1  #copies under their original
                 continue  #its building solids are read by import_option()
             if not parts:
                 continue  #block with no render mesh, nothing to measure
@@ -737,9 +767,9 @@ def main():
                  "hand (CASES paths_rd), walked by road_network.py, not street canyons for height_width.py.",
         "features": streets,
     }, indent=1)
-    street_rd = {}  #each option's street and link surfaces in RD, cut out of its green
+    street_rd = {}  #each option's street, link and walkway surfaces in RD, cut out of its green
     for f in streets:
-        if f["properties"]["kind"] in ("street", "link"):
+        if f["properties"]["kind"] in ("street", "link", "walkway"):  #walkway: 30.10 draws green under it
             g = transform(lambda x, y, z=None: to_rd(x, y), shape(f["geometry"]))
             sc = f["properties"]["scenario"]
             street_rd[sc] = g if sc not in street_rd else street_rd[sc].union(g)

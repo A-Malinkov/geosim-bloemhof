@@ -1,6 +1,6 @@
 {
  "_written_by": "analysis/abm_landuse/score_scenarios.py",
- "_method": "Today's 25 m land-use grid (ca_landuse.rasterise) with each Rhino option burned into cleared_area(scenario): pond -> water, new block on >= 25 % of a cell -> residential, street surface on >= 50 % -> road, proposed green on >= 50 % -> green, else vacant. Scored with the CA objective 1.6*mix + 1.0*green + 0.8*max(0, 1 - d/400) over the design site and over the buurt.",
+ "_method": "Today's 25 m land-use grid (ca_landuse.rasterise) with each Rhino option burned into cleared_area(scenario): pond -> water, new block on >= 25 % of a cell -> residential, street surface on >= 50 % -> road, proposed green on >= 50 % -> green, else vacant. Scored with the objective 1.6*mix + 1.0*green + 0.8*max(0, 1 - d/400) + 1.1*min(1, dwellings / dwellings today) over the design site and over the buurt. Dwellings from road_metrics.json: BAG today, road_network.py's estimate for a design.",
  "_open_ground": "open_ground_as_vacant labels unprogrammed open ground between blocks vacant, the same rule rasterise() applies to today's grid. open_ground_as_green counts it as green: an upper bound on the green share.",
  "_not_the_ca": "These are the team's design options. The CA's programmes (baseline, compact, green in landuse_abm.json) are a different thing.",
  "parameters": {
@@ -13,7 +13,8 @@
  "objective_weights": {
   "w_mix": 1.6,
   "w_green": 1.0,
-  "w_prox": 0.8
+  "w_prox": 0.8,
+  "w_housing": 1.1
  },
  "baseline": {
   "open_ground_as_vacant": {
@@ -22,7 +23,9 @@
     "green_share": 0.0317,
     "residential_cells": 160,
     "mean_distance_to_amenity_m": 98.9,
-    "objective": 1.0,
+    "objective": 2.1,
+    "dwellings": 1027,
+    "housing_term": 1.0,
     "class_cells": {
      "water": 0,
      "road": 1,
@@ -39,7 +42,8 @@
     "green_share": 0.0525,
     "residential_cells": 1089,
     "mean_distance_to_amenity_m": 91.1,
-    "objective": 1.2146,
+    "objective": 2.3146,
+    "dwellings": 6331,
     "shares": {
      "water": 0.0256,
      "road": 0.0586,
@@ -61,7 +65,9 @@
     "green_share": 0.0582,
     "residential_cells": 99,
     "mean_distance_to_amenity_m": 135.4,
-    "objective": 1.096,
+    "objective": 2.196,
+    "dwellings": 1920,
+    "housing_term": 1.0,
     "class_cells": {
      "water": 0,
      "road": 2,
@@ -78,7 +84,8 @@
     "green_share": 0.0556,
     "residential_cells": 1028,
     "mean_distance_to_amenity_m": 94.2,
-    "objective": 1.2312,
+    "objective": 2.3312,
+    "dwellings": 7224,
     "shares": {
      "water": 0.0256,
      "road": 0.0592,
@@ -98,7 +105,9 @@
     "green_share": 0.4286,
     "residential_cells": 99,
     "mean_distance_to_amenity_m": 135.4,
-    "objective": 1.7604,
+    "objective": 2.8604,
+    "dwellings": 1920,
+    "housing_term": 1.0,
     "class_cells": {
      "water": 0,
      "road": 2,
@@ -115,7 +124,8 @@
     "green_share": 0.0983,
     "residential_cells": 1028,
     "mean_distance_to_amenity_m": 94.2,
-    "objective": 1.3686,
+    "objective": 2.4686,
+    "dwellings": 7224,
     "shares": {
      "water": 0.0256,
      "road": 0.0592,
@@ -135,7 +145,9 @@
     "green_share": 0.0582,
     "residential_cells": 85,
     "mean_distance_to_amenity_m": 45.2,
-    "objective": 1.7651,
+    "objective": 2.8651,
+    "dwellings": 1920,
+    "housing_term": 1.0,
     "class_cells": {
      "water": 0,
      "road": 1,
@@ -152,7 +164,8 @@
     "green_share": 0.0556,
     "residential_cells": 1014,
     "mean_distance_to_amenity_m": 80.9,
-    "objective": 1.3292,
+    "objective": 2.4292,
+    "dwellings": 7224,
     "shares": {
      "water": 0.0256,
      "road": 0.0586,
@@ -175,7 +188,9 @@
     "green_share": 0.3333,
     "residential_cells": 48,
     "mean_distance_to_amenity_m": 121.1,
-    "objective": 1.7399,
+    "objective": 2.8399,
+    "dwellings": 1250,
+    "housing_term": 1.0,
     "class_cells": {
      "water": 0,
      "road": 0,
@@ -192,7 +207,8 @@
     "green_share": 0.0873,
     "residential_cells": 977,
     "mean_distance_to_amenity_m": 91.3,
-    "objective": 1.3615,
+    "objective": 2.4615,
+    "dwellings": 6554,
     "shares": {
      "water": 0.0256,
      "road": 0.058,
@@ -212,7 +228,9 @@
     "green_share": 0.709,
     "residential_cells": 48,
     "mean_distance_to_amenity_m": 121.1,
-    "objective": 1.9608,
+    "objective": 3.0608,
+    "dwellings": 1250,
+    "housing_term": 1.0,
     "class_cells": {
      "water": 0,
      "road": 0,
@@ -229,7 +247,8 @@
     "green_share": 0.1306,
     "residential_cells": 977,
     "mean_distance_to_amenity_m": 91.3,
-    "objective": 1.4758,
+    "objective": 2.5758,
+    "dwellings": 6554,
     "shares": {
      "water": 0.0256,
      "road": 0.058,
@@ -249,7 +268,9 @@
     "green_share": 0.3333,
     "residential_cells": 35,
     "mean_distance_to_amenity_m": 42.6,
-    "objective": 2.2567,
+    "objective": 3.3567,
+    "dwellings": 1250,
+    "housing_term": 1.0,
     "class_cells": {
      "water": 0,
      "road": 0,
@@ -266,7 +287,8 @@
     "green_share": 0.0873,
     "residential_cells": 964,
     "mean_distance_to_amenity_m": 84.4,
-    "objective": 1.4396,
+    "objective": 2.5396,
+    "dwellings": 6554,
     "shares": {
      "water": 0.0256,
      "road": 0.058,
@@ -285,71 +307,77 @@
  "final": {
   "open_ground_as_vacant": {
    "site": {
-    "landuse_mix": 0.7393,
-    "green_share": 0.2275,
-    "residential_cells": 43,
-    "mean_distance_to_amenity_m": 78.3,
-    "objective": 2.0536,
+    "landuse_mix": 0.7284,
+    "green_share": 0.2963,
+    "residential_cells": 40,
+    "mean_distance_to_amenity_m": 69.4,
+    "objective": 2.9433,
+    "dwellings": 766,
+    "housing_term": 0.7459,
     "class_cells": {
      "water": 0,
      "road": 1,
-     "green": 43,
-     "residential": 43,
-     "retail": 17,
+     "green": 56,
+     "residential": 40,
+     "retail": 20,
      "amenity": 4,
      "industry": 1,
-     "vacant": 80
+     "vacant": 67
     }
    },
    "buurt": {
-    "landuse_mix": 0.4253,
-    "green_share": 0.0751,
-    "residential_cells": 972,
-    "mean_distance_to_amenity_m": 88.2,
-    "objective": 1.3792,
+    "landuse_mix": 0.4409,
+    "green_share": 0.083,
+    "residential_cells": 969,
+    "mean_distance_to_amenity_m": 87.8,
+    "objective": 2.4675,
+    "dwellings": 6070,
     "shares": {
      "water": 0.0256,
      "road": 0.0586,
-     "green": 0.0751,
-     "residential": 0.5934,
-     "retail": 0.0189,
+     "green": 0.083,
+     "residential": 0.5916,
+     "retail": 0.0208,
      "amenity": 0.025,
      "industry": 0.0134,
-     "vacant": 0.1899
+     "vacant": 0.1819
     }
    },
    "cleared_cells": 176
   },
   "open_ground_as_green": {
    "site": {
-    "landuse_mix": 0.5888,
+    "landuse_mix": 0.5969,
     "green_share": 0.6402,
-    "residential_cells": 43,
-    "mean_distance_to_amenity_m": 78.3,
-    "objective": 2.2256,
+    "residential_cells": 40,
+    "mean_distance_to_amenity_m": 69.4,
+    "objective": 3.0768,
+    "dwellings": 766,
+    "housing_term": 0.7459,
     "class_cells": {
      "water": 0,
      "road": 1,
      "green": 121,
-     "residential": 43,
-     "retail": 17,
+     "residential": 40,
+     "retail": 20,
      "amenity": 4,
      "industry": 1,
      "vacant": 2
     }
    },
    "buurt": {
-    "landuse_mix": 0.4769,
+    "landuse_mix": 0.4819,
     "green_share": 0.1227,
-    "residential_cells": 972,
-    "mean_distance_to_amenity_m": 88.2,
-    "objective": 1.5093,
+    "residential_cells": 969,
+    "mean_distance_to_amenity_m": 87.8,
+    "objective": 2.5728,
+    "dwellings": 6070,
     "shares": {
      "water": 0.0256,
      "road": 0.0586,
      "green": 0.1227,
-     "residential": 0.5934,
-     "retail": 0.0189,
+     "residential": 0.5916,
+     "retail": 0.0208,
      "amenity": 0.025,
      "industry": 0.0134,
      "vacant": 0.1422
@@ -359,37 +387,40 @@
   },
   "with_amenities": {
    "site": {
-    "landuse_mix": 0.8182,
-    "green_share": 0.2275,
+    "landuse_mix": 0.7919,
+    "green_share": 0.2963,
     "residential_cells": 36,
     "mean_distance_to_amenity_m": 71.0,
-    "objective": 2.1945,
+    "objective": 3.0417,
+    "dwellings": 766,
+    "housing_term": 0.7459,
     "class_cells": {
      "water": 0,
      "road": 0,
-     "green": 43,
+     "green": 56,
      "residential": 36,
      "retail": 25,
      "amenity": 10,
      "industry": 1,
-     "vacant": 74
+     "vacant": 61
     }
    },
    "buurt": {
-    "landuse_mix": 0.447,
-    "green_share": 0.0751,
+    "landuse_mix": 0.4571,
+    "green_share": 0.083,
     "residential_cells": 965,
     "mean_distance_to_amenity_m": 87.7,
-    "objective": 1.4149,
+    "objective": 2.4936,
+    "dwellings": 6070,
     "shares": {
      "water": 0.0256,
      "road": 0.058,
-     "green": 0.0751,
+     "green": 0.083,
      "residential": 0.5891,
      "retail": 0.0238,
      "amenity": 0.0287,
      "industry": 0.0134,
-     "vacant": 0.1862
+     "vacant": 0.1783
     }
    },
    "amenities_placed": 70,
