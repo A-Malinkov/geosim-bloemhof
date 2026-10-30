@@ -212,8 +212,9 @@ independent calculation agree to 0.1°, and a synthetic 40 m tower casts its
 shadow in the right direction (within 1°) and to the right length in both.
 
 Results, direct sun on open ground (clear sky, 1 m cells, sun every 30 min).
-The equinox run is the app's overlay; the solstices use `--suffix` so they do
-not overwrite it:
+All three days are app overlays, picked with the day buttons in the Direct sun
+section of the morphology card. The solstices use `--suffix` so they do not
+overwrite the equinox:
 
 | Day | Daylight | Bloemhof | Design site (median, share < 2 h) |
 |---|---|---|---|

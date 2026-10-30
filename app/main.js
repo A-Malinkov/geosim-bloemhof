@@ -308,6 +308,28 @@ async function boot_() {
     el.classList.toggle("lgroup__count--on", on > 0);
   }
 
+  /* A group in config.layerPanel.hides switches other groups off while any of
+   * its layers is on (Morphology hides Vegetation, so trees stand on no overlay).
+   * Layers it hid come back once the group's last layer is off. */
+  const layerToggles = new Map();  //group name -> list of {box, setVisible}
+  const hiddenBy = new Map();  //hiding group -> set of setVisible functions it switched off
+  function applyHides(gName, visible) {
+    const targets = LP.hides?.[gName];
+    if (!targets) return;  //this group hides nothing
+    if (visible) {
+      const hid = hiddenBy.get(gName) ?? new Set();
+      for (const t of targets) {
+        for (const l of layerToggles.get(t) ?? []) {
+          if (l.box.checked) { l.setVisible(false); hid.add(l.setVisible); }  //switch off and remember
+        }
+      }
+      hiddenBy.set(gName, hid);
+    } else if (!(layerToggles.get(gName) ?? []).some((l) => l.box.checked)) {
+      for (const setVisible of hiddenBy.get(gName) ?? []) setVisible(true);  //last one off, restore
+      hiddenBy.delete(gName);
+    }
+  }
+
   //panel-head button that folds or unfolds every group at once
   const allBtn = document.createElement("button");
   allBtn.className = "lgroup__all";  //own class, .panel__collapse buttons get the panel-collapse handler
@@ -357,14 +379,17 @@ async function boot_() {
       box.addEventListener("change", (e) => {
         apply(e.target.checked);
         updateCount(gName);  //count follows the click
+        applyHides(gName, e.target.checked);  //may switch other groups off or back on
       });
-      return {
-        setVisible: (visible) => {
-          box.checked = visible;  //keep the checkbox and the count in step with code-driven toggles
-          apply(visible);
-          updateCount(gName);
-        },
+      const setVisible = (visible) => {
+        box.checked = visible;  //keep the checkbox and the count in step with code-driven toggles
+        apply(visible);
+        updateCount(gName);
+        applyHides(gName, visible);  //same rule as a click
       };
+      if (!layerToggles.has(gName)) layerToggles.set(gName, []);
+      layerToggles.get(gName).push({ box, setVisible });  //so a hiding group can reach this layer
+      return { setVisible };
     },
 
     /* Add a panel to the right-hand dashboard. Returns the empty <div> body,

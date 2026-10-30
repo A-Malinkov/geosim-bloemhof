@@ -76,26 +76,30 @@ const runSuffix = (scenario) => (scenario === "baseline" ? "" : `_${scenario}`);
  * already warped to EPSG:4326 plus a summary JSON holding the bbox it covers
  * (<base>_overlay[_scenario].png, <base>_summary[_scenario].json), so the PNG
  * drapes straight onto the globe with a SingleTileImageryProvider.
+ * A dated run appends its day to the name (shadow_overlay_final_2026-06-21.png);
+ * setDay() picks which day is shown, "" being the default run.
  * ------------------------------------------------------------------------ */
 function addScenarioOverlay(ctx, { id, label, base }) {
   const { Cesium, viewer } = ctx;
-  const layers = new Map();  //scenario -> Promise of its ImageryLayer, or null when there is no run
+  const layers = new Map();  //scenario + day suffix -> Promise of its ImageryLayer, or null when there is no run
   let shown = false;  //layer checkbox state
   let current = ctx.scenario();  //scenario the app is on
+  let day = "";  //day suffix of the run shown, "" for the default day
 
   //Images are ~2 MB and the layer is off by default, so each scenario's image
   //loads the first time it is actually needed, not during startup.
-  function load(scenario) {
-    if (!layers.has(scenario)) {
-      layers.set(scenario, (async () => {
-        const sum = await ctx.loadJson(`../data/processed/${base}_summary${runSuffix(scenario)}.json`, { quiet: true });
+  function load(scenario, d) {
+    const key = runSuffix(scenario) + d;  //file suffix of this run, scenario then day
+    if (!layers.has(key)) {
+      layers.set(key, (async () => {
+        const sum = await ctx.loadJson(`../data/processed/${base}_summary${key}.json`, { quiet: true });
         const bb = sum?.bbox_wgs84;  //the warped bbox, not the RD square's corners
         if (!bb) return null;  //no run for this scenario
         try {
           //fromUrl reads the image's real size; the synchronous constructor needs
           //tileWidth/tileHeight by hand, and a wrong guess distorts the overlay silently
           const provider = await Cesium.SingleTileImageryProvider.fromUrl(
-            `../data/processed/${base}_overlay${runSuffix(scenario)}.png`,
+            `../data/processed/${base}_overlay${key}.png`,
             { rectangle: Cesium.Rectangle.fromDegrees(...bb) },
           );
           const layer = viewer.imageryLayers.addImageryProvider(provider);
@@ -109,7 +113,7 @@ function addScenarioOverlay(ctx, { id, label, base }) {
         }
       })());
     }
-    return layers.get(scenario);
+    return layers.get(key);
   }
 
   //show exactly the current scenario's image, or nothing if it has no run
@@ -120,9 +124,9 @@ function addScenarioOverlay(ctx, { id, label, base }) {
     }
     viewer.scene.requestRender();  //the hiding happened after awaits, so ask for a redraw
     if (!shown) return;
-    const want = current;
-    const l = await load(want);
-    if (want !== current || !shown) return;  //switched while loading
+    const want = current, wantDay = day;
+    const l = await load(want, wantDay);
+    if (want !== current || wantDay !== day || !shown) return;  //switched while loading
     if (l) l.show = true;
     else ctx.note(`${label}: no run for ${want}`, "warn");
     viewer.scene.requestRender();  //the image appears after loading, so ask for a redraw
@@ -136,6 +140,7 @@ function addScenarioOverlay(ctx, { id, label, base }) {
     onToggle: (visible) => { shown = visible; refresh(); },  //checkbox
   });
   ctx.onScenarioChange((sc) => { current = sc; refresh(); });  //scenario switch
+  return { setDay: (d) => { day = d; refresh(); } };  //day switch, from the card
 }
 
 /* ---------------------------------------------------------------------------
@@ -606,16 +611,38 @@ export async function setup(ctx) {
   /* ---- Sky View Factor and direct sun, per scenario ---------------------- */
   //map overlays, each following the scenario switch
   addScenarioOverlay(ctx, { id: "svfOverlay", label: "Sky View Factor (AHN)", base: "svf" });
-  addScenarioOverlay(ctx, { id: "shadowOverlay", label: "Direct sun hours (AHN)", base: "shadow" });
+  const shadowOverlay = addScenarioOverlay(ctx, { id: "shadowOverlay", label: "Direct sun hours (AHN)", base: "shadow" });
+
+  //days shadows.py was run for, with the file suffix of each ("" is the equinox default)
+  const SUN_DAYS = [
+    { label: "Equinox", sfx: "" },
+    { label: "21 Jun", sfx: "_2026-06-21" },
+    { label: "21 Dec", sfx: "_2026-12-21" },
+  ];
+  let sunDay = "";  //day shown in the direct-sun card and overlay
 
   const svfBox = document.createElement("div");
   body.appendChild(svfBox);
+  const sunDayBox = document.createElement("div");  //day buttons, kept outside shadowBox so a re-render leaves them
+  sunDayBox.innerHTML =
+    `<h4>Direct sun</h4>` +
+    `<div class="seg">` +
+    SUN_DAYS.map((d) => `<button data-sfx="${d.sfx}"${d.sfx === sunDay ? ' class="on"' : ""}>${d.label}</button>`).join("") +
+    `</div>`;
+  body.appendChild(sunDayBox);
   const shadowBox = document.createElement("div");
   body.appendChild(shadowBox);
+  const sunBtns = [...sunDayBox.querySelectorAll("button")];
+  sunBtns.forEach((b) => b.addEventListener("click", () => {
+    sunBtns.forEach((x) => x.classList.toggle("on", x === b));  //highlight the chosen day
+    sunDay = b.dataset.sfx;
+    shadowOverlay.setDay(sunDay);  //map overlay follows
+    renderShadow(ctx.scenario());  //and the card's numbers
+  }));
 
-  //summary JSON of one run, baseline or a scenario
-  const summary = (base, sc) =>
-    ctx.loadJson(`../data/processed/${base}_summary${runSuffix(sc)}.json`, { quiet: true });
+  //summary JSON of one run, baseline or a scenario, optionally of a dated run
+  const summary = (base, sc, day = "") =>
+    ctx.loadJson(`../data/processed/${base}_summary${runSuffix(sc)}${day}.json`, { quiet: true });
 
   //one table row for the design site, with the baseline value beside a scenario's
   const siteRow = (label, v, vBase, digits, unit = "") =>
@@ -672,13 +699,15 @@ export async function setup(ctx) {
   }
 
   async function renderShadow(sc) {
-    const [shadow, shadowBase] = await Promise.all([summary("shadow", sc), sc === "baseline" ? null : summary("shadow", "baseline")]);
-    if (sc !== ctx.scenario()) return;  //switched while loading
+    const day = sunDay;
+    const [shadow, shadowBase] = await Promise.all([summary("shadow", sc, day), sc === "baseline" ? null : summary("shadow", "baseline", day)]);
+    if (sc !== ctx.scenario() || day !== sunDay) return;  //switched while loading
     if (!shadow?.open_ground_sunlit_hours) {
       ctx.placeholder(shadowBox, {
-        what: `Direct-sun analysis not computed for "${sc}" yet.`,
-        produces: `data/processed/shadow_summary${runSuffix(sc)}.json`,
-        owner: `analysis/morphology/shadows.py${sc === "baseline" ? "" : ` --scenario ${sc}`}`,
+        what: `Direct-sun analysis not computed for "${sc}" on this day yet.`,
+        produces: `data/processed/shadow_summary${runSuffix(sc)}${day}.json`,
+        owner: `analysis/morphology/shadows.py${sc === "baseline" ? "" : ` --scenario ${sc}`}` +
+          (day ? ` --date ${day.slice(1)} --suffix ${day}` : ""),  //a dated run needs both flags
       });
       return;
     }
@@ -688,7 +717,6 @@ export async function setup(ctx) {
     const site = shadow.design_site?.open_ground_sunlit_hours;  //design site, open ground
     const siteBase = shadowBase?.design_site?.open_ground_sunlit_hours;
     shadowBox.innerHTML =
-      `<h4>Direct sun</h4>` +
       `<table class="kv"><tbody>` +
       `<tr><td>mean sun</td><td>${g.mean.toFixed(1)} h</td></tr>` +
       `<tr><td>median</td><td>${g.median.toFixed(1)} h</td></tr>` +
@@ -709,7 +737,8 @@ export async function setup(ctx) {
       `<p class="muted">Hours of direct sun on open ground on ${shadow.date}, ` +
       `of ${shadow.daylight_hours.toFixed(1)} h of daylight. Ray-cast from the ` +
       `AHN surface every ${shadow.parameters.step_minutes} min; clear-sky, so an ` +
-      `upper bound. ` +
+      `upper bound. The map overlay runs from no sun to the whole day's ` +
+      `${shadow.daylight_hours.toFixed(1)} h, so its colours are per day. ` +  //each PNG is scaled to its own daylight
       (sc === "baseline" ? "" : `Demolition adds open ground, so the site means cover ` +
         `different areas: compare the shares too. `) +  //the denominators differ between scenarios
       `Toggle the map overlay under <em>Analysis</em>.</p>`;
