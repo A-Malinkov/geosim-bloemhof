@@ -94,7 +94,7 @@ CASES = [
 ]
 LABELLED = ["final"]  #scenarios whose shops the Rhino model labels: read, not placed
 #labelled shop units that become another type, chosen by the same p-median among those units: the final design
-#names 69 shop units and no health practice, today the site has 7 (Atanas, 2026-10-28); the shopping centre stays a shop
+#names 49 shop units and no health practice, today the site has 7 (Atanas, 2026-10-28); the shopping centre stays a shop
 CONVERT = {"final": {"health": 7}}
 
 PARAMS = {

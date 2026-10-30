@@ -294,13 +294,13 @@
       "health": {
         "p": 7,
         "from": "labelled shop units",
-        "n_candidates": 69,
-        "J_before_m": 321.4,
-        "J_after_m": 268.0,
-        "J_random_mean_m": 282.9,
-        "J_random_best_m": 272.8,
-        "site_dwellings_before_m": 362.6,
-        "site_dwellings_after_m": 124.1
+        "n_candidates": 49,
+        "J_before_m": 321.7,
+        "J_after_m": 271.5,
+        "J_random_mean_m": 283.3,
+        "J_random_best_m": 274.8,
+        "site_dwellings_before_m": 364.5,
+        "site_dwellings_after_m": 125.9
       }
     }
   },

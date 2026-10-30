@@ -940,26 +940,26 @@
         "circuity": 1.018,
         "betweenness_max": 0.1154,
         "street_length_km": 27.16,
-        "dwellings": 6070,
+        "dwellings": 6081,
         "shop": {
           "mean_m": 129.2,
           "within_15min_frac": 1.0,
           "within_5min_frac": 0.999
         },
         "education": {
-          "mean_m": 239.4,
+          "mean_m": 239.3,
           "within_15min_frac": 1.0,
           "within_5min_frac": 0.915
         },
         "health": {
-          "mean_m": 321.4,
+          "mean_m": 321.7,
           "within_15min_frac": 1.0,
-          "within_5min_frac": 0.754
+          "within_5min_frac": 0.753
         },
         "rail_stop": {
           "mean_m": 425.0,
           "within_15min_frac": 1.0,
-          "within_5min_frac": 0.523
+          "within_5min_frac": 0.522
         },
         "mean_of_types_m": 278.8,
         "walk_15min_reach_frac": 1.0
@@ -972,26 +972,26 @@
         "circuity": 1.018,
         "betweenness_max": 0.1154,
         "street_length_km": 27.16,
-        "dwellings": 6070,
+        "dwellings": 6081,
         "shop": {
           "mean_m": 129.2,
           "within_15min_frac": 1.0,
           "within_5min_frac": 0.999
         },
         "education": {
-          "mean_m": 239.4,
+          "mean_m": 239.3,
           "within_15min_frac": 1.0,
           "within_5min_frac": 0.915
         },
         "health": {
-          "mean_m": 321.4,
+          "mean_m": 321.7,
           "within_15min_frac": 1.0,
-          "within_5min_frac": 0.754
+          "within_5min_frac": 0.753
         },
         "rail_stop": {
           "mean_m": 425.0,
           "within_15min_frac": 1.0,
-          "within_5min_frac": 0.523
+          "within_5min_frac": 0.522
         },
         "mean_of_types_m": 278.8,
         "walk_15min_reach_frac": 1.0
@@ -1036,28 +1036,28 @@
         "circuity": 1.006,
         "betweenness_max": 0.0936,
         "street_length_km": 6.17,
-        "dwellings": 766,
+        "dwellings": 777,
         "shop": {
-          "mean_m": 223.5,
+          "mean_m": 221.8,
           "within_15min_frac": 1.0,
           "within_5min_frac": 0.994
         },
         "education": {
-          "mean_m": 259.1,
+          "mean_m": 258.5,
           "within_15min_frac": 1.0,
           "within_5min_frac": 1.0
         },
         "health": {
-          "mean_m": 362.6,
+          "mean_m": 364.5,
           "within_15min_frac": 1.0,
-          "within_5min_frac": 0.583
+          "within_5min_frac": 0.575
         },
         "rail_stop": {
-          "mean_m": 576.5,
+          "mean_m": 574.9,
           "within_15min_frac": 1.0,
           "within_5min_frac": 0.003
         },
-        "mean_of_types_m": 355.4,
+        "mean_of_types_m": 354.9,
         "walk_15min_reach_frac": 1.0
       }
     },
@@ -1091,59 +1091,59 @@
       "_note": "today with its own shops, health and schools on the site; an option with the ones place_amenities.py puts on its ground floors (the kept school is in both)",
       "areas": {
         "Bloemhof": {
-          "dwellings": 6070,
+          "dwellings": 6081,
           "shop": {
-            "mean_m": 114.8,
+            "mean_m": 115.1,
             "within_15min_frac": 1.0,
             "within_5min_frac": 1.0
           },
           "education": {
-            "mean_m": 239.4,
+            "mean_m": 239.3,
             "within_15min_frac": 1.0,
             "within_5min_frac": 0.915
           },
           "health": {
-            "mean_m": 268.0,
+            "mean_m": 271.5,
             "within_15min_frac": 1.0,
             "within_5min_frac": 0.872
           },
           "rail_stop": {
             "mean_m": 425.0,
             "within_15min_frac": 1.0,
-            "within_5min_frac": 0.523
+            "within_5min_frac": 0.522
           },
-          "mean_of_types_m": 261.8,
+          "mean_of_types_m": 262.7,
           "walk_15min_reach_frac": 1.0
         },
         "study_area": {
-          "dwellings": 6070,
+          "dwellings": 6081,
           "shop": {
-            "mean_m": 114.8,
+            "mean_m": 115.1,
             "within_15min_frac": 1.0,
             "within_5min_frac": 1.0
           },
           "education": {
-            "mean_m": 239.4,
+            "mean_m": 239.3,
             "within_15min_frac": 1.0,
             "within_5min_frac": 0.915
           },
           "health": {
-            "mean_m": 268.0,
+            "mean_m": 271.5,
             "within_15min_frac": 1.0,
             "within_5min_frac": 0.872
           },
           "rail_stop": {
             "mean_m": 425.0,
             "within_15min_frac": 1.0,
-            "within_5min_frac": 0.523
+            "within_5min_frac": 0.522
           },
-          "mean_of_types_m": 261.8,
+          "mean_of_types_m": 262.7,
           "walk_15min_reach_frac": 1.0
         },
         "outside_site": {
           "dwellings": 5304,
           "shop": {
-            "mean_m": 114.7,
+            "mean_m": 114.8,
             "within_15min_frac": 1.0,
             "within_5min_frac": 1.0
           },
@@ -1153,7 +1153,7 @@
             "within_5min_frac": 0.903
           },
           "health": {
-            "mean_m": 288.7,
+            "mean_m": 292.8,
             "within_15min_frac": 1.0,
             "within_5min_frac": 0.854
           },
@@ -1162,38 +1162,38 @@
             "within_15min_frac": 1.0,
             "within_5min_frac": 0.599
           },
-          "mean_of_types_m": 260.8,
+          "mean_of_types_m": 261.8,
           "walk_15min_reach_frac": 1.0
         },
         "design_site": {
-          "dwellings": 766,
+          "dwellings": 777,
           "shop": {
-            "mean_m": 115.5,
+            "mean_m": 117.1,
             "within_15min_frac": 1.0,
             "within_5min_frac": 1.0
           },
           "education": {
-            "mean_m": 259.1,
+            "mean_m": 258.5,
             "within_15min_frac": 1.0,
             "within_5min_frac": 1.0
           },
           "health": {
-            "mean_m": 124.1,
+            "mean_m": 125.9,
             "within_15min_frac": 1.0,
             "within_5min_frac": 1.0
           },
           "rail_stop": {
-            "mean_m": 576.5,
+            "mean_m": 574.9,
             "within_15min_frac": 1.0,
             "within_5min_frac": 0.003
           },
-          "mean_of_types_m": 268.8,
+          "mean_of_types_m": 269.1,
           "walk_15min_reach_frac": 1.0
         }
       },
       "site_grid": {
         "shop": {
-          "mean_m": 116.7,
+          "mean_m": 119.5,
           "within_15min_frac": 1.0,
           "within_5min_frac": 1.0
         },
@@ -1203,16 +1203,16 @@
           "within_5min_frac": 0.997
         },
         "health": {
-          "mean_m": 142.6,
+          "mean_m": 155.2,
           "within_15min_frac": 1.0,
-          "within_5min_frac": 0.994
+          "within_5min_frac": 0.982
         },
         "rail_stop": {
           "mean_m": 594.1,
           "within_15min_frac": 1.0,
           "within_5min_frac": 0.039
         },
-        "mean_of_types_m": 274.2,
+        "mean_of_types_m": 278.1,
         "walk_15min_reach_frac": 1.0,
         "grid_points": 332
       }
@@ -1230,7 +1230,7 @@
       "connectors": 57,
       "connector_length_m": 269.3,
       "new_street_length_m": 3408.2,
-      "new_block_dwellings_est": 766
+      "new_block_dwellings_est": 777
     }
   }
 }

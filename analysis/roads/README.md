@@ -230,25 +230,25 @@ junctions, and that green had none.
 Run 2026-10-30 with `road_network.py --scenario final` and `optimise_links.py
 --scenario final`, on the 30.10 model. A and B are on 27.10, which 30.10 leaves unchanged.
 
-Its destinations are its own 70 shop units from the Rhino block names (31
-podiums, 38 terraced houses with a shop (20 drawn as one solid, 18 as a shop with
-flats on it), the shopping centre: two joined
+Its destinations are its own 50 shop units from the Rhino block names (31
+podiums, 18 terraced houses split into a shop with flats on it, the shopping
+centre: two joined
 buildings, one marker) and the kept school. The model names no health practice,
-so `place_amenities.py` turns 7 of the 69 shop units (the shopping centre stays
+so `place_amenities.py` turns 7 of the 49 shop units (the shopping centre stays
 a shop) into health practices, picked by the same p-median as A and B use,
-among those units only (`CONVERT`). That leaves 63 shops. Shop floor holds no
-dwellings in the estimate, and a terraced house with a shop loses its ground
-floor: 766 dwellings on the site.
+among those units only (`CONVERT`). That leaves 43 shops. The 20 terraced houses
+the model names "WITH SHOPS" are homes on every floor (Atanas, 2026-10-30). Shop
+floor holds no dwellings in the estimate: 777 dwellings on the site.
 
-Site residents walk 356 m on the mean of the four types on the network alone,
+Site residents walk 355 m on the mean of the four types on the network alone,
 269 m with its shops and health practices, against 317 m today with today's own
-amenities. Shops are 116 m away, health care 124 m (363 m before the 7
+amenities. Shops are 117 m away, health care 126 m (365 m before the 7
 practices). The 7 picked units bring the buurt-wide walk to health care from
-321.4 to 268.0 m; 7 units picked at random do 282.9 m on average.
+321.7 to 271.5 m; 7 units picked at random do 283.3 m on average.
 The curvy walkway the model draws on its vegetation layer is walked along its
 centreline (670 m). The other pedestrian and bike surfaces are not walked separately:
-all of them run within 5 m of a street. The optimiser's 9 links (368 m) lower J from
-261.78 to 261.41 m and the site residents' walk from 268.8 to 267.2 m.
+all of them run within 5 m of a street. The optimiser's 8 links (320 m) lower J from
+262.72 to 262.37 m and the site residents' walk from 269.1 to 267.6 m.
 
 ## Amenities on the new ground floors
 

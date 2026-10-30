@@ -96,92 +96,83 @@
       "reach_m": 20.0
     },
     "n_candidates": 20,
-    "J_before_m": 261.78,
-    "site_dwellings_before_m": 268.8,
-    "site_grid_before_m": 274.2,
-    "J_ceiling_m": 261.41,
-    "site_grid_ceiling_m": 270.3,
+    "J_before_m": 262.72,
+    "site_dwellings_before_m": 269.1,
+    "site_grid_before_m": 278.1,
+    "J_ceiling_m": 262.37,
+    "site_grid_ceiling_m": 273.3,
     "site_grid_baseline_m": 313.5,
     "steps": [
       {
         "rank": 1,
         "length_m": 55.8,
         "gain_m": 0.13,
-        "J_m": 261.65,
-        "site_dwellings_m": 268.8,
-        "site_grid_m": 274.0,
-        "share_of_ceiling": 0.353
+        "J_m": 262.6,
+        "site_dwellings_m": 269.1,
+        "site_grid_m": 277.9,
+        "share_of_ceiling": 0.37
       },
       {
         "rank": 2,
         "length_m": 44.4,
-        "gain_m": 0.09,
-        "J_m": 261.56,
-        "site_dwellings_m": 268.3,
-        "site_grid_m": 273.7,
-        "share_of_ceiling": 0.599
+        "gain_m": 0.066,
+        "J_m": 262.53,
+        "site_dwellings_m": 268.8,
+        "site_grid_m": 277.6,
+        "share_of_ceiling": 0.559
       },
       {
         "rank": 3,
         "length_m": 38.9,
         "gain_m": 0.045,
-        "J_m": 261.52,
-        "site_dwellings_m": 268.0,
-        "site_grid_m": 273.5,
-        "share_of_ceiling": 0.723
+        "J_m": 262.48,
+        "site_dwellings_m": 268.4,
+        "site_grid_m": 277.5,
+        "share_of_ceiling": 0.687
       },
       {
         "rank": 4,
         "length_m": 29.8,
-        "gain_m": 0.042,
-        "J_m": 261.47,
-        "site_dwellings_m": 267.6,
-        "site_grid_m": 273.1,
-        "share_of_ceiling": 0.837
+        "gain_m": 0.043,
+        "J_m": 262.44,
+        "site_dwellings_m": 268.1,
+        "site_grid_m": 277.2,
+        "share_of_ceiling": 0.81
       },
       {
         "rank": 5,
         "length_m": 60.9,
-        "gain_m": 0.036,
-        "J_m": 261.44,
-        "site_dwellings_m": 267.4,
-        "site_grid_m": 272.6,
-        "share_of_ceiling": 0.934
+        "gain_m": 0.041,
+        "J_m": 262.4,
+        "site_dwellings_m": 267.8,
+        "site_grid_m": 276.7,
+        "share_of_ceiling": 0.928
       },
       {
         "rank": 6,
         "length_m": 14.7,
         "gain_m": 0.014,
-        "J_m": 261.42,
-        "site_dwellings_m": 267.3,
-        "site_grid_m": 270.6,
-        "share_of_ceiling": 0.971
+        "J_m": 262.39,
+        "site_dwellings_m": 267.7,
+        "site_grid_m": 273.6,
+        "share_of_ceiling": 0.967
       },
       {
         "rank": 7,
         "length_m": 22.8,
-        "gain_m": 0.005,
-        "J_m": 261.42,
-        "site_dwellings_m": 267.2,
-        "site_grid_m": 270.6,
-        "share_of_ceiling": 0.984
-      },
-      {
-        "rank": 8,
-        "length_m": 48.3,
-        "gain_m": 0.005,
-        "J_m": 261.41,
-        "site_dwellings_m": 267.2,
-        "site_grid_m": 270.6,
+        "gain_m": 0.01,
+        "J_m": 262.38,
+        "site_dwellings_m": 267.6,
+        "site_grid_m": 273.6,
         "share_of_ceiling": 0.997
       },
       {
-        "rank": 9,
+        "rank": 8,
         "length_m": 52.9,
         "gain_m": 0.001,
-        "J_m": 261.41,
-        "site_dwellings_m": 267.2,
-        "site_grid_m": 270.6,
+        "J_m": 262.37,
+        "site_dwellings_m": 267.6,
+        "site_grid_m": 273.6,
         "share_of_ceiling": 1.0
       }
     ],

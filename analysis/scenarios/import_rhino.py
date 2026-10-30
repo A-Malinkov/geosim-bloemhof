@@ -64,8 +64,8 @@ WHAT IT CANNOT TELL YOU
   "residential" because that is the brief, not because the model says so.
   The exception is the Final Model, which places named Rhino blocks: "Shops"
   (a 4 m podium, with a "flats over shops" block stood on it via
-  base_height_m), "Terraced House (4 storey) WITH SHOPS" (use "mixed",
-  ground_floor "shop", one 12 m solid, not split by floor) and plain houses.
+  base_height_m), "Terraced House (4 storey) WITH SHOPS" (one 12 m solid,
+  residential on every floor despite its name, Atanas 2026-10-30) and plain houses.
   In 30.10, 18 of those are split into a 4 m "ground Floor shops" block with
   an 8 m "(3 storey) above shops" block on it, and many houses are renamed
   copies ("Terraced House (4 storey) 12", "... copy copy"): block_use() strips
@@ -163,7 +163,7 @@ BLOCK_USE = {
     "Shops": "shop",  #4 m ground-floor podium, a "flats over shops" block stands on each one
     "flats over shops (4 stories)": "residential",  #flats on top of the shop podium, 4 to 16 m
     "Flats above shops (4 floors)": "residential",  #defined in the model, never placed
-    "Terraced House (4 storey) WITH SHOPS": "mixed",  #one 12 m solid, shop on the ground floor; not split, the model draws no floor
+    "Terraced House (4 storey) WITH SHOPS": "residential",  #one 12 m solid; homes on every floor despite the name (Atanas, 2026-10-30)
     "Terraced House (4 storey) ground Floor shops": "shop",  #30.10: 4 m ground floor of a split shop terrace
     "Terraced House (3 storey) above shops": "residential",  #30.10: 8 m of flats stood on that ground floor
     "Terraced House (4 storey)": "residential",
@@ -333,7 +333,8 @@ def import_option(c):
         peak = max((p.Z / MM for m in meshes(geom, xform) for p in m.Vertices),
                    default=max((z for _, z in parts), default=base))  #true top from the mesh; the bounding box is loose; a mesh-less box: its roof
         if block:  #a placed block: named after it, one summary line per block name below
-            key = block_use(block).lower().replace(" (4 storey)", "").replace(" (3 storey)", "").replace(" (4 stories)", "")  #e.g. "terraced house with shops", copies counted with their original
+            key = block_use(block).lower().replace(" (4 storey)", "").replace(" (3 storey)", "").replace(" (4 stories)", "")  #e.g. "terraced house", copies counted with their original
+            key = key.replace(" with shops", "")  #the WITH SHOPS terrace is all homes, so it is named and counted as a terraced house
             n_by_class[key] = n_by_class.get(key, 0) + 1
             name = f"{c['scenario']} {key} {n_by_class[key]}"
         else:
@@ -372,8 +373,6 @@ def import_option(c):
             }
             if block:
                 props["rhino_block"] = block  #the Rhino block the solid comes from
-            if use == "mixed":
-                props["ground_floor"] = "shop"  #Terraced House WITH SHOPS
             if raised:
                 props["base_height_m"] = round(ground + base, 2)  #underside in m NAP: stands on the podium below
             feats.append({"type": "Feature", "geometry": mapping(wgs), "properties": props})

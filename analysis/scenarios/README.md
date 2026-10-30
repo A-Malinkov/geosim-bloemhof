@@ -34,8 +34,9 @@ Model: OPTION 1 and OPTION 2 import exactly as from 27.10.
 
 The `Final Model` is built from named Rhino blocks rather than plain solids: 154
 terraced houses, 8 semi-detached pairs and 8 detached houses, 31 shop podiums (4 m) each with
-a block of flats on top (to 16 m), 20 terraced houses with a ground-floor shop drawn as
-one 12 m solid, 18 more split into a 4 m shop and 8 m of flats on it, two elderly homes,
+a block of flats on top (to 16 m), 20 more terraced houses one 12 m solid each (named
+"WITH SHOPS" in the model but homes on every floor, Atanas 2026-10-30), 18 split into a
+4 m shop and 8 m of flats on it, two elderly homes,
 a student building and the shopping centre, 301 volumes in all. 30.10 copies many house
 blocks under new names ("Terraced House (4 storey) 12", "... copy copy"): `block_use()`
 reads a copy as its original. It also places 3 flat blocks twice on the same spot; the

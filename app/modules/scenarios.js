@@ -39,7 +39,6 @@ const COLOURS = {
 //blocks whose Rhino block name gives a use other than housing (import_rhino.py BLOCK_USE), coloured by it
 const USE_COLOURS = {
   shop:  ["#7b4fd0", "shop (ground-floor podium)"],  //the amenity layer's shop purple
-  mixed: ["#b39ddb", "terraced house, shop on the ground floor"],
   "shopping centre": ["#5e35b1", "shopping centre"],  //the large south-west building of the final design
 };
 //paved surfaces other than streets, Final Model only (import_rhino.py surface_layers)

@@ -389,15 +389,15 @@ Over the design site, 189 cells:
 | baseline (today) | 2.100 | 0.229 | 3.2 % | 1,027 | 1.000 | 160 | 8 | 99 m |
 | scenario_a | 2.196 | 0.318 | 5.8 % | 1,920 | 1.000 | 99 | 4 | 135 m |
 | scenario_b | 2.840 | 0.530 | 33.3 % | 1,250 | 1.000 | 48 | 4 | 121 m |
-| final | 2.943 | 0.728 | 29.6 % | 766 | 0.746 | 40 | 24 | 69 m |
+| final | 2.955 | 0.728 | 29.6 % | 777 | 0.757 | 40 | 24 | 69 m |
 
 Over the whole buurt the objective is 2.315 today, 2.331 for scenario_a,
-2.462 for scenario_b and 2.467 for the final design, on the same grid and function.
+2.462 for scenario_b and 2.469 for the final design, on the same grid and function.
 Over the site they compare directly with the CA's programmes (compact 2.421, green 2.710).
 
 **The final design scores highest and is the only one the housing term costs.**
 A and B build more homes than they demolish and get the full 1.1. The final
-design has 766 against today's 1,027, a housing term of 0.746, and still leads
+design has 777 against today's 1,027, a housing term of 0.757, and still leads
 on mix and shops.
 
 **Both options score above today, scenario_b by far, and for the wrong reason

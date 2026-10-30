@@ -16494,15 +16494,14 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house with shops 1",
-    "use": "mixed",
+    "name": "final terraced house 128",
+    "use": "residential",
     "height_class": "short",
     "height_m": 11.07,
     "building_height_m": 12.0,
     "footprint_m2": 50.1,
     "rhino_layer": "Final Model::Short Buildings - Copy",
-    "rhino_block": "Terraced House (4 storey) WITH SHOPS",
-    "ground_floor": "shop"
+    "rhino_block": "Terraced House (4 storey) WITH SHOPS"
    }
   },
   {
@@ -16536,15 +16535,14 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house with shops 2",
-    "use": "mixed",
+    "name": "final terraced house 129",
+    "use": "residential",
     "height_class": "short",
     "height_m": 11.07,
     "building_height_m": 12.0,
     "footprint_m2": 50.1,
     "rhino_layer": "Final Model::Short Buildings - Copy",
-    "rhino_block": "Terraced House (4 storey) WITH SHOPS",
-    "ground_floor": "shop"
+    "rhino_block": "Terraced House (4 storey) WITH SHOPS"
    }
   },
   {
@@ -16578,15 +16576,14 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house with shops 3",
-    "use": "mixed",
+    "name": "final terraced house 130",
+    "use": "residential",
     "height_class": "short",
     "height_m": 11.07,
     "building_height_m": 12.0,
     "footprint_m2": 50.1,
     "rhino_layer": "Final Model::Short Buildings - Copy",
-    "rhino_block": "Terraced House (4 storey) WITH SHOPS",
-    "ground_floor": "shop"
+    "rhino_block": "Terraced House (4 storey) WITH SHOPS"
    }
   },
   {
@@ -16620,15 +16617,14 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house with shops 4",
-    "use": "mixed",
+    "name": "final terraced house 131",
+    "use": "residential",
     "height_class": "short",
     "height_m": 11.07,
     "building_height_m": 12.0,
     "footprint_m2": 50.1,
     "rhino_layer": "Final Model::Short Buildings - Copy",
-    "rhino_block": "Terraced House (4 storey) WITH SHOPS",
-    "ground_floor": "shop"
+    "rhino_block": "Terraced House (4 storey) WITH SHOPS"
    }
   },
   {
@@ -16662,15 +16658,14 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house with shops 5",
-    "use": "mixed",
+    "name": "final terraced house 132",
+    "use": "residential",
     "height_class": "short",
     "height_m": 11.07,
     "building_height_m": 12.0,
     "footprint_m2": 50.1,
     "rhino_layer": "Final Model::Short Buildings - Copy",
-    "rhino_block": "Terraced House (4 storey) WITH SHOPS",
-    "ground_floor": "shop"
+    "rhino_block": "Terraced House (4 storey) WITH SHOPS"
    }
   },
   {
@@ -16704,15 +16699,14 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house with shops 6",
-    "use": "mixed",
+    "name": "final terraced house 133",
+    "use": "residential",
     "height_class": "short",
     "height_m": 11.07,
     "building_height_m": 12.0,
     "footprint_m2": 50.1,
     "rhino_layer": "Final Model::Short Buildings - Copy",
-    "rhino_block": "Terraced House (4 storey) WITH SHOPS",
-    "ground_floor": "shop"
+    "rhino_block": "Terraced House (4 storey) WITH SHOPS"
    }
   },
   {
@@ -16746,15 +16740,14 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house with shops 7",
-    "use": "mixed",
+    "name": "final terraced house 134",
+    "use": "residential",
     "height_class": "short",
     "height_m": 11.07,
     "building_height_m": 12.0,
     "footprint_m2": 50.1,
     "rhino_layer": "Final Model::Short Buildings - Copy",
-    "rhino_block": "Terraced House (4 storey) WITH SHOPS",
-    "ground_floor": "shop"
+    "rhino_block": "Terraced House (4 storey) WITH SHOPS"
    }
   },
   {
@@ -16788,15 +16781,14 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house with shops 8",
-    "use": "mixed",
+    "name": "final terraced house 135",
+    "use": "residential",
     "height_class": "short",
     "height_m": 11.07,
     "building_height_m": 12.0,
     "footprint_m2": 50.1,
     "rhino_layer": "Final Model::Short Buildings - Copy",
-    "rhino_block": "Terraced House (4 storey) WITH SHOPS",
-    "ground_floor": "shop"
+    "rhino_block": "Terraced House (4 storey) WITH SHOPS"
    }
   },
   {
@@ -16830,15 +16822,14 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house with shops 9",
-    "use": "mixed",
+    "name": "final terraced house 136",
+    "use": "residential",
     "height_class": "short",
     "height_m": 11.07,
     "building_height_m": 12.0,
     "footprint_m2": 50.1,
     "rhino_layer": "Final Model::Short Buildings - Copy",
-    "rhino_block": "Terraced House (4 storey) WITH SHOPS",
-    "ground_floor": "shop"
+    "rhino_block": "Terraced House (4 storey) WITH SHOPS"
    }
   },
   {
@@ -16872,15 +16863,14 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house with shops 10",
-    "use": "mixed",
+    "name": "final terraced house 137",
+    "use": "residential",
     "height_class": "short",
     "height_m": 11.07,
     "building_height_m": 12.0,
     "footprint_m2": 50.1,
     "rhino_layer": "Final Model::Short Buildings - Copy",
-    "rhino_block": "Terraced House (4 storey) WITH SHOPS",
-    "ground_floor": "shop"
+    "rhino_block": "Terraced House (4 storey) WITH SHOPS"
    }
   },
   {
@@ -16914,15 +16904,14 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house with shops 11",
-    "use": "mixed",
+    "name": "final terraced house 138",
+    "use": "residential",
     "height_class": "short",
     "height_m": 11.07,
     "building_height_m": 12.0,
     "footprint_m2": 50.1,
     "rhino_layer": "Final Model::Short Buildings - Copy",
-    "rhino_block": "Terraced House (4 storey) WITH SHOPS",
-    "ground_floor": "shop"
+    "rhino_block": "Terraced House (4 storey) WITH SHOPS"
    }
   },
   {
@@ -16956,15 +16945,14 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house with shops 12",
-    "use": "mixed",
+    "name": "final terraced house 139",
+    "use": "residential",
     "height_class": "short",
     "height_m": 11.07,
     "building_height_m": 12.0,
     "footprint_m2": 50.1,
     "rhino_layer": "Final Model::Short Buildings - Copy",
-    "rhino_block": "Terraced House (4 storey) WITH SHOPS",
-    "ground_floor": "shop"
+    "rhino_block": "Terraced House (4 storey) WITH SHOPS"
    }
   },
   {
@@ -16998,15 +16986,14 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house with shops 13",
-    "use": "mixed",
+    "name": "final terraced house 140",
+    "use": "residential",
     "height_class": "short",
     "height_m": 11.07,
     "building_height_m": 12.0,
     "footprint_m2": 50.1,
     "rhino_layer": "Final Model::Short Buildings - Copy",
-    "rhino_block": "Terraced House (4 storey) WITH SHOPS",
-    "ground_floor": "shop"
+    "rhino_block": "Terraced House (4 storey) WITH SHOPS"
    }
   },
   {
@@ -17040,15 +17027,14 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house with shops 14",
-    "use": "mixed",
+    "name": "final terraced house 141",
+    "use": "residential",
     "height_class": "short",
     "height_m": 11.07,
     "building_height_m": 12.0,
     "footprint_m2": 50.1,
     "rhino_layer": "Final Model::Short Buildings - Copy",
-    "rhino_block": "Terraced House (4 storey) WITH SHOPS",
-    "ground_floor": "shop"
+    "rhino_block": "Terraced House (4 storey) WITH SHOPS"
    }
   },
   {
@@ -17082,15 +17068,14 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house with shops 15",
-    "use": "mixed",
+    "name": "final terraced house 142",
+    "use": "residential",
     "height_class": "short",
     "height_m": 11.07,
     "building_height_m": 12.0,
     "footprint_m2": 50.1,
     "rhino_layer": "Final Model::Short Buildings - Copy",
-    "rhino_block": "Terraced House (4 storey) WITH SHOPS",
-    "ground_floor": "shop"
+    "rhino_block": "Terraced House (4 storey) WITH SHOPS"
    }
   },
   {
@@ -17124,15 +17109,14 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house with shops 16",
-    "use": "mixed",
+    "name": "final terraced house 143",
+    "use": "residential",
     "height_class": "short",
     "height_m": 11.07,
     "building_height_m": 12.0,
     "footprint_m2": 50.1,
     "rhino_layer": "Final Model::Short Buildings - Copy",
-    "rhino_block": "Terraced House (4 storey) WITH SHOPS",
-    "ground_floor": "shop"
+    "rhino_block": "Terraced House (4 storey) WITH SHOPS"
    }
   },
   {
@@ -17166,15 +17150,14 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house with shops 17",
-    "use": "mixed",
+    "name": "final terraced house 144",
+    "use": "residential",
     "height_class": "short",
     "height_m": 11.07,
     "building_height_m": 12.0,
     "footprint_m2": 50.1,
     "rhino_layer": "Final Model::Short Buildings - Copy",
-    "rhino_block": "Terraced House (4 storey) WITH SHOPS",
-    "ground_floor": "shop"
+    "rhino_block": "Terraced House (4 storey) WITH SHOPS"
    }
   },
   {
@@ -17208,15 +17191,14 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house with shops 18",
-    "use": "mixed",
+    "name": "final terraced house 145",
+    "use": "residential",
     "height_class": "short",
     "height_m": 11.07,
     "building_height_m": 12.0,
     "footprint_m2": 50.1,
     "rhino_layer": "Final Model::Short Buildings - Copy",
-    "rhino_block": "Terraced House (4 storey) WITH SHOPS",
-    "ground_floor": "shop"
+    "rhino_block": "Terraced House (4 storey) WITH SHOPS"
    }
   },
   {
@@ -17250,15 +17232,14 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house with shops 19",
-    "use": "mixed",
+    "name": "final terraced house 146",
+    "use": "residential",
     "height_class": "short",
     "height_m": 11.07,
     "building_height_m": 12.0,
     "footprint_m2": 50.1,
     "rhino_layer": "Final Model::Short Buildings - Copy",
-    "rhino_block": "Terraced House (4 storey) WITH SHOPS",
-    "ground_floor": "shop"
+    "rhino_block": "Terraced House (4 storey) WITH SHOPS"
    }
   },
   {
@@ -17292,15 +17273,14 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house with shops 20",
-    "use": "mixed",
+    "name": "final terraced house 147",
+    "use": "residential",
     "height_class": "short",
     "height_m": 11.07,
     "building_height_m": 12.0,
     "footprint_m2": 50.1,
     "rhino_layer": "Final Model::Short Buildings - Copy",
-    "rhino_block": "Terraced House (4 storey) WITH SHOPS",
-    "ground_floor": "shop"
+    "rhino_block": "Terraced House (4 storey) WITH SHOPS"
    }
   },
   {
@@ -18484,7 +18464,7 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house 128",
+    "name": "final terraced house 148",
     "use": "residential",
     "height_class": "short",
     "height_m": 11.06,
@@ -19239,7 +19219,7 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house 129",
+    "name": "final terraced house 149",
     "use": "residential",
     "height_class": "short",
     "height_m": 11.07,
@@ -19280,7 +19260,7 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house 130",
+    "name": "final terraced house 150",
     "use": "residential",
     "height_class": "short",
     "height_m": 11.07,
@@ -19321,7 +19301,7 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house 131",
+    "name": "final terraced house 151",
     "use": "residential",
     "height_class": "short",
     "height_m": 11.07,
@@ -19362,7 +19342,7 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house 132",
+    "name": "final terraced house 152",
     "use": "residential",
     "height_class": "short",
     "height_m": 11.07,
@@ -19403,7 +19383,7 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house 133",
+    "name": "final terraced house 153",
     "use": "residential",
     "height_class": "short",
     "height_m": 11.07,
@@ -19444,7 +19424,7 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house 134",
+    "name": "final terraced house 154",
     "use": "residential",
     "height_class": "short",
     "height_m": 11.07,
@@ -19485,7 +19465,7 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house 135",
+    "name": "final terraced house 155",
     "use": "residential",
     "height_class": "short",
     "height_m": 11.07,
@@ -19526,7 +19506,7 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house 136",
+    "name": "final terraced house 156",
     "use": "residential",
     "height_class": "short",
     "height_m": 11.07,
@@ -19567,7 +19547,7 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house 137",
+    "name": "final terraced house 157",
     "use": "residential",
     "height_class": "short",
     "height_m": 11.07,
@@ -19608,7 +19588,7 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house 138",
+    "name": "final terraced house 158",
     "use": "residential",
     "height_class": "short",
     "height_m": 11.07,
@@ -19649,7 +19629,7 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house 139",
+    "name": "final terraced house 159",
     "use": "residential",
     "height_class": "short",
     "height_m": 11.07,
@@ -19690,7 +19670,7 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house 140",
+    "name": "final terraced house 160",
     "use": "residential",
     "height_class": "short",
     "height_m": 11.07,
@@ -19731,7 +19711,7 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house 141",
+    "name": "final terraced house 161",
     "use": "residential",
     "height_class": "short",
     "height_m": 11.07,
@@ -19772,7 +19752,7 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house 142",
+    "name": "final terraced house 162",
     "use": "residential",
     "height_class": "short",
     "height_m": 11.07,
@@ -19813,7 +19793,7 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house 143",
+    "name": "final terraced house 163",
     "use": "residential",
     "height_class": "short",
     "height_m": 11.07,
@@ -19854,7 +19834,7 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house 144",
+    "name": "final terraced house 164",
     "use": "residential",
     "height_class": "short",
     "height_m": 11.07,
@@ -19895,7 +19875,7 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house 145",
+    "name": "final terraced house 165",
     "use": "residential",
     "height_class": "short",
     "height_m": 11.07,
@@ -19936,7 +19916,7 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house 146",
+    "name": "final terraced house 166",
     "use": "residential",
     "height_class": "short",
     "height_m": 11.07,
@@ -19977,7 +19957,7 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house 147",
+    "name": "final terraced house 167",
     "use": "residential",
     "height_class": "short",
     "height_m": 11.07,
@@ -20018,7 +19998,7 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house 148",
+    "name": "final terraced house 168",
     "use": "residential",
     "height_class": "short",
     "height_m": 11.07,
@@ -20059,7 +20039,7 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house 149",
+    "name": "final terraced house 169",
     "use": "residential",
     "height_class": "short",
     "height_m": 11.07,
@@ -20100,7 +20080,7 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house 150",
+    "name": "final terraced house 170",
     "use": "residential",
     "height_class": "short",
     "height_m": 11.07,
@@ -20141,7 +20121,7 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house 151",
+    "name": "final terraced house 171",
     "use": "residential",
     "height_class": "short",
     "height_m": 11.07,
@@ -20182,7 +20162,7 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house 152",
+    "name": "final terraced house 172",
     "use": "residential",
     "height_class": "short",
     "height_m": 11.07,
@@ -20223,7 +20203,7 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house 153",
+    "name": "final terraced house 173",
     "use": "residential",
     "height_class": "short",
     "height_m": 11.07,
@@ -20264,7 +20244,7 @@
    },
    "properties": {
     "scenario": "final",
-    "name": "final terraced house 154",
+    "name": "final terraced house 174",
     "use": "residential",
     "height_class": "short",
     "height_m": 11.07,
