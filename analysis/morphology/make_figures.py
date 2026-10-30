@@ -485,6 +485,55 @@ def fig_density_maps(dens, grid_geo):
     save(fig, "fig_density_maps.png")
 
 
+def fig_building_heights(dens):
+    """One plain map: every building in the buurt, coloured by height class."""
+    from shapely.geometry import Point
+    from common.project import design_site_polygon, study_area_polygon
+    p = dens["parameters"]
+    area = study_area_polygon()
+    feats = json.loads((RAW / "buildings_3dbag.geojson").read_text())["features"]
+    xs, ys, fp, hs = [], [], [], []
+    for f in feats:  #buildings inside the buurt only, same clip as the statistics
+        x, y = f["geometry"]["coordinates"]
+        a, h = f["properties"].get("b3_opp_grond"), f["properties"].get("height_m")
+        if not a or a <= 0 or h is None or not area.contains(Point(x, y)):
+            continue
+        xs.append(x); ys.append(y); fp.append(a); hs.append(h)
+    xs, ys, fp, hs = map(np.array, (xs, ys, fp, hs))
+    main = (fp >= p["principal_min_footprint_m2"]) & (hs >= p["principal_min_height_m"])  #sheds apart, as in the height statistics
+
+    classes = [(0, 6, "under 6 m, 1–2 storeys", BLUE_RAMP[1]),  #four plain classes instead of a colour bar
+               (6, 9, "6–9 m, 2–3 storeys", BLUE_RAMP[5]),
+               (9, 15, "9–15 m, 3–5 storeys", BLUE_RAMP[8]),
+               (15, 1e9, "15 m and taller", BLUE_RAMP[12])]
+    fig, ax = plt.subplots(figsize=(7.2, 6.8))
+    size = lambda a: np.clip(a / 10, 5, 90)  #dot area follows the footprint
+    ax.scatter(xs[~main], ys[~main], s=size(fp[~main]), c=NEUTRAL, linewidths=0,
+               label="sheds and small structures")
+    for lo, hi, label, col in classes:
+        m = main & (hs >= lo) & (hs < hi)
+        ax.scatter(xs[m], ys[m], s=size(fp[m]), c=col, linewidths=0.2, edgecolors=SURFACE,
+                   label=f"{label} ({m.sum():,})")
+    for geom, lw, ls in ((area, 1.0, "-"), (design_site_polygon(), 1.4, "--")):  #buurt and design site outlines
+        for g in getattr(geom, "geoms", [geom]):
+            ax.plot(*g.exterior.xy, color=INK, lw=lw, ls=ls)
+    ax.set_aspect("equal")
+    ax.set_xticks([]); ax.set_yticks([])
+    for s in ax.spines.values():
+        s.set_visible(False)
+    c = dens["combined"]
+    titled(ax, f"Building heights — {STUDY_AREA.name}",
+           f"GSI {c['gsi']:.2f} · FSI {c['fsi']:.2f} · {c['layers']:.1f} storeys on average · "
+           "dashed line is the design site")
+    ax.legend(loc="upper left", bbox_to_anchor=(1.0, 1.0), frameon=False, fontsize=8,
+              markerscale=1.6, labelcolor=INK_2)
+
+    x0, y0 = xs.max() - 200, ys.min() - 60  #scale bar bottom right, clear of the site outline
+    ax.plot([x0, x0 + 200], [y0, y0], color=INK, lw=3, solid_capstyle="butt")
+    ax.text(x0 + 100, y0 + 12, "200 m", ha="center", va="bottom", fontsize=8, color=INK)
+    save(fig, "fig_building_heights.png")
+
+
 # ============================================================ 9. land-use mix
 def fig_landuse(lu, grid_geo):
     """
