@@ -27,7 +27,7 @@
  * Frames load lazily, one imagery layer per frame, cached after first use.
  *
  * PROGRAMMES, NOT SCENARIOS. The CA's runs are land-use programmes (baseline,
- * compact, green) over the whole buurt, and the RL agents re-plan the site.
+ * compact, green) on the cleared design site, and the RL agents re-plan the same site.
  * Neither is a Rhino design option, so neither follows the scenario switch:
  * the card has its own programme selector. What does follow the switch is the
  * Rhino option scored on the same objective (score_scenarios.py ->
@@ -192,8 +192,8 @@ export async function setup(ctx) {
     <div id="luRhino"></div>
 
     <h4>Land-use programmes (CA) — not the Rhino options</h4>
-    <p class="muted">Development programmes over the whole buurt, set by us. They do
-    not change with the scenario switch above.</p>
+    <p class="muted">The design site cleared and rebuilt by the CA for two programmes
+    set by us, scored over the site. They do not change with the scenario switch above.</p>
     <table class="kv"><thead><tr><th>programme</th><th>objective</th><th>mix</th></tr></thead>
     <tbody>${ca.ranking.map((r) => {
       const win = r.scenario === ca.preferred;
@@ -283,8 +283,9 @@ export async function setup(ctx) {
       `<table class="kv"><thead><tr><th>wins across the weight space</th><th></th></tr></thead>` +
       `<tbody>${bars}</tbody></table>` +
       `<p class="muted">The objective weights ` +
-      `(${w.w_mix} · ${w.w_green} · ${w.w_prox} for mix, green and walkability) ` +
-      `are ours, so the ranking is re-scored across ` +  //housing is left out of the sweep: it is the same for every programme
+      `(${w.w_mix} · ${w.w_green} · ${w.w_prox}` + (w.w_housing ? ` · ${w.w_housing}` : "") +
+      ` for mix, green, walkability` + (w.w_housing ? ` and housing` : "") + `) ` +
+      `are ours, so the ranking is re-scored across ` +
       `${ws.parameters.n_weight_vectors.toLocaleString("en-GB")} weight vectors on the ` +
       `normalised simplex. <strong>${ws.default_winner}</strong> wins at our weights, ` +
       `by ${ws.default_margin.toFixed(4)}, and across ` +
@@ -295,8 +296,6 @@ export async function setup(ctx) {
           `${ws.nearest_flip.weights.join(" · ")} (favouring ` +
           `${ws.nearest_flip.winner}). `
         : `No weighting on the lattice changes the answer. `) +
-      (w.w_housing ? `The housing term (weight ${w.w_housing}) is the same for every programme, ` +
-        `which all keep or add homes, so it is not swept. ` : "") +
       `Note the margin against the spread between replicates of one scenario ` +
       `(${Object.entries(ws.margin.replicate_sd_at_default)
              .filter(([, x]) => x > 0)
@@ -332,8 +331,7 @@ export async function setup(ctx) {
       `</tbody></table>` +
       (rl.scope === "design_site" ?
         `<p class="muted">The agent re-plans every cell of the design site and is ` +
-        `scored over the site alone, so its numbers are not comparable with the ` +
-        `CA's above.</p>` : "") +
+        `scored over the site, like the CA's programmes above.</p>` : "") +
       `<p class="muted">The agent is linear Q-learning: it scores each empty cell ` +  //what the agent sees and learns
       `from ${rl.features?.length ?? 13} numbers (neighbours of each land use, road access, ` +
       `distance to water and a few flags) and learns one weight per number for each ` +
@@ -359,6 +357,7 @@ export async function setup(ctx) {
     const f = (x) => (x == null ? "—" : x.toFixed(3));
     const rows = [["random policy, mean", dqn.random_policy.mean],
                   ["linear agent, best episode", rl.best_objective],
+                  ...(rl.greedy_objective != null ? [["linear agent, learned policy", rl.greedy_objective]] : []),  //no exploration
                   ["DQN, best episode", dqn.best_objective],
                   ["DQN, learned policy", dqn.greedy_objective],
                   ...(dqn.hill_climb ? [["hill climbing", dqn.hill_climb.best_objective]] : [])];
@@ -368,8 +367,8 @@ export async function setup(ctx) {
       `</tbody></table>` +
       `<p class="muted">Same site, objective and reward; only the agent differs. ` +
       `<em>Random</em> is a purely random policy, the baseline to beat. ` +
-      `<em>Best</em> is the best training episode; the <em>learned policy</em> is one run of ` +
-      `the DQN with no exploration. The DQN is a convolutional ` +  //what the DQN is
+      `<em>Best</em> is the best training episode; a <em>learned policy</em> is one run of ` +
+      `the trained agent with no exploration. The DQN is a convolutional ` +  //what the DQN is
       `network that reads the grid itself and scores every cell and use at once. ` +
       `<em>Hill climbing</em> optimises the objective directly, no learning.</p>` +
       verdict();  //what the numbers say, from the numbers

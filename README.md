@@ -314,7 +314,7 @@ python analysis/knmi/train_forecast.py           # train + score the models  (~6
 
 python analysis/abm_landuse/fetch_landcover.py   # OSM green/water/roads     (~30 s)
 python analysis/abm_landuse/ca_landuse.py        # cellular automaton        (~5 s)
-python analysis/abm_landuse/rl_landuse.py --episodes 120  # RL agent, design site  (~90 s)
+python analysis/abm_landuse/rl_landuse.py  # RL agent, design site, 400 episodes
 python analysis/abm_landuse/weight_sensitivity.py # objective-weight sweep    (~2 s)
 
 python analysis/roads/road_network.py            # walk network, per scenario (~3 min first run)
@@ -354,7 +354,7 @@ Other results:
 | SVF under a tree crown vs 15 m from any tree | **0.35 vs 0.70** — trees remove 50 % of visible sky |
 | Weather forecast (temperature, +6 h) | MAE 1.29 °C, 54 % better than assuming no change |
 | Weather forecast (wind, +6 h) | MAE 1.13 m/s — but it under-predicts strong winds by 0.5 m/s |
-| Land-use model | CA prefers the **green** programme (mix 0.390); RL agent re-planning the design site reaches mix 0.777, but keeps only 84 of its 160 residential cells, even with homes in the objective |
+| Land-use model | CA prefers the **green** programme (mix 0.577); RL agent re-planning the design site reaches mix 0.804, but keeps only 76 of its 160 residential cells, even with homes in the objective |
 
 ### Figures (`docs/`)
 

@@ -255,11 +255,12 @@ def main() -> int:
     abm = json.loads((PROCESSED / "landuse_abm.json").read_text())
     rl = json.loads((PROCESSED / "landuse_rl.json").read_text())
     b = res["baseline"]["open_ground_as_vacant"]
-    assert b["buurt"]["objective"] == abm["scenarios"]["baseline"]["objective_best"], \
-        (b["buurt"]["objective"], abm["scenarios"]["baseline"]["objective_best"])
-    assert {k: b["buurt"][k] for k in abm["initial"]["score"]} == abm["initial"]["score"]  #dwellings is extra, the CA's keys must match
+    #since 2026-10-30 the CA scores the design site, like the RL agents: today's site must score the same in all three
+    assert abs(b["site"]["objective"] - abm["scenarios"]["baseline"]["objective_best"]) < 1e-3, \
+        (b["site"]["objective"], abm["scenarios"]["baseline"]["objective_best"])  #the CA rounds the distance first
+    assert {k: b["buurt"][k] for k in abm["initial"]["score"]} == abm["initial"]["score"]  #the same grid: dwellings is extra, the CA's keys must match
     assert b["site"]["objective"] == round(rl["baseline_objective"], 4), (b["site"]["objective"], rl["baseline_objective"])
-    print(f"  baseline reproduces the CA's buurt objective {abm['scenarios']['baseline']['objective_best']} "
+    print(f"  baseline reproduces the CA's site objective {abm['scenarios']['baseline']['objective_best']} "
           f"and the RL agent's site objective {rl['baseline_objective']}")
 
     out = {

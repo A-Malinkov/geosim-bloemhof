@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 weight_sensitivity.py -- does the green programme win because it is better, or
-because of the three weights we picked?
+because of the four weights we picked?
 
 THE PROBLEM
 -----------
@@ -10,9 +10,10 @@ ca_landuse.py ranks the scenarios on
     objective = 1.6*landuse_mix + 1.0*green_share + 0.8*max(0, 1 - d/400)
               + 1.1*min(1, homes / homes today)
 
-and the green programme wins. The housing term (since 2026-10-30) is 1 for all
-three programmes, because each keeps or adds housing, so it adds the same 1.1
-to each and cannot change the ranking: the sweep varies the other three. Those three weights were chosen by us. The README said so
+and the green programme wins. Since 2026-10-30 the CA clears the design site and
+rebuilds it, and the green programme asks for 120 housing cells against today's
+160, so the housing term differs between programmes: the sweep varies all four
+weights. Those weights were chosen by us. The README said so
 and called a sensitivity sweep "the obvious next step", which is this file.
 
 The margin is the reason it matters: green beats compact by about 0.02
@@ -21,15 +22,15 @@ small is not obviously larger than the arbitrariness in the weights.
 
 WHAT IT DOES
 ------------
-Every CA replicate already stores its three raw components, so the sweep needs
+Every CA replicate already stores its raw components, so the sweep needs
 no re-run of the model: it re-scores the stored replicates under many weight
 vectors and re-picks the best replicate each time, exactly as ca_landuse.py
 does. Re-running the CA would give the same answer and take minutes.
 
-Scaling all three weights leaves the ranking unchanged, so only the DIRECTION
+Scaling all four weights leaves the ranking unchanged, so only the DIRECTION
 matters. The sweep therefore walks the normalised simplex w_mix + w_green +
-w_prox = 1 on a triangular lattice. A grid over raw weights would spend most of
-its points re-testing the same three ratios.
+w_prox + w_housing = 1 on a lattice. A grid over raw weights would spend most of
+its points re-testing the same ratios.
 
 The CA's programmes are baseline, compact and green (keyed scenario_a and
 scenario_b until 2026-10-27). They are not the Rhino design options.
@@ -47,7 +48,7 @@ vector under a different one is not the same experiment as training under that
 vector, and pretending otherwise would flatter or damn the agent for free.
 Retraining across the simplex is a separate, much slower job.
 
-It also cannot tell you the objective contains the right three terms. A weight
+It also cannot tell you the objective contains the right four terms. A weight
 sweep explores the space we chose; it does not question it.
 
     python analysis/abm_landuse/weight_sensitivity.py
@@ -88,15 +89,18 @@ def components(rep: dict, homes: float, homes_today: float) -> tuple[float, floa
             min(1.0, homes / homes_today))  #no net loss of homes = 1
 
 
-def simplex(step: float) -> np.ndarray:
-    """Lattice points on w_mix + w_green + w_prox = 1, all strictly positive.
+def simplex(step: float, d: int = 4) -> np.ndarray:
+    """Lattice points on w_1 + ... + w_d = 1, all strictly positive.
 
     Zero weights are excluded: dropping a term is a different model, not a
     sensitivity of this one, and the corners would dominate the win shares.
     """
+    from itertools import combinations
     n = int(round(1.0 / step))
-    pts = [(i / n, j / n, (n - i - j) / n)
-           for i in range(1, n) for j in range(1, n - i)]
+    pts = []
+    for cut in combinations(range(1, n), d - 1):  #d positive parts of n: choose d-1 cut points
+        parts = np.diff((0, *cut, n))
+        pts.append(parts / n)
     return np.array(pts, dtype=float)
 
 
@@ -117,7 +121,7 @@ def main() -> int:
         return 2
 
     names = list(abm["scenarios"])
-    homes_today = abm["initial"]["score"]["residential_cells"]  #the CA counts housing cells
+    homes_today = abm.get("homes_today_cells", abm["initial"]["score"]["residential_cells"])  #the CA counts housing cells on the site
     # components of every replicate, per scenario: (n_replicates, 4)
     comp4 = {k: np.array([components(r, r["residential_cells"], homes_today) for r in abm["scenarios"][k]["replicates"]])
              for k in names}
@@ -142,17 +146,7 @@ def main() -> int:
         return 1
     print(f"  reproduced the published objectives (max drift {worst:.2e})")
 
-    #the housing term is the same for every replicate, so it shifts every programme equally and the sweep can drop it
-    housing = np.concatenate([comp4[k][:, 3] for k in names])
-    if np.ptp(housing) > 1e-9:
-        print("! the housing term differs between programmes; a sweep over the other three terms "
-              "does not cover it -- extend the sweep to four weights")
-        return 1
-    print(f"  housing term {housing[0]:.3f} for every programme: it cannot change the ranking, "
-          "the sweep varies the other three weights")
-    comp = {k: v[:, :3] for k, v in comp4.items()}
-    w0 = w04[:3]
-
+    comp, w0 = comp4, w04  #all four terms are swept
     # --- sweep ---------------------------------------------------------------
     W = simplex(args.step)
     # best replicate per scenario at every weight point: (n_points, n_scenarios)
@@ -181,7 +175,7 @@ def main() -> int:
     else:
         flip_pt, flip_to, flip_dist = None, None, None
 
-    print(f"\n  default weights {DEFAULT_W[:3]} (housing not swept) normalise to "
+    print(f"\n  default weights {DEFAULT_W} normalise to "
           f"({', '.join(f'{v:.3f}' for v in w0n)}) -> {default_winner} wins "
           f"by {margin[i0]:.4f}")
     if flip_to:
@@ -191,12 +185,11 @@ def main() -> int:
         print("  no weight vector on the lattice changes the winner")
 
     # a readable slice: how the winner changes as the mix weight varies alone
-    print("\n  holding green:prox at the default ratio, varying the mix weight:")
-    g0, p0 = w0n[1], w0n[2]
+    print("\n  holding green:prox:housing at the default ratio, varying the mix weight:")
+    others = w0n[1:] / w0n[1:].sum()  #the other three weights' default proportions
     rows = []
     for wm in (0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9):
-        rest = 1.0 - wm
-        w = np.array([wm, rest * g0 / (g0 + p0), rest * p0 / (g0 + p0)])
+        w = np.array([wm, *((1.0 - wm) * others)])
         vals = {k: float((comp[k] @ w).max()) for k in names}
         top = max(vals, key=vals.get)
         srt = sorted(vals.values(), reverse=True)
@@ -207,7 +200,7 @@ def main() -> int:
 
     out = {
         "method": "sensitivity of the CA scenario ranking to the objective weights",
-        "_note": "The CA is not re-run. Every replicate stores its three raw "
+        "_note": "The CA is not re-run. Every replicate stores its raw "
                  "objective components, so the sweep re-scores the stored "
                  "replicates and re-picks the best one, exactly as ca_landuse.py "
                  "does. Verified against the published ranking before sweeping.",
@@ -216,10 +209,9 @@ def main() -> int:
                      "w_housing*min(1, housing cells / housing cells today)",
         "default_weights": {"w_mix": DEFAULT_W[0], "w_green": DEFAULT_W[1],
                             "w_prox": DEFAULT_W[2], "w_housing": DEFAULT_W[3]},
-        "housing_term": round(float(housing[0]), 4),  #the same for every programme, so it is not swept
-        "_housing_note": "The housing term is equal for every programme and replicate, so it adds the "
-                         "same amount to each and cannot change the ranking. The sweep varies the other "
-                         "three weights on their normalised simplex.",
+        "_housing_note": "Since 2026-10-30 the green programme asks for fewer housing cells than "
+                         "today, so the housing term differs between programmes and all four weights "
+                         "are swept.",
         "default_weights_normalised": [round(float(v), 4) for v in w0n],
         "parameters": {
             "simplex_step": args.step,
@@ -248,8 +240,8 @@ def main() -> int:
             "Sweeps the scoring of the CA only. The RL agent optimises the "
             "objective directly, so re-scoring its result under other weights "
             "is not the same as retraining under them.",
-            "Explores the three terms we chose; it does not test whether they "
-            "are the right three.",
+            "Explores the four terms we chose; it does not test whether they "
+            "are the right four.",
             "Zero weights are excluded: dropping a term is a different model.",
         ],
     }

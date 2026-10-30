@@ -8,16 +8,16 @@
     "w_prox": 0.8,
     "w_housing": 1.1
   },
-  "housing_term": 1.0,
-  "_housing_note": "The housing term is equal for every programme and replicate, so it adds the same amount to each and cannot change the ranking. The sweep varies the other three weights on their normalised simplex.",
+  "_housing_note": "Since 2026-10-30 the green programme asks for fewer housing cells than today, so the housing term differs between programmes and all four weights are swept.",
   "default_weights_normalised": [
-    0.4706,
-    0.2941,
-    0.2353
+    0.3556,
+    0.2222,
+    0.1778,
+    0.2444
   ],
   "parameters": {
     "simplex_step": 0.01,
-    "n_weight_vectors": 4851,
+    "n_weight_vectors": 156849,
     "replicates_per_scenario": {
       "baseline": 12,
       "compact": 12,
@@ -26,125 +26,126 @@
     "zero_weights_excluded": true
   },
   "default_winner": "green",
-  "default_margin": 0.0073,
+  "default_margin": 0.0658,
   "win_share": {
     "baseline": 0.0,
-    "compact": 0.3428,
-    "green": 0.6572
+    "compact": 0.297,
+    "green": 0.703
   },
   "win_counts": {
     "baseline": 0,
-    "compact": 1663,
-    "green": 3188
+    "compact": 46586,
+    "green": 110263
   },
   "nearest_flip": {
     "weights": [
-      0.43,
-      0.19,
-      0.38
+      0.28,
+      0.15,
+      0.2,
+      0.37
     ],
     "winner": "compact",
-    "simplex_distance": 0.1828
+    "simplex_distance": 0.1649
   },
   "mix_weight_slice": [
     {
       "w_mix": 0.1,
       "winner": "green",
-      "margin": 0.0048,
+      "margin": 0.0027,
       "objectives": {
-        "baseline": 0.3692,
-        "compact": 0.405,
-        "green": 0.4098
+        "baseline": 0.561,
+        "compact": 0.6093,
+        "green": 0.6121
       }
     },
     {
       "w_mix": 0.2,
       "winner": "green",
-      "margin": 0.0056,
+      "margin": 0.0268,
       "objectives": {
-        "baseline": 0.366,
-        "compact": 0.4021,
-        "green": 0.4076
+        "baseline": 0.5241,
+        "compact": 0.5814,
+        "green": 0.6082
       }
     },
     {
       "w_mix": 0.3,
       "winner": "green",
-      "margin": 0.0063,
+      "margin": 0.0509,
       "objectives": {
-        "baseline": 0.3627,
-        "compact": 0.3991,
-        "green": 0.4055
+        "baseline": 0.4871,
+        "compact": 0.5534,
+        "green": 0.6043
       }
     },
     {
       "w_mix": 0.4,
       "winner": "green",
-      "margin": 0.0071,
+      "margin": 0.075,
       "objectives": {
-        "baseline": 0.3595,
-        "compact": 0.3962,
-        "green": 0.4033
+        "baseline": 0.4502,
+        "compact": 0.5255,
+        "green": 0.6005
       }
     },
     {
       "w_mix": 0.5,
       "winner": "green",
-      "margin": 0.0078,
+      "margin": 0.0991,
       "objectives": {
-        "baseline": 0.3563,
-        "compact": 0.3933,
-        "green": 0.4011
+        "baseline": 0.4133,
+        "compact": 0.4975,
+        "green": 0.5966
       }
     },
     {
       "w_mix": 0.6,
       "winner": "green",
-      "margin": 0.0086,
+      "margin": 0.1232,
       "objectives": {
-        "baseline": 0.3531,
-        "compact": 0.3903,
-        "green": 0.3989
+        "baseline": 0.3764,
+        "compact": 0.4695,
+        "green": 0.5928
       }
     },
     {
       "w_mix": 0.7,
       "winner": "green",
-      "margin": 0.0093,
+      "margin": 0.1473,
       "objectives": {
-        "baseline": 0.3499,
-        "compact": 0.3874,
-        "green": 0.3967
+        "baseline": 0.3395,
+        "compact": 0.4416,
+        "green": 0.5889
       }
     },
     {
       "w_mix": 0.8,
       "winner": "green",
-      "margin": 0.0101,
+      "margin": 0.1714,
       "objectives": {
-        "baseline": 0.3466,
-        "compact": 0.3845,
-        "green": 0.3946
+        "baseline": 0.3025,
+        "compact": 0.4136,
+        "green": 0.585
       }
     },
     {
       "w_mix": 0.9,
       "winner": "green",
-      "margin": 0.0108,
+      "margin": 0.1955,
       "objectives": {
-        "baseline": 0.3434,
-        "compact": 0.3815,
-        "green": 0.3924
+        "baseline": 0.2656,
+        "compact": 0.3857,
+        "green": 0.5812
       }
     }
   ],
   "margin": {
-    "at_default": 0.0073,
-    "median_over_simplex": 0.0101,
+    "at_default": 0.0658,
+    "median_over_simplex": 0.0577,
     "replicate_sd_at_default": {
       "baseline": 0.0,
-      "compact": 0.004,
-      "green": 0.0048
+      "compact": 0.0123,
+      "green": 0.0128
     }
   },
   "limitations": [

@@ -20,8 +20,8 @@ Component 4.7 · Owner: **Atanas Malinkov** · study area: Bloemhof · feeds `ap
 python analysis/morphology/fetch_landuse.py      # BAG units — needed first
 python analysis/abm_landuse/fetch_landcover.py   # ~30 s
 python analysis/abm_landuse/ca_landuse.py        # ~2 s
-python analysis/abm_landuse/rl_landuse.py --episodes 120   # ~90 s
-python analysis/abm_landuse/rl_dqn.py --hill-climb 56400   # 60 episodes, ~7 min on CPU, needs PyTorch
+python analysis/abm_landuse/rl_landuse.py   # 400 episodes, the default
+python analysis/abm_landuse/rl_dqn.py --hill-climb 56400   # 400 episodes, ~45 min on CPU, needs PyTorch
 python analysis/abm_landuse/weight_sensitivity.py --step 0.01  # ~2 s, no model re-run; 0.01 is the published lattice
 python analysis/abm_landuse/score_scenarios.py   # ~5 s, after analysis/scenarios/import_rhino.py
 ```
@@ -41,8 +41,10 @@ is worth arguing about — and they do disagree (below).
 A neighbour-rule CA, constrained by demand.
 
 Grid: 42 × 39 cells of 25 m over Bloemhof's bounding box. States: water, road, green, residential, retail, amenity, industry, vacant.
-Water and road never convert, and only **vacant** cells change: nothing that
-stands is demolished.
+For each programme the CA **clears the design site** (its 188 buildable cells
+become vacant; roads and water stay) and **rebuilds all of it**. The rest of
+Bloemhof stays as it is and is the context the site grows from. Inside the site
+only vacant cells change, so it grows inwards from its edges.
 
 Each step a vacant cell can take a use that one of its **8 neighbours** supports:
 
@@ -56,15 +58,22 @@ Each step a vacant cell can take a use that one of its **8 neighbours** supports
 
 A cell's score for a use is how many of its 8 neighbours support it. The uses
 the programme asks for take the highest-scoring vacant cells first, each at most
-its growth spread evenly over the 20 steps, so the map grows outwards from what
-exists. A random tie-break orders cells with the same score, so the 12 replicates
-differ.
+its growth spread evenly over the 20 steps, so the site fills from its edges
+inwards. A random tie-break orders cells with the same score, so the 12 replicates
+differ. A run continues past the 20 steps while the programme is not met and
+something can still grow (at most 20 more); cells no rule can reach then take
+what the programme still lacks, so the whole site is built. In the green
+programme that last rule places 0 to 10 cells per run (3 in its best run),
+because the park closes off pockets that housing cannot reach; compact needs it
+in no run.
 
 Until 2026-10-30 this was a constrained CA after White, Engelen & Uljee (1997):
 a 64-weight influence matrix over a radius of 4 cells, multiplied by
 suitability, road access, a stochastic term and inertia. It ranked the
 programmes the same way (green 1.374, compact 1.355) but every weight was an
-assumption to defend, so it was replaced by the rules above.
+assumption to defend, so it was replaced by the rules above. Until the same day
+both CAs only added a programme of 98 cells to the buurt's vacant land and left
+everything standing; now the CA rebuilds the cleared site, like the RL agents.
 
 ### Building the initial raster — a trap worth knowing
 
@@ -107,19 +116,26 @@ CA it replaced (κ 0.668, 0.481 and 0.295 over Bloemhof).
 
 ## Programme results
 
-The CA explores land-use **programmes** over the whole buurt: `compact` and
-`green` against `baseline`, no programme. They are not the Rhino design options.
+The CA rebuilds the cleared design site for two land-use **programmes**,
+`compact` and `green`, against `baseline`, the site today. They are not the Rhino design options.
 Until 2026-10-27 they were keyed `scenario_a` and `scenario_b`, which made the
 app show them under the same names as the Rhino options. The Rhino options are
 scored on the same objective further down.
 
-Programme: 98 cells (6.1 ha, 6 % of the grid), 12 stochastic replicates each.
+Programmes for the 188 cleared cells (Atanas, 2026-10-30), 12 stochastic replicates each:
 
-| programme | objective | land-use mix | green | home → amenity |
+| programme | housing | shops | amenity | green |
 |---|---|---|---|---|
-| baseline | 2.315 | 0.340 | 5.3 % | 91 m |
-| compact | 2.440 | 0.379 | 5.3 % | 59 m |
-| green **★** | 2.466 | 0.390 | 8.2 % | 70 m |
+| compact | 160 (today's) | 14 | 7 | 7 |
+| green | 120 | 10 | 8 | 50 |
+
+Scored over the design site, 189 cells, like the RL agents and the Rhino designs:
+
+| programme | objective | land-use mix | green | housing cells | home → amenity |
+|---|---|---|---|---|---|
+| baseline | 2.100 | 0.229 | 3.2 % | 160 | 99 m |
+| compact | 2.421 | 0.358 | 3.7 % | 160 | 44 m |
+| green **★** | 2.710 | 0.577 | 26.5 % | 120 | 52 m |
 
 ```
 objective = 1.6 · land-use mix + 1.0 · green share
@@ -131,44 +147,43 @@ The housing term went in on 2026-10-30. It scores homes against today, capped
 at 1: keeping today's homes scores the full 1.1, more homes earn nothing extra,
 and every home lost costs its share. A grid model only knows land, so the CA and
 the RL agents count **housing cells**; the Rhino designs count **dwellings**,
-so their storeys count (below). The two families are never compared. All three
-programmes keep or add housing cells, so each gets the full 1.1 and the ranking
-is the one it was without the term.
+so their storeys count (below). The two families are never compared.
 
-**The green programme wins.** Trading some housing for park and amenity beats
-maximising housing: it gains more on mix and green than it loses on walkability.
+**The green programme wins.** Its 40 fewer housing cells cost it 1.1 × 40 / 160 =
+0.275 on the housing term, but its park and the wider mix gain more. Its homes
+are a little further from a shop (52 m against 44 m), because the park takes
+ground the shops could have lined.
 
 ### How much of that is the weights?
 
 Those weights are ours, and the gap between the top two programmes is
-0.0073 on a normalised scale, against a replicate spread of
-σ 0.0040 and 0.0048. So the ranking deserves a
+0.0658 on a normalised scale, against a replicate spread of
+σ 0.0123 and 0.0128. So the ranking deserves a
 sensitivity check rather than a full stop.
 
 `weight_sensitivity.py` re-scores every stored replicate across
-4,851 weight vectors on the normalised simplex
-w_mix + w_green + w_prox = 1, re-picking the best replicate at each point exactly
+156,849 weight vectors on the normalised simplex
+w_mix + w_green + w_prox + w_housing = 1, re-picking the best replicate at each point exactly
 as `ca_landuse.py` does. The CA is not re-run: each replicate already stores its
-raw components, so the sweep is exact and takes seconds. The housing term is the
-same 1.0 for every programme and replicate, so it shifts them all equally and is
-left out of the sweep; the script checks that before it sweeps.
+raw components, so the sweep is exact and takes seconds. All four weights are
+swept, because the green programme's housing term (0.75) differs from compact's (1.0).
 
 | programme | share of the weight space it wins |
 |---|---|
-| green **★** | 66 % |
-| compact | 34 % |
+| green **★** | 70 % |
+| compact | 30 % |
 | baseline | 0 % |
 
-**green's win holds at the default and across two thirds of the weight
-space.** It takes 66 % of the weight space, compact takes the other 34 %, and
+**green's win holds at the default and across 70 % of the weight
+space.** Compact takes the other 30 %, and
 baseline never wins under any positive weighting — that last part is
 the firm result. The nearest weights that flip the answer are
-0.43 · 0.19 · 0.38 (favouring compact),
-0.18 away on the simplex. The default is not on a knife edge (with the
-influence-matrix CA it was 0.12 away and green took 59 %). Compact wins when walkability is weighted heavily against
-green space, which is exactly the trade it makes.
+0.28 · 0.15 · 0.20 · 0.37 (favouring compact),
+0.16 away on the simplex. The default is not on a knife edge. Compact wins when
+housing and walkability are weighted heavily against mix and green space, which
+is exactly the trade it makes.
 
-Two lattices agree on the shares: 0.02 (66 / 34) and 0.01 (66 / 34). (Over
+Two lattices agree on the shares: 0.02 (71 / 29) and 0.01 (70 / 30). (Over
 both buurten 200,000 uniform Dirichlet draws also agreed with the lattices;
 that check was not repeated for Bloemhof.)
 
@@ -179,11 +194,11 @@ normaliser was checked to make it fail.
 **What the sweep cannot do.** It sweeps the *scoring* of the CA. The RL agent
 optimises the objective directly, so re-scoring its result under other weights is
 not the same experiment as retraining under them, and it is excluded. It also
-explores the three terms we chose without asking whether they are the right three.
+explores the four terms we chose without asking whether they are the right four.
 
 ## The RL agent
 
-Q-learning, TD(0), **linear** function approximation, ε-greedy, 120 episodes.
+Q-learning, TD(0), **linear** function approximation, ε-greedy, 400 episodes.
 
 **It works on the design site only**, not the whole study area. Every cell of the
 site that is not road or water (188 of 189) is cleared, and each episode the
@@ -194,9 +209,10 @@ for walkability, but the agent cannot change it and is not scored on it.
 
 The objective is the CA's formula, **computed over the site's cells**: mix and
 green share of the site, and the mean distance from homes in the site to the
-nearest shop or amenity anywhere. Because the CA is scored over the whole buurt,
-**the two models' numbers are not comparable**, and the figures keep them apart
-(`fig_landuse_abm.png` for the CA, `fig_landuse_rl_site.png` for the agent).
+nearest shop or amenity anywhere. Since 2026-10-30 the CA rebuilds and scores the
+same site, so **the CA's programmes and the agent's plans are on one scale**. They
+still answer different questions: the CA lays out a programme we set, the agent
+chooses the programme itself.
 
 **What the agent sees.** For each candidate cell, 13 numbers: how many
 neighbours of each of the 8 land-use classes it has within 4 cells
@@ -219,36 +235,42 @@ not score better.
 
 Its housing term counts the site's housing cells against today's 160.
 
-Learns: 2.708 over the first 10 % of episodes → 2.775 over the last 10 %.
-Best 2.853 against 2.100 for the site today; its plan reaches mix 0.777,
-29 % green and 29 m to the nearest amenity (today 0.229, 3 % and 99 m).
+Learns: 2.717 over the first 10 % of episodes → 2.814 over the last 10 %. Its
+learned policy, one run with no exploration, scores 2.814.
+Best 2.848 against 2.100 for the site today; its plan reaches mix 0.804,
+30 % green and 28 m to the nearest amenity (today 0.229, 3 % and 99 m).
+
+**400 episodes, not 120.** At 120 episodes the curve looked flat at about 2.78,
+but trained longer it keeps rising until about episode 250 and levels off at
+2.81 (`fig_landuse_rl_training.png`). Its learned policy goes from 2.774 at 120
+episodes to 2.814 at 400, and keeps 108 housing cells instead of 50.
 
 The site's cells depend on the grid, and the grid is anchored on the study-area
 box's top edge. Narrowing the study area to Bloemhof on 2026-10-22 moved that
 edge, so the site now covers 189 cells instead of 195. Same site, different
 25 m cells.
 
-**It still gives up housing, about half: 160 housing cells become 84.** Before
+**It still gives up housing: 160 housing cells become 76 in its best plan**, 108 in its learned policy. Before
 the housing term nothing in the objective valued homes, and the agent kept 30.
 With the term each lost housing cell costs 1.1 / 160 = 0.007, but turning the
 first cells into shops, amenities and park still gains more on mix and green
-than that. Every optimiser below stops at about half: the linear agent at 84,
-the DQN at 77, hill climbing at 82. A higher housing weight would keep more. At
+than that. The DQN's best plan keeps 82 and hill climbing 82, about half. A
+higher housing weight would keep more. At
 1.1 this is the trade the objective asks for.
 
 ### The interesting disagreement
 
-The agent learned that **retail should avoid other retail**: −19.6, its
+The agent learned that **retail should avoid other retail**: −44.8, its
 strongest aversion. Our CA has no such rule: it puts shops on streets next to
 homes and lets them sit side by side wherever housing is densest. (The
 influence-matrix CA it replaced went further and gave retail→retail **+0.8**,
 so shops clustered.)
 
-Read the weights within a row, not on their own. Every class carries about +42
-to +45 on *vacant* neighbours and a negative weight on everything else, because
+Read the weights within a row, not on their own. Every class carries about +37
+to +38 on *vacant* neighbours and a negative weight on everything else, because
 on a cleared site the vacant count mainly tells the agent how early in the
 episode it is. What separates the classes is which neighbour each avoids most:
-retail→retail −19.6, amenity→amenity −19.6. That is the mix term asking for uses
+retail→retail −44.8, amenity→amenity −45.4. That is the mix term asking for uses
 to be spread out.
 
 Both are defensible and the disagreement is informative. The objective rewards
@@ -266,7 +288,7 @@ distance to water, plus broadcast site-wide shares and progress), four 3x3
 convolutions (two dilated) and a 1x1 head giving a Q-value for every cell x use,
 69,940 weights. It picks from all empty cells, not 40 sampled ones. DQN with
 replay, a target network, Double DQN targets, Huber loss and Adam; one update
-every 4 steps; 60 episodes, about 7 min on CPU. Needs PyTorch (CPU), which is
+every 4 steps; 400 episodes, about 45 min on CPU. Needs PyTorch (CPU), which is
 optional (see `requirements.txt`).
 
 It also reports what the linear script does not: a **random policy** on the same
@@ -279,18 +301,23 @@ the direct optimiser any learner should beat.
 |---|---|---|
 | today | 2.100 | 160 |
 | random policy, mean | 2.684 | |
-| linear agent, best episode | 2.853 | 84 |
-| DQN, best episode | 2.847 | 77 |
-| DQN, learned policy | 2.687 | 103 |
-| hill climbing, 56,400 evaluations, 8.5 s | **2.865** | 82 |
+| linear agent, best episode | 2.848 | 76 |
+| linear agent, learned policy | 2.814 | 108 |
+| DQN, best episode | 2.850 | 82 |
+| DQN, learned policy | 2.264 | 22 |
+| hill climbing, 56,400 evaluations, about 8 s | **2.865** | 82 |
 
-**The DQN does not do better.** Its best episode scores just below the linear
-agent's, and its learned policy scores 2.687, level with a random policy. A CNN
-with 70,000 weights gets about 2,800 gradient steps in 60 episodes, far too few;
-the linear agent's 13 weights per use learn faster from the same experience. The
+**The DQN does not do better.** Its best episode matches the linear agent's
+(2.850 against 2.848), but that is luck while exploring: its learned policy
+scores 2.264, far below a random policy (2.684), and keeps only 22 housing
+cells. Its training curve climbs for about 150 episodes and then breaks down;
+its last 10 % of episodes average 2.432 (`fig_landuse_rl_training.png`). The
+linear agent's 13 weights per use converge on the same experience where the
+CNN's 70,000 do not. We first trained it for 60 episodes (learned policy 2.687,
+level with random) and 120 (2.242); longer training only made it worse. The
 random baseline also puts the linear agent in proportion: on a cleared site a
-random mix of four uses already scores 2.68, so the agent's gain over it is 0.17
-(`fig_landuse_rl_comparison.png`).
+random mix of four uses already scores 2.68, so the linear agent's learned
+policy gains 0.13 over it (`fig_landuse_rl_comparison.png`).
 
 Before the housing term we tried the standard fixes on the DQN (choose only the
 use of each cell in turn, no discounting, 5-step returns, 300 episodes). None
@@ -299,7 +326,7 @@ objective, and so was `--keep-housing`, a hard rule that forced today's 160
 housing cells and under which neither agent learned. The housing term replaces
 that rule.
 
-**Hill climbing beats both agents in 8.5 seconds.** It reaches 2.865 and keeps
+**Hill climbing beats both agents in about 8 seconds.** It reaches 2.865 and keeps
 2,445 of its 56,400 moves. One evaluation of the objective takes about 0.15 ms,
 so optimising it directly is the right tool here; reinforcement learning would
 only earn its place by learning something that carries over, a policy for
@@ -352,8 +379,8 @@ cell is green. Open ground the model leaves unprogrammed (courtyards, pavements,
 gardens) is labelled vacant, the rule `rasterise()` applies to today's grid, so
 the two are compared like with like. The housing term counts dwellings: BAG
 today, `road_network.py`'s estimate for a design, which counts storeys. The
-baseline reproduces the CA's buurt objective (2.315) and the RL agent's site
-objective (2.100) exactly, which the script asserts.
+baseline reproduces the CA's site objective (2.100, within its rounding of the
+distance) and the RL agent's (2.100) exactly, which the script asserts.
 
 Over the design site, 189 cells:
 
@@ -365,8 +392,8 @@ Over the design site, 189 cells:
 | final | 2.943 | 0.728 | 29.6 % | 766 | 0.746 | 40 | 24 | 69 m |
 
 Over the whole buurt the objective is 2.315 today, 2.331 for scenario_a,
-2.462 for scenario_b and 2.467 for the final design, on the same grid and function as the CA programmes
-(compact 2.440, green 2.466).
+2.462 for scenario_b and 2.467 for the final design, on the same grid and function.
+Over the site they compare directly with the CA's programmes (compact 2.421, green 2.710).
 
 **The final design scores highest and is the only one the housing term costs.**
 A and B build more homes than they demolish and get the full 1.1. The final

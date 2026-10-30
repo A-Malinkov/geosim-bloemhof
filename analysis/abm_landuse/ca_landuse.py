@@ -71,7 +71,7 @@ import sys
 import numpy as np
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
-from common.project import PROCESSED, RAW, STUDY_AREA, bbox_rd  # noqa: E402
+from common.project import PROCESSED, RAW, STUDY_AREA, bbox_rd, design_site_polygon  # noqa: E402
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from weight_sensitivity import DEFAULT_W, components  # noqa: E402  #the objective, defined once
 
@@ -90,6 +90,12 @@ RULES = {
     AMENITY: {"next_to": [RESID], "street": False},  #a school or health practice serves the homes around it
 }
 STREET_FRAC = 0.2  #a cell is on a street if at least this share of it is carriageway
+
+#the programmes: cells of each use on the cleared design site (188 buildable cells); today has 160 housing, 8 shop or amenity, 6 green
+PROGRAMMES = {
+    "compact": {RESID: 160, RETAIL: 14, AMENITY: 7, GREEN: 7},  #today's housing kept, more shops (Atanas, 2026-10-30)
+    "green": {RESID: 120, RETAIL: 10, AMENITY: 8, GREEN: 50},  #a quarter less housing for a park
+}
 
 
 # ------------------------------------------------------------ initial raster
@@ -223,8 +229,9 @@ def growth_rates(grid, demand, steps):
     return {k: math.ceil(max(0, demand.get(k, 0) - int((grid == k).sum())) / steps) for k in RULES}
 
 
-def step(grid, demand, rng, street, rate):
-    """One CA step: vacant cells take the uses their neighbours support, until demand is met."""
+def step(grid, demand, rng, street, rate, allowed=None):
+    """One CA step: vacant cells take the uses their neighbours support, until demand is met.
+    allowed: cells that may convert (the cleared design site); None lets every vacant cell convert."""
     nb = neighbour_counts(grid)
     new = grid.copy()
     taken = np.zeros(grid.shape, dtype=bool)  #one conversion per cell per step
@@ -237,6 +244,8 @@ def step(grid, demand, rng, street, rate):
         rule = RULES[k]
         score = sum(nb[m] for m in rule["next_to"]).astype("float32")  #how many neighbours support this use
         ok = (grid == VACANT) & ~taken & (score >= 1)  #only vacant land, and only next to a supporting neighbour
+        if allowed is not None:
+            ok &= allowed  #only inside the area being rebuilt
         if rule["street"]:
             ok &= street  #shops only on a street
         cand = np.where(ok, score + rng.uniform(0, 1, grid.shape), -np.inf).ravel()  #random tie-break within a score
@@ -267,22 +276,26 @@ def shannon_mix(grid):
     return float(-(p * np.log(p)).sum() / math.log(len(ACTIVE)))
 
 
-def amenity_access(grid, cell_m):
-    """Mean distance from a home to the nearest amenity or shop, in metres."""
+def amenity_access(grid, cell_m, mask=None):
+    """Mean distance from a home to the nearest amenity or shop, in metres.
+    mask: only homes inside it count; shops and amenities anywhere on the grid serve them."""
     from scipy.ndimage import distance_transform_edt
     target = np.isin(grid, [AMENITY, RETAIL])
-    if not target.any() or not (grid == RESID).any():
+    homes = (grid == RESID) if mask is None else (grid == RESID) & mask
+    if not target.any() or not homes.any():
         return None
     d = distance_transform_edt(~target) * cell_m
-    return round(float(d[grid == RESID].mean()), 1)
+    return round(float(d[homes].mean()), 1)
 
 
-def score(grid, cell_m):
+def score(grid, cell_m, mask=None):
+    #the objective's terms over the whole grid, or over the cells of mask (the design site, as the RL agents score)
+    cells = grid if mask is None else grid[mask]
     return {
-        "landuse_mix": round(shannon_mix(grid), 4),
-        "green_share": round(float((grid == GREEN).sum()) / grid.size, 4),
-        "residential_cells": int((grid == RESID).sum()),
-        "mean_distance_to_amenity_m": amenity_access(grid, cell_m),
+        "landuse_mix": round(shannon_mix(cells), 4),
+        "green_share": round(float((cells == GREEN).sum()) / cells.size, 4),
+        "residential_cells": int((cells == RESID).sum()),
+        "mean_distance_to_amenity_m": amenity_access(grid, cell_m, mask),
     }
 
 
@@ -408,34 +421,30 @@ def main() -> int:
 
     street = road_frac >= STREET_FRAC  #cells a shop may take
 
-    base = {k: int((grid0 == k).sum()) for k in ACTIVE}
-    homes_today = base[RESID]  #housing cells today, the reference of the objective's housing term
-    n_new = int(0.06 * grid0.size)            # the development programme
-    print(f"\n  development programme: {n_new} cells "
-          f"({n_new * args.cell**2 / 10_000:.1f} ha)")
+    #the design site, cell centre inside it (as rl_landuse.py and score_scenarios.py use it)
+    from rasterio.features import rasterize as burn
+    site = burn([(design_site_polygon(), 1)], out_shape=grid0.shape, transform=transform).astype(bool)
+    cleared = grid0.copy()
+    cleared[site & ~np.isin(grid0, list(FIXED))] = VACANT  #the site cleared except roads and water, as the RL agents start
+    n_site = int((site & (cleared == VACANT)).sum())  #cells to rebuild
+    homes_today = int((grid0[site] == RESID).sum())  #housing cells on the site today, the housing term's reference
+    print(f"\n  design site {int(site.sum())} cells, {n_site} cleared and rebuilt; {homes_today} housing cells today")
 
-    #land-use programmes, keyed by their own names so they never read as the Rhino scenario_a/scenario_b
-    scenarios = {
-        "baseline": dict(base),
-        "compact": {**base, RESID: base[RESID] + n_new,
-                    RETAIL: base[RETAIL] + n_new // 4,
-                    AMENITY: base[AMENITY] + n_new // 6},  #was scenario_a until 2026-10-27
-        "green": {**base, RESID: base[RESID] + int(n_new * 0.7),
-                  GREEN: base[GREEN] + int(n_new * 0.5),
-                  AMENITY: base[AMENITY] + n_new // 6},  #was scenario_b until 2026-10-27
-    }
+    #land-use programmes on the cleared site, keyed by their own names so they never read as the Rhino scenario_a/scenario_b
+    scenarios = {"baseline": {k: int((grid0 == k).sum()) for k in RULES}}  #today: demand met, nothing converts
+    for name, prog in PROGRAMMES.items():
+        assert sum(prog.values()) == n_site, (name, sum(prog.values()), n_site)  #every cleared cell gets a use
+        scenarios[name] = {k: int((cleared == k).sum()) + prog.get(k, 0) for k in RULES}  #the rest of the grid plus the site's programme
     labels = {
-        "baseline": "reference: no development programme. Demand equals the "
-                    "current counts so nothing converts — this is the comparison "
-                    "state, NOT a validation of the model.",
-        "compact": "compact: maximum housing plus mixed ground floors",
-        "green": "green: less housing, more park and amenity",
+        "baseline": "today: the design site as it stands, nothing cleared.",
+        "compact": "compact: the design site cleared and rebuilt with today's housing and more shops",
+        "green": "green: the design site cleared and rebuilt with a quarter less housing and a park",
     }
 
     out = {
         "method": "cellular_automata",
         "colours": COLOURS,
-        "model": "neighbour-rule CA: vacant cells take the uses their 8 neighbours support, until demand is met",
+        "model": "neighbour-rule CA: the design site is cleared and its cells take the uses their 8 neighbours support, until the programme is met",
         "cell_size_m": args.cell,
         "bbox_rd": [round(v, 1) for v in bbox_rd()],
         "grid": {"nx": nx, "ny": ny, "origin_rd": [bbox_rd()[0], bbox_rd()[1]]},
@@ -447,17 +456,23 @@ def main() -> int:
             "rules": {CLASSES[k]: {"next_to": [CLASSES[m] for m in r["next_to"]], "street": r["street"]}
                       for k, r in RULES.items()},  #industry has no rule: it never grows
             "street_frac": STREET_FRAC,
-            "converts": "vacant cells only",
+            "converts": "the design site's cells, cleared first (roads and water stay); outside the site nothing changes",
             "growth": "each class's growth spread evenly over the steps, best-supported cells first, random tie-break",
         },
         "caveat": "Demand is set by us, not derived from a regional model. This "
                   "explores the consequences of a development programme, it does "
                   "not forecast one.",
         "_programmes_note": "The entries under 'scenarios' are land-use programmes "
-                            "(baseline, compact, green) over the whole buurt. They are "
-                            "NOT the Rhino design options scenario_a and scenario_b; those "
-                            "are scored on the same objective in landuse_scenarios.json.",
-        "initial": {"shares": s0, "score": score(grid0, args.cell)},
+                            "(baseline, compact, green) on the cleared design site, scored over the "
+                            "site like the RL agents. They are NOT the Rhino design options "
+                            "scenario_a and scenario_b; those are scored on the same objective in "
+                            "landuse_scenarios.json.",
+        "initial": {"shares": s0, "score": score(grid0, args.cell)},  #the whole grid today
+        "initial_site": score(grid0, args.cell, site),  #the design site today
+        "site_cells": int(site.sum()),
+        "rebuilt_cells": n_site,
+        "homes_today_cells": homes_today,  #the housing term's reference
+        "programmes_site_cells": {n: {CLASSES[k]: v for k, v in prog.items()} for n, prog in PROGRAMMES.items()},
         "scenarios": {},
     }
 
@@ -466,18 +481,34 @@ def main() -> int:
         best, best_obj, runs = None, -1e9, []
         for rep in range(args.replicates):
             rng = np.random.default_rng(args.seed + rep)
-            g = grid0.copy()
-            traj = [{"t": 0, "shares": s0}]
+            g = (grid0 if name == "baseline" else cleared).copy()  #a programme starts from the cleared site
+            traj = [{"t": 0, "shares": shares(g)}]  #the start: today, or the cleared site
             keep_grids = [g.copy()]
             rate = growth_rates(g, demand, args.steps)  #cells per step per class
             for t in range(1, args.steps + 1):
-                g = step(g, demand, rng, street, rate)
+                g = step(g, demand, rng, street, rate, allowed=site)  #only the site changes
                 traj.append({"t": t, "shares": shares(g)})
                 keep_grids.append(g.copy())
-            sc = score(g, args.cell)
+            extra = 0  #steps past the last one, while cells are still short of the programme and something can still grow
+            while extra < args.steps and any(demand[k] > int((g == k).sum()) for k in RULES):
+                g2 = step(g, demand, rng, street, {k: max(1, rate[k]) for k in RULES}, allowed=site)
+                if (g2 == g).all():
+                    break  #nothing can grow any more: the rest stays unmet and is reported
+                g, extra = g2, extra + 1
+            filled = 0  #cells no rule could reach take what the programme still lacks, so the whole site is built
+            left = np.flatnonzero((site & (g == VACANT)).ravel())
+            for k in sorted(RULES, key=lambda k: int((g == k).sum()) - demand[k]):  #largest shortfall first
+                short = demand[k] - int((g == k).sum())
+                if short > 0 and left.size:
+                    take = rng.choice(left, size=min(short, left.size), replace=False)
+                    g.ravel()[take] = k
+                    left = np.setdiff1d(left, take)
+                    filled += len(take)
+            keep_grids[-1] = g.copy()  #the last frame shows the finished site
+            sc = score(g, args.cell, site)  #over the design site, as the RL agents are scored
             #the objective: mixed, green, walkable, and no net loss of housing cells against today
             obj = float(np.dot(DEFAULT_W, components(sc, sc["residential_cells"], homes_today)))
-            runs.append({"replicate": rep, "objective": round(obj, 4), **sc})
+            runs.append({"replicate": rep, "objective": round(obj, 4), "extra_steps": extra, "filled_cells": filled, **sc})
             if obj > best_obj:
                 best_obj, best = obj, (g, traj, keep_grids)
 
@@ -487,7 +518,7 @@ def main() -> int:
         print(f"     objective over {args.replicates} runs: "
               f"mean {objs.mean():.3f}  best {objs.max():.3f}  sd {objs.std():.3f}")
         print(f"     land-use mix: {mixes.mean():.3f} +/- {mixes.std():.3f}")
-        sc = score(g, args.cell)
+        sc = score(g, args.cell, site)
         unmet = {CLASSES[k]: demand[k] - int((g == k).sum()) for k in RULES if demand[k] > int((g == k).sum())}  #demand the rules could not place
         if unmet:
             print(f"     unmet demand in the best run: {unmet} cells")

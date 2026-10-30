@@ -154,7 +154,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--cell", type=float, default=25.0)
-    ap.add_argument("--episodes", type=int, default=250)
+    ap.add_argument("--episodes", type=int, default=400)  #400 since 2026-10-30: the curve still rose at 120 and levels off after about 250
     ap.add_argument("--alpha", type=float, default=0.02, help="learning rate")
     ap.add_argument("--gamma", type=float, default=0.95)
     ap.add_argument("--eps-start", type=float, default=0.9)
@@ -194,10 +194,8 @@ def main() -> int:
     W = np.zeros((len(PLACEABLE), len(FEATURES)), dtype="float64")  #the whole model: one weight per use and feature
     curve, best_obj, best_grid = [], -1e9, None
 
-    for ep in range(args.episodes):
-        #exploration rate, decaying from eps_start towards eps_end
-        eps = args.eps_end + (args.eps_start - args.eps_end) * \
-            math.exp(-3.0 * ep / max(1, args.episodes))
+    def run_episode(eps, learn=True):
+        #one episode: fill the site cell by cell; learn=False only plays, for the learned policy without exploration
         g = grid0.copy()
         acc = accessibility(g, road_frac)  #roads do not change, so access is computed once per episode
         prev_obj = cleared_obj
@@ -232,6 +230,8 @@ def main() -> int:
             reward = (new_obj - prev_obj) * 100.0     # scale: deltas are tiny
             prev_obj = new_obj
 
+            if not learn:
+                continue  #playing only: no update
             # TD(0) with the greedy next-state value over a fresh candidate set
             nxt = np.flatnonzero(free.ravel())
             if nxt.size:
@@ -245,7 +245,13 @@ def main() -> int:
             W[ai] += args.alpha * (target - float(W[ai] @ phi)) * phi  #gradient step on the chosen use's weights only
             np.clip(W, -50, 50, out=W)  #keep weights bounded so a bad step cannot run away
 
-        final = objective(g, args.cell, site, homes_today)
+        return objective(g, args.cell, site, homes_today), g
+
+    for ep in range(args.episodes):
+        #exploration rate, decaying from eps_start towards eps_end
+        eps = args.eps_end + (args.eps_start - args.eps_end) * \
+            math.exp(-3.0 * ep / max(1, args.episodes))
+        final, g = run_episode(eps)
         curve.append(round(final, 4))  #objective at the end of each episode = the learning curve
         if final > best_obj:
             best_obj, best_grid = final, g.copy()
@@ -253,6 +259,8 @@ def main() -> int:
             print(f"     episode {ep+1:4}/{args.episodes}  eps {eps:.2f}  "
                   f"objective {final:.4f}  best {best_obj:.4f}")
 
+    greedy_obj, greedy_grid = run_episode(0.0, learn=False)  #the learned policy itself: no exploration, no update
+    greedy_score = site_score(greedy_grid, args.cell, site)
     g = best_grid  #report the best episode's plan, which may include lucky exploration
     score = site_score(g, args.cell, site)
     d = score["mean_distance_to_amenity_m"]
@@ -297,6 +305,8 @@ def main() -> int:
         "improvement_over_training": round(last - first, 4),
         "best_objective": round(best_obj, 4),
         "score": score,
+        "greedy_objective": round(greedy_obj, 4),  #one run of the learned policy, no exploration, as rl_dqn.py reports
+        "greedy_score": greedy_score,
         "learned_weights": learned,
         "caveat": "Linear Q-learning was chosen over a deep network so the "
                   "learned weights can be read and argued with. A DQN would "
@@ -314,7 +324,8 @@ def main() -> int:
 
     print(f"\n  learning: {first:.4f} (first 10% of episodes) -> "
           f"{last:.4f} (last 10%)   {'LEARNED' if last > first else 'NO IMPROVEMENT'}")
-    print(f"  best objective {best_obj:.4f} vs {base_obj:.4f} for the site today")
+    print(f"  best objective {best_obj:.4f} vs {base_obj:.4f} for the site today; "
+          f"learned policy {greedy_obj:.4f} ({greedy_score['residential_cells']} housing cells)")
     print(f"  best plan -> mix {score['landuse_mix']:.3f}, "
           f"green {100*score['green_share']:.1f}%, amenity {d} m, "
           f"{score['residential_cells']} residential cells "

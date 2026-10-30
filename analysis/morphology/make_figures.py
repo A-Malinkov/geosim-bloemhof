@@ -627,6 +627,10 @@ def fig_abm(ca, rl):
     classes, cols, cmap = lu_cmap(ca)
     names = list(ca["scenarios"].keys())
     site = rl.get("site_mask") if rl else None
+    crop = (slice(None), slice(None))
+    if site:  #since 2026-10-30 the CA rebuilds the design site: show the site with 3 cells of context
+        rows, cols_ = np.where(np.array(site, dtype=bool))
+        crop = (slice(max(0, rows.min() - 3), rows.max() + 4), slice(max(0, cols_.min() - 3), cols_.max() + 4))
 
     fig = plt.figure(figsize=(7.4, 3.2))
     gs = fig.add_gridspec(1, len(names), wspace=0.06, top=0.78, bottom=0.10,
@@ -634,10 +638,10 @@ def fig_abm(ca, rl):
     for i, n in enumerate(names):
         sc = ca["scenarios"][n]
         ax = fig.add_subplot(gs[0, i])
-        ax.imshow(np.array(sc["steps"][-1]["grid"], dtype="int16"), cmap=cmap,
+        ax.imshow(np.array(sc["steps"][-1]["grid"], dtype="int16")[crop], cmap=cmap,
                   vmin=0, vmax=len(classes) - 1, interpolation="nearest")
         if site:
-            outline_site(ax, site)
+            outline_site(ax, np.array(site, dtype=bool)[crop].tolist())  #the outline in the cropped frame
         ax.set_xticks([]); ax.set_yticks([])
         for sp in ax.spines.values():
             sp.set_visible(False)
@@ -661,8 +665,8 @@ def fig_abm(ca, rl):
                  x=0.012, y=1.0, ha="left", fontsize=11, fontweight="bold",
                  color=INK)
     fig.text(0.012, 0.915,
-             f"{STUDY_AREA.name}, 25 m cells · rules are assumed, "  #study-area name from project.py
-             "best of the replicates shown · * = preferred by the objective · "
+             "Design site cleared and rebuilt, 25 m cells · rules are assumed · "  #the CA rebuilds the site since 2026-10-30
+             "best of 12 runs · * = preferred by the objective · "
              "not the Rhino design options",  #say it on the figure too
              fontsize=8.5, color=INK_2, ha="left")
     save(fig, "fig_landuse_abm.png")
@@ -686,6 +690,7 @@ def fig_rl_comparison(runs):
                 ("random policy, best of %d" % rnd["episodes"], rnd["best"], MUTED),
                 ("linear Q, end of training", lin["objective_last_decile_mean"], SERIES_1),
                 ("linear Q, best episode", lin["best_objective"], SERIES_1),
+                *([("linear Q, greedy policy", lin["greedy_objective"], SERIES_1)] if "greedy_objective" in lin else []),  #its learned policy, since 2026-10-30
                 ("DQN, end of training", dqn["objective_last_decile_mean"], SERIES_2),
                 ("DQN, best episode", dqn["best_objective"], SERIES_2),
                 ("DQN, greedy policy", dqn["greedy_objective"], SERIES_2)]
@@ -723,6 +728,36 @@ def fig_rl_comparison(runs):
              "the random policy is the baseline to beat", fontsize=8.5, color=INK_2,
              ha="left", va="top")
     save(fig, "fig_landuse_rl_comparison.png")
+
+
+def fig_rl_training(lin, dqn):
+    """Training curves of both agents, against the random policy and hill climbing."""
+    fig, ax = plt.subplots(figsize=(7.4, 3.6))
+    fig.subplots_adjust(top=0.80, bottom=0.15, left=0.09, right=0.80)
+    tidy(ax, ygrid=True)
+    for run, col, name in ((lin, SERIES_1, "linear Q-learning"), (dqn, SERIES_2, "deep Q-network")):
+        c = np.array(run["learning_curve"])
+        x = np.arange(1, len(c) + 1)
+        ax.plot(x, c, color=col, lw=0.8, alpha=0.35)  #every episode
+        k = 10  #10-episode running mean
+        sm = np.convolve(c, np.ones(k) / k, mode="valid")
+        ax.plot(x[k - 1:], sm, color=col, lw=2.0)
+        ax.text(x[-1] + 2, sm[-1], name, color=col, fontsize=8.5, va="center", zorder=5,
+                bbox=dict(facecolor=ax.get_facecolor(), edgecolor="none", pad=1.5))  #direct label at the line end, readable over the other curve
+    rnd = dqn["random_policy"]["mean"]
+    ax.axhline(rnd, color=MUTED, lw=1.2, ls="--")
+    ax.text(ax.get_xlim()[1], rnd, " random policy", color=INK_2, fontsize=8.5, va="center")
+    if dqn.get("hill_climb"):  #the direct optimiser both agents should beat
+        hc = dqn["hill_climb"]["best_objective"]
+        ax.axhline(hc, color=INK, lw=1.2, ls=":")
+        ax.text(ax.get_xlim()[1], hc, " hill climbing", color=INK, fontsize=8.5, va="center")
+    ax.set_xlabel("training episode")
+    ax.set_ylabel("objective over the design site")
+    fig.suptitle("How the two RL agents learn", x=0.012, y=0.99, ha="left",
+                 fontsize=11, fontweight="bold", color=INK)
+    fig.text(0.012, 0.905, f"Objective at the end of each episode, thin; 10-episode mean, thick · "
+             f"the site today scores {lin['baseline_objective']:.3f}", fontsize=8.5, color=INK_2, ha="left")
+    save(fig, "fig_landuse_rl_training.png")
 
 
 def fig_rl_site(ca, rl, out="fig_landuse_rl_site.png",
@@ -893,8 +928,9 @@ def main() -> int:
             #one run per agent since the housing term went into the objective (2026-10-30)
             names = {"Objective with housing": ("landuse_rl.json", "landuse_rl_dqn.json")}
             if all((PROCESSED / f).exists() for pair in names.values() for f in pair):
-                fig_rl_comparison({k: tuple(json.loads((PROCESSED / f).read_text())
-                                            for f in pair) for k, pair in names.items()})
+                runs = {k: tuple(json.loads((PROCESSED / f).read_text()) for f in pair) for k, pair in names.items()}
+                fig_rl_comparison(runs)
+                fig_rl_training(*runs["Objective with housing"])  #the training curves on their own
     else:
         print("  (skipping ABM figure — run ca_landuse.py first)")
 

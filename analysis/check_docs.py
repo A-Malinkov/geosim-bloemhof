@@ -125,8 +125,8 @@ def main() -> int:
         sc = ca["scenarios"][pref]
         checks += [
             ("CA mix headline", r"Land-use model \| CA prefers", f"{sc['score']['landuse_mix']:.3f}", [MAIN]),
-            ("CA objective row", rf"^\| {pref} ", f"{sc['objective_best']:.3f}", [ABM]),
-            ("CA mix in that row", rf"^\| {pref} ", f"{sc['score']['landuse_mix']:.3f}", [ABM]),
+            ("CA objective row", rf"^\| {pref} \*\*★\*\* \|", f"{sc['objective_best']:.3f}", [ABM]),  #the starred programme row, not the rules table
+            ("CA mix in that row", rf"^\| {pref} \*\*★\*\* \|", f"{sc['score']['landuse_mix']:.3f}", [ABM]),
             ("CA kappa", r"^\| 10 % \|", f"{ca['validation']['erase_10pct']['kappa_mean']:.3f}", [ABM]),
         ]
     if rl:
@@ -269,6 +269,9 @@ def main() -> int:
         checks += [("ABM: random policy mean", r"^\| random policy, mean \|", f"{dqn['random_policy']['mean']:.3f}", [ABM]),
                    ("ABM: linear best", r"^\| linear agent, best episode \|", f"{rl['best_objective']:.3f}", [ABM]),
                    ("ABM: linear housing cells", r"^\| linear agent, best episode \|", f"| {rl['score']['residential_cells']} |", [ABM]),
+                   *([("ABM: linear learned policy", r"^\| linear agent, learned policy \|", f"{rl['greedy_objective']:.3f}", [ABM]),
+                      ("ABM: linear learned-policy housing cells", r"^\| linear agent, learned policy \|",
+                       f"| {rl['greedy_score']['residential_cells']} |", [ABM])] if "greedy_objective" in rl else []),
                    ("ABM: DQN best", r"^\| DQN, best episode \|", f"{dqn['best_objective']:.3f}", [ABM]),
                    ("ABM: DQN housing cells", r"^\| DQN, best episode \|", f"| {dqn['score']['residential_cells']} |", [ABM]),
                    ("ABM: DQN learned policy", r"^\| DQN, learned policy \|", f"{dqn['greedy_objective']:.3f}", [ABM])]
@@ -401,8 +404,10 @@ def main() -> int:
         ]
     if dqn and rl:
         claims += [
-            ("ABM README: 'the DQN does not do better'",
-             dqn["best_objective"] <= rl["best_objective"]),
+            ("ABM README: 'the DQN does not do better': its learned policy is below the linear agent's",
+             dqn["greedy_objective"] < rl.get("greedy_objective", rl["best_objective"])),
+            ("ABM README: 'its best episode matches the linear agent's' (within 0.01)",
+             abs(dqn["best_objective"] - rl["best_objective"]) < 0.01),
             ("ABM README: 'its learned policy is no better than the random policy' (within 0.01)",
              dqn["greedy_objective"] < dqn["random_policy"]["mean"] + 0.01),
         ]

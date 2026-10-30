@@ -41,7 +41,7 @@ Two numbers come out, and they are different things:
 
 USAGE
 -----
-    python analysis/abm_landuse/rl_dqn.py --hill-climb 56400   # the published run, 60 episodes, ~15 min
+    python analysis/abm_landuse/rl_dqn.py --hill-climb 56400   # the published run, 400 episodes, ~45 min
 
 EXPLORING (2026-10-23; tried, did not help, results no longer published)
 ---------
@@ -95,7 +95,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--cell", type=float, default=25.0)
-    ap.add_argument("--episodes", type=int, default=60)  #60 since 2026-10-30, ~15 min on a CPU
+    ap.add_argument("--episodes", type=int, default=400)  #400 since 2026-10-30, as the linear agent; ~45 min on a CPU
     ap.add_argument("--gamma", type=float, default=0.95)
     ap.add_argument("--lr", type=float, default=5e-4)
     ap.add_argument("--batch", type=int, default=64)
