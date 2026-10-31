@@ -242,7 +242,7 @@ def main() -> int:
                     help="append to output names (e.g. _2026-12-21) so extra days "
                          "do not overwrite the app's files")
     ap.add_argument("--scenario", default="baseline",
-                    choices=["baseline", "scenario_a", "scenario_b"])  #which built environment
+                    choices=["baseline", "scenario_a", "scenario_b", "final"])  #final: the Rhino Final Model, 2026-10-28  #which built environment
     args = ap.parse_args()
 
     dsm_path, dtm_path = RAW / "ahn_dsm_05m.tif", RAW / "ahn_dtm_05m.tif"

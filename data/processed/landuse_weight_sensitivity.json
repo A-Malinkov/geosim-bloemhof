@@ -1,147 +1,151 @@
 {
   "method": "sensitivity of the CA scenario ranking to the objective weights",
   "_note": "The CA is not re-run. Every replicate stores its three raw objective components, so the sweep re-scores the stored replicates and re-picks the best one, exactly as ca_landuse.py does. Verified against the published ranking before sweeping.",
-  "objective": "w_mix*landuse_mix + w_green*green_share + w_prox*max(0, 1 - mean_home_to_amenity_m/400)",
+  "objective": "w_mix*landuse_mix + w_green*green_share + w_prox*max(0, 1 - mean_home_to_amenity_m/400) + w_housing*min(1, housing cells / housing cells today)",
   "default_weights": {
     "w_mix": 1.6,
     "w_green": 1.0,
-    "w_prox": 0.8
+    "w_prox": 0.8,
+    "w_housing": 1.1
   },
+  "_housing_note": "Since 2026-10-30 the green programme asks for fewer housing cells than today, so the housing term differs between programmes and all four weights are swept.",
   "default_weights_normalised": [
-    0.4706,
-    0.2941,
-    0.2353
+    0.3556,
+    0.2222,
+    0.1778,
+    0.2444
   ],
   "parameters": {
     "simplex_step": 0.01,
-    "n_weight_vectors": 4851,
+    "n_weight_vectors": 156849,
     "replicates_per_scenario": {
       "baseline": 12,
-      "scenario_a": 12,
-      "scenario_b": 12
+      "compact": 12,
+      "green": 12
     },
     "zero_weights_excluded": true
   },
-  "default_winner": "scenario_b",
-  "default_margin": 0.0051,
+  "default_winner": "green",
+  "default_margin": 0.0658,
   "win_share": {
     "baseline": 0.0,
-    "scenario_a": 0.4104,
-    "scenario_b": 0.5896
+    "compact": 0.297,
+    "green": 0.703
   },
   "win_counts": {
     "baseline": 0,
-    "scenario_a": 1991,
-    "scenario_b": 2860
+    "compact": 46586,
+    "green": 110263
   },
   "nearest_flip": {
     "weights": [
-      0.45,
-      0.22,
-      0.33
+      0.28,
+      0.15,
+      0.2,
+      0.37
     ],
-    "winner": "scenario_a",
-    "simplex_distance": 0.122
+    "winner": "compact",
+    "simplex_distance": 0.1649
   },
   "mix_weight_slice": [
     {
       "w_mix": 0.1,
-      "winner": "scenario_b",
-      "margin": 0.0025,
+      "winner": "green",
+      "margin": 0.0027,
       "objectives": {
-        "baseline": 0.3692,
-        "scenario_a": 0.411,
-        "scenario_b": 0.4135
+        "baseline": 0.561,
+        "compact": 0.6093,
+        "green": 0.6121
       }
     },
     {
       "w_mix": 0.2,
-      "winner": "scenario_b",
-      "margin": 0.0033,
+      "winner": "green",
+      "margin": 0.0268,
       "objectives": {
-        "baseline": 0.366,
-        "scenario_a": 0.4076,
-        "scenario_b": 0.4109
+        "baseline": 0.5241,
+        "compact": 0.5814,
+        "green": 0.6082
       }
     },
     {
       "w_mix": 0.3,
-      "winner": "scenario_b",
-      "margin": 0.0042,
+      "winner": "green",
+      "margin": 0.0509,
       "objectives": {
-        "baseline": 0.3627,
-        "scenario_a": 0.4042,
-        "scenario_b": 0.4084
+        "baseline": 0.4871,
+        "compact": 0.5534,
+        "green": 0.6043
       }
     },
     {
       "w_mix": 0.4,
-      "winner": "scenario_b",
-      "margin": 0.0049,
+      "winner": "green",
+      "margin": 0.075,
       "objectives": {
-        "baseline": 0.3595,
-        "scenario_a": 0.4009,
-        "scenario_b": 0.4058
+        "baseline": 0.4502,
+        "compact": 0.5255,
+        "green": 0.6005
       }
     },
     {
       "w_mix": 0.5,
-      "winner": "scenario_b",
-      "margin": 0.0056,
+      "winner": "green",
+      "margin": 0.0991,
       "objectives": {
-        "baseline": 0.3563,
-        "scenario_a": 0.3977,
-        "scenario_b": 0.4033
+        "baseline": 0.4133,
+        "compact": 0.4975,
+        "green": 0.5966
       }
     },
     {
       "w_mix": 0.6,
-      "winner": "scenario_b",
-      "margin": 0.0063,
+      "winner": "green",
+      "margin": 0.1232,
       "objectives": {
-        "baseline": 0.3531,
-        "scenario_a": 0.3945,
-        "scenario_b": 0.4008
+        "baseline": 0.3764,
+        "compact": 0.4695,
+        "green": 0.5928
       }
     },
     {
       "w_mix": 0.7,
-      "winner": "scenario_b",
-      "margin": 0.0069,
+      "winner": "green",
+      "margin": 0.1473,
       "objectives": {
-        "baseline": 0.3499,
-        "scenario_a": 0.3913,
-        "scenario_b": 0.3982
+        "baseline": 0.3395,
+        "compact": 0.4416,
+        "green": 0.5889
       }
     },
     {
       "w_mix": 0.8,
-      "winner": "scenario_b",
-      "margin": 0.0078,
+      "winner": "green",
+      "margin": 0.1714,
       "objectives": {
-        "baseline": 0.3466,
-        "scenario_a": 0.388,
-        "scenario_b": 0.3958
+        "baseline": 0.3025,
+        "compact": 0.4136,
+        "green": 0.585
       }
     },
     {
       "w_mix": 0.9,
-      "winner": "scenario_b",
-      "margin": 0.0087,
+      "winner": "green",
+      "margin": 0.1955,
       "objectives": {
-        "baseline": 0.3434,
-        "scenario_a": 0.3848,
-        "scenario_b": 0.3935
+        "baseline": 0.2656,
+        "compact": 0.3857,
+        "green": 0.5812
       }
     }
   ],
   "margin": {
-    "at_default": 0.0051,
-    "median_over_simplex": 0.01,
+    "at_default": 0.0658,
+    "median_over_simplex": 0.0577,
     "replicate_sd_at_default": {
       "baseline": 0.0,
-      "scenario_a": 0.0056,
-      "scenario_b": 0.0051
+      "compact": 0.0123,
+      "green": 0.0128
     }
   },
   "limitations": [

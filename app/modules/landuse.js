@@ -5,17 +5,16 @@
  * Shows two models of how land use could evolve, and lets you watch them run.
  *
  *   Cellular automaton   analysis/abm_landuse/ca_landuse.py   -> landuse_abm.json
- *       Rules are ASSUMED — an influence matrix saying shops want streets and
- *       industry repels housing. Shows what follows from those assumptions.
+ *       Rules are ASSUMED — vacant cells take the uses their 8 neighbours support
+ *       (shops on streets next to homes). Shows what follows from those assumptions.
  *
  *   RL agent             analysis/abm_landuse/rl_landuse.py   -> landuse_rl.json
  *       Rules are LEARNED — the agent is given only the objective. Its weights
- *       can be read off and compared with the CA's matrix. A second example
- *       keeps today's housing (--keep-housing -> landuse_rl_keep_housing.json),
- *       and a convolutional DQN (rl_dqn.py -> landuse_rl_dqn*.json) is run on
- *       the same problem for comparison. The "Optimiser plan (RL)" layer shows
- *       the linear agent's plan for either rule; the housing-kept plans of both
- *       agents also have their own layers.
+ *       can be read off and compared with the CA's rules. A convolutional DQN
+ *       (rl_dqn.py -> landuse_rl_dqn.json) is run on the same problem for
+ *       comparison, with hill climbing as the baseline both should beat. Since
+ *       2026-10-30 the objective has a housing term, so there is one run each
+ *       and no separate housing rule.
  *
  * MAP RENDERING
  * -------------
@@ -26,6 +25,13 @@
  * View Factor overlay. Python warps it; the browser just drapes it.
  *
  * Frames load lazily, one imagery layer per frame, cached after first use.
+ *
+ * PROGRAMMES, NOT SCENARIOS. The CA's runs are land-use programmes (baseline,
+ * compact, green) on the cleared design site, and the RL agents re-plan the same site.
+ * Neither is a Rhino design option, so neither follows the scenario switch:
+ * the card has its own programme selector. What does follow the switch is the
+ * Rhino option scored on the same objective (score_scenarios.py ->
+ * landuse_scenarios.json).
  * ========================================================================== */
 
 export async function setup(ctx) {
@@ -44,12 +50,10 @@ export async function setup(ctx) {
                                 { quiet: true });
   const rl = await ctx.loadJson("../data/processed/landuse_rl.json",
                                 { quiet: true });
-  const rlKeep = await ctx.loadJson("../data/processed/landuse_rl_keep_housing.json",
-                                    { quiet: true });
   const dqn = await ctx.loadJson("../data/processed/landuse_rl_dqn.json",
                                  { quiet: true });
-  const dqnKeep = await ctx.loadJson("../data/processed/landuse_rl_dqn_keep_housing.json",
-                                     { quiet: true });
+  const rhino = await ctx.loadJson("../data/processed/landuse_scenarios.json",
+                                   { quiet: true });  //the Rhino options on the same objective, keyed by scenario
 
   if (!ca?.scenarios) {
     ctx.placeholder(body, {
@@ -109,7 +113,7 @@ export async function setup(ctx) {
 
   ctx.registerLayer({
     id: "landuseModel",
-    label: "Land-use simulation",
+    label: "Land-use programmes (CA, not the Rhino options)",  //programmes are not the scenario switch's options
     group: "Analysis",
     show: false,
     onToggle: async (v) => {
@@ -121,14 +125,13 @@ export async function setup(ctx) {
   });
 
   /* ---- optimiser plan layer ---------------------------------------------
-   * One layer for the RL plans; the panel's switch picks which rule. Each plan
-   * is one PNG already warped to EPSG:4326 by export_grid_png(). */
+   * The linear agent's plan, one PNG already warped to EPSG:4326 by
+   * export_grid_png(). */
   const plans = {};
   if (rl?.png && rl?.bbox_wgs84) plans.free = rl;
-  if (rlKeep?.png && rlKeep?.bbox_wgs84) plans.keep = rlKeep;
   const planLayers = {};
   let planOn = false;
-  let planKey = "free";
+  const planKey = "free";  //one plan since the housing rule went into the objective
 
   async function showPlan() {
     const key = planKey;  //the plan wanted when this call started
@@ -162,49 +165,13 @@ export async function setup(ctx) {
   if (Object.keys(plans).length) {
     ctx.registerLayer({
       id: "landuseRlPlan",
-      label: "Optimiser plan (RL)",
+      label: "RL site re-plan (not a Rhino option)",  //the agent's own plan for the site
       group: "Analysis",
       show: false,
       onToggle: async (v) => { planOn = v; await showPlan(); },
     });
   }
 
-  /* ---- housing-kept plans as their own layers ----------------------------
-   * The --keep-housing runs of both agents, each a standalone layer so they
-   * can be shown without the panel switch. Loaded on first toggle. */
-  function planLayer(id, label, run) {
-    if (!run?.png || !run?.bbox_wgs84) return;  //run missing or still a stub
-    let loading = null;  //Promise of the image layer, created on first tick
-    let on = false;  //checkbox state
-    ctx.registerLayer({
-      id, label, group: "Land use", show: false,
-      onToggle: async (v) => {
-        on = v;
-        if (v && !loading) {
-          loading = (async () => {
-            try {
-              const [w, s2, e, n] = run.bbox_wgs84;
-              const provider = await Cesium.SingleTileImageryProvider.fromUrl(
-                `../data/processed/${run.png}`,
-                { rectangle: Cesium.Rectangle.fromDegrees(w, s2, e, n) });
-              const l = viewer.imageryLayers.addImageryProvider(provider);
-              l.alpha = 0.8;
-              return l;
-            } catch (err) {
-              console.warn("[landuse] plan layer failed to load", run.png, err);
-              ctx.note(`${label}: failed to load`, "err");
-              return null;
-            }
-          })();
-        }
-        const l = loading ? await loading : null;
-        if (l) l.show = on;  //the state now, so unticking during the load wins
-        viewer.scene.requestRender();
-      },
-    });
-  }
-  planLayer("landuseRlKeepLinear", "RL plan, housing kept (linear)", rlKeep);  //linear Q-learning
-  planLayer("landuseRlKeepDqn", "RL plan, housing kept (DQN)", dqnKeep);  //convolutional DQN best episode
 
   /* ---- panel ------------------------------------------------------------ */
   const names = Object.keys(ca.scenarios);
@@ -219,11 +186,15 @@ export async function setup(ctx) {
     <table class="kv"><tbody>
       <tr><td>model</td><td>${ca.model ?? ca.method}</td></tr>
       <tr><td>cells</td><td>${ca.grid.nx} × ${ca.grid.ny} at ${ca.cell_size_m} m</td></tr>
-      <tr><td>replicates</td><td>${ca.parameters.replicates} per scenario</td></tr>
+      <tr><td>replicates</td><td>${ca.parameters.replicates} per programme</td></tr>
     </tbody></table>
 
-    <h4>Scenario ranking</h4>
-    <table class="kv"><thead><tr><th>scenario</th><th>objective</th><th>mix</th></tr></thead>
+    <div id="luRhino"></div>
+
+    <h4>Land-use programmes (CA) — not the Rhino options</h4>
+    <p class="muted">The design site cleared and rebuilt by the CA for two programmes
+    set by us, scored over the site. They do not change with the scenario switch above.</p>
+    <table class="kv"><thead><tr><th>programme</th><th>objective</th><th>mix</th></tr></thead>
     <tbody>${ca.ranking.map((r) => {
       const win = r.scenario === ca.preferred;
       return `<tr><td>${win ? "★ " : ""}${r.scenario}</td>` +
@@ -233,10 +204,10 @@ export async function setup(ctx) {
 
     <div id="luSens"></div>
 
-    <h4>Watch it evolve</h4>
+    <h4>Watch a programme evolve</h4>
     <div class="seg" id="luScen">
       ${names.map((n, i) =>
-        `<button data-s="${n}" class="${i === 0 ? "on" : ""}">${n.replace("scenario_", "")}</button>`).join("")}
+        `<button data-s="${n}" class="${i === 0 ? "on" : ""}">${n}</button>`).join("")}
     </div>
     <label class="slider">
       <span>step <output id="luOut">0</output> of ${maxT}</span>
@@ -312,7 +283,8 @@ export async function setup(ctx) {
       `<table class="kv"><thead><tr><th>wins across the weight space</th><th></th></tr></thead>` +
       `<tbody>${bars}</tbody></table>` +
       `<p class="muted">The objective weights ` +
-      `(${w.w_mix} · ${w.w_green} · ${w.w_prox} for mix, green and walkability) ` +
+      `(${w.w_mix} · ${w.w_green} · ${w.w_prox}` + (w.w_housing ? ` · ${w.w_housing}` : "") +
+      ` for mix, green, walkability` + (w.w_housing ? ` and housing` : "") + `) ` +
       `are ours, so the ranking is re-scored across ` +
       `${ws.parameters.n_weight_vectors.toLocaleString("en-GB")} weight vectors on the ` +
       `normalised simplex. <strong>${ws.default_winner}</strong> wins at our weights, ` +
@@ -341,7 +313,7 @@ export async function setup(ctx) {
       `<p class="muted">Erase a share of developed cells, restore the original ` +
       `demand, and see how much of the real map the CA rebuilds. κ discounts ` +
       `chance agreement.</p>` : "") +
-    (rl ? `<h4>RL agent — design site only</h4>` +
+    (rl ? `<h4>RL agent — re-plans the design site, not a Rhino option</h4>` +
       `<table class="kv"><tbody>` +
       `<tr><td>algorithm</td><td>${rl.algorithm}</td></tr>` +
       `<tr><td>episodes</td><td>${rl.parameters.episodes}</td></tr>` +
@@ -354,13 +326,12 @@ export async function setup(ctx) {
       `<tr><td>its land-use mix</td><td>${rl.score.landuse_mix.toFixed(3)}</td></tr>` +
       `<tr><td>home → amenity</td><td>${rl.score.mean_distance_to_amenity_m} m</td></tr>` +
       (rl.baseline_score ?
-        `<tr><td>residential cells</td><td>${rl.score.residential_cells} ` +
+        `<tr><td>housing cells</td><td>${rl.score.residential_cells} ` +
         `<span class="muted">vs ${rl.baseline_score.residential_cells} today</span></td></tr>` : "") +
       `</tbody></table>` +
       (rl.scope === "design_site" ?
         `<p class="muted">The agent re-plans every cell of the design site and is ` +
-        `scored over the site alone, so its numbers are not comparable with the ` +
-        `CA's above.</p>` : "") +
+        `scored over the site, like the CA's programmes above.</p>` : "") +
       `<p class="muted">The agent is linear Q-learning: it scores each empty cell ` +  //what the agent sees and learns
       `from ${rl.features?.length ?? 13} numbers (neighbours of each land use, road access, ` +
       `distance to water and a few flags) and learns one weight per number for each ` +
@@ -368,80 +339,93 @@ export async function setup(ctx) {
       `<p class="muted">The RL agent optimises this objective directly, while the ` +
       `CA follows fixed rules and is merely scored on it — so a higher number is ` +
       `expected and is <em>not</em> evidence that RL models cities better.</p>` +
-      planSwitch() + comparisonTable()
+      planInfoBlock() + comparisonTable()
       : `<p class="muted">RL agent not run yet — ` +
         `<code>analysis/abm_landuse/rl_landuse.py</code></p>`);
 
-  function planSwitch() {
-    if (!plans.free || !plans.keep) return "";
-    return `<h4>Optimiser plan on the map</h4>` +
-      `<div class="seg" id="luPlan">` +
-      `<button data-p="free" class="on">no housing rule</button>` +
-      `<button data-p="keep">housing kept</button></div>` +
-      `<p class="muted" id="luPlanInfo"></p>`;
-  }
-
-  function planInfo() {
-    const r = plans[planKey];
-    const el = body.querySelector("#luPlanInfo");
-    if (!r || !el) return;
-    el.innerHTML = `${planKey === "keep" ? "All " + r.baseline_score.residential_cells +
-      " housing cells kept" : "No rule on housing"}: objective ` +
-      `${r.best_objective.toFixed(3)}, mix ${r.score.landuse_mix.toFixed(3)}, ` +
-      `${(r.score.green_share * 100).toFixed(0)} % green, ` +
-      `${r.score.residential_cells} housing cells. Switch on ` +
-      `<em>Optimiser plan (RL)</em> under Analysis to see it.`;
+  //the linear agent's plan in one line, pointing at its map layer
+  function planInfoBlock() {
+    const r = plans.free;
+    if (!r) return "";
+    return `<p class="muted">Its best plan: objective ${r.best_objective.toFixed(3)}, ` +
+      `mix ${r.score.landuse_mix.toFixed(3)}, ${(r.score.green_share * 100).toFixed(0)} % green, ` +
+      `${r.score.residential_cells} housing cells. Switch on <em>RL site re-plan</em> to see it.</p>`;
   }
 
   function comparisonTable() {
-    const rows = [["no housing rule", rl, dqn], ["housing kept", rlKeep, dqnKeep]]
-      .filter(([, a, b]) => a && b?.random_policy);
-    if (!rows.length) return "";
+    if (!rl || !dqn?.random_policy) return "";
     const f = (x) => (x == null ? "—" : x.toFixed(3));
+    const rows = [["random policy, mean", dqn.random_policy.mean],
+                  ["linear agent, best episode", rl.best_objective],
+                  ...(rl.greedy_objective != null ? [["linear agent, learned policy", rl.greedy_objective]] : []),  //no exploration
+                  ["DQN, best episode", dqn.best_objective],
+                  ["DQN, learned policy", dqn.greedy_objective],
+                  ...(dqn.hill_climb ? [["hill climbing", dqn.hill_climb.best_objective]] : [])];
     return `<h4>Linear agent vs deep Q-network</h4>` +
-      `<table class="kv"><thead><tr><th>rule</th><th>random</th><th>linear</th>` +
-      `<th>DQN best</th><th>DQN greedy</th></tr></thead><tbody>` +
-      rows.map(([n, a, b]) => `<tr><td>${n}</td><td>${f(b.random_policy.mean)}</td>` +
-        `<td>${f(a.best_objective)}</td><td>${f(b.best_objective)}</td>` +
-        `<td>${f(b.greedy_objective)}</td></tr>`).join("") +
+      `<table class="kv"><thead><tr><th>site re-plan</th><th>objective</th></tr></thead><tbody>` +
+      rows.map(([n, v]) => `<tr><td>${n}</td><td>${f(v)}</td></tr>`).join("") +
       `</tbody></table>` +
       `<p class="muted">Same site, objective and reward; only the agent differs. ` +
-      `<em>Random</em> is the mean of a purely random policy, the baseline to beat. ` +
-      `<em>Best</em> is the best training episode; <em>greedy</em> is one run of ` +
-      `the DQN's learned policy with no exploration. The DQN is a convolutional ` +  //what the DQN is
-      `network that reads the grid itself and scores every cell and use at once.</p>` +
-      verdict(rows);  //what the numbers say, from the numbers
+      `<em>Random</em> is a purely random policy, the baseline to beat. ` +
+      `<em>Best</em> is the best training episode; a <em>learned policy</em> is one run of ` +
+      `the trained agent with no exploration. The DQN is a convolutional ` +  //what the DQN is
+      `network that reads the grid itself and scores every cell and use at once. ` +
+      `<em>Hill climbing</em> optimises the objective directly, no learning.</p>` +
+      verdict();  //what the numbers say, from the numbers
   }
 
   //one sentence on the comparison, generated so it cannot outlive a re-run
-  function verdict(rows) {
-    const below = rows.filter(([, , b]) => b.greedy_objective < b.random_policy.mean).map(([n]) => n);
-    const linearWins = rows.every(([, a, b]) => a.best_objective >= b.best_objective);
+  function verdict() {
     const parts = [];
-    if (linearWins) parts.push("the linear agent's best plan beats or matches the DQN's under every rule");
-    if (below.length) parts.push(`the DQN's learned policy scores below the random baseline (${below.join(", ")}), ` +
-      `so with ${rows[0][2].parameters?.episodes ?? "these"} episodes it has not learned the problem`);
+    if (rl.best_objective >= dqn.best_objective) parts.push("the linear agent's best plan beats or matches the DQN's");
+    if (dqn.greedy_objective < dqn.random_policy.mean + 0.01)  //below or level with random: nothing learned
+      parts.push(`the DQN's learned policy scores ${dqn.greedy_objective < dqn.random_policy.mean ? "below" : "level with"} ` +
+        `the random policy, so with ${dqn.parameters?.episodes ?? "these"} episodes it has not learned the problem`);
+    const hc = dqn.hill_climb?.best_objective;
+    if (hc != null && hc >= Math.max(rl.best_objective, dqn.best_objective))
+      parts.push(`hill climbing beats both agents in ${dqn.hill_climb.seconds} s`);
     return parts.length ? `<p class="muted">Result: ${parts.join("; ")}.</p>` : "";
   }
 
-  const planBtns = [...body.querySelectorAll("#luPlan button")];
-  planBtns.forEach((b) => b.addEventListener("click", async () => {
-    planBtns.forEach((x) => x.classList.toggle("on", x === b));
-    planKey = b.dataset.p;
-    planInfo();
-    await showPlan();
-  }));
-  planInfo();
-
-  // the scenario switcher at the top of the dashboard drives this too
-  ctx.onScenarioChange((s) => {
-    if (names.includes(s)) {
-      active = s;
-      segs.forEach((x) => x.classList.toggle("on", x.dataset.s === s));
-      render();
+  /* ---- the Rhino option on the same objective --------------------------
+   * The only part of this card that follows the scenario switch: the team's
+   * design scored like the CA's programmes, over the site and the buurt. */
+  const rhinoEl = body.querySelector("#luRhino");
+  function renderRhino(sc) {
+    const runs = ["baseline", "scenario_a", "scenario_b", "final"].filter((k) => rhino?.[k]?.open_ground_as_vacant);  //final: its shop blocks burn in as retail
+    if (!runs.length) {
+      rhinoEl.innerHTML = `<p class="muted">Rhino options not scored yet — ` +
+        `<code>analysis/abm_landuse/score_scenarios.py</code></p>`;
+      return;
     }
-  });
+    const f = (x, d = 3) => (x == null ? "—" : x.toFixed(d));
+    rhinoEl.innerHTML =
+      `<h4>The design options on this objective</h4>` +
+      `<table class="kv"><thead><tr><th>design site</th><th>objective</th><th>mix</th>` +
+      `<th>green</th><th>home → amenity</th></tr></thead><tbody>` +
+      runs.map((k) => {
+        const s = rhino[k].open_ground_as_vacant.site;
+        return `<tr${k === sc ? ' style="font-weight:600"' : ""}><td>${k === sc ? "▸ " : ""}${k}</td>` +  //the switch's scenario in bold
+          `<td>${f(s.objective)}</td><td>${f(s.landuse_mix)}</td>` +
+          `<td>${f(100 * s.green_share, 0)} %</td><td>${f(s.mean_distance_to_amenity_m, 0)} m</td></tr>`;
+      }).join("") +
+      `</tbody></table>` +
+      (runs.every((k) => rhino[k].open_ground_as_vacant.site.dwellings != null)  //homes under the table: a sixth column does not fit the card
+        ? `<p class="muted">Homes: ` + runs.map((k) => {
+            const s = rhino[k].open_ground_as_vacant.site;
+            return `${k} ${s.dwellings.toLocaleString("en-GB")} (housing term ${f(s.housing_term)})`;
+          }).join(", ") + `.</p>` : "") +
+      `<p class="muted">The Rhino options burned into today's 25 m grid and scored like the ` +
+      `programmes below. The housing term counts their homes against today's, capped at today, ` +  //dwellings, so storeys count
+      `so a design loses score only for homes it does not replace. ` +
+      `Mix counts green as a use, so housing replaced by green raises it ` +
+      `even with fewer shops. Open ground the model leaves unprogrammed counts as vacant; ` +
+      `counted as green the site objective would be ` +
+      runs.filter((k) => rhino[k].open_ground_as_green)
+        .map((k) => `${f(rhino[k].open_ground_as_green.site.objective)} (${k})`).join(", ") + `.</p>`;
+  }
+  ctx.onScenarioChange(renderRhino);  //the programmes below no longer follow the switch, this does
 
   render();
-  ctx.note(`Land use: CA + RL, best ${ca.preferred}`, "ok");
+  ctx.note(`Land use: CA + RL, best programme ${ca.preferred}`, "ok");
 }

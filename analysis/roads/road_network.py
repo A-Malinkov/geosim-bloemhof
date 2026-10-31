@@ -9,6 +9,7 @@ USAGE
 -----
     python analysis/roads/road_network.py               # every case in CASES
     python analysis/roads/road_network.py --refresh     # re-fetch the OSM network and stops
+    python analysis/roads/road_network.py --scenario final   # only these cases, the rest kept as written
 
 The first run fetches the OSM walk network and the public-transport stops
 (about three minutes) into cache/roads/ (gitignored).
@@ -93,17 +94,16 @@ HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 sys.path.insert(0, str(HERE.parent / "scenarios"))
 from common.project import (PROCESSED, RAW, ROOT, STUDY_AREA, buurt_polygons,  # noqa: E402
-                            design_site_polygon, study_area_polygon, to_wgs, write_processed)
+                            design_site_polygon, study_area_polygon, to_rd, to_wgs, write_processed)
 
 CACHE = ROOT / "cache" / "roads"  #gitignored
-WALK = CACHE / "walk_osm.graphml"  #OSM walk network, buffered
-STOPS = CACHE / "pt_stops.geojson"  #OSM public-transport stops, buffered
 
 PARAMS = {
     "buffer_m": 500,  #network fetched this far beyond the buurten
     "snap_tol_m": 35.0,  #free ends of new streets joined to a street this close
     "join_tol_m": 5.0,  #an old street end this close to a new street (or the reverse) is joined to it
     "node_tol_m": 0.5,  #graph nodes closer than this are one junction
+    "kerb_gap_m": 8.0,  #an OSM footway ending this close to a street, on or near the site, is joined to it
     "walk_m_per_min": 80.0,  #4.8 km/h
     "reach_min": 15,  #the 15-minute walk
     "near_min": 5,  #a short walk, 400 m: every home reaches everything within 15 min, so this is what varies
@@ -111,6 +111,16 @@ PARAMS = {
     "storey_m": 3.0,  #storey height for the new blocks' dwelling estimate
     "net_to_gross": 0.8,  #usable floor area / gross floor area, assumed
 }
+
+def extent_key(buffer_m):
+    #short key of the area the OSM cache covers: a changed study area gets a fresh download, not the old network
+    import hashlib
+    b = study_area_polygon().buffer(buffer_m).bounds
+    return hashlib.sha1(",".join(f"{v:.0f}" for v in b).encode()).hexdigest()[:8]
+
+
+WALK = CACHE / f"walk_osm_{extent_key(PARAMS['buffer_m'])}.graphml"  #OSM walk network, buffered, for this study area
+STOPS = CACHE / f"pt_stops_{extent_key(PARAMS['buffer_m'])}.geojson"  #OSM public-transport stops, same area
 
 DEST = {  #destination type -> BAG gebruiksdoel, or "rail" for OSM stops
     "shop": "winkelfunctie",
@@ -123,6 +133,7 @@ CASES = [
     {"scenario": "baseline"},
     {"scenario": "scenario_a"},
     {"scenario": "scenario_b"},  #OPTION 2, imported 2026-10-23
+    {"scenario": "final"},  #the Rhino Final Model, imported 2026-10-28
 ]
 
 
@@ -186,6 +197,24 @@ def destinations():
     return out, removed, float(bag[on_site & bag["gebruiksdoel"].str.contains("woonfunctie")]["area_m2"].median())
 
 
+def dest_with_amenities(dest, scenario):
+    #destinations as the scenario is lived: today with its own site amenities, an option with those placed on its
+    #ground floors by place_amenities.py; None if that has not run
+    import geopandas as gpd
+    from shapely.geometry import Point
+    path = PROCESSED / "design_amenities.geojson"
+    if not path.exists():
+        return None
+    want = ("demolished",) if scenario == "baseline" else ("placed", "labelled")  #today's own on cleared ground / the option's placed or labelled ones
+    feats = [f for f in json.loads(path.read_text())["features"]
+             if f["properties"]["scenario"] == scenario and f["properties"].get("status") in want]
+    out = {}
+    for k, pts in dest.items():
+        add = [Point(*to_rd(*f["geometry"]["coordinates"])) for f in feats if f["properties"]["type"] == k]
+        out[k] = gpd.GeoSeries(list(pts.values) + add, crs=28992) if add else pts  #the kept block is already in dest
+    return out
+
+
 def homes_for_scenario(scenario, dwelling_m2, p):
     #dwellings as (points RD, weight, on-site flag, new-block flag) for the scenario
     import geopandas as gpd
@@ -201,7 +230,10 @@ def homes_for_scenario(scenario, dwelling_m2, p):
         new, gone = load_scenario(scenario)
         gone = {g.rsplit(".", 1)[-1] for g in gone}  #NL.IMBAG.Pand.<id> -> <id>, BAG's pand_id
         h = h[~bag["pand_id"].astype(str).isin(gone).values]
-        storeys = np.maximum(1, np.round(new["height_m"].to_numpy() / p["storey_m"]))
+        storeys = np.maximum(1, np.round(new["own_height_m"].to_numpy() / p["storey_m"]))  #its own storeys, a podium below not counted
+        use = new["use"].to_numpy()
+        storeys = np.where(np.isin(use, ["shop", "shopping centre"]), 0, storeys)  #shop space holds no dwellings
+        storeys = np.where(use == "mixed", storeys - 1, storeys)  #a shop on the ground floor
         n = new.geometry.area.to_numpy() * storeys * p["net_to_gross"] / dwelling_m2  #estimated dwellings per block
         nb = gpd.GeoDataFrame({"w": n, "new": True}, geometry=new.geometry.centroid.values, crs=28992)
         print(f"  {scenario}: {len(bag) - len(h)} dwellings demolished, {n.sum():.0f} estimated in "
@@ -220,6 +252,7 @@ def lines_for_scenario(edges, scenario, p):
     from scenario_world import load_scenario, streets_for_scenario
     s = streets_for_scenario(edges, scenario, paths=True).explode(index_parts=False).reset_index(drop=True)  #with hand-drawn paths
     s["kind"] = np.where(s["name"].astype(str).str.endswith(("new street", " path", " link")), "new", "osm")  #design streets, paths, links
+    s = join_kerb_gaps(s, edges, scenario, p)  #pavements OSM stops at the kerb, every scenario alike
     if scenario == "baseline":
         return s
     blocks = shapely.union_all(load_scenario(scenario)[0].geometry.values).buffer(-0.5)  #a connector may touch a wall
@@ -261,7 +294,104 @@ def lines_for_scenario(edges, scenario, p):
              for g in conn]
     out = gpd.GeoDataFrame(rows, crs=s.crs)
     print(f"  {scenario}: {len(conn)} connectors, {sum(g.length for g in conn):.0f} m, join the new streets' free ends")
+    out = close_cut_ends(out, edges, blocks, scenario, p)  #old streets the design's water or blocks cut short
     return node_scenario_lines(out, blocks, scenario, p)
+
+
+def join_kerb_gaps(lines, edges, scenario, p):
+    #OSM maps a pavement as a footway that stops at the kerb, 6-7 m short of the road's centreline: six such ends
+    #round the site (Strevelsweg, Weimanspad, Lange Hilleweg) led nowhere in every scenario, today included
+    #(2026-10-28). Join each footway end that is a dead end in OSM, on or near the site, to the nearest other
+    #line within kerb_gap_m, and split that line there so the join is a junction
+    import geopandas as gpd
+    import pandas as pd
+    import shapely
+    key = lambda c: (round(c[0], 1), round(c[1], 1))
+    osm_deg = pd.Series([key(c) for g in edges.geometry for c in (g.coords[0], g.coords[-1])]).value_counts()
+    geoms = list(lines.geometry.values)
+    hw = lines["highway"].astype(str).to_numpy() if "highway" in lines else np.array([""] * len(lines))
+    tree = shapely.STRtree(geoms)
+    site = design_site_polygon().buffer(25)
+    cuts, joins = {}, []
+    for i, g in enumerate(geoms):
+        if lines["kind"].iat[i] != "osm" or not any(t in hw[i] for t in ("footway", "path", "pedestrian")):
+            continue  #OSM footways only; a street that ends is a cul-de-sac
+        for c in (g.coords[0], g.coords[-1]):
+            pt = shapely.Point(c)
+            if osm_deg.get(key(c), 0) != 1 or not pt.within(site):
+                continue  #a junction in OSM, or off the site
+            near = [j for j in tree.query(pt.buffer(p["kerb_gap_m"])) if j != i
+                    and geoms[j].distance(pt) <= p["kerb_gap_m"]]
+            if not near or any(geoms[j].distance(pt) < p["node_tol_m"] for j in near):
+                continue  #nothing close, or it already meets a line
+            j = min(near, key=lambda j: geoms[j].distance(pt))
+            d = geoms[j].project(pt)
+            joins.append(shapely.LineString([c, geoms[j].interpolate(d).coords[0]]))
+            cuts.setdefault(j, []).append(d)
+    rows = []
+    for i, g in enumerate(geoms):  #the joined lines split where a footway now meets them
+        for piece in split_at(g, cuts.get(i, [])):
+            rows.append({**lines.iloc[i].drop("geometry").to_dict(), "geometry": piece})
+    rows += [{"highway": "footway", "name": f"{scenario} kerb join", "kind": "osm", "geometry": g}
+             for g in joins]  #today's pavement OSM leaves out, so OSM-kind: not the design's network, the optimiser starts no link on it
+    print(f"  {scenario}: {len(joins)} footway ends joined across the kerb ({sum(g.length for g in joins):.0f} m)")
+    return gpd.GeoDataFrame(rows, geometry="geometry", crs=lines.crs)
+
+
+def close_cut_ends(lines, edges, blocks, scenario, p):
+    #ends of old streets that the scenario cut (not an end in OSM) and that lead nowhere: join each to the
+    #nearest other line within snap_tol_m by a straight connector clear of new blocks and water, or drop the
+    #piece. The shared pond and the blocks cut Dubbelstraat, Oudelandstraat and Heer Danielstraat round the
+    #kept block and left their pieces ending at the water's edge or a wall (2026-10-28)
+    import geopandas as gpd
+    import pandas as pd
+    import shapely
+    from scenario_world import water_for
+    key = lambda c: (round(c[0], 1), round(c[1], 1))
+    osm_deg = pd.Series([key(c) for g in edges.geometry for c in (g.coords[0], g.coords[-1])]).value_counts()  #lines meeting at each OSM end
+    geoms = list(lines.geometry.values)
+    water = shapely.union_all(water_for(scenario)) if water_for(scenario) else shapely.Point()
+    tree = shapely.STRtree(geoms)
+    site = design_site_polygon().buffer(25)
+    drop = {i for i, g in enumerate(geoms) if lines["kind"].iat[i] == "osm" and g.length < 2.0 and g.within(site)
+            and any(key(c) not in osm_deg for c in (g.coords[0], g.coords[-1]))}  #slivers the cut left on the site, never a real OSM edge
+    while True:  #until no piece is dropped: a join must not lead to a piece that goes
+        live = [i for i in range(len(geoms)) if i not in drop]
+        ends = pd.Series([key(geoms[i].coords[k]) for i in live for k in (0, -1)]).value_counts()  #ends shared are junctions
+        joins, more = [], set()
+        for i in live:
+            g = geoms[i]
+            if lines["kind"].iat[i] != "osm":
+                continue  #the design's own lines get their connectors in lines_for_scenario
+            for k in (0, -1):
+                c = g.coords[k]
+                pt = shapely.Point(c)
+                if ends[key(c)] > 1 or osm_deg.get(key(c), 0) == 1 or not pt.within(site):
+                    continue  #a junction, an end that is a dead end in OSM too, or off the site
+                if any(geoms[j].distance(pt) < p["node_tol_m"] for j in tree.query(pt.buffer(p["node_tol_m"]))
+                       if j != i and j not in drop):
+                    continue  #already on another line: node_scenario_lines makes it a junction
+                best = None
+                for j in tree.query(pt.buffer(p["snap_tol_m"])):  #nearest live line whose straight join stays dry and clear
+                    if j == i or j in drop:
+                        continue
+                    q = geoms[j].interpolate(geoms[j].project(pt))
+                    seg = shapely.LineString([c, q.coords[0]])
+                    if seg.length <= p["snap_tol_m"] and not seg.intersects(blocks) and not seg.crosses(water) \
+                            and not seg.within(water) and (best is None or seg.length < best.length):
+                        best = seg
+                if best is not None:
+                    joins.append(best)
+                else:
+                    more.add(i)  #nowhere to go: the piece goes, rather than end in the pond or at a wall
+        if not more:
+            break
+        drop |= more
+    rows = [r for i, r in enumerate(lines.to_dict("records")) if i not in drop]
+    rows += [{"highway": "connector", "name": f"{scenario} cut join", "kind": "connector", "geometry": g} for g in joins]
+    print(f"  {scenario}: {len(joins)} cut old-street ends joined ({sum(g.length for g in joins):.0f} m), "
+          f"{len(drop)} cut pieces with nowhere to go dropped")
+    return gpd.GeoDataFrame(rows, geometry="geometry", crs=lines.crs)
 
 
 def split_at(g, ds):
@@ -531,6 +661,20 @@ def run(case, p, dest, dwelling_m2):
     g = access(dist_grid, grid, np.ones(len(grid), bool), p)  #same origins in every scenario: the network's effect alone
     g["grid_points"] = g.pop("dwellings")
     res["site_grid"] = g
+    dw = dest_with_amenities(dest, sc)
+    if dw is not None:  #the same walks with the scenario's amenities: today's own, or the placed ones
+        D2 = {k: dist_from(net, G, snap(net, pts.values)) for k, pts in dw.items()}
+        d2 = {k: to_points(net, d, hs) for k, d in D2.items()}
+        g2 = access({k: to_points(net, d, gs) for k, d in D2.items()}, grid, np.ones(len(grid), bool), p)
+        g2["grid_points"] = g2.pop("dwellings")
+        res["with_amenities"] = {
+            "_note": "today with its own shops, health and schools on the site; an option with the ones "
+                     "place_amenities.py puts on its ground floors (the kept school is in both)",
+            "areas": {name: access(d2, homes, shapely.within(hp, poly), p) for name, poly in areas().items()},
+            "site_grid": g2}
+        wa = res["with_amenities"]
+        print(f"  with amenities: site dwellings {wa['areas']['design_site']['mean_of_types_m']} m, "
+              f"site grid {g2['mean_of_types_m']} m, study area {wa['areas']['study_area']['mean_of_types_m']} m")
     res["metrics"] = {k: res["areas"]["study_area"][k] for k in
                       ("n_nodes", "n_edges", "avg_street_length_m", "intersection_density_km2",
                        "circuity", "betweenness_max", "walk_15min_reach_frac")}  #the stub's shape, for the card
@@ -552,6 +696,7 @@ def run(case, p, dest, dwelling_m2):
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--refresh", action="store_true", help="re-fetch the OSM walk network and stops")
+    ap.add_argument("--scenario", nargs="+", help="run only these cases; the others stay as in road_metrics.json")
     args = ap.parse_args()
     p = PARAMS
     print(f"Walking network — {STUDY_AREA.name}")
@@ -566,9 +711,13 @@ def main() -> int:
         "destinations_on_site_today": removed,
         "dwelling_m2_site_median": dwelling_m2,
     }
+    old = json.loads((PROCESSED / "road_metrics.json").read_text()) if args.scenario else {}
     for case in CASES:  #one scenario per case
+        if args.scenario and case["scenario"] not in args.scenario:
+            out[case["scenario"]] = old.get(case["scenario"], {"_status": "not_computed_yet"})  #kept as written
+            continue
         out[case["scenario"]] = run(case, p, dest, dwelling_m2)
-    for sc in ("baseline", "scenario_a", "scenario_b"):
+    for sc in ("baseline", "scenario_a", "scenario_b", "final"):
         if sc not in out:
             out[sc] = {"_status": "not_computed_yet", "_note": f"{sc} has no massing yet"}  #keyed for 4.9 all the same
     write_processed("road_metrics.json", out)

@@ -485,6 +485,55 @@ def fig_density_maps(dens, grid_geo):
     save(fig, "fig_density_maps.png")
 
 
+def fig_building_heights(dens):
+    """One plain map: every building in the buurt, coloured by height class."""
+    from shapely.geometry import Point
+    from common.project import design_site_polygon, study_area_polygon
+    p = dens["parameters"]
+    area = study_area_polygon()
+    feats = json.loads((RAW / "buildings_3dbag.geojson").read_text())["features"]
+    xs, ys, fp, hs = [], [], [], []
+    for f in feats:  #buildings inside the buurt only, same clip as the statistics
+        x, y = f["geometry"]["coordinates"]
+        a, h = f["properties"].get("b3_opp_grond"), f["properties"].get("height_m")
+        if not a or a <= 0 or h is None or not area.contains(Point(x, y)):
+            continue
+        xs.append(x); ys.append(y); fp.append(a); hs.append(h)
+    xs, ys, fp, hs = map(np.array, (xs, ys, fp, hs))
+    main = (fp >= p["principal_min_footprint_m2"]) & (hs >= p["principal_min_height_m"])  #sheds apart, as in the height statistics
+
+    classes = [(0, 6, "under 6 m, 1–2 storeys", BLUE_RAMP[1]),  #four plain classes instead of a colour bar
+               (6, 9, "6–9 m, 2–3 storeys", BLUE_RAMP[5]),
+               (9, 15, "9–15 m, 3–5 storeys", BLUE_RAMP[8]),
+               (15, 1e9, "15 m and taller", BLUE_RAMP[12])]
+    fig, ax = plt.subplots(figsize=(7.2, 6.8))
+    size = lambda a: np.clip(a / 10, 5, 90)  #dot area follows the footprint
+    ax.scatter(xs[~main], ys[~main], s=size(fp[~main]), c=NEUTRAL, linewidths=0,
+               label="sheds and small structures")
+    for lo, hi, label, col in classes:
+        m = main & (hs >= lo) & (hs < hi)
+        ax.scatter(xs[m], ys[m], s=size(fp[m]), c=col, linewidths=0.2, edgecolors=SURFACE,
+                   label=f"{label} ({m.sum():,})")
+    for geom, lw, ls in ((area, 1.0, "-"), (design_site_polygon(), 1.4, "--")):  #buurt and design site outlines
+        for g in getattr(geom, "geoms", [geom]):
+            ax.plot(*g.exterior.xy, color=INK, lw=lw, ls=ls)
+    ax.set_aspect("equal")
+    ax.set_xticks([]); ax.set_yticks([])
+    for s in ax.spines.values():
+        s.set_visible(False)
+    c = dens["combined"]
+    titled(ax, f"Building heights — {STUDY_AREA.name}",
+           f"GSI {c['gsi']:.2f} · FSI {c['fsi']:.2f} · {c['layers']:.1f} storeys on average · "
+           "dashed line is the design site")
+    ax.legend(loc="upper left", bbox_to_anchor=(1.0, 1.0), frameon=False, fontsize=8,
+              markerscale=1.6, labelcolor=INK_2)
+
+    x0, y0 = xs.max() - 200, ys.min() - 60  #scale bar bottom right, clear of the site outline
+    ax.plot([x0, x0 + 200], [y0, y0], color=INK, lw=3, solid_capstyle="butt")
+    ax.text(x0 + 100, y0 + 12, "200 m", ha="center", va="bottom", fontsize=8, color=INK)
+    save(fig, "fig_building_heights.png")
+
+
 # ============================================================ 9. land-use mix
 def fig_landuse(lu, grid_geo):
     """
@@ -572,12 +621,16 @@ def outline_site(ax, mask, color=INK, lw=1.2):
 
 
 def fig_abm(ca, rl):
-    """The CA scenarios over the whole study area, design site outlined."""
+    """The CA land-use programmes over the whole study area, design site outlined."""
     import matplotlib.patches as mpatches
 
     classes, cols, cmap = lu_cmap(ca)
     names = list(ca["scenarios"].keys())
     site = rl.get("site_mask") if rl else None
+    crop = (slice(None), slice(None))
+    if site:  #since 2026-10-30 the CA rebuilds the design site: show the site with 3 cells of context
+        rows, cols_ = np.where(np.array(site, dtype=bool))
+        crop = (slice(max(0, rows.min() - 3), rows.max() + 4), slice(max(0, cols_.min() - 3), cols_.max() + 4))
 
     fig = plt.figure(figsize=(7.4, 3.2))
     gs = fig.add_gridspec(1, len(names), wspace=0.06, top=0.78, bottom=0.10,
@@ -585,10 +638,10 @@ def fig_abm(ca, rl):
     for i, n in enumerate(names):
         sc = ca["scenarios"][n]
         ax = fig.add_subplot(gs[0, i])
-        ax.imshow(np.array(sc["steps"][-1]["grid"], dtype="int16"), cmap=cmap,
+        ax.imshow(np.array(sc["steps"][-1]["grid"], dtype="int16")[crop], cmap=cmap,
                   vmin=0, vmax=len(classes) - 1, interpolation="nearest")
         if site:
-            outline_site(ax, site)
+            outline_site(ax, np.array(site, dtype=bool)[crop].tolist())  #the outline in the cropped frame
         ax.set_xticks([]); ax.set_yticks([])
         for sp in ax.spines.values():
             sp.set_visible(False)
@@ -608,12 +661,13 @@ def fig_abm(ca, rl):
     for t in leg.get_texts():
         t.set_color(INK_2)
 
-    fig.suptitle("Land-use scenarios from the cellular automaton",
+    fig.suptitle("Land-use programmes from the cellular automaton",  #programmes, not the Rhino scenario_a/b
                  x=0.012, y=1.0, ha="left", fontsize=11, fontweight="bold",
                  color=INK)
     fig.text(0.012, 0.915,
-             f"{STUDY_AREA.name}, 25 m cells · rules are assumed, "  #study-area name from project.py
-             "best of the replicates shown · * = preferred by the objective",
+             "Design site cleared and rebuilt, 25 m cells · rules are assumed · "  #the CA rebuilds the site since 2026-10-30
+             "best of 12 runs · * = preferred by the objective · "
+             "not the Rhino design options",  #say it on the figure too
              fontsize=8.5, color=INK_2, ha="left")
     save(fig, "fig_landuse_abm.png")
 
@@ -636,9 +690,12 @@ def fig_rl_comparison(runs):
                 ("random policy, best of %d" % rnd["episodes"], rnd["best"], MUTED),
                 ("linear Q, end of training", lin["objective_last_decile_mean"], SERIES_1),
                 ("linear Q, best episode", lin["best_objective"], SERIES_1),
+                *([("linear Q, greedy policy", lin["greedy_objective"], SERIES_1)] if "greedy_objective" in lin else []),  #its learned policy, since 2026-10-30
                 ("DQN, end of training", dqn["objective_last_decile_mean"], SERIES_2),
                 ("DQN, best episode", dqn["best_objective"], SERIES_2),
                 ("DQN, greedy policy", dqn["greedy_objective"], SERIES_2)]
+        if dqn.get("hill_climb"):  #the baseline both agents should beat: direct optimisation
+            rows.append(("hill climbing", dqn["hill_climb"]["best_objective"], INK))
         y = np.arange(len(rows))
         vals = [v for _, v, _ in rows]
         lo, hi = min(vals), max(vals)
@@ -673,12 +730,34 @@ def fig_rl_comparison(runs):
     save(fig, "fig_landuse_rl_comparison.png")
 
 
-def fig_rl_keep_housing(ca, rl):
-    """The same agent with today's number of residential cells kept."""
-    n = rl["baseline_score"]["residential_cells"]
-    fig_rl_site(ca, rl, out="fig_landuse_rl_keep_housing.png",
-                heading=f"The RL agent re-plans the site, keeping all {n} housing cells",
-                plan_label=f"Plan with {n} housing cells kept")
+def fig_rl_training(lin, dqn):
+    """Training curves of both agents, against the random policy and hill climbing."""
+    fig, ax = plt.subplots(figsize=(7.4, 3.6))
+    fig.subplots_adjust(top=0.80, bottom=0.15, left=0.09, right=0.80)
+    tidy(ax, ygrid=True)
+    for run, col, name in ((lin, SERIES_1, "linear Q-learning"), (dqn, SERIES_2, "deep Q-network")):
+        c = np.array(run["learning_curve"])
+        x = np.arange(1, len(c) + 1)
+        ax.plot(x, c, color=col, lw=0.8, alpha=0.35)  #every episode
+        k = 10  #10-episode running mean
+        sm = np.convolve(c, np.ones(k) / k, mode="valid")
+        ax.plot(x[k - 1:], sm, color=col, lw=2.0)
+        ax.text(x[-1] + 2, sm[-1], name, color=col, fontsize=8.5, va="center", zorder=5,
+                bbox=dict(facecolor=ax.get_facecolor(), edgecolor="none", pad=1.5))  #direct label at the line end, readable over the other curve
+    rnd = dqn["random_policy"]["mean"]
+    ax.axhline(rnd, color=MUTED, lw=1.2, ls="--")
+    ax.text(ax.get_xlim()[1], rnd, " random policy", color=INK_2, fontsize=8.5, va="center")
+    if dqn.get("hill_climb"):  #the direct optimiser both agents should beat
+        hc = dqn["hill_climb"]["best_objective"]
+        ax.axhline(hc, color=INK, lw=1.2, ls=":")
+        ax.text(ax.get_xlim()[1], hc, " hill climbing", color=INK, fontsize=8.5, va="center")
+    ax.set_xlabel("training episode")
+    ax.set_ylabel("objective over the design site")
+    fig.suptitle("How the two RL agents learn", x=0.012, y=0.99, ha="left",
+                 fontsize=11, fontweight="bold", color=INK)
+    fig.text(0.012, 0.905, f"Objective at the end of each episode, thin; 10-episode mean, thick · "
+             f"the site today scores {lin['baseline_objective']:.3f}", fontsize=8.5, color=INK_2, ha="left")
+    save(fig, "fig_landuse_rl_training.png")
 
 
 def fig_rl_site(ca, rl, out="fig_landuse_rl_site.png",
@@ -846,15 +925,12 @@ def main() -> int:
             fig_abm(abm, rl)
             if rl and rl.get("site_mask"):
                 fig_rl_site(abm, rl)
-            keep_path = PROCESSED / "landuse_rl_keep_housing.json"
-            if keep_path.exists():
-                fig_rl_keep_housing(abm, json.loads(keep_path.read_text()))
-            names = {"No housing rule": ("landuse_rl.json", "landuse_rl_dqn.json"),
-                     "Today's housing kept": ("landuse_rl_keep_housing.json",
-                                              "landuse_rl_dqn_keep_housing.json")}
+            #one run per agent since the housing term went into the objective (2026-10-30)
+            names = {"Objective with housing": ("landuse_rl.json", "landuse_rl_dqn.json")}
             if all((PROCESSED / f).exists() for pair in names.values() for f in pair):
-                fig_rl_comparison({k: tuple(json.loads((PROCESSED / f).read_text())
-                                            for f in pair) for k, pair in names.items()})
+                runs = {k: tuple(json.loads((PROCESSED / f).read_text()) for f in pair) for k, pair in names.items()}
+                fig_rl_comparison(runs)
+                fig_rl_training(*runs["Objective with housing"])  #the training curves on their own
     else:
         print("  (skipping ABM figure — run ca_landuse.py first)")
 

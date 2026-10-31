@@ -5,9 +5,9 @@ rl_dqn.py — a convolutional deep Q-network for the same land-use problem.
 Component 4.7, a second RL version. Owner: Atanas Malinkov
 
 rl_landuse.py stays as it is; this is the comparison. Everything that defines
-the PROBLEM is shared with it — grid, design site, objective, reward, discount,
-the --keep-housing rule and the output schema — so the two runs differ only in
-the agent:
+the PROBLEM is shared with it — grid, design site, objective (with its housing
+term since 2026-10-30), reward, discount and the output schema — so the two runs
+differ only in the agent:
 
     rl_landuse.py   linear Q-learning on 13 hand-made features of a cell
                     (neighbour counts, access, ...); 40 sampled cells per step.
@@ -19,9 +19,8 @@ THE NETWORK
 Fully convolutional over a crop of the grid around the site (the site plus 6
 cells). Input channels: one-hot land use (8), site mask, empty-cell mask,
 road accessibility, distance to water, and broadcast "global" channels — the
-current share of each placeable use on the site, the fraction of the site
-placed, and the housing quota still to place — because the objective is a
-site-wide sum, not a local one. Four 3x3 convolutions, two of them dilated
+current share of each placeable use on the site and the fraction of the site
+placed — because the objective is a site-wide sum, not a local one. Four 3x3 convolutions, two of them dilated
 (2 and 4), give each cell a view about 15 cells across; a 1x1 convolution
 outputs one Q-value per placeable use.
 
@@ -29,8 +28,9 @@ TRAINING
 --------
 DQN with experience replay, a target network synced every 500 steps, Double
 DQN targets, Huber loss and Adam. Epsilon falls linearly from 1.0 to 0.05 over
-the first 70 % of episodes. Actions that would break the housing rule are
-masked out of both the choice and the bootstrap target.
+the first 70 % of episodes. Until 2026-10-30 a --keep-housing rule masked
+actions that broke a fixed count of housing cells; the objective's housing term
+replaced it, so every use is allowed at every step.
 
 Two numbers come out, and they are different things:
     best_objective     the best episode seen during training (what
@@ -41,10 +41,9 @@ Two numbers come out, and they are different things:
 
 USAGE
 -----
-    python analysis/abm_landuse/rl_dqn.py --episodes 120
-    python analysis/abm_landuse/rl_dqn.py --episodes 120 --keep-housing
+    python analysis/abm_landuse/rl_dqn.py --hill-climb 56400   # the published run, 400 episodes, ~45 min
 
-EXPLORING (2026-10-23; the defaults above are the published runs, unchanged)
+EXPLORING (2026-10-23; tried, did not help, results no longer published)
 ---------
     --action use      fill the site's cells one after another and choose only
                       the USE of the current cell: 4 actions instead of
@@ -56,8 +55,7 @@ EXPLORING (2026-10-23; the defaults above are the published runs, unchanged)
                       to discount within one fixed-length episode
     --n-step 5        n-step returns: the reward reaches back 5 placements
     --hill-climb N    baseline: hill climbing on the objective itself with N
-                      evaluations (single-cell changes, or swaps under
-                      --keep-housing), accepting equal moves
+                      evaluations (single-cell changes), accepting equal moves
     --out-dir DIR --tag NAME   write somewhere other than data/processed
 
 Needs PyTorch (CPU is enough; not in requirements.txt, see the note there):
@@ -65,8 +63,8 @@ Needs PyTorch (CPU is enough; not in requirements.txt, see the note there):
 
 OUTPUT
 ------
-    data/processed/landuse_rl_dqn.json                (and _keep_housing)
-    data/processed/landuse_rl_dqn_best.png            (and _keep_housing)
+    data/processed/landuse_rl_dqn.json
+    data/processed/landuse_rl_dqn_best.png
 """
 from __future__ import annotations
 
@@ -90,14 +88,14 @@ from ca_landuse import (  # noqa: E402
 from rl_landuse import PLACEABLE, objective, site_score  # noqa: E402
 
 MARGIN = 6                      # cells of context around the site in the crop
-N_GLOBAL = len(PLACEABLE) + 2   # site shares, progress, quota left
+N_GLOBAL = len(PLACEABLE) + 1   # site shares, progress
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--cell", type=float, default=25.0)
-    ap.add_argument("--episodes", type=int, default=120)
+    ap.add_argument("--episodes", type=int, default=400)  #400 since 2026-10-30, as the linear agent; ~45 min on a CPU
     ap.add_argument("--gamma", type=float, default=0.95)
     ap.add_argument("--lr", type=float, default=5e-4)
     ap.add_argument("--batch", type=int, default=64)
@@ -110,8 +108,6 @@ def main() -> int:
                     help="episodes of a purely random policy, as the baseline to beat")
     ap.add_argument("--threads", type=int, default=0, help="torch threads (0 = default)")
     ap.add_argument("--seed", type=int, default=0)
-    ap.add_argument("--keep-housing", action="store_true",
-                    help="plan exactly as many residential cells as the site has today")
     #exploration options; the defaults reproduce the published runs
     ap.add_argument("--action", choices=["cell", "use"], default="cell",
                     help="cell: choose cell x use (published); use: cells in turn, choose the use")
@@ -134,7 +130,7 @@ def main() -> int:
     from rasterio.features import rasterize as burn
     from scipy.ndimage import distance_transform_edt
 
-    tag = ("_keep_housing" if args.keep_housing else "") + args.tag
+    tag = args.tag  #one run since the housing rule went into the objective
     out_dir = pathlib.Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     torch.manual_seed(args.seed)
@@ -162,13 +158,11 @@ def main() -> int:
     acc = accessibility(grid0, road_frac).astype("float32")
     dw = distance_transform_edt(grid0 != WATER).astype("float32")
     dist_water = np.clip(dw / 20.0, 0, 1)
-    base_obj = objective(grid_now, args.cell, site)
+    homes_today = int((grid_now[site] == RESID).sum())  #housing cells on the site today, the housing term's reference
+    base_obj = objective(grid_now, args.cell, site, homes_today)
     base_score = site_score(grid_now, args.cell, site)
-    cleared_obj = objective(grid0, args.cell, site)
-    quota = base_score["residential_cells"] if args.keep_housing else None
-    print(f"  objective of the site today: {base_obj:.4f}")
-    if quota is not None:
-        print(f"  housing rule: exactly {quota} residential cells, as today")
+    cleared_obj = objective(grid0, args.cell, site, homes_today)
+    print(f"  objective of the site today: {base_obj:.4f} ({homes_today} housing cells)")
 
     RES_I = PLACEABLE.index(RESID)
     site_c = torch.tensor(site[crop], dtype=torch.float32)
@@ -176,23 +170,14 @@ def main() -> int:
     placeable_t = torch.tensor(PLACEABLE)
 
     def allowed(n_resid: int, n_free: int) -> np.ndarray:
-        """Mask over PLACEABLE: which uses keep the housing rule satisfiable."""
-        ok = np.ones(len(PLACEABLE), dtype=bool)
-        if quota is not None:
-            need = quota - n_resid
-            if need <= 0:
-                ok[RES_I] = False
-            elif need >= n_free:
-                ok[:] = False
-                ok[RES_I] = True
-        return ok
+        #every use is allowed at every step; the mask stays because the replay format carries it
+        return np.ones(len(PLACEABLE), dtype=bool)
 
     def glob(counts: np.ndarray, n_free: int, n_resid: int) -> np.ndarray:
-        """Site-wide context: shares of each placeable use, progress, quota left."""
+        """Site-wide context: shares of each placeable use, progress."""
         placed = n_new - n_free
         shares = counts / max(1, n_new)
-        q_left = 0.0 if quota is None else max(0, quota - n_resid) / max(1, n_new)
-        return np.concatenate([shares, [placed / n_new, q_left]]).astype("float32")
+        return np.concatenate([shares, [placed / n_new]]).astype("float32")
 
     #stack every input channel: one-hot land use, empty mask, static layers, site-wide numbers
     def inputs(gc: torch.Tensor, fc: torch.Tensor, gl: torch.Tensor, cur=None) -> torch.Tensor:
@@ -294,7 +279,7 @@ def main() -> int:
             free[r_, c_] = False
             counts[ai] += 1
             n_resid += PLACEABLE[ai] == RESID
-            new = objective(g, args.cell, site)
+            new = objective(g, args.cell, site, homes_today)
             reward = (new - prev) * 100.0  #same reward as rl_landuse.py: change in the objective, times 100
             prev = new
             if not learn:
@@ -328,7 +313,7 @@ def main() -> int:
                 train_step()
             if steps % args.target_sync == 0:  #refresh the target network
                 tgt.load_state_dict(net.state_dict())
-        return objective(g, args.cell, site), g
+        return objective(g, args.cell, site, homes_today), g
 
     #one gradient step on a random minibatch from the replay memory
     def train_step():
@@ -391,43 +376,23 @@ def main() -> int:
         hr = np.random.default_rng(args.seed + 1)
         cells = [tuple(c) for c in cells0]
         g = grid0.copy()
-        uses = hr.choice(len(PLACEABLE), size=len(cells))
-        if quota is not None:  #start from a plan that keeps the rule: exactly quota residential cells
-            uses = hr.choice([i for i in range(len(PLACEABLE)) if i != RES_I], size=len(cells))
-            uses[hr.choice(len(cells), size=quota, replace=False)] = RES_I
+        uses = hr.choice(len(PLACEABLE), size=len(cells))  #a random start
         for (r_, c_), u in zip(cells, uses):
             g[r_, c_] = PLACEABLE[u]
-        cur = objective(g, args.cell, site)
+        cur = objective(g, args.cell, site, homes_today)
         best, best_g, evals, accepted = cur, g.copy(), 1, 0
         while evals < budget:
             i = int(hr.integers(len(cells)))
             r_, c_ = cells[i]
             old = g[r_, c_]
-            if quota is not None and hr.random() < 0.5:  #under the housing rule, half the moves are swaps
-                #swap a residential and a non-residential cell: the count stays at the quota
-                j = int(hr.choice([k for k, (rr, cc) in enumerate(cells) if (g[rr, cc] == RESID) != (old == RESID)]))
-                r2, c2 = cells[j]
-                g[r_, c_], g[r2, c2] = g[r2, c2], g[r_, c_]
-                new = objective(g, args.cell, site); evals += 1
-                if new >= cur:
-                    cur, accepted = new, accepted + 1
-                else:
-                    g[r_, c_], g[r2, c2] = g[r2, c2], g[r_, c_]
+            g[r_, c_] = hr.choice([u for u in PLACEABLE if u != old])  #one cell to another use
+            new = objective(g, args.cell, site, homes_today); evals += 1
+            if new >= cur:  #accept equal moves too, so it can walk along plateaus
+                cur, accepted = new, accepted + 1
             else:
-                choices = [PLACEABLE[k] for k in range(len(PLACEABLE))
-                           if PLACEABLE[k] != old and (quota is None or (PLACEABLE[k] == RESID) == (old == RESID))]
-                if not choices:
-                    continue
-                g[r_, c_] = hr.choice(choices)
-                new = objective(g, args.cell, site); evals += 1
-                if new >= cur:  #accept equal moves too, so it can walk along plateaus
-                    cur, accepted = new, accepted + 1
-                else:
-                    g[r_, c_] = old
+                g[r_, c_] = old
             if cur > best:
                 best, best_g = cur, g.copy()
-        if quota is not None:
-            assert int((best_g[site] == RESID).sum()) == quota
         return best, best_g, evals, accepted
 
     steps = 0
@@ -455,9 +420,6 @@ def main() -> int:
                   f"objective {final:.4f}  best {best_obj:.4f}  ({time.time()-t0:.0f} s)")
 
     greedy_obj, greedy_grid = run_episode(0.0, learn=False)  #what the network learned: no exploration
-    if quota is not None:
-        assert int((best_grid[site] == RESID).sum()) == quota
-        assert int((greedy_grid[site] == RESID).sum()) == quota
     score = site_score(best_grid, args.cell, site)
     greedy_score = site_score(greedy_grid, args.cell, site)
     first = float(np.mean(curve[:max(1, len(curve) // 10)]))
@@ -480,15 +442,15 @@ def main() -> int:
                        "eps_start": 1.0, "eps_end": 0.05,
                        "action": args.action, "order": args.order if use_mode else None,
                        "n_step": args.n_step, "eps_decay": args.eps_decay,
-                       "seed": args.seed, "programme_cells": n_new,
-                       "housing_rule": (f"exactly {quota} residential cells (as today)"
-                                        if quota is not None else "none")},
+                       "seed": args.seed, "programme_cells": n_new},
+        "homes_today_cells": homes_today,  #the housing term's reference
         "scope": "design_site",
         "scope_note": "Same problem as landuse_rl.json (site, objective, reward); "
                       "only the agent differs, so the two are directly comparable.",
         "site_cells": int(site.sum()),
         "objective": "over the design site: 1.6*landuse_mix + 1.0*green_share + "
-                     "0.8*max(0, 1 - mean_home_to_amenity_m/400)",
+                     "0.8*max(0, 1 - mean_home_to_amenity_m/400) + "
+                     "1.1*min(1, housing cells / housing cells today)",
         "baseline_objective": round(base_obj, 4),
         "baseline_score": base_score,
         "learning_curve": curve,

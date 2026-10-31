@@ -311,7 +311,7 @@ def main() -> int:
     ap.add_argument("--no-clip-buurt", action="store_true",
                     help="skip the CBS neighbourhood-boundary statistics")
     ap.add_argument("--scenario", default="baseline",
-                    choices=["baseline", "scenario_a", "scenario_b"])  #which built environment
+                    choices=["baseline", "scenario_a", "scenario_b", "final"])  #final: the Rhino Final Model, 2026-10-28  #which built environment
     args = ap.parse_args()
     sfx = "" if args.scenario == "baseline" else f"_{args.scenario}"  #baseline keeps the original file names
 

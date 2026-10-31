@@ -212,8 +212,9 @@ independent calculation agree to 0.1°, and a synthetic 40 m tower casts its
 shadow in the right direction (within 1°) and to the right length in both.
 
 Results, direct sun on open ground (clear sky, 1 m cells, sun every 30 min).
-The equinox run is the app's overlay; the solstices use `--suffix` so they do
-not overwrite it:
+All three days are app overlays, picked with the day buttons in the Direct sun
+section of the morphology card. The solstices use `--suffix` so they do not
+overwrite the equinox:
 
 | Day | Daylight | Bloemhof | Design site (median, share < 2 h) |
 |---|---|---|---|
@@ -278,18 +279,18 @@ Open ground only for SVF and sun hours, street length for H/W. Generated from
 `svf_summary*.json`, `shadow_summary*.json` and `canyon_hw*.json`; checked by
 `analysis/check_docs.py`.
 
-| | baseline | Scenario A | Scenario B |
-|---|---|---|---|
-| SVF, mean | 0.714 | 0.647 | 0.784 |
-| SVF, median | 0.744 | 0.646 | 0.825 |
-| sun 20 Mar, mean | 4.30 h | 3.78 h | 5.97 h |
-| sun 21 Jun, mean | 8.61 h | 8.80 h | 10.19 h |
-| sun 21 Dec, mean | 0.53 h | 0.49 h | 1.32 h |
-| sun 20 Mar, share < 2 h | 22 % | 40 % | 13 % |
-| sun 21 Dec, share < 2 h | 87 % | 87 % | 67 % |
-| street H/W, median | 0.39 | 0.48 | 0.28 |
-| street length that is canyon | 76 % | 74 % | 47 % |
-| street width W, median | 22.9 m | 24.6 m | 47.1 m |
+| | baseline | Scenario A | Scenario B | Final design |
+|---|---|---|---|---|
+| SVF, mean | 0.714 | 0.647 | 0.784 | 0.765 |
+| SVF, median | 0.744 | 0.646 | 0.825 | 0.809 |
+| sun 20 Mar, mean | 4.30 h | 3.78 h | 5.97 h | 5.84 h |
+| sun 21 Jun, mean | 8.61 h | 8.81 h | 10.19 h | 10.29 h |
+| sun 21 Dec, mean | 0.53 h | 0.49 h | 1.32 h | 1.11 h |
+| sun 20 Mar, share < 2 h | 22 % | 40 % | 13 % | 22 % |
+| sun 21 Dec, share < 2 h | 87 % | 87 % | 67 % | 71 % |
+| street H/W, median | 0.39 | 0.48 | 0.28 | 0.28 |
+| street length that is canyon | 76 % | 74 % | 47 % | 60 % |
+| street width W, median | 22.9 m | 24.6 m | 47.1 m | 38.3 m |
 
 Demolition opens ground, so the open-ground means cover different areas in
 each column: quote the shares next to the means (CLAUDE.md). Scenario A's

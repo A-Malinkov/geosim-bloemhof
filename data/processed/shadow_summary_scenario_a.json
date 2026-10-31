@@ -46,9 +46,9 @@
     "max": 12.0
   },
   "open_ground_sunlit_hours": {
-    "n_pixels": 651626,
-    "mean": 4.1904,
-    "std": 2.8355,
+    "n_pixels": 651637,
+    "mean": 4.1906,
+    "std": 2.8357,
     "min": 0.0,
     "p05": 0.0,
     "p25": 2.0,
@@ -63,9 +63,9 @@
       "inhabitants": 13740,
       "raster_coverage_fraction": 0.6281,
       "open_ground_sunlit_hours": {
-        "n_pixels": 418527,
-        "mean": 4.158,
-        "std": 2.689,
+        "n_pixels": 418538,
+        "mean": 4.1583,
+        "std": 2.6894,
         "min": 0.0,
         "p05": 0.0,
         "p25": 2.0,
@@ -81,9 +81,9 @@
     "inhabitants": null,
     "raster_coverage_fraction": 0.6281,
     "open_ground_sunlit_hours": {
-      "n_pixels": 418527,
-      "mean": 4.158,
-      "std": 2.689,
+      "n_pixels": 418538,
+      "mean": 4.1583,
+      "std": 2.6894,
       "min": 0.0,
       "p05": 0.0,
       "p25": 2.0,
@@ -95,9 +95,9 @@
   },
   "design_site": {
     "open_ground_sunlit_hours": {
-      "n_pixels": 86516,
-      "mean": 3.7788,
-      "std": 3.4915,
+      "n_pixels": 86527,
+      "mean": 3.7801,
+      "std": 3.4927,
       "min": 0.0,
       "p05": 0.0,
       "p25": 0.0,
@@ -106,7 +106,7 @@
       "p95": 10.0,
       "max": 12.0,
       "share_under_2h": 0.3995,
-      "share_under_4h": 0.5523
+      "share_under_4h": 0.5522
     }
   },
   "histogram": {
@@ -138,30 +138,30 @@
       12.0
     ],
     "counts": [
-      76664,
-      23800,
-      24404,
-      27568,
-      34942,
+      76665,
+      23805,
+      24407,
+      27559,
+      34943,
       38578,
-      38486,
-      36830,
-      36264,
-      35763,
-      36483,
-      35919,
-      35550,
-      33135,
-      30670,
+      38496,
+      36813,
+      36279,
+      35756,
+      36476,
+      35923,
+      35555,
+      33129,
+      30639,
       26805,
-      22362,
-      18818,
-      14505,
-      10499,
-      5777,
-      3323,
-      2983,
-      1498
+      22375,
+      18826,
+      14512,
+      10509,
+      5782,
+      3321,
+      2985,
+      1499
     ]
   },
   "_note": "Geometric clear-sky direct-sun hours on one day, an upper bound: no clouds, tree crowns treated as solid, shadows from obstructions beyond --radius ignored."

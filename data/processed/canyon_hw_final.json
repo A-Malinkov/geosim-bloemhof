@@ -1,0 +1,82 @@
+{
+  "study_area": "Bloemhof",
+  "scenario": "final",
+  "method": "street-canyon H/W (Oke 1988): perpendicular rays from OSM centrelines to the first 3DBAG main-building fa\u00e7ade on each side",
+  "parameters": {
+    "step_m": 10.0,
+    "max_ray_m": 60.0,
+    "wall_min_footprint_m2": 15,
+    "wall_min_height_m": 3.0,
+    "class_edges": [
+      0.4,
+      0.7,
+      1.0,
+      1.5
+    ]
+  },
+  "unit": "street length; H/W statistics over canyon samples (buildings on both sides)",
+  "per_buurt": {
+    "Bloemhof": {
+      "street_km": 26.03,
+      "canyon_share": 0.647,
+      "hw": {
+        "median": 0.4,
+        "mean": 0.44,
+        "p10": 0.15,
+        "p90": 0.78
+      },
+      "h_m_median": 9.1,
+      "w_m_median": 22.9,
+      "classes": {
+        "< 0.4 open": 0.513,
+        "0.4\u20130.7": 0.351,
+        "0.7\u20131.0": 0.088,
+        "1.0\u20131.5": 0.046,
+        "> 1.5 deep": 0.001
+      }
+    }
+  },
+  "combined": {
+    "street_km": 26.03,
+    "canyon_share": 0.647,
+    "hw": {
+      "median": 0.4,
+      "mean": 0.44,
+      "p10": 0.15,
+      "p90": 0.78
+    },
+    "h_m_median": 9.1,
+    "w_m_median": 22.9,
+    "classes": {
+      "< 0.4 open": 0.513,
+      "0.4\u20130.7": 0.351,
+      "0.7\u20131.0": 0.088,
+      "1.0\u20131.5": 0.046,
+      "> 1.5 deep": 0.001
+    }
+  },
+  "design_site": {
+    "street_km": 5.21,
+    "canyon_share": 0.599,
+    "hw": {
+      "median": 0.28,
+      "mean": 0.33,
+      "p10": 0.13,
+      "p90": 0.67
+    },
+    "h_m_median": 11.7,
+    "w_m_median": 38.3,
+    "classes": {
+      "< 0.4 open": 0.833,
+      "0.4\u20130.7": 0.083,
+      "0.7\u20131.0": 0.067,
+      "1.0\u20131.5": 0.016,
+      "> 1.5 deep": 0.0
+    }
+  },
+  "limitations": [
+    "One height per building (roof median), not eave height.",
+    "Gaps in a street wall narrower than the 10 m sample spacing are averaged over.",
+    "Dual carriageways are measured from each half's centreline."
+  ]
+}

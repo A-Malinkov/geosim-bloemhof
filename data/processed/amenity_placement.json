@@ -1,0 +1,327 @@
+{
+  "_method": "p-median per type, greedy then vertex substitution, on the walk network of road_network.py. See analysis/roads/place_amenities.py.",
+  "_params": {
+    "spacing_m": 15.0,
+    "street_m": 40.0,
+    "order": [
+      "education",
+      "health",
+      "shop"
+    ],
+    "fixed": {
+      "education": "0599100000623494"
+    },
+    "curve_factor": 2,
+    "dwelling_m2": 73.0,
+    "random_draws": 200,
+    "seed": 0
+  },
+  "budgets": {
+    "shop": {
+      "p": 20,
+      "median_m2": 69.0
+    },
+    "education": {
+      "p": 1,
+      "median_m2": 2183.0
+    },
+    "health": {
+      "p": 7,
+      "median_m2": 33.0
+    }
+  },
+  "baseline": {
+    "today_with_own_amenities": {
+      "shop": {
+        "site_dwellings_m": 126.9,
+        "site_grid_m": 134.5
+      },
+      "education": {
+        "site_dwellings_m": 250.7,
+        "site_grid_m": 240.9
+      },
+      "health": {
+        "site_dwellings_m": 252.6,
+        "site_grid_m": 266.7
+      },
+      "rail_stop": {
+        "site_dwellings_m": 637.3,
+        "site_grid_m": 612.0
+      },
+      "mean_of_four": {
+        "site_dwellings_m": 316.9,
+        "site_grid_m": 313.5
+      }
+    },
+    "_note": "no new blocks today; these are today's walks with the site's own shops, health and schools"
+  },
+  "scenario_a": {
+    "education": {
+      "p": 1,
+      "J_before_m": 247.7,
+      "J_after_m": 224.5,
+      "J_greedy_m": 224.5,
+      "J_random_mean_m": 235.2,
+      "J_random_best_m": 224.6,
+      "site_dwellings_before_m": 278.4,
+      "site_dwellings_after_m": 213.4,
+      "site_grid_before_m": 254.7,
+      "site_grid_after_m": 201.7,
+      "curve_m": [
+        247.66,
+        224.52,
+        208.39
+      ],
+      "floor_m2": 2183,
+      "dwellings_lost_est": 29.9
+    },
+    "health": {
+      "p": 7,
+      "J_before_m": 347.0,
+      "J_after_m": 233.5,
+      "J_greedy_m": 234.5,
+      "J_random_mean_m": 259.0,
+      "J_random_best_m": 247.6,
+      "site_dwellings_before_m": 434.1,
+      "site_dwellings_after_m": 102.1,
+      "site_grid_before_m": 419.9,
+      "site_grid_after_m": 122.7,
+      "curve_m": [
+        346.98,
+        279.8,
+        260.6,
+        252.97,
+        246.19,
+        240.12,
+        237.17,
+        234.47,
+        232.47,
+        230.62,
+        229.25,
+        228.19,
+        227.22,
+        226.25,
+        225.41
+      ],
+      "floor_m2": 231,
+      "dwellings_lost_est": 3.2
+    },
+    "shop": {
+      "p": 20,
+      "J_before_m": 150.0,
+      "J_after_m": 102.1,
+      "J_greedy_m": 102.6,
+      "J_random_mean_m": 114.3,
+      "J_random_best_m": 109.5,
+      "site_dwellings_before_m": 244.9,
+      "site_dwellings_after_m": 78.5,
+      "site_grid_before_m": 215.3,
+      "site_grid_after_m": 86.1,
+      "curve_m": [
+        149.97,
+        129.54,
+        124.15,
+        118.8,
+        116.05,
+        113.55,
+        111.43,
+        110.12,
+        108.92,
+        107.79,
+        106.86,
+        106.08,
+        105.46,
+        104.9,
+        104.39,
+        103.9,
+        103.56,
+        103.25,
+        102.98,
+        102.75,
+        102.55,
+        102.36,
+        102.19,
+        102.02,
+        101.88,
+        101.75,
+        101.62,
+        101.59,
+        101.57,
+        101.55,
+        101.55,
+        101.54,
+        101.54,
+        101.54,
+        101.54,
+        101.54,
+        101.54,
+        101.54,
+        101.54,
+        101.54,
+        101.54
+      ],
+      "floor_m2": 1380,
+      "dwellings_lost_est": 18.9
+    },
+    "mean_of_four": {
+      "site_dwellings_before_m": 394.5,
+      "site_dwellings_after_m": 253.7,
+      "site_grid_before_m": 370.7,
+      "site_grid_after_m": 250.9
+    },
+    "n_candidates": 379,
+    "dwellings_lost_est": 52.0
+  },
+  "scenario_b": {
+    "education": {
+      "p": 1,
+      "J_before_m": 249.5,
+      "J_after_m": 223.4,
+      "J_greedy_m": 223.4,
+      "J_random_mean_m": 241.0,
+      "J_random_best_m": 223.4,
+      "site_dwellings_before_m": 310.5,
+      "site_dwellings_after_m": 189.5,
+      "site_grid_before_m": 280.3,
+      "site_grid_after_m": 203.1,
+      "curve_m": [
+        249.5,
+        223.43,
+        216.19
+      ],
+      "floor_m2": 2183,
+      "dwellings_lost_est": 29.9
+    },
+    "health": {
+      "p": 7,
+      "J_before_m": 334.3,
+      "J_after_m": 252.6,
+      "J_greedy_m": 253.2,
+      "J_random_mean_m": 274.9,
+      "J_random_best_m": 262.3,
+      "site_dwellings_before_m": 414.5,
+      "site_dwellings_after_m": 137.4,
+      "site_grid_before_m": 414.2,
+      "site_grid_after_m": 134.2,
+      "curve_m": [
+        334.34,
+        294.34,
+        280.66,
+        268.05,
+        260.72,
+        257.79,
+        255.23,
+        253.23,
+        251.86,
+        250.55,
+        249.89,
+        249.29,
+        248.71,
+        248.23,
+        247.81
+      ],
+      "floor_m2": 231,
+      "dwellings_lost_est": 3.2
+    },
+    "shop": {
+      "p": 20,
+      "J_before_m": 138.5,
+      "J_after_m": 113.7,
+      "J_greedy_m": 113.7,
+      "J_random_mean_m": 120.0,
+      "J_random_best_m": 115.5,
+      "site_dwellings_before_m": 235.9,
+      "site_dwellings_after_m": 124.4,
+      "site_grid_before_m": 215.9,
+      "site_grid_after_m": 107.9,
+      "curve_m": [
+        138.55,
+        128.91,
+        124.71,
+        121.34,
+        119.17,
+        117.6,
+        116.13,
+        115.16,
+        114.65,
+        114.3,
+        114.0,
+        113.88,
+        113.81,
+        113.74,
+        113.7,
+        113.7,
+        113.7,
+        113.7,
+        113.7,
+        113.7,
+        113.7,
+        113.7,
+        113.7,
+        113.7,
+        113.7,
+        113.7,
+        113.7,
+        113.7,
+        113.7,
+        113.7,
+        113.7,
+        113.7,
+        113.7,
+        113.7,
+        113.7,
+        113.7,
+        113.7,
+        113.7,
+        113.7,
+        113.7,
+        113.7
+      ],
+      "floor_m2": 1380,
+      "dwellings_lost_est": 18.9
+    },
+    "mean_of_four": {
+      "site_dwellings_before_m": 390.6,
+      "site_dwellings_after_m": 263.2,
+      "site_grid_before_m": 376.7,
+      "site_grid_after_m": 260.4
+    },
+    "n_candidates": 148,
+    "dwellings_lost_est": 52.0
+  },
+  "final": {
+    "converted": {
+      "health": {
+        "p": 7,
+        "from": "labelled shop units",
+        "n_candidates": 49,
+        "J_before_m": 321.7,
+        "J_after_m": 271.5,
+        "J_random_mean_m": 283.3,
+        "J_random_best_m": 274.8,
+        "site_dwellings_before_m": 364.5,
+        "site_dwellings_after_m": 125.9
+      }
+    }
+  },
+  "counts_on_site": {
+    "baseline": {
+      "shop": 20,
+      "health": 7,
+      "education": 2,
+      "community": 7
+    },
+    "scenario_a": {
+      "shop": 20,
+      "health": 7,
+      "education": 2,
+      "community": 3
+    },
+    "scenario_b": {
+      "shop": 20,
+      "health": 7,
+      "education": 2,
+      "community": 3
+    }
+  }
+}

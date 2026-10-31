@@ -33,8 +33,16 @@
 const COLOURS = {
   scenario_a: "#ff8a3d",
   scenario_b: "#4dd0e1",
+  final:      "#ffca28",
   baseline:   "#9e9e9e",
 };
+//blocks whose Rhino block name gives a use other than housing (import_rhino.py BLOCK_USE), coloured by it
+const USE_COLOURS = {
+  shop:  ["#7b4fd0", "shop (ground-floor podium)"],  //the amenity layer's shop purple
+  "shopping centre": ["#5e35b1", "shopping centre"],  //the large south-west building of the final design
+};
+//paved surfaces other than streets, Final Model only (import_rhino.py surface_layers)
+const SURFACE_COLOURS = { street: "#4a4f57", link: "#4a4f57", walkway: "#d9c39a", pedestrian: "#c9b79c", bike: "#b5524a", parking: "#6f7680" };  //walkway: the gravel of the drawn paths
 
 export async function setup(ctx) {
   const { Cesium, viewer, config } = ctx;
@@ -116,7 +124,8 @@ export async function setup(ctx) {
       streetsByScenario.set(name, ds);
     }
     //hand-drawn footpaths (kind "path", import_rhino.py paths_rd): a line on the ground, either geometry type
-    const paths = f.geometry?.type === "LineString" ? [f.geometry.coordinates]
+    const traced = f.properties.source?.startsWith("centreline");  //a walkway's walked centreline: its surface is drawn instead
+    const paths = traced ? [] : f.geometry?.type === "LineString" ? [f.geometry.coordinates]
       : f.geometry?.type === "MultiLineString" ? f.geometry.coordinates : [];
     for (const line of paths) {
       streetsByScenario.get(name).entities.add({
@@ -137,14 +146,82 @@ export async function setup(ctx) {
       const toCart = (ring) => Cesium.Cartesian3.fromDegreesArray(ring.flatMap(([x, y]) => [x, y]));  //lon/lat ring -> Cartesian
       streetsByScenario.get(name).entities.add({
         name: f.properties.name ?? `${name} streets`,
-        description: `<table><tr><td>new streets</td><td>${f.properties.area_m2 ?? "—"} m²</td></tr></table>`,
+        description: `<table><tr><td>${f.properties.kind === "street" || !f.properties.kind ? "new streets" : f.properties.kind}</td>` +
+          `<td>${f.properties.area_m2 ?? "—"} m²</td></tr></table>`,  //street, link, pedestrian, bike or parking
         polygon: {
           hierarchy: new Cesium.PolygonHierarchy(toCart(poly[0]), poly.slice(1).map((h) => new Cesium.PolygonHierarchy(toCart(h)))),  //outer ring plus holes
           classificationType: Cesium.ClassificationType.TERRAIN,  //drape on the ground, over the aerial photo
-          material: Cesium.Color.fromCssColorString("#4a4f57").withAlpha(0.95),  //asphalt grey
+          material: Cesium.Color.fromCssColorString(SURFACE_COLOURS[f.properties.kind] ?? "#4a4f57").withAlpha(0.95),  //asphalt grey, or the kind's colour
         },
       });
     }
+  }
+
+  /* ---- ground-floor amenities placed by analysis/roads/place_amenities.py --- */
+  //shops, health practices and a school on the new blocks' ground floors, where they shorten walks most
+  const amenGeo = await ctx.loadJson("../data/processed/design_amenities.geojson", { quiet: true });  //optional file
+  const AMEN = { shop: ["#7b4fd0", "Shop"], health: ["#d63c7b", "Health care"], education: ["#1f2a44", "School"],
+                 community: ["#b8860b", "Community hall"] };  //as in docs/fig_amenities.png
+  const amenBy = new Map();  //scenario name -> CustomDataSource of amenity points
+  for (const f of amenGeo?.features ?? []) {
+    const { scenario: name, type, rank, block, floor_m2, status } = f.properties;
+    const named = f.properties.label;  //a marker with its own name, e.g. the final design's shopping centre
+    const gone = status === "demolished";  //today's amenity that A and B demolish: drawn hollow
+    if (!amenBy.has(name)) {
+      const ds = new Cesium.CustomDataSource(`amenities-${name}`);
+      ds.show = false;  //shown with the massing
+      await viewer.dataSources.add(ds);
+      amenBy.set(name, ds);
+    }
+    const [col, typeLabel] = AMEN[type] ?? ["#888888", type];
+    const label = named ?? typeLabel;  //"Shopping centre" rather than "Shop"
+    amenBy.get(name).entities.add({
+      name: status === "placed" ? `${label} (optimised placement)`  //placed by the p-median
+        : status === "labelled" && f.properties.converted ? `${label} (optimised among the model's shop units)`  //final: p-median pick
+        : status === "labelled" ? `${label} (labelled in the Rhino model)`  //final design: a shop block, not placed
+        : name === "baseline" ? `${label} today${gone ? ", demolished in A and B" : ", kept"}`  //today's, from BAG
+        : `${label} (kept community centre and school, fixed)`,  //the kept block, never moved
+      description: `<table><tr><td>use</td><td>${label}</td></tr><tr><td>where</td><td>${block}</td></tr>` +
+        (status === "placed" ? `<tr><td>pick</td><td>${rank} of its type</td></tr>` : "") +
+        `<tr><td>floor area</td><td>${floor_m2} m²${status === "placed" ? " (today's median)" : status === "labelled" ? " (block footprint)" : " (BAG)"}</td></tr>` +
+        `<tr><td>source</td><td>${status === "placed" ? "place_amenities.py, p-median on walking distance"
+          : status === "labelled" && f.properties.converted ? "a Rhino shop unit, made this use by place_amenities.py (p-median)"
+          : status === "labelled" ? "Rhino block name (Final Model)" : "BAG"}</td></tr></table>`,
+      position: Cesium.Cartesian3.fromDegrees(...f.geometry.coordinates),
+      label: named ? {  //the shopping centre carries its name on the map
+        text: named,
+        font: "600 14px sans-serif",
+        fillColor: Cesium.Color.WHITE,
+        outlineColor: Cesium.Color.BLACK,
+        outlineWidth: 3,
+        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+        pixelOffset: new Cesium.Cartesian2(0, -18),
+        heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+        disableDepthTestDistance: Number.POSITIVE_INFINITY,
+      } : undefined,
+      point: {
+        pixelSize: type === "education" || named ? 15 : 10,  //a school or the shopping centre: a bigger dot
+        color: gone ? Cesium.Color.WHITE.withAlpha(0.15) : Cesium.Color.fromCssColorString(col),  //hollow when demolished
+        outlineColor: gone ? Cesium.Color.fromCssColorString(col) : Cesium.Color.WHITE,
+        outlineWidth: gone ? 3 : 2,
+        heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+        disableDepthTestDistance: Number.POSITIVE_INFINITY,  //a ground-floor door, drawn over its own block
+      },
+    });
+  }
+  let amenOn = true;  //layer checkbox
+  const showAmen = () => {  //the current scenario's amenities only, if ticked; an option's only while its massing shows
+    for (const [n, ds] of amenBy) ds.show = amenOn && n === ctx.scenario() && (n === "baseline" || shownMassing.has(n));
+    viewer.scene.requestRender();
+  };
+  if (amenBy.size) {
+    ctx.registerLayer({
+      id: "designAmenities",
+      label: "Amenities: today's, kept and optimised",
+      group: "Design",
+      show: true,
+      onToggle: (v) => { amenOn = v; showAmen(); },
+    });
   }
 
   const lift = config.napToEllipsoidM;
@@ -172,7 +249,8 @@ export async function setup(ctx) {
         collection.entities.add({
           name: p.name || `${name} block`,
           description:
-            `<table><tr><td>use</td><td>${p.use ?? "—"}</td></tr>` +
+            `<table><tr><td>use</td><td>${p.use ?? "—"}${p.ground_floor ? `, ${p.ground_floor} on the ground floor` : ""}</td></tr>` +
+            (p.rhino_block ? `<tr><td>Rhino block</td><td>${p.rhino_block}</td></tr>` : "") +  //Final Model blocks are named
             `<tr><td>height</td><td>${p.height_m ?? "—"} m NAP</td></tr>` +
             (p.building_height_m != null ? `<tr><td>building height</td><td>${p.building_height_m} m</td></tr>` : "") +  //as modelled, above ground
             `<tr><td>scenario</td><td>${name}</td></tr></table>`,
@@ -183,7 +261,7 @@ export async function setup(ctx) {
             // NAP -> ellipsoid, so our massing sits with the 3DBAG buildings.
             height:          (p.base_height_m ?? defaultBase) + lift,
             extrudedHeight:  (p.height_m ?? 12) + lift,
-            material:        colour.withAlpha(0.85),
+            material:        (USE_COLOURS[p.use] ? Cesium.Color.fromCssColorString(USE_COLOURS[p.use][0]) : colour).withAlpha(0.85),  //shops in purple
             shadows:         Cesium.ShadowMode.ENABLED,  //cast and receive shadows for the sun slider
             outline:         true,
             outlineColor:    Cesium.Color.BLACK.withAlpha(0.5),
@@ -207,6 +285,7 @@ export async function setup(ctx) {
         applyDemolition();
         const st = streetsByScenario.get(name);  //this scenario's new streets
         if (st) st.show = visible;  //streets follow the massing
+        showAmen();  //and so do the placed amenities
       },
     }));  //end of registerLayer, handle stored
   }
@@ -216,6 +295,7 @@ export async function setup(ctx) {
   body.appendChild(summary);
 
   function render(scenario) {
+    queueMicrotask(showAmen);  //after the massing switch below, so the amenities follow the scenario
     // show only the active scenario's massing
     for (const [name] of byScenario) layerHandles.get(name)?.setVisible(name === scenario);  //shows the massing and ticks its checkbox
 
@@ -239,9 +319,19 @@ export async function setup(ctx) {
       .map((h) => h - ctx.config.napToEllipsoidM);
     const max = heights.length ? Math.max(...heights) : null;
     const nDemo = demolishes.get(scenario)?.size;  //existing buildings this scenario removes
+    const uses = {};  //volumes and footprint per use, from the features behind this collection
+    for (const f of geo.features) {
+      if (f.properties?.scenario !== scenario) continue;
+      const u = f.properties.use ?? "residential";
+      uses[u] ??= [0, 0];
+      uses[u][0] += 1; uses[u][1] += f.properties.footprint_m2 ?? 0;
+    }
+    const useRows = Object.keys(uses).length > 1 ? Object.entries(uses).sort((a, b) => b[1][1] - a[1][1]).map(([u, [k, a]]) =>
+      `<tr><td>${USE_COLOURS[u] ? `<span style="color:${USE_COLOURS[u][0]}">■</span> ` : ""}${u}</td>` +
+      `<td>${k} volume${k === 1 ? "" : "s"}, ${Math.round(a).toLocaleString()} m²</td></tr>`).join("") : "";  //only when the model names uses
     summary.innerHTML =
       `<table class="kv"><tbody>` +
-      `<tr><td>volumes</td><td>${n}</td></tr>` +
+      `<tr><td>volumes</td><td>${n}</td></tr>` + useRows +
       (nDemo != null ? `<tr><td>existing buildings removed</td><td>${nDemo}</td></tr>` : "") +  //hidden from the 3DBAG layer
       `<tr><td>max height</td><td>${max == null ? "—" : max.toFixed(1) + " m NAP"}</td></tr>` +
       `</tbody></table>`;

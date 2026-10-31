@@ -1,6 +1,7 @@
 {
   "_objective": "J = mean walking distance from a dwelling to the nearest shop, education, health care and rail stop, equal weights over the four types, dwelling-weighted over the study area and the design site. Minimised by adding straight footpaths through the site, greedily.",
   "_method": "analysis/roads/optimise_links.py",
+  "_destinations": "the existing destinations plus the shops, health practices and school that place_amenities.py puts on the option's ground floors; the kept school is in both",
   "scenario_a": {
     "budget": 10,
     "candidate_rule": {
@@ -9,52 +10,44 @@
       "detour_min": 1.5,
       "reach_m": 20.0
     },
-    "n_candidates": 23,
-    "J_before_m": 301.45,
-    "site_dwellings_before_m": 394.8,
-    "site_grid_before_m": 371.2,
-    "J_ceiling_m": 300.64,
-    "site_grid_ceiling_m": 369.8,
-    "site_grid_baseline_m": 377.4,
+    "n_candidates": 9,
+    "J_before_m": 255.27,
+    "site_dwellings_before_m": 253.7,
+    "site_grid_before_m": 250.9,
+    "J_ceiling_m": 255.03,
+    "site_grid_ceiling_m": 245.4,
+    "site_grid_baseline_m": 313.5,
     "steps": [
       {
         "rank": 1,
-        "length_m": 45.5,
-        "gain_m": 0.596,
-        "J_m": 300.86,
-        "site_dwellings_m": 392.5,
-        "site_grid_m": 370.7,
-        "share_of_ceiling": 0.735
+        "length_m": 11.1,
+        "gain_m": 0.163,
+        "J_m": 255.11,
+        "site_dwellings_m": 253.1,
+        "site_grid_m": 248.1,
+        "share_of_ceiling": 0.69
       },
       {
         "rank": 2,
-        "length_m": 13.9,
-        "gain_m": 0.185,
-        "J_m": 300.67,
-        "site_dwellings_m": 391.9,
-        "site_grid_m": 370.2,
-        "share_of_ceiling": 0.963
+        "length_m": 31.9,
+        "gain_m": 0.07,
+        "J_m": 255.04,
+        "site_dwellings_m": 252.8,
+        "site_grid_m": 247.8,
+        "share_of_ceiling": 0.984
       },
       {
         "rank": 3,
         "length_m": 35.2,
-        "gain_m": 0.023,
-        "J_m": 300.65,
-        "site_dwellings_m": 391.8,
-        "site_grid_m": 370.0,
-        "share_of_ceiling": 0.992
-      },
-      {
-        "rank": 4,
-        "length_m": 28.3,
-        "gain_m": 0.007,
-        "J_m": 300.64,
-        "site_dwellings_m": 391.7,
-        "site_grid_m": 370.0,
+        "gain_m": 0.004,
+        "J_m": 255.03,
+        "site_dwellings_m": 252.8,
+        "site_grid_m": 247.8,
         "share_of_ceiling": 1.0
       }
     ],
-    "geojson": "../data/processed/road_links_scenario_a.geojson"
+    "geojson": "../data/processed/road_links_scenario_a.geojson",
+    "destinations": "with the placed amenities"
   },
   "scenario_b": {
     "budget": 10,
@@ -64,43 +57,127 @@
       "detour_min": 1.5,
       "reach_m": 20.0
     },
-    "n_candidates": 10,
-    "J_before_m": 290.82,
-    "site_dwellings_before_m": 390.6,
-    "site_grid_before_m": 378.0,
-    "J_ceiling_m": 290.07,
-    "site_grid_ceiling_m": 374.9,
-    "site_grid_baseline_m": 377.4,
+    "n_candidates": 8,
+    "J_before_m": 257.65,
+    "site_dwellings_before_m": 263.2,
+    "site_grid_before_m": 260.4,
+    "J_ceiling_m": 257.54,
+    "site_grid_ceiling_m": 256.9,
+    "site_grid_baseline_m": 313.5,
     "steps": [
       {
         "rank": 1,
-        "length_m": 47.5,
-        "gain_m": 0.532,
-        "J_m": 290.29,
-        "site_dwellings_m": 387.9,
-        "site_grid_m": 376.9,
-        "share_of_ceiling": 0.71
+        "length_m": 16.6,
+        "gain_m": 0.057,
+        "J_m": 257.59,
+        "site_dwellings_m": 262.9,
+        "site_grid_m": 258.3,
+        "share_of_ceiling": 0.536
       },
       {
         "rank": 2,
-        "length_m": 70.8,
-        "gain_m": 0.162,
-        "J_m": 290.13,
-        "site_dwellings_m": 387.0,
-        "site_grid_m": 375.7,
-        "share_of_ceiling": 0.926
-      },
-      {
-        "rank": 3,
-        "length_m": 16.6,
-        "gain_m": 0.056,
-        "J_m": 290.07,
-        "site_dwellings_m": 386.7,
-        "site_grid_m": 375.0,
+        "length_m": 47.5,
+        "gain_m": 0.049,
+        "J_m": 257.54,
+        "site_dwellings_m": 262.7,
+        "site_grid_m": 257.7,
         "share_of_ceiling": 1.0
       }
     ],
-    "geojson": "../data/processed/road_links_scenario_b.geojson"
+    "geojson": "../data/processed/road_links_scenario_b.geojson",
+    "destinations": "with the placed amenities"
+  },
+  "final": {
+    "budget": 10,
+    "candidate_rule": {
+      "min_m": 10.0,
+      "max_m": 150.0,
+      "detour_min": 1.5,
+      "reach_m": 20.0
+    },
+    "n_candidates": 20,
+    "J_before_m": 262.72,
+    "site_dwellings_before_m": 269.1,
+    "site_grid_before_m": 278.1,
+    "J_ceiling_m": 262.37,
+    "site_grid_ceiling_m": 273.3,
+    "site_grid_baseline_m": 313.5,
+    "steps": [
+      {
+        "rank": 1,
+        "length_m": 55.8,
+        "gain_m": 0.13,
+        "J_m": 262.6,
+        "site_dwellings_m": 269.1,
+        "site_grid_m": 277.9,
+        "share_of_ceiling": 0.37
+      },
+      {
+        "rank": 2,
+        "length_m": 44.4,
+        "gain_m": 0.066,
+        "J_m": 262.53,
+        "site_dwellings_m": 268.8,
+        "site_grid_m": 277.6,
+        "share_of_ceiling": 0.559
+      },
+      {
+        "rank": 3,
+        "length_m": 38.9,
+        "gain_m": 0.045,
+        "J_m": 262.48,
+        "site_dwellings_m": 268.4,
+        "site_grid_m": 277.5,
+        "share_of_ceiling": 0.687
+      },
+      {
+        "rank": 4,
+        "length_m": 29.8,
+        "gain_m": 0.043,
+        "J_m": 262.44,
+        "site_dwellings_m": 268.1,
+        "site_grid_m": 277.2,
+        "share_of_ceiling": 0.81
+      },
+      {
+        "rank": 5,
+        "length_m": 60.9,
+        "gain_m": 0.041,
+        "J_m": 262.4,
+        "site_dwellings_m": 267.8,
+        "site_grid_m": 276.7,
+        "share_of_ceiling": 0.928
+      },
+      {
+        "rank": 6,
+        "length_m": 14.7,
+        "gain_m": 0.014,
+        "J_m": 262.39,
+        "site_dwellings_m": 267.7,
+        "site_grid_m": 273.6,
+        "share_of_ceiling": 0.967
+      },
+      {
+        "rank": 7,
+        "length_m": 22.8,
+        "gain_m": 0.01,
+        "J_m": 262.38,
+        "site_dwellings_m": 267.6,
+        "site_grid_m": 273.6,
+        "share_of_ceiling": 0.997
+      },
+      {
+        "rank": 8,
+        "length_m": 52.9,
+        "gain_m": 0.001,
+        "J_m": 262.37,
+        "site_dwellings_m": 267.6,
+        "site_grid_m": 273.6,
+        "share_of_ceiling": 1.0
+      }
+    ],
+    "geojson": "../data/processed/road_links_final.geojson",
+    "destinations": "with the shops the Rhino model labels"
   },
   "baseline": {
     "_status": "not_computed_yet",

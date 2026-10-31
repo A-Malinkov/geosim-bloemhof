@@ -165,7 +165,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--scenario", default="baseline",
-                    choices=["baseline", "scenario_a", "scenario_b"])
+                    choices=["baseline", "scenario_a", "scenario_b", "final"])  #final: the Rhino Final Model, 2026-10-28
     ap.add_argument("--refresh", action="store_true")
     args = ap.parse_args()
     sys.path.insert(0, str(HERE.parent / "scenarios"))

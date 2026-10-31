@@ -19,12 +19,42 @@ The app treats a stub as "no data" and shows a placeholder until you overwrite i
 - To make the other components respond to your scenarios, write per-scenario outputs with matching keys (`baseline`, `scenario_a`, `scenario_b`). Every module already listens for the switch.
 - For SVF and wind per scenario, burn the massing into a copy of the AHN DSM and re-run the morphology and wind scripts.
 
-## Scenarios A and B come from the team's Rhino model
+## Scenarios A, B and final come from the team's Rhino model
 
-`import_rhino.py` reads the `OPTION 1` and `OPTION 2` layer trees of
-`Group Project Q1 - Proposal Modelling_23.10.26.3dm` (from Modelling on the
-shared drive, copied to `data/raw/`, gitignored) and writes them as `scenario_a`
-and `scenario_b`. OPTION 1 comes out of 23.10 exactly as it did out of 16.10.
+`import_rhino.py` reads the `OPTION 1`, `OPTION 2` and `Final Model` layer trees of
+`Group Project Q1 - Proposal Modelling_30.10.26.3dm` (OneDrive zip from the team,
+copied to `data/raw/`, gitignored) and writes them as `scenario_a`, `scenario_b`
+and `final`. OPTION 2 comes out of 27.10 exactly as it did out of 23.10. OPTION 1's
+18 boxes are saved without render meshes in 27.10 and are read from their
+extrusion profiles instead, which moves each footprint by at most 2 m². The
+shared pond shrank from 1,082 to 671 m² in 27.10. 30.10 changes only the Final
+Model: OPTION 1 and OPTION 2 import exactly as from 27.10.
+
+### The final design
+
+The `Final Model` is built from named Rhino blocks rather than plain solids: 154
+terraced houses, 8 semi-detached pairs and 8 detached houses, 31 shop podiums (4 m) each with
+a block of flats on top (to 16 m), 20 more terraced houses one 12 m solid each (named
+"WITH SHOPS" in the model but homes on every floor, Atanas 2026-10-30), 18 split into a
+4 m shop and 8 m of flats on it, two elderly homes,
+a student building and the shopping centre, 301 volumes in all. 30.10 copies many house
+blocks under new names ("Terraced House (4 storey) 12", "... copy copy"): `block_use()`
+reads a copy as its original. It also places 3 flat blocks twice on the same spot; the
+importer keeps one of each. The block names
+give each volume its use (`BLOCK_USE` in `import_rhino.py`), so here and only
+here the massing says where the shops are. The large unnamed building in the
+south-west corner (2,714 m², sloping roof averaged to 19 m) and the 12 m
+building joined to its north side (679 m²) are the shopping centre, set by
+location in CASES `use_at_rd` (team decision 2026-10-28). Its streets, one-way roads,
+pedestrian paths, bike paths and parking come in as separate surface kinds. The
+curvy strip on its vegetation layer is a walking path (team decision 2026-10-28):
+kind `walkway`, its centreline walked as a path. 30.10 merges it into one surface
+with the green beside it, so its 27.10 outline is kept in
+`data/raw/walkway_final_rd.geojson` (CASES `walkway_rd`) and cut out of that green.
+The app draws it in the path colour, and the green area (comparison) and green share
+(land use) count it as green (Atanas, 2026-10-30). Its
+92 trees, 114 solid bushes and the house gardens come in as planting. It keeps
+the same school block as A and B. Noise and wind are not run on it.
 
 ```bash
 python analysis/scenarios/import_rhino.py
@@ -58,7 +88,7 @@ from each block after its instance transform) and 16 green patches, 2.11 ha. All
 of it lies on the site and none of it on a new block or street. Both options draw
 green over the buildings they keep (about 2,000 m², mostly over the school); that
 is cut away, and a plant standing in a kept building is dropped. The one surface
-on the top-level `Water feature?` layer (1,082 m², in the central green by
+on the top-level `Water feature?` layer (671 m² since 27.10, 1,082 m² before, in the central green by
 Dubbelstraat) is imported as water and cut out of the green. It is under
 neither option. The same pond is scenario_b's: it lies wholly in OPTION 2's green,
 12 m clear of its blocks, so both scenarios carry it. For scenario_b the layer

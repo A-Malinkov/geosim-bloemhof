@@ -49,6 +49,8 @@ html, body {
  * light text (#edffff) becomes unreadable. Matching the iframe element to the
  * document inside it keeps it transparent over Cesium's dark panel. */
 .cesium-infoBox-iframe { color-scheme: light; }
+/*Cesium puts the info box at the right edge, under the dashboard; stand it just left of it*/
+.cesium-infoBox { top: 12px; right: 344px; z-index: 11; }  /*dashboard is 320 px wide at right 12 px, plus a 12 px gap*/
 
 /* ------------------------------------------------------------------ boot */
 .boot {
@@ -247,6 +249,7 @@ table.kv tr:last-child td { border-bottom: none; }
 @media (max-width: 900px) {
   .panel { width: calc(50% - 18px); }
   .panel--right { width: calc(50% - 18px); max-height: calc(100% - 32px - var(--status-h, 0px)); }  /*chips span the full width here*/
+  .cesium-infoBox { right: 12px; }  /*no room beside the panels on a narrow screen, so it lies over the dashboard (z-index 11)*/
   .status { max-width: calc(100% - 24px); }
 }
 

@@ -35,7 +35,7 @@
   ],
   "all_cells_sunlit_hours": {
     "n_pixels": 1255120,
-    "mean": 1.9332,
+    "mean": 1.9331,
     "std": 2.5601,
     "min": 0.0,
     "p05": 0.0,
@@ -46,8 +46,8 @@
     "max": 7.5
   },
   "open_ground_sunlit_hours": {
-    "n_pixels": 651626,
-    "mean": 0.6533,
+    "n_pixels": 651637,
+    "mean": 0.6534,
     "std": 1.1342,
     "min": 0.0,
     "p05": 0.0,
@@ -63,8 +63,8 @@
       "inhabitants": 13740,
       "raster_coverage_fraction": 0.6281,
       "open_ground_sunlit_hours": {
-        "n_pixels": 418527,
-        "mean": 0.5769,
+        "n_pixels": 418538,
+        "mean": 0.577,
         "std": 1.0182,
         "min": 0.0,
         "p05": 0.0,
@@ -81,8 +81,8 @@
     "inhabitants": null,
     "raster_coverage_fraction": 0.6281,
     "open_ground_sunlit_hours": {
-      "n_pixels": 418527,
-      "mean": 0.5769,
+      "n_pixels": 418538,
+      "mean": 0.577,
       "std": 1.0182,
       "min": 0.0,
       "p05": 0.0,
@@ -95,9 +95,9 @@
   },
   "design_site": {
     "open_ground_sunlit_hours": {
-      "n_pixels": 86516,
-      "mean": 0.4888,
-      "std": 0.9692,
+      "n_pixels": 86527,
+      "mean": 0.489,
+      "std": 0.9694,
       "min": 0.0,
       "p05": 0.0,
       "p25": 0.0,
@@ -106,7 +106,7 @@
       "p95": 3.0,
       "max": 5.5,
       "share_under_2h": 0.8683,
-      "share_under_4h": 0.9879
+      "share_under_4h": 0.9878
     }
   },
   "histogram": {
@@ -139,22 +139,22 @@
     ],
     "counts": [
       409928,
-      59922,
+      59919,
       0,
-      47122,
-      37323,
+      47132,
+      37328,
       0,
-      27354,
+      27344,
       0,
-      20408,
-      16272,
+      20415,
+      16273,
       0,
       12166,
-      8313,
+      8311,
       0,
-      6290,
+      6292,
       0,
-      4266,
+      4267,
       1875,
       0,
       363,

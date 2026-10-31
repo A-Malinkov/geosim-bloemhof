@@ -67,7 +67,6 @@ def main() -> int:
     den, lu = load("density_summary.json"), load("landuse_summary.json")
     ca, rl, fc = load("landuse_abm.json"), load("landuse_rl.json"), load("knmi_forecast.json")
     ws = load("landuse_weight_sensitivity.json")
-    rlk = load("landuse_rl_keep_housing.json")
     dqn = load("landuse_rl_dqn.json")
     rm, rlinks = load("road_metrics.json"), load("road_links.json")  #4.8 road network
     edge = load("edge_access.json")  #4.8 distance to the edge streets
@@ -127,8 +126,8 @@ def main() -> int:
         sc = ca["scenarios"][pref]
         checks += [
             ("CA mix headline", r"Land-use model \| CA prefers", f"{sc['score']['landuse_mix']:.3f}", [MAIN]),
-            ("CA objective row", rf"^\| {pref} ", f"{sc['objective_best']:.3f}", [ABM]),
-            ("CA mix in that row", rf"^\| {pref} ", f"{sc['score']['landuse_mix']:.3f}", [ABM]),
+            ("CA objective row", rf"^\| {pref} \*\*★\*\* \|", f"{sc['objective_best']:.3f}", [ABM]),  #the starred programme row, not the rules table
+            ("CA mix in that row", rf"^\| {pref} \*\*★\*\* \|", f"{sc['score']['landuse_mix']:.3f}", [ABM]),
             ("CA kappa", r"^\| 10 % \|", f"{ca['validation']['erase_10pct']['kappa_mean']:.3f}", [ABM]),
         ]
     if rl:
@@ -137,21 +136,21 @@ def main() -> int:
             ("RL best objective", r"^Best [\d.]+ against", f"{rl['best_objective']:.3f}", [ABM]),
             ("RL homes kept", r"Land-use model \| CA prefers", f"only {rl['score']['residential_cells']} of", [MAIN]),
             ("RL homes today", r"Land-use model \| CA prefers", f"of its {rl['baseline_score']['residential_cells']} residential", [MAIN]),
-            ("RL homes in the ABM README", r"^\*\*It gets there by demolishing",
-             f"{rl['baseline_score']['residential_cells']} residential cells become "
+            ("RL homes in the ABM README", r"^\*\*It still gives up housing",
+             f"{rl['baseline_score']['residential_cells']} housing cells become "
              f"{rl['score']['residential_cells']}", [ABM]),
         ]
     if ws:
-        b = 100 * ws["win_share"]["scenario_b"]
-        a = 100 * ws["win_share"]["scenario_a"]
+        b = 100 * ws["win_share"]["green"]
+        a = 100 * ws["win_share"]["compact"]
         checks += [
             # anchored on the two-column weight-space row only: the same row
             # label also opens the scenario results table, and matching both
             # would let the value sit on either line and still pass
-            ("weight sweep: scenario_b share",
-             r"^\| scenario_b \*\*★\*\* \| \d+ % \|$", f"{b:.0f} %", [ABM]),
-            ("weight sweep: scenario_a share",
-             r"^\| scenario_a \| \d+ % \|$", f"{a:.0f} %", [ABM]),
+            ("weight sweep: green share",
+             r"^\| green \*\*★\*\* \| \d+ % \|$", f"{b:.0f} %", [ABM]),
+            ("weight sweep: compact share",
+             r"^\| compact \| \d+ % \|$", f"{a:.0f} %", [ABM]),
             ("weight sweep: n vectors", r"weight vectors on the normalised simplex",
              f"{ws['parameters']['n_weight_vectors']:,}", [ABM]),
             ("weight sweep: default margin", r"on a normalised scale, against",
@@ -291,17 +290,82 @@ def main() -> int:
                            (f"morph: canyon share {k}", r"^\| street length that is canyon \|", f"{100 * h['canyon_share']:.0f} %", [MORPH]),
                            (f"morph: W median {k}", r"^\| street width W, median \|", f"{h['w_m_median']:.1f} m", [MORPH])]
 
-    #numbers in the DQN exploration table (analysis/abm_landuse/README.md)
-    for f, row in (("landuse_rl_dqn_use_g1_n1.json", r"^\| DQN, choose use, γ 1, one-step \|"),
-                   ("landuse_rl_dqn_use_g1_n5.json", r"^\| DQN, choose use, γ 1, 5-step \|")):
-        d = load(f)
-        if d:
-            for key in ("best_objective", "greedy_objective", "objective_last_decile_mean"):
-                checks.append((f"ABM: {f} {key}", row, f"{d[key]:.3f}", [ABM]))
-            checks.append((f"ABM: {f} random mean", row, f"{d['random_policy']['mean']:.3f}", [ABM]))
-            if d.get("hill_climb"):
-                checks.append(("ABM: hill climbing best", r"^\| hill climbing", f"{d['hill_climb']['best_objective']:.3f}", [ABM]))
-                checks.append(("ABM: hill climbing evaluations", r"^\| hill climbing", f"{d['hill_climb']['evaluations']:,}", [ABM]))
+    #numbers in the agent table (analysis/abm_landuse/README.md), one run each since 2026-10-30
+    if rl and dqn:
+        checks += [("ABM: random policy mean", r"^\| random policy, mean \|", f"{dqn['random_policy']['mean']:.3f}", [ABM]),
+                   ("ABM: linear best", r"^\| linear agent, best episode \|", f"{rl['best_objective']:.3f}", [ABM]),
+                   ("ABM: linear housing cells", r"^\| linear agent, best episode \|", f"| {rl['score']['residential_cells']} |", [ABM]),
+                   *([("ABM: linear learned policy", r"^\| linear agent, learned policy \|", f"{rl['greedy_objective']:.3f}", [ABM]),
+                      ("ABM: linear learned-policy housing cells", r"^\| linear agent, learned policy \|",
+                       f"| {rl['greedy_score']['residential_cells']} |", [ABM])] if "greedy_objective" in rl else []),
+                   ("ABM: DQN best", r"^\| DQN, best episode \|", f"{dqn['best_objective']:.3f}", [ABM]),
+                   ("ABM: DQN housing cells", r"^\| DQN, best episode \|", f"| {dqn['score']['residential_cells']} |", [ABM]),
+                   ("ABM: DQN learned policy", r"^\| DQN, learned policy \|", f"{dqn['greedy_objective']:.3f}", [ABM])]
+        if dqn.get("hill_climb"):
+            h = dqn["hill_climb"]
+            checks += [("ABM: hill climbing best", r"^\| hill climbing", f"{h['best_objective']:.3f}", [ABM]),
+                       ("ABM: hill climbing housing cells", r"^\| hill climbing", f"| {h['score']['residential_cells']} |", [ABM])]
+
+    lus = load("landuse_scenarios.json")  #the Rhino options on the land-use objective
+    if lus:
+        for sc in ("scenario_a", "scenario_b"):
+            st = lus[sc]["open_ground_as_vacant"]["site"]
+            checks += [(f"Rhino {sc} site objective", rf"^\| {sc} \| ", f"{st['objective']:.3f}", [ABM]),
+                       (f"Rhino {sc} site mix", rf"^\| {sc} \| ", f"{st['landuse_mix']:.3f}", [ABM]),
+                       (f"Rhino {sc} walk to amenity", rf"^\| {sc} \| ", f"{st['mean_distance_to_amenity_m']:.0f} m", [ABM])]
+        checks.append(("Rhino baseline site objective", r"^\| baseline \(today\) \| ",
+                       f"{lus['baseline']['open_ground_as_vacant']['site']['objective']:.3f}", [ABM]))
+        claims_rhino = [
+            ("ABM README: 'both Rhino options score above today on the site'",
+             all(lus[k]["open_ground_as_vacant"]["site"]["objective"] > lus["baseline"]["open_ground_as_vacant"]["site"]["objective"]
+                 for k in ("scenario_a", "scenario_b"))),
+            ("ABM README: 'the walk to services grows in both options'",
+             all(lus[k]["open_ground_as_vacant"]["site"]["mean_distance_to_amenity_m"]
+                 > lus["baseline"]["open_ground_as_vacant"]["site"]["mean_distance_to_amenity_m"] for k in ("scenario_a", "scenario_b"))),
+        ]
+
+    cmp_ = load("scenario_comparison.json")  #4.9 scenario comparison
+    CMP = ROOT / "analysis/comparison/README.md"
+    if cmp_:
+        #(row anchor, key, format) for the results table of the comparison README, one value per scenario
+        rows = [(r"^\| dwellings on the site \|", "dwellings", "{:,.0f}"),
+                (r"^\| FSI, floor area / site \|", "fsi", "{:.2f}"),
+                (r"^\| sky view factor, mean \|", "svf_mean", "{:.2f}"),
+                (r"^\| open ground under 2 h sun, equinox \|", "sun_under2h_0320", "pct"),
+                (r"^\| open ground under 2 h sun, 21 Dec \|", "sun_under2h_1221", "pct"),
+                (r"^\| street H/W, median \|", "hw_median", "{:.2f}"),
+                (r"^\| existing trees kept on the site \|", "trees_existing", "{:,.0f}"),
+                (r"^\| walk to 4 everyday places, site grid, housing only \|", "walk_grid_m", "{:.0f} m"),
+                (r"^\| walk to 4 everyday places, residents, housing only \|", "walk_dwellings_m", "{:.0f} m"),
+                (r"^\| residents, with the placed amenities \|", "walk_dwellings_amen_m", "{:.0f} m"),
+                (r"^\| site grid, with the placed amenities \|", "walk_grid_amen_m", "{:.0f} m"),
+                (r"^\| site grid, network only \|", "walk_grid_network_m", "{:.0f} m"),
+                (r"^\| land-use objective J, with the placed amenities \|", "lu_objective_amen", "{:.3f}"),
+                (r"^\| shops on the site \|", "n_shop", "{:.0f}"),
+                (r"^\| schools on the site \|", "n_education", "{:.0f}"),
+                (r"^\| community halls on the site \|", "n_community", "{:.0f}"),
+                (r"^\| land-use objective J \|", "lu_objective", "{:.3f}")]
+        for pat, key, fm in rows:
+            for sc in ("baseline", "scenario_a", "scenario_b"):
+                v = cmp_[sc].get(key)
+                if v is None:
+                    continue
+                txt = f"{100 * v:.0f} %" if fm == "pct" else fm.format(v)
+                checks.append((f"comparison: {key} {sc}", pat, f"| {txt} |", [CMP]))
+
+    ap = load("amenity_placement.json")  #amenities placed on the new ground floors
+    if ap and ap.get("scenario_a", {}).get("shop"):
+        for sc, L in (("scenario_a", "A"), ("scenario_b", "B")):
+            for k, lab in (("shop", "shop"), ("health", "health care"), ("education", "education")):  #the kept school is fixed, one more placed
+                r = ap[sc][k]
+                pat = rf"^\| {L}, {lab} \|"
+                checks += [(f"amenities {sc} {k} before", pat, f"{r['J_before_m']:.1f} m", [ROADS]),
+                           (f"amenities {sc} {k} optimised", pat, f"{r['J_after_m']:.1f} m", [ROADS]),
+                           (f"amenities {sc} {k} random", pat, f"{r['J_random_mean_m']:.1f} m", [ROADS])]
+        own = ap["baseline"]["today_with_own_amenities"]["mean_of_four"]
+        checks += [("amenities: today with its own", r"^services, a site resident walks", f"{own['site_dwellings_m']:.1f} m", [ROADS]),
+                   ("amenities: A placed", r"^With the placed shops and health practices", f"{ap['scenario_a']['mean_of_four']['site_dwellings_after_m']:.1f} m", [ROADS]),
+                   ("amenities: B placed", r"^With the placed shops and health practices", f"{ap['scenario_b']['mean_of_four']['site_dwellings_after_m']:.1f} m", [ROADS])]
 
     import re
 
@@ -345,39 +409,37 @@ def main() -> int:
         claims += [
             ("ABM README: 'baseline never wins under any positive weighting'",
              ws["win_share"]["baseline"] == 0.0),
-            ("ABM README: 'scenario_b wins the majority of the weight space'",
-             ws["win_share"]["scenario_b"] > 0.5),
+            ("ABM README: 'green wins the majority of the weight space'",
+             ws["win_share"]["green"] > 0.5),
             ("ABM README: 'the default weights are not on a knife edge'",
              ws["nearest_flip"] is None
              or ws["nearest_flip"]["simplex_distance"] > 0.05),
             ("ABM README: 'the winner is weight-dependent, not unanimous'",
-             ws["win_share"]["scenario_b"] < 1.0),
+             ws["win_share"]["green"] < 1.0),
         ]
     #the 'Hillesluis is looser by buurt, denser by cell' claim went with Hillesluis on 2026-10-22
     if ca and rl:
         claims += [
-            ("ABM README: 'scenario_b is preferred'", ca["preferred"] == "scenario_b"),
+            ("ABM README: 'green is preferred'", ca["preferred"] == "green"),
             ("ABM README: 'the RL agent learns'",
              rl["objective_last_decile_mean"] > rl["objective_first_decile_mean"]),
             ("ABM README: 'retail avoids retail most of all'",
              min(rl["learned_weights"]["retail"].items(), key=lambda kv: kv[1])[0] == "retail"),
-            ("ABM README: 'the agent demolishes housing'",
-             rl["score"]["residential_cells"] < rl["baseline_score"]["residential_cells"]),
-        ]
-    if rlk:
-        claims += [
-            ("ABM README: 'with housing kept, the agent does not learn'",
-             rlk["objective_last_decile_mean"] <= rlk["objective_first_decile_mean"]),
-            ("ABM README: 'keep-housing keeps exactly today's homes'",
-             rlk["score"]["residential_cells"] == rlk["baseline_score"]["residential_cells"]),
+            ("ABM README: 'it still gives up housing cells, about half' (40-60 % kept)",
+             0.4 <= rl["score"]["residential_cells"] / rl["baseline_score"]["residential_cells"] <= 0.6),
         ]
     if dqn and rl:
         claims += [
-            ("ABM README: 'the DQN does not do better'",
-             dqn["best_objective"] <= rl["best_objective"]),
-            ("ABM README: 'its greedy policy scores below the random policy'",
-             dqn["greedy_objective"] < dqn["random_policy"]["mean"]),
+            ("ABM README: 'the DQN does not do better': its learned policy is below the linear agent's",
+             dqn["greedy_objective"] < rl.get("greedy_objective", rl["best_objective"])),
+            ("ABM README: 'its best episode matches the linear agent's' (within 0.01)",
+             abs(dqn["best_objective"] - rl["best_objective"]) < 0.01),
+            ("ABM README: 'its learned policy is no better than the random policy' (within 0.01)",
+             dqn["greedy_objective"] < dqn["random_policy"]["mean"] + 0.01),
         ]
+        if dqn.get("hill_climb"):
+            claims.append(("ABM README: 'hill climbing beats both agents'",
+                           dqn["hill_climb"]["best_objective"] > max(rl["best_objective"], dqn["best_objective"])))
     if rm and rm.get("scenario_b", {}).get("areas"):
         b, a, bb = rm["baseline"], rm["scenario_a"], rm["scenario_b"]
         g = lambda x: x["site_grid"]["mean_of_types_m"]
@@ -400,11 +462,11 @@ def main() -> int:
         st = rlinks["scenario_a"]["steps"]
         claims += [
             ("roads README: 'after link 2 each link saves under 0.03 m of J'", all(x["gain_m"] < 0.03 for x in st[2:])),
-            ("roads README: 'A stops after four links'", len(st) == 4),
+            ("roads README: 'A stops after three links'", len(st) == 3),  #four before the dead-end fixes of 2026-10-28
         ]
     if rlinks and rlinks.get("scenario_b", {}).get("steps"):
         stb = rlinks["scenario_b"]["steps"]
-        claims.append(("roads README: 'B: three links reach the ceiling'", len(stb) == 3 and stb[-1]["share_of_ceiling"] == 1.0))
+        claims.append(("roads README: 'B: two links reach the ceiling'", len(stb) == 2 and stb[-1]["share_of_ceiling"] == 1.0))
     #morphology scenario table, the sentences under it
     g = lambda s, d="": (load(f"shadow_summary{s}{d}.json") or {}).get("design_site", {}).get("open_ground_sunlit_hours")
     v = lambda s: (load(f"svf_summary{s}.json") or {}).get("design_site", {}).get("open_ground")
@@ -420,19 +482,21 @@ def main() -> int:
             ("morph README: 'B: about half its street length is not a canyon' (40-60 % canyon)",
              bool(hwx and hwx.get("design_site")) and 0.4 <= hwx["design_site"]["canyon_share"] <= 0.6),
         ]
-    #DQN exploration runs (rl_dqn.py --action use) and the hill-climbing baseline
-    dx1, dx5 = load("landuse_rl_dqn_use_g1_n1.json"), load("landuse_rl_dqn_use_g1_n5.json")
-    if dx1 and dx5 and dx5.get("hill_climb") and rl and dqn:
-        hc = dx5["hill_climb"]["best_objective"]
+    if lus:
+        claims += claims_rhino  #Rhino options on the land-use objective
+    if ap and ap.get("scenario_a", {}).get("shop"):
         claims += [
-            ("ABM README: 'neither variant learns a policy better than random'",
-             all(d["greedy_objective"] < d["random_policy"]["mean"] for d in (dx1, dx5))),
-            ("ABM README: 'five-step returns are worse' (greedy and last decile below one-step)",
-             dx5["greedy_objective"] < dx1["greedy_objective"] and dx5["objective_last_decile_mean"] < dx1["objective_last_decile_mean"]),
-            ("ABM README: 'hill climbing beats all of them'",
-             hc > max(dx1["best_objective"], dx5["best_objective"], rl["best_objective"], dqn["best_objective"])),
-            ("ABM README: 'every agent's best episode sits at about 2.48' (within 0.01)",
-             max(d["best_objective"] for d in (dx1, dx5, rl, dqn)) - min(d["best_objective"] for d in (dx1, dx5, rl, dqn)) < 0.01),
+            ("roads README: 'the amenities beat random placement on every type'",
+             all(ap[s][k]["J_after_m"] < ap[s][k]["J_random_mean_m"] for s in ("scenario_a", "scenario_b")
+                 for k in ("shop", "health", "education"))),
+            ("comparison README: 'two schools in each option, the kept one and one placed'",
+             all(ap["counts_on_site"][s]["education"] == 2 for s in ("scenario_a", "scenario_b"))),
+            ("roads README: 'with the placed amenities, site walks are shorter than today'",
+             all(ap[s]["mean_of_four"]["site_dwellings_after_m"] < ap["baseline"]["today_with_own_amenities"]["mean_of_four"]["site_dwellings_m"]
+                 for s in ("scenario_a", "scenario_b"))),
+            ("roads README: 'housing only, site walks are longer than today'",
+             all(ap[s]["mean_of_four"]["site_dwellings_before_m"] > ap["baseline"]["today_with_own_amenities"]["mean_of_four"]["site_dwellings_m"]
+                 for s in ("scenario_a", "scenario_b"))),
         ]
     broken = [c for c, ok in claims if not ok]
 
