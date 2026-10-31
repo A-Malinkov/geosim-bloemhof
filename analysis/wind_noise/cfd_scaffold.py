@@ -2,12 +2,14 @@
 """
 cfd_scaffold.py — build the OpenFOAM wind cases from the assignment template.
 
-Writes two ready-to-run simpleFoam cases under analysis/wind_noise/cfd/:
+Writes four ready-to-run simpleFoam cases under analysis/wind_noise/cfd/:
 
     cfd/baseline/      the current buildings on the design site
     cfd/scenario_a/    the proposed massing + the kept circled block
+    cfd/scenario_b/    OPTION 2's massing + the same kept block
+    cfd/final/         the Final Model's massing + the same kept block
 
-Both cases share identical system/, constant/ and 0.orig/ — only the building
+All cases share identical system/, constant/ and 0.orig/ — only the building
 STL differs (each case's resources/geometry/buildings.stl) — so the comparison
 is fair and the only thing that changes the result is the design.
 
@@ -17,8 +19,8 @@ you still know what to discuss in the report.
 
 Domain follows Blocken (2015) / COST 732 for an urban block of height H:
     5H upwind, 15H downwind, 5H lateral, >=5H top, blockage ratio < 3 %.
-H is taken as the tallest building over BOTH cases (40 m, the scenario_a tower),
-so the two cases sit in the identical box. The numbers are computed from the STL
+H is taken as the tallest building over ALL cases (40 m, the scenario_a tower),
+so every case sits in the identical box. The numbers are computed from the STL
 extents in cache/wind/geometry/b_*.meta.json, not hard-coded.
 
 Run (after wind_cfd_export.py):
@@ -39,7 +41,7 @@ from common.project import ROOT  # noqa: E402
 
 GEO = ROOT / "cache" / "wind" / "geometry"
 CFD = HERE / "cfd"
-CASES = ("baseline", "scenario_a")
+CASES = ("baseline", "scenario_a", "scenario_b", "final")
 BASE_CELL_M = 20.0  #blockMesh base cell; snappyHexMesh refines near the buildings and ground
 
 HEADER = r"""/*--------------------------------*- C++ -*----------------------------------*\
@@ -63,7 +65,7 @@ FOOT = "\n\n// *****************************************************************
 
 
 def domain_from_meta() -> dict:
-    #union of both cases' building extents -> a Blocken domain, cells, refinement box, seed point
+    #union of every case's building extents -> a Blocken domain, cells, refinement box, seed point
     xs0, ys0, xs1, ys1, z1 = [], [], [], [], []
     for c in CASES:
         m = json.loads((GEO / f"b_{c}.meta.json").read_text())["local_bounds_m"]
@@ -71,7 +73,7 @@ def domain_from_meta() -> dict:
         ys0.append(m["yMin"]); ys1.append(m["yMax"]); z1.append(m["zMax"])
     bx0, bx1 = min(xs0), max(xs1)
     by0, by1 = min(ys0), max(ys1)
-    H = max(z1)  #tallest building over both cases, the driving length scale
+    H = max(z1)  #tallest building over all cases, the driving length scale
     #Blocken / COST 732 directional padding, snapped out to a 10 m grid
     xmin = math.floor((bx0 - 5 * H) / 10) * 10
     xmax = math.ceil((bx1 + 15 * H) / 10) * 10

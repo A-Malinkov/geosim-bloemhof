@@ -1,18 +1,28 @@
 {
   "_status": "not_computed_yet",
   "_note": "Placeholder. The app treats _status=not_computed_yet as 'no data' and shows a placeholder panel. Overwrite this file with real output.",
-  "_written_by": "analysis/wind_noise/",
+  "_written_by": "analysis/wind_noise/wind_cfd_import.py (from a finished OpenFOAM run on ronna)",
   "_schema": {
-    "quantity": "wind_speed_ratio | noise_laeq_db",
-    "level_m": 1.75,
+    "quantity": "wind_speed_ratio",
+    "level_m": 1.5,
     "bbox_rd": "[xmin, ymin, xmax, ymax] in EPSG:28992",
     "bbox_wgs84": "[west, south, east, north] \u2014 WARP THE GRID TO EPSG:4326 FIRST and use the warped bounds. Do NOT just reproject the RD bbox corners: RD New is rotated against WGS84, so the square's four corners do not share two longitudes and a rectangle built from two of them misplaces the overlay by ~30 m. See reproject_to_wgs84() in analysis/morphology/sky_view_factor.py.",
     "shape": "[ny, nx]",
-    "values": "row-major 2D array, null = no data",
+    "values": "row-major 2D array, row 0 = north, |U| / undisturbed inflow at the same height, null = building or no data",
     "summary": {
       "mean": 0,
       "p95": 0,
-      "exceedance_frac": 0
+      "exceedance_frac": 0,
+      "exceedance_ratio": 1.1,
+      "sheltered_frac": 0,
+      "sheltered_ratio": 0.5,
+      "mean_ms": 0,
+      "p95_ms": 0,
+      "ref_ms": 0
+    },
+    "solver": {
+      "iterations": 0,
+      "converged": false
     }
   }
 }

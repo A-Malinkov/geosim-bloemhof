@@ -15,6 +15,11 @@ Per case:
                  workshops, circled on the BAG) is NOT in the demolition list,
                  so it survives buildings_for_scenario() and is welded into the
                  STL as a solid obstacle.
+    scenario_b   the same, with OPTION 2's 10 blocks
+    final        the same, with the Final Model's 301 volumes. Flats stood on a
+                 shop podium share its footprint; where footprints overlap the
+                 lower one loses the overlap, so the STL holds touching stepped
+                 prisms rather than solids nested inside each other.
 
 The geometry is moved to a local metric frame centred on the site and ROTATED so
 the prevailing wind (from the SW, 225 deg) blows along +x. That is the inlet
@@ -26,7 +31,7 @@ Writes, per case, into cache/wind/geometry/ (gitignored, regenerable):
     b_<case>.meta.json   centre, rotation, local bounds, counts, kept ids
 
 Run:
-    python analysis/wind_noise/wind_cfd_export.py                 # both cases
+    python analysis/wind_noise/wind_cfd_export.py                 # all four cases
     python analysis/wind_noise/wind_cfd_export.py --wind-from 225 # pick a wind
     python analysis/wind_noise/wind_cfd_export.py --cases scenario_a
 """
@@ -102,6 +107,22 @@ def polygons(geom):
                 yield from polygons(g)
 
 
+def cut_overlaps(rows, min_area_m2: float = 1.0):
+    #rows whose footprint overlaps a taller one lose that part, so no solid hides inside another
+    #(final: flats on a shop podium, two volumes on one footprint; baseline, A and B have none)
+    from shapely.ops import unary_union
+    order = sorted(range(len(rows)), key=lambda i: -float(rows[i][1]))  #tallest first
+    out, taller, n_cut = list(rows), [], 0
+    for i in order:
+        _id, h, geom = rows[i]
+        hits = [g for g in taller if g.intersects(geom) and g.intersection(geom).area > min_area_m2]
+        if hits:
+            out[i] = (_id, h, geom.difference(unary_union(hits)))  #the part a taller block does not cover
+            n_cut += 1
+        taller.append(geom)
+    return out, n_cut
+
+
 def build_mesh(rows, cx, cy, alpha_deg):
     #extrude each footprint from z=0 to its height, in the local frame; return one concatenated mesh
     import trimesh
@@ -126,6 +147,9 @@ def export_case(b, case: str, site, cx, cy, alpha_deg, wind_from):
     rows, kept = buildings_for_case(b, case, site)
     print(f"  {case}: {len(rows)} buildings on the site"
           + (f", {len(kept)} kept 3DBAG survivors" if case != "baseline" else ""))
+    rows, n_cut = cut_overlaps(rows)
+    if n_cut:
+        print(f"    {n_cut} footprints overlapped a taller block; the overlap is left to the taller one")
     mesh = build_mesh(rows, cx, cy, alpha_deg)
     if mesh is None:
         sys.exit(f"no geometry built for {case}")
@@ -142,6 +166,7 @@ def export_case(b, case: str, site, cx, cy, alpha_deg, wind_from):
                 "+x points downwind (wind blows from -x inlet to +x outlet)",
         "centre_rd": [round(cx, 2), round(cy, 2)],
         "n_buildings": len(rows),
+        "n_overlaps_cut": n_cut,
         "n_triangles": int(len(mesh.faces)),
         "watertight": bool(mesh.is_watertight),
         "local_bounds_m": {
@@ -165,8 +190,8 @@ def main() -> int:
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--wind-from", type=float, default=DEFAULT_WIND_FROM,
                     help="bearing the wind blows FROM, met. degrees (225 = SW, default)")
-    ap.add_argument("--cases", nargs="+", default=["baseline", "scenario_a"],
-                    help="cases to export (default: baseline scenario_a)")
+    ap.add_argument("--cases", nargs="+", default=["baseline", "scenario_a", "scenario_b", "final"],
+                    help="cases to export (default: all four)")
     args = ap.parse_args()
 
     #a wind FROM bearing B must be turned (B+90) deg ccw to point downwind along +x
