@@ -9,10 +9,13 @@ and which new footpaths through the design site would shorten those walks most.
 |---|---|---|
 | `road_network.py` | network metrics and walking distances per scenario | `data/processed/road_metrics.json`, `roads_<scenario>.geojson` |
 | `optimise_links.py` | greedy choice of new footpaths on the site | `data/processed/road_links.json`, `road_links_<scenario>.geojson` |
+| `edge_access.py` | walk and drive distance from each site address to Lange Hilleweg and Strevelsweg | `data/processed/edge_access.json`, `edge_access_<scenario>.geojson` |
 
 ```bash
 python analysis/roads/road_network.py      # first run fetches OSM into cache/roads/, about 3 min
 python analysis/roads/optimise_links.py    # needs road_network.py's output, about 15 s
+python analysis/roads/edge_access.py       # baseline; first run fetches the OSM drive network, about 1 min
+python analysis/roads/edge_access.py --scenario scenario_a --check   # a design option, verified against networkx
 ```
 
 Both have one case dict per scenario in `CASES`: baseline, scenario_a and
@@ -189,6 +192,100 @@ streets are joined up properly: the ceilings are 0.81 m (A) and 0.75 m (B) below
 The optimiser could not have found the path through the school green in A: a
 candidate must join two street junctions, and that green had none.
 
+## Distance to the edge streets
+
+`edge_access.py` (2026-10-27). How far every address on the design site is from
+the site's two main edge streets, Lange Hilleweg (north-west) and Strevelsweg
+(south), on foot and by car.
+
+**Targets.** The stretch of each street along the site: its network nodes within
+15 m of the site outline. Reaching any of them is arriving. An address on the
+street itself is 0 m away by network.
+
+**Walk.** The walk network above, clipped to the site + 15 m, so a walk cannot
+leave the site and come back round the outside. The access leg from the BAG
+point to the street counts.
+
+**Drive.** OSM drive network (`network_type="drive"`: no footways, alleys or
+service roads) with its one-way streets, over Bloemhof + 500 m and not clipped:
+a one-way street can force a car out and back. The car starts on the street at
+the address, so there is no access leg, and on a one-way street it leaves by the
+end the traffic runs to. A one-way piece that leads into a dead end with no way
+out is made two-way, because a car turns round there. In the baseline that only
+happens at the edge of the fetched area (22 pieces, none within 50 m of the
+site). A scenario adds the one-way stubs its design cuts short (Oudelandstraat,
+Dubbelstraat).
+
+**Origins.** The 1,027 BAG dwellings on the site, at 687 distinct points. Each
+snaps to the nearest piece of the street in its own address, not just the
+nearest street: the BAG point lies inside the building, and its nearest street
+is often a back alley or a side street. Every baseline address found its own
+street.
+
+**Distance.** One Dijkstra run per street and mode, from a super-source joined
+to the target nodes, on the reversed graph, so the distance runs from the
+address to the street. With `--check` a sample of 60 addresses per mode and
+street is recomputed with networkx: max difference 0.0 m in every case.
+
+### Results, baseline
+
+Dwelling-weighted, design site.
+
+| | median | p90 | max | ≤ 100 m | ≤ 200 m | straight line, median |
+|---|---|---|---|---|---|---|
+| walk to Lange Hilleweg | 141.6 m | 320.1 m | 479.3 m | 35 % | 66 % | 93.5 m |
+| walk to Strevelsweg | 264.1 m | 377.8 m | 525.2 m | 25 % | 32 % | 116.7 m |
+| drive to Lange Hilleweg | 205.1 m | 555.0 m | 686.4 m | 30 % | 48 % | 93.5 m |
+| drive to Strevelsweg | 660.4 m | 856.7 m | 953.6 m | 17 % | 17 % | 116.7 m |
+
+**By car, Strevelsweg is a long way from almost the whole site.** The 17 % of
+dwellings on Strevelsweg itself are on it already. The others cannot drive onto
+it from inside the site. Oudelandstraat, at the east end, is one-way away from
+Strevelsweg. The site's own carriageway of Lange Hilleweg is one-way north-east.
+The strip of terraced rows along Strevelsweg has no street through it. The only
+way onto Strevelsweg is the outer carriageway of Lange Hilleweg, beyond the
+green strip, which runs south-west. A car gets there by driving north-east to the
+crossing at Resedastraat and coming back. The median dwelling, on Koolzaadstraat,
+drives 660 m to a street 117 m away in a straight line.
+
+**On foot it is a detour too.** Walking to Strevelsweg is 2.3 times the straight
+line at the median (264.1 m against 116.7 m): OSM has no path through the
+terraced strip either, only round its two ends. Real gaps between the houses
+would shorten this; OSM does not map them.
+
+**Lange Hilleweg is the nearer edge street for most of the site:** 71 % of
+dwellings on foot and 83 % by car.
+
+### Scenarios: what the team still has to draw
+
+Both scenarios run (`--scenario scenario_a`), but are not published yet,
+because two inputs are design decisions:
+
+- **Entrances of the new blocks.** Points in
+  `data/processed/design_entrances.geojson` (WGS84, property `scenario`,
+  optional `dwellings`), within 5 m of a block's wall. A block's estimated
+  dwellings (the formula above) are shared over its entrances; a `dwellings`
+  value on a point overrides its share. A block with no drawn entrance gets one
+  every 15 m along its walls within 20 m of a street.
+- **Car access of the new streets.** `CASES` in `edge_access.py`:
+  `car_free_rd`, RD polygons over new streets cars may not use, and
+  `oneway_rd`, RD lines drawn in the direction of travel. Hand-drawn footpaths
+  are never driven. Left empty, every new street, link and connector is a
+  two-way car street.
+
+Until both are drawn, the output lists what it assumed under `assumptions`, and
+the app shows it under the table.
+
+### What it cannot tell you
+
+- No turn restrictions, traffic or parking: a car starts on the street in front
+  of the address, and the distance is metres, not minutes.
+- No separate pavements in OSM here, so a walk crosses Strevelsweg anywhere for
+  free. Strevelsweg and Lange Hilleweg are each two one-way carriageways in the
+  drive network; reaching either side counts.
+- The stretch "along the site" is the outline + 15 m. A junction just beyond a
+  corner of the site does not count.
+
 ## What it cannot tell you
 
 - OSM's walk network is only as complete as OSM. Pavements are mostly not
@@ -200,8 +297,9 @@ candidate must join two street junctions, and that green had none.
 - The new blocks' dwelling count is an estimate, and each block's dwellings sit
   at its centroid, not at its entrances.
 - Betweenness weights every pair of nodes equally. It is network position, not
-  a traffic forecast. There is no drive network here, and noise traffic still
-  runs on the OSM roads (see `analysis/wind_noise/`).
+  a traffic forecast. Betweenness and the destination walks use the walk
+  network only (the drive network is `edge_access.py`'s alone), and noise
+  traffic still runs on the OSM roads (see `analysis/wind_noise/`).
 - Greedy is not guaranteed optimal. A pair of links that only help together is
   never picked unless one helps alone.
 - The optimiser assumes the ground between the new blocks is public and

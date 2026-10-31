@@ -70,6 +70,7 @@ def main() -> int:
     rlk = load("landuse_rl_keep_housing.json")
     dqn = load("landuse_rl_dqn.json")
     rm, rlinks = load("road_metrics.json"), load("road_links.json")  #4.8 road network
+    edge = load("edge_access.json")  #4.8 distance to the edge streets
 
     MAIN = ROOT / "README.md"
     MORPH = ROOT / "analysis/morphology/README.md"
@@ -239,6 +240,31 @@ def main() -> int:
             ("roads: A two links length", r"^\*\*Two links, \d+ m", f"{sum(x['length_m'] for x in st[:2]):.0f} m", [ROADS]),
             ("roads: A two links share", r"^\*\*Two links, \d+ m", f"{100 * st[1]['share_of_ceiling']:.0f} %", [ROADS]),
             ("roads: A all candidates", r"^give\.\*\*|^\*\*Two links, \d+ m", f"all {rlinks['scenario_a']['n_candidates']} candidates", [ROADS]),
+        ]
+
+    if edge and edge.get("baseline", {}).get("dwellings"):
+        #distance to the edge streets: the baseline table and the sentences quoting it
+        E = edge["baseline"]
+        for mode in ("walk", "drive"):
+            for key, name in edge["targets"].items():
+                a = E["dwellings"][mode][key]
+                row = rf"^\| {mode} to {name} \|"
+                for f in ("median_m", "p90_m", "max_m", "straight_median_m"):
+                    checks.append((f"roads: edge {mode} {key} {f}", row, f"{a[f]:.1f} m", [ROADS]))
+                for m in edge["_params"]["near_m"]:
+                    checks.append((f"roads: edge {mode} {key} ≤{m}", row, f"{100 * a[f'within_{m}m_frac']:.0f} %", [ROADS]))
+        dw, ds = E["dwellings"]["walk"]["strevelsweg"], E["dwellings"]["drive"]["strevelsweg"]
+        checks += [
+            ("roads: edge on Strevelsweg share", r"^\*\*By car, Strevelsweg", f"{100 * ds['within_100m_frac']:.0f} %", [ROADS]),
+            ("roads: edge median drive", r"^drives \d+ m to a street", f"drives {ds['median_m']:.0f} m", [ROADS]),
+            ("roads: edge median straight", r"^drives \d+ m to a street", f"{ds['straight_median_m']:.0f} m away", [ROADS]),
+            ("roads: edge walk detour", r"^\*\*On foot it is a detour", f"{dw['median_m'] / dw['straight_median_m']:.1f} times", [ROADS]),
+            ("roads: edge walk median", r"^line at the median \(", f"{dw['median_m']:.1f} m against {dw['straight_median_m']:.1f} m", [ROADS]),
+            ("roads: edge LH nearer walk", r"^\*\*Lange Hilleweg is the nearer", f"{100 * E['dwellings']['walk']['lange_hilleweg']['nearer_frac']:.0f} %", [ROADS]),
+            ("roads: edge LH nearer drive", r"^dwellings on foot and", f"{100 * E['dwellings']['drive']['lange_hilleweg']['nearer_frac']:.0f} %", [ROADS]),
+            ("roads: edge baseline dwellings", r"^\*\*Origins\.\*\* The [\d,]+ BAG", f"{E['origins']['bag_dwellings']:,} BAG", [ROADS]),
+            ("roads: edge trap pieces", r"^happens at the edge of the fetched area",
+             f"({E['network']['drive']['oneway_trap_edges_made_two_way']} pieces", [ROADS]),
         ]
 
     #morphology: the scenario results table on the design site (analysis/morphology/README.md)

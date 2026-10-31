@@ -1,0 +1,170 @@
+{
+ "study_area": "Bloemhof",
+ "_method": "Network distance from each address on the design site to the stretch of Lange Hilleweg and of Strevelsweg along the site. Walk: OSM walk network clipped to the site + 15 m, access leg included. Drive: OSM drive network with one-way streets, from the point on the street. Dijkstra from a super-source on the reversed graph. See analysis/roads/edge_access.py.",
+ "_params": {
+  "target_band_m": 15.0,
+  "walk_band_m": 15.0,
+  "own_street_m": 60.0,
+  "entrance_step_m": 15.0,
+  "facade_street_m": 20.0,
+  "entrance_block_m": 5.0,
+  "oneway_match_m": 3.0,
+  "near_m": [
+   100,
+   200
+  ],
+  "check_n": 60
+ },
+ "targets": {
+  "lange_hilleweg": "Lange Hilleweg",
+  "strevelsweg": "Strevelsweg"
+ },
+ "baseline": {
+  "origins": {
+   "bag_dwellings": 1027
+  },
+  "assumptions": [],
+  "network": {
+   "walk": {
+    "edges": 115,
+    "length_km": 5.4,
+    "oneway_edges": 0,
+    "oneway_trap_edges_made_two_way": 0,
+    "addresses_on_own_street_frac": 1.0,
+    "lange_hilleweg_target_nodes": 14,
+    "strevelsweg_target_nodes": 14
+   },
+   "drive": {
+    "edges": 1015,
+    "length_km": 74.57,
+    "oneway_edges": 717,
+    "oneway_trap_edges_made_two_way": 22,
+    "addresses_on_own_street_frac": 1.0,
+    "lange_hilleweg_target_nodes": 9,
+    "strevelsweg_target_nodes": 8
+   }
+  },
+  "dwellings": {
+   "walk": {
+    "lange_hilleweg": {
+     "dwellings": 1027,
+     "unreachable_dwellings": 0,
+     "mean_m": 158.8,
+     "median_m": 141.6,
+     "p90_m": 320.1,
+     "max_m": 479.3,
+     "within_100m_frac": 0.354,
+     "within_200m_frac": 0.664,
+     "straight_median_m": 93.5,
+     "nearer_frac": 0.71
+    },
+    "strevelsweg": {
+     "dwellings": 1027,
+     "unreachable_dwellings": 0,
+     "mean_m": 232.0,
+     "median_m": 264.1,
+     "p90_m": 377.8,
+     "max_m": 525.2,
+     "within_100m_frac": 0.251,
+     "within_200m_frac": 0.319,
+     "straight_median_m": 116.7,
+     "nearer_frac": 0.29
+    }
+   },
+   "drive": {
+    "lange_hilleweg": {
+     "dwellings": 1027,
+     "unreachable_dwellings": 0,
+     "mean_m": 226.7,
+     "median_m": 205.1,
+     "p90_m": 555.0,
+     "max_m": 686.4,
+     "within_100m_frac": 0.299,
+     "within_200m_frac": 0.483,
+     "straight_median_m": 93.5,
+     "nearer_frac": 0.833
+    },
+    "strevelsweg": {
+     "dwellings": 1027,
+     "unreachable_dwellings": 0,
+     "mean_m": 557.8,
+     "median_m": 660.4,
+     "p90_m": 856.7,
+     "max_m": 953.6,
+     "within_100m_frac": 0.167,
+     "within_200m_frac": 0.167,
+     "straight_median_m": 116.7,
+     "nearer_frac": 0.167
+    }
+   }
+  },
+  "site_grid": {
+   "walk": {
+    "lange_hilleweg": {
+     "dwellings": 332,
+     "unreachable_dwellings": 0,
+     "mean_m": 177.7,
+     "median_m": 163.6,
+     "p90_m": 347.4,
+     "max_m": 482.1,
+     "within_100m_frac": 0.289,
+     "within_200m_frac": 0.59,
+     "straight_median_m": 111.7,
+     "nearer_frac": 0.639
+    },
+    "strevelsweg": {
+     "dwellings": 332,
+     "unreachable_dwellings": 0,
+     "mean_m": 235.9,
+     "median_m": 264.0,
+     "p90_m": 386.0,
+     "max_m": 530.3,
+     "within_100m_frac": 0.22,
+     "within_200m_frac": 0.334,
+     "straight_median_m": 114.6,
+     "nearer_frac": 0.358
+    }
+   },
+   "drive": {
+    "lange_hilleweg": {
+     "dwellings": 332,
+     "unreachable_dwellings": 0,
+     "mean_m": 267.0,
+     "median_m": 227.6,
+     "p90_m": 581.2,
+     "max_m": 1105.3,
+     "within_100m_frac": 0.256,
+     "within_200m_frac": 0.428,
+     "straight_median_m": 111.7,
+     "nearer_frac": 0.828
+    },
+    "strevelsweg": {
+     "dwellings": 332,
+     "unreachable_dwellings": 0,
+     "mean_m": 567.1,
+     "median_m": 676.4,
+     "p90_m": 847.6,
+     "max_m": 955.9,
+     "within_100m_frac": 0.175,
+     "within_200m_frac": 0.175,
+     "straight_median_m": 114.6,
+     "nearer_frac": 0.169
+    }
+   },
+   "points": 332
+  },
+  "check_max_diff_m": {
+   "walk_lange_hilleweg": 0.0,
+   "walk_strevelsweg": 0.0,
+   "drive_lange_hilleweg": 0.0,
+   "drive_strevelsweg": 0.0
+  },
+  "geojson": "../data/processed/edge_access_baseline.geojson"
+ },
+ "scenario_a": {
+  "_status": "not_computed_yet"
+ },
+ "scenario_b": {
+  "_status": "not_computed_yet"
+ }
+}

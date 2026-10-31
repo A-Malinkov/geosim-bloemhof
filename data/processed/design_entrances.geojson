@@ -1,0 +1,14 @@
+{
+  "type": "FeatureCollection",
+  "_status": "not_computed_yet",
+  "_note": "Placeholder. The entrances of each scenario's new blocks, drawn by the team. Until a scenario has points here, analysis/roads/edge_access.py gives its blocks automatic entrances and says so in edge_access.json. Overwrite with real points (the stub status line removed).",
+  "_written_by": "the team, by hand (Rhino or QGIS); later possibly analysis/scenarios/import_rhino.py",
+  "_schema": {
+    "geometry": "Point, WGS84 lon/lat (EPSG:4326), on or within 5 m of a new block's wall",
+    "properties": {
+      "scenario": "scenario_a | scenario_b",
+      "dwellings": "optional number: dwellings served by this entrance; the block's estimate is otherwise shared evenly over its entrances"
+    }
+  },
+  "features": []
+}
