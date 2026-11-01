@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-fetch_buildings.py — 3DBAG building attributes for the study area.
+fetch_buildings.py - 3DBAG building attributes for the study area.
 
 Owner: Atanas Malinkov
 
@@ -24,7 +24,7 @@ would make buildings on higher ground look taller than they are.
 
 We keep a representative POINT per building rather than the footprint polygon.
 Footprint *area* comes from b3_opp_grond, which is exact, so the polygon would
-only be needed to split a building across two grid cells — a small effect at
+only be needed to split a building across two grid cells: a small effect at
 100 m cells that is not worth the extra machinery. See density_height.py.
 
 CAVEAT ON b3_bouwlagen
@@ -96,7 +96,7 @@ def main() -> int:
     args = ap.parse_args()
 
     xmin, ymin, xmax, ymax = bbox_rd(args.pad)
-    print(f"3DBAG buildings — {STUDY_AREA.name}")
+    print(f"3DBAG buildings: {STUDY_AREA.name}")
     print(f"  bbox RD {xmin:.0f},{ymin:.0f},{xmax:.0f},{ymax:.0f}")
 
     q = urllib.parse.urlencode(
@@ -171,7 +171,7 @@ def main() -> int:
         print(f"  height: median {hs_sorted[len(hs)//2]:.1f} m, "
               f"max {max(hs):.1f} m, {len(hs):,} with a height")
     print(f"  storey count missing for {no_floors:,} "
-          f"({100 * no_floors / max(1, len(feats)):.0f}%) — those fall back to height/3 m")
+          f"({100 * no_floors / max(1, len(feats)):.0f}%): those fall back to height/3 m")
     return 0
 
 

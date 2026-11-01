@@ -3,8 +3,8 @@
   "scenario": "scenario_a",
   "method": "multi-directional horizon angle (Zaksek, Ostir & Kokalj 2011)",
   "formulation": {
-    "svf": "mean(cos^2(gamma)) \u2014 cosine-weighted, urban-climate convention",
-    "svf_geometric": "1 - mean(sin(gamma)) \u2014 plain solid-angle fraction"
+    "svf": "mean(cos^2(gamma)): cosine-weighted, urban-climate convention",
+    "svf_geometric": "1 - mean(sin(gamma)): plain solid-angle fraction"
   },
   "parameters": {
     "cell_size_m": 0.5,

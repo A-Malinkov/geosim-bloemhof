@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-fetch_bgt_green.py — today's green on the design site, from the BGT.
+fetch_bgt_green.py - today's green on the design site, from the BGT.
 
 Component 4.9. Built 2026-10-28 for the green-area row of the scenario
 comparison (compare_scenarios.py).

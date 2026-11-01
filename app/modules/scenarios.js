@@ -1,5 +1,5 @@
 /* =============================================================================
- * modules/scenarios.js  —  components 1 + 9: proposed massing & design scenarios
+ * modules/scenarios.js - components 1 + 9: proposed massing & design scenarios
  * OWNER: <put your name here>
  *
  * Owns OUR OWN design: the proposed residential massing, and at least two
@@ -130,8 +130,8 @@ export async function setup(ctx) {
     for (const line of paths) {
       streetsByScenario.get(name).entities.add({
         name: f.properties.name ?? `${name} path`,
-        description: `<table><tr><td>footpath</td><td>${f.properties.length_m ?? "—"} m</td></tr>` +
-          `<tr><td>source</td><td>${f.properties.source ?? "—"}</td></tr></table>`,
+        description: `<table><tr><td>footpath</td><td>${f.properties.length_m ?? "-"} m</td></tr>` +
+          `<tr><td>source</td><td>${f.properties.source ?? "-"}</td></tr></table>`,
         polyline: {
           positions: Cesium.Cartesian3.fromDegreesArray(line.flatMap(([x, y]) => [x, y])),
           clampToGround: true,  //follows the terrain like the street surfaces
@@ -147,7 +147,7 @@ export async function setup(ctx) {
       streetsByScenario.get(name).entities.add({
         name: f.properties.name ?? `${name} streets`,
         description: `<table><tr><td>${f.properties.kind === "street" || !f.properties.kind ? "new streets" : f.properties.kind}</td>` +
-          `<td>${f.properties.area_m2 ?? "—"} m²</td></tr></table>`,  //street, link, pedestrian, bike or parking
+          `<td>${f.properties.area_m2 ?? "-"} m²</td></tr></table>`,  //street, link, pedestrian, bike or parking
         polygon: {
           hierarchy: new Cesium.PolygonHierarchy(toCart(poly[0]), poly.slice(1).map((h) => new Cesium.PolygonHierarchy(toCart(h)))),  //outer ring plus holes
           classificationType: Cesium.ClassificationType.TERRAIN,  //drape on the ground, over the aerial photo
@@ -249,9 +249,9 @@ export async function setup(ctx) {
         collection.entities.add({
           name: p.name || `${name} block`,
           description:
-            `<table><tr><td>use</td><td>${p.use ?? "—"}${p.ground_floor ? `, ${p.ground_floor} on the ground floor` : ""}</td></tr>` +
+            `<table><tr><td>use</td><td>${p.use ?? "-"}${p.ground_floor ? `, ${p.ground_floor} on the ground floor` : ""}</td></tr>` +
             (p.rhino_block ? `<tr><td>Rhino block</td><td>${p.rhino_block}</td></tr>` : "") +  //Final Model blocks are named
-            `<tr><td>height</td><td>${p.height_m ?? "—"} m NAP</td></tr>` +
+            `<tr><td>height</td><td>${p.height_m ?? "-"} m NAP</td></tr>` +
             (p.building_height_m != null ? `<tr><td>building height</td><td>${p.building_height_m} m</td></tr>` : "") +  //as modelled, above ground
             `<tr><td>scenario</td><td>${name}</td></tr></table>`,
           polygon: {
@@ -276,7 +276,7 @@ export async function setup(ctx) {
 
     layerHandles.set(name, ctx.registerLayer({  //keep the handle so a scenario switch can tick the checkbox
       id: `massing-${name}`,
-      label: `Proposed massing — ${name}`,
+      label: `Proposed massing: ${name}`,
       group: "Design",
       show: false,
       target: collection,
@@ -303,7 +303,7 @@ export async function setup(ctx) {
     if (!ds) {
       summary.innerHTML =
         (scenario === "baseline"
-          ? `<p class="muted">Current situation — no proposed massing shown.</p>`
+          ? `<p class="muted">Current situation: no proposed massing shown.</p>`
           : `<p class="muted">No massing for ${scenario} yet. Model it in Rhino and add it to ` +
             `<code>analysis/scenarios/import_rhino.py</code>.</p>`);  //a scenario without massing is not the current situation
       return;
@@ -333,7 +333,7 @@ export async function setup(ctx) {
       `<table class="kv"><tbody>` +
       `<tr><td>volumes</td><td>${n}</td></tr>` + useRows +
       (nDemo != null ? `<tr><td>existing buildings removed</td><td>${nDemo}</td></tr>` : "") +  //hidden from the 3DBAG layer
-      `<tr><td>max height</td><td>${max == null ? "—" : max.toFixed(1) + " m NAP"}</td></tr>` +
+      `<tr><td>max height</td><td>${max == null ? "-" : max.toFixed(1) + " m NAP"}</td></tr>` +
       `</tbody></table>`;
   }
 

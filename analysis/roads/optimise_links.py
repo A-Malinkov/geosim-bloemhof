@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-optimise_links.py — which new footpaths through the design site shorten
+optimise_links.py - which new footpaths through the design site shorten
 everyday walks the most.
 
 Component 4.8. Built 2026-10-21. Uses the network, homes and destinations of

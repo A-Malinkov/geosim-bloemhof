@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-rl_landuse.py — a reinforcement-learning agent for land-use allocation.
+rl_landuse.py - a reinforcement-learning agent for land-use allocation.
 
 Component 4.7, the RL half. Owner: Atanas Malinkov
 
@@ -14,7 +14,7 @@ They answer different questions, and running both is the point.
 
     rl_landuse.py   rules are LEARNED. The agent is told only the objective and
                     has to discover where to put things. Its learned weights can
-                    be read off and compared with the CA's hand-set rules —
+                    be read off and compared with the CA's hand-set rules:
                     where they agree, the assumption is supported; where they
                     disagree, one of them is worth arguing about.
 
@@ -26,7 +26,7 @@ re-plans the whole site, one cell at a time. The rest of the study area stays
 as it is: it is context, not something the agent may change or is scored on.
 
     state   the grid so far
-    action  (cell, class) — develop this cell as that use
+    action  (cell, class): develop this cell as that use
     reward  the change in the planning objective caused by that placement
             (times 100); there is no separate terminal bonus
 
@@ -42,7 +42,7 @@ as it is: it is context, not something the agent may change or is scored on.
 
 Q(s, a) is linear in features of the candidate cell: how many neighbours of each
 class it has, how reachable it is, whether it is currently vacant, and how close
-it is to water. Linear rather than a deep network on purpose — the whole value
+it is to water. Linear rather than a deep network on purpose: the whole value
 of the RL run here is that you can READ the learned weights and argue about
 them. A DQN would score similarly and explain nothing. That is a deliberate
 choice, not a limitation to hide. rl_dqn.py is the deep version, on the
@@ -56,7 +56,7 @@ Trained with epsilon-greedy exploration and TD(0) updates.
 
 USAGE
 -----
-    python analysis/abm_landuse/ca_landuse.py     # first — builds the raster
+    python analysis/abm_landuse/ca_landuse.py     # first: builds the raster
     python analysis/abm_landuse/rl_landuse.py
     python analysis/abm_landuse/rl_landuse.py --episodes 400
 
@@ -160,14 +160,14 @@ def main() -> int:
     ap.add_argument("--eps-start", type=float, default=0.9)
     ap.add_argument("--eps-end", type=float, default=0.05)
     ap.add_argument("--candidates", type=int, default=40,
-                    help="cells sampled per decision — the full grid is too many")
+                    help="cells sampled per decision: the full grid is too many")
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
     tag = ""  #one run since the housing rule went into the objective
 
     from scipy.ndimage import distance_transform_edt
 
-    print(f"RL land-use allocation — {STUDY_AREA.name}")
+    print(f"RL land-use allocation: {STUDY_AREA.name}")
     from rasterio.features import rasterize as burn
     grid_now, transform, (nx, ny), road_frac = rasterise(args.cell)
     site = burn([(design_site_polygon(), 1)], out_shape=grid_now.shape,

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-make_figures.py — report figures for the morphology + vegetation work.
+make_figures.py - report figures for the morphology + vegetation work.
 
 Owner: Atanas Malinkov
 
@@ -15,7 +15,7 @@ Writes PNGs into docs/ at 200 dpi, sized for a report page.
 Design notes (so the figures stay consistent if you add more):
   * Sequential magnitude uses ONE hue, light to dark. Not viridis, not a rainbow.
   * Categorical series use fixed slots in a fixed order; never recoloured by rank.
-  * A single-series chart gets no legend box — the title names it.
+  * A single-series chart gets no legend box: the title names it.
   * Labels are selective. A number on every bar is noise.
   * Gridlines are solid hairlines, never dashed, and sit behind the marks.
 """
@@ -136,7 +136,7 @@ def fig_svf_map(svf, open_ground, stats):
         s.set_visible(False)
     g = stats["open_ground"]
     titled(ax,
-           f"Sky View Factor at pedestrian level — {STUDY_AREA.name}, Rotterdam",
+           f"Sky View Factor at pedestrian level: {STUDY_AREA.name}, Rotterdam",
            f"open ground only · mean {g['mean']:.2f} · "
            f"{stats['parameters']['n_directions']} directions · "
            f"{stats['parameters']['search_radius_m']:.0f} m radius · "
@@ -208,7 +208,7 @@ def fig_species(veg):
     ax.barh(y, vals, color=SERIES_1, height=0.68, linewidth=0)
     ax.set_yticks(y, names, fontsize=8.5, color=INK)
     ax.set_xlabel("trees")
-    titled(ax, f"Most common street trees — {veg['n_trees']:,} trees, "
+    titled(ax, f"Most common street trees: {veg['n_trees']:,} trees, "
                f"{veg['n_species']} species",
            f"the top 12 are {100 * sum(vals) / veg['n_trees']:.0f}% of all trees; "
            f"plane alone is {100 * max(vals) / veg['n_trees']:.0f}%")
@@ -262,7 +262,7 @@ def fig_tree_map(trees_rd, veg):
     ax.set_xticks([]); ax.set_yticks([])
     for s in ax.spines.values():
         s.set_visible(False)
-    titled(ax, f"Where the trees are — {veg['n_trees']:,} trees, "
+    titled(ax, f"Where the trees are: {veg['n_trees']:,} trees, "
                f"{veg['trees_per_hectare']} per hectare",
            "dot size is crown diameter · colour is height class midpoint")
 
@@ -332,7 +332,7 @@ def fig_canopy_effect(svf, open_ground, transform, trees_rd):
     drop = away.mean() - under.mean()
     titled(ax, "Street trees are doing real work on enclosure",
            f"mean SVF {away.mean():.2f} in the open vs {under.mean():.2f} under "
-           f"canopy — a drop of {drop:.2f} ({100 * drop / away.mean():.0f}%)")
+           f"canopy: a drop of {drop:.2f} ({100 * drop / away.mean():.0f}%)")
     leg = ax.legend(frameon=False, fontsize=8.5, loc="upper left")
     for t in leg.get_texts():
         t.set_color(INK_2)
@@ -429,9 +429,9 @@ def fig_spacematrix(dens):
                     fontweight="bold" if is_comb else "normal")
 
     ax.set_xlim(0, xmax); ax.set_ylim(0, ymax)
-    ax.set_xlabel("GSI — ground space index (built footprint / land area)")
-    ax.set_ylabel("FSI — floor space index (floor area / land area)")
-    titled(ax, "Spacematrix — what kind of density is this?",
+    ax.set_xlabel("GSI: ground space index (built footprint / land area)")
+    ax.set_ylabel("FSI: floor space index (floor area / land area)")
+    titled(ax, "Spacematrix: what kind of density is this?",
            f"one dot per {dens['parameters']['cell_size_m']:.0f} m cell · "
            f"grey lines are storeys (L) and open space ratio (OSR)")
     cb = fig.colorbar(sc, ax=ax, fraction=0.04, pad=0.02)
@@ -449,7 +449,7 @@ def fig_density_maps(dens, grid_geo):
     g = grid_geo.get("_grid") or {}
     nx, ny = g.get("nx"), g.get("ny")
     if not nx or "row" not in feats[0]["properties"]:
-        print("  (density maps skipped — regenerate density_grid.geojson)")
+        print("  (density maps skipped: regenerate density_grid.geojson)")
         return
 
     def raster(key):
@@ -464,7 +464,7 @@ def fig_density_maps(dens, grid_geo):
 
     fig, axes = plt.subplots(1, 2, figsize=(7.4, 4.2))
     for ax, key, label in (
-            (axes[0], "fsi", "FSI — floor space index"),
+            (axes[0], "fsi", "FSI: floor space index"),
             (axes[1], "height_std_m", "height variation within cell (σ, m)")):
         a = raster(key)
         vm = float(np.nanpercentile(a, 97))
@@ -476,7 +476,7 @@ def fig_density_maps(dens, grid_geo):
         cb = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.02)
         cb.outline.set_visible(False)
         cb.ax.tick_params(colors=MUTED, length=0, labelsize=7.5)
-    fig.suptitle(f"Density and height variation — {STUDY_AREA.name}, "
+    fig.suptitle(f"Density and height variation: {STUDY_AREA.name}, "
                  f"{cell:.0f} m cells",
                  x=0.012, ha="left", fontsize=11, fontweight="bold", color=INK)
     fig.text(0.012, 0.905, "cells with fewer than 3 buildings are left blank",
@@ -522,7 +522,7 @@ def fig_building_heights(dens):
     for s in ax.spines.values():
         s.set_visible(False)
     c = dens["combined"]
-    titled(ax, f"Building heights — {STUDY_AREA.name}",
+    titled(ax, f"Building heights: {STUDY_AREA.name}",
            f"GSI {c['gsi']:.2f} · FSI {c['fsi']:.2f} · {c['layers']:.1f} storeys on average · "
            "dashed line is the design site")
     ax.legend(loc="upper left", bbox_to_anchor=(1.0, 1.0), frameon=False, fontsize=8,
@@ -539,7 +539,7 @@ def fig_landuse(lu, grid_geo):
     """
     Composition of built floor space, and how the mix varies across the area.
 
-    The composition bars are nominal categories, so they get ONE colour — a
+    The composition bars are nominal categories, so they get ONE colour: a
     value ramp there would imply an order the categories do not have. The map
     encodes a magnitude (entropy), so it gets the sequential ramp.
     """
@@ -584,7 +584,7 @@ def fig_landuse(lu, grid_geo):
 
     o = lu["overall"]
     b = lu.get("combined") or {}
-    fig.suptitle(f"Land-use mix — {STUDY_AREA.name}, Rotterdam",
+    fig.suptitle(f"Land-use mix: {STUDY_AREA.name}, Rotterdam",
                  x=0.012, ha="left", fontsize=11, fontweight="bold", color=INK)
     fig.text(0.012, 0.912,
              f"Shannon {b.get('shannon_area', o['shannon_area']):.3f} of a possible 1.0 · "
@@ -827,7 +827,7 @@ def fig_rl_site(ca, rl, out="fig_landuse_rl_site.png",
     ax.set_title("Grey today, coloured the plan", loc="left", fontsize=8.5,
                  fontweight="normal", color=INK_2)
 
-    # learning curve — today's objective is far below, so it is stated, not drawn
+    # learning curve: today's objective is far below, so it is stated, not drawn
     ax2 = fig.add_subplot(gs[1, 1])
     tidy(ax2, ygrid=True)
     c = np.array(rl["learning_curve"])
@@ -871,7 +871,7 @@ def main() -> int:
             RAW / "ahn_dsm_05m.tif", RAW / "ahn_dtm_05m.tif"]
     missing = [p for p in need if not p.exists()]
     if missing:
-        print("missing inputs — run fetch_ahn.py, fetch_trees.py and "
+        print("missing inputs: run fetch_ahn.py, fetch_trees.py and "
               "sky_view_factor.py first:")
         for p in missing:
             print(f"   {p}")
@@ -906,7 +906,7 @@ def main() -> int:
         fig_spacematrix(dens)
         fig_density_maps(dens, grid_geo)
     else:
-        print("  (skipping density figures — run density_height.py first)")
+        print("  (skipping density figures: run density_height.py first)")
 
     lu_path = PROCESSED / "landuse_summary.json"
     lug_path = PROCESSED / "landuse_grid.geojson"
@@ -914,7 +914,7 @@ def main() -> int:
         fig_landuse(json.loads(lu_path.read_text()),
                     json.loads(lug_path.read_text()))
     else:
-        print("  (skipping land-use figure — run landuse_mix.py first)")
+        print("  (skipping land-use figure: run landuse_mix.py first)")
 
     abm_path = PROCESSED / "landuse_abm.json"
     if abm_path.exists():
@@ -932,9 +932,9 @@ def main() -> int:
                 fig_rl_comparison(runs)
                 fig_rl_training(*runs["Objective with housing"])  #the training curves on their own
     else:
-        print("  (skipping ABM figure — run ca_landuse.py first)")
+        print("  (skipping ABM figure: run ca_landuse.py first)")
 
-    # the canopy effect is a finding, not just a picture — keep the numbers
+    # the canopy effect is a finding, not just a picture: keep the numbers
     veg["svf_canopy_effect"] = effect
     (PROCESSED / "vegetation_summary.json").write_text(json.dumps(veg, indent=2) + "\n")
     print(f"\n  canopy effect: SVF {effect['svf_open']} open vs "

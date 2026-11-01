@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-ca_landuse.py — a simple constrained cellular automaton for land-use configuration.
+ca_landuse.py - a simple constrained cellular automaton for land-use configuration.
 
 Component 4.7. Owner: Atanas Malinkov
 
@@ -10,7 +10,7 @@ Builds a 25 m raster of the study area from real data, then lets land use evolve
 under explicit transition rules towards a stated demand, and scores the
 resulting configurations with the same indicators used in component 4.3. Run
 several times with different demand and rule settings, it explores which spatial
-arrangements score best — which is what "explore optimal land-use
+arrangements score best, which is what "explore optimal land-use
 configurations" asks for.
 
 THE MODEL
@@ -131,7 +131,7 @@ def rasterise(cell_m: float):
     if rd_path.exists():
         roads = gpd.read_file(rd_path).to_crs("EPSG:28992")
         # Buffering every centreline by half a cell put 41% of the study area
-        # under tarmac — 44 km of road at 22.5 m width is 99 ha, more than the
+        # under tarmac: 44 km of road at 22.5 m width is 99 ha, more than the
         # square itself. Use realistic carriageway widths per OSM class instead,
         # and measure the AREA FRACTION of each cell on a 5 m sub-grid rather
         # than an all-or-nothing burn.
@@ -206,7 +206,7 @@ def neighbour_counts(grid):
 
 def accessibility(grid, road_frac=None, threshold=0.2):  #not used by the CA any more; the RL agents use it as a feature
     """
-    Distance decay from the road SURFACE — nothing is built far from a street.
+    Distance decay from the road SURFACE, nothing is built far from a street.
 
     Measured from the continuous carriageway fraction, not from cells whose
     final state happens to be ROAD. At 25 m most street cells also contain a
@@ -353,8 +353,8 @@ def validate_regrow(grid0, street, cell_m, steps, frac, seed, rng_reps=5):
     """
     Can the CA put back what we take away?
 
-    A CA run with demand equal to the current counts converts nothing — there is
-    no deficit — so "the baseline does not change" validates nothing. The real
+    A CA run with demand equal to the current counts converts nothing: there is
+    no deficit, so "the baseline does not change" validates nothing. The real
     test: erase a random `frac` of the developed cells, set demand back to the
     original counts, and see how much of the original map the model reproduces.
 
@@ -406,12 +406,12 @@ def main() -> int:
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
 
-    print(f"Cellular automaton land use — {STUDY_AREA.name}")
+    print(f"Cellular automaton land use: {STUDY_AREA.name}")
     grid0, transform, (nx, ny), road_frac = rasterise(args.cell)
     print(f"  grid {nx} x {ny} of {args.cell:.0f} m = {nx*ny:,} cells")
     served = (road_frac >= STREET_FRAC)
     print(f"  street-served cells: {served.sum():,} "
-          f"({100*served.mean():.0f}%) — carriageway covers "
+          f"({100*served.mean():.0f}%): carriageway covers "
           f"{100*road_frac.mean():.0f}% of the area")
     s0 = shares(grid0)
     print("  initial state:")
@@ -477,7 +477,7 @@ def main() -> int:
     }
 
     for name, demand in scenarios.items():
-        print(f"\n  === {name} — {labels[name]} ===")
+        print(f"\n  === {name}: {labels[name]} ===")
         best, best_obj, runs = None, -1e9, []
         for rep in range(args.replicates):
             rng = np.random.default_rng(args.seed + rep)

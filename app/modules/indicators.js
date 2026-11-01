@@ -1,5 +1,5 @@
 /* =============================================================================
- * modules/indicators.js  —  component 3: urban morphology indicators
+ * modules/indicators.js - component 3: urban morphology indicators
  * OWNER: Atanas Malinkov
  *
  * Sky View Factor, built density (FSI/GSI), height variation, land-use mix,
@@ -176,11 +176,11 @@ async function addDensityGrid(ctx) {
       `<table>` +
       `<tr><td>FSI</td><td>${fsi.toFixed(2)}</td></tr>` +
       `<tr><td>GSI</td><td>${(p?.gsi?.getValue?.() ?? 0).toFixed(2)}</td></tr>` +
-      `<tr><td>storeys</td><td>${p?.layers?.getValue?.() ?? "—"}</td></tr>` +
-      `<tr><td>OSR</td><td>${p?.osr?.getValue?.() ?? "—"}</td></tr>` +
-      `<tr><td>mean height</td><td>${p?.height_mean_m?.getValue?.() ?? "—"} m</td></tr>` +
-      `<tr><td>height σ</td><td>${p?.height_std_m?.getValue?.() ?? "—"} m</td></tr>` +
-      `<tr><td>buildings</td><td>${p?.n_buildings?.getValue?.() ?? "—"}</td></tr>` +
+      `<tr><td>storeys</td><td>${p?.layers?.getValue?.() ?? "-"}</td></tr>` +
+      `<tr><td>OSR</td><td>${p?.osr?.getValue?.() ?? "-"}</td></tr>` +
+      `<tr><td>mean height</td><td>${p?.height_mean_m?.getValue?.() ?? "-"} m</td></tr>` +
+      `<tr><td>height σ</td><td>${p?.height_std_m?.getValue?.() ?? "-"} m</td></tr>` +
+      `<tr><td>buildings</td><td>${p?.n_buildings?.getValue?.() ?? "-"}</td></tr>` +
       `</table>`;
   }
   await viewer.dataSources.add(ds);
@@ -232,8 +232,8 @@ async function addLanduseGrid(ctx) {
       `<table>` +
       `<tr><td>Shannon</td><td>${sh.toFixed(3)}</td></tr>` +
       `<tr><td>Simpson</td><td>${(p?.simpson?.getValue?.() ?? 0).toFixed(3)}</td></tr>` +
-      `<tr><td>units</td><td>${p?.n_units?.getValue?.() ?? "—"}</td></tr>` +
-      `<tr><td>dominant</td><td>${p?.dominant?.getValue?.() ?? "—"}</td></tr>` +
+      `<tr><td>units</td><td>${p?.n_units?.getValue?.() ?? "-"}</td></tr>` +
+      `<tr><td>dominant</td><td>${p?.dominant?.getValue?.() ?? "-"}</td></tr>` +
       `</table><hr><table>` +
       [
         "residential",
@@ -284,7 +284,7 @@ function perBuurtTable(perBuurt, cols) {
           cols
             .map(
               ([k, , dp]) =>
-                `<td>${b[k] == null ? "—" : Number(b[k]).toFixed(dp)}</td>`,
+                `<td>${b[k] == null ? "-" : Number(b[k]).toFixed(dp)}</td>`,
             )
             .join("") +
           `</tr>`
@@ -417,7 +417,7 @@ function histogramSvg(hist, mean) {
  * GSI on x, FSI on y. Those two fix the other two indicators, so the diagram
  * carries all four: L = FSI/GSI is a straight line through the origin, and
  * OSR = (1-GSI)/FSI is a curve. Plotting it is the whole point of computing
- * Spacematrix rather than a bare density figure — fabric types separate by
+ * Spacematrix rather than a bare density figure: fabric types separate by
  * WHERE they sit, not by any single number, and two cells with the same FSI
  * can be a low sprawl or a tall point block depending on GSI.
  *
@@ -692,7 +692,7 @@ export async function setup(ctx) {
         (
           svf.combined?.open_ground_geometric?.mean ??
           svf.open_ground_geometric?.mean
-        )?.toFixed(3) ?? "—"
+        )?.toFixed(3) ?? "-"
       }. ` +
       (sc === "baseline" ? "" : `Scenario run: demolition and new blocks burned into the AHN surface. `) +  //say what changed
       `Toggle the map overlay under <em>Analysis</em>.</p>`;
@@ -754,7 +754,7 @@ export async function setup(ctx) {
    * which is the whole-day total.
    *
    * It opens on LIVE: the sun as it stands right now in Rotterdam, clear-sky.
-   * That is for orientation only — the analysis day is the equinox, which is
+   * That is for orientation only: the analysis day is the equinox, which is
    * what shadows.py computes, and the reference days are one click away. */
   {
     const { Cesium, viewer, config } = ctx;
@@ -830,7 +830,7 @@ export async function setup(ctx) {
     const PERF = ` Shadows can be switched off under <em>Performance</em>.`;
     const NOTE_LIVE =
       `Live: this moment in Rotterdam, clear-sky. The analysis uses the ` +
-      `equinox — the whole-day direct-sun total is under <em>Urban ` +
+      `equinox: the whole-day direct-sun total is under <em>Urban ` +
       `morphology</em>, the map overlay under <em>Analysis</em>.` + PERF;
     const NOTE_FIXED =
       `One instant on the chosen day. The whole-day direct-sun total is under ` +
@@ -890,7 +890,7 @@ export async function setup(ctx) {
         const rise = nextSunrise(now);
         const r = rise && nlParts(rise);
         nightEl.textContent = r
-          ? `Sun is down — rises at ${r.hour}:${r.minute}.`
+          ? `Sun is down: rises at ${r.hour}:${r.minute}.`
           : "Sun is down.";
       }
     };
@@ -1016,7 +1016,7 @@ export async function setup(ctx) {
       `<p class="muted">Normalised Shannon entropy over ` +
       `${lu.parameters.n_categories_in_scheme} BAG use classes, weighted by ` +
       `usable floor area. 0 = one use only, 1 = an even mix. ` +
-      `Built floor space only — parks, water and streets are not in BAG; ` +
+      `Built floor space only: parks, water and streets are not in BAG; ` +
       `use GSI above for the built/unbuilt split. ` +
       `Toggle the grid under <em>Analysis</em>.</p>`;
   } else {
@@ -1101,7 +1101,7 @@ export async function setup(ctx) {
       INDICATORS.map(({ key, label, unit, hint }) => {
         const v = s[key];
         const b = base[key];
-        const shown = v == null ? "—" : `${Number(v).toFixed(2)}${unit}`;
+        const shown = v == null ? "-" : `${Number(v).toFixed(2)}${unit}`;
         let delta = "";
         if (v != null && b != null && scenario !== "baseline") {
           const d = v - b;

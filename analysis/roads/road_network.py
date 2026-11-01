@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-road_network.py — the walking network per scenario, its structure and how far
+road_network.py - the walking network per scenario, its structure and how far
 homes are from everyday destinations.
 
 Component 4.8. Built 2026-10-21.
@@ -699,7 +699,7 @@ def main() -> int:
     ap.add_argument("--scenario", nargs="+", help="run only these cases; the others stay as in road_metrics.json")
     args = ap.parse_args()
     p = PARAMS
-    print(f"Walking network — {STUDY_AREA.name}")
+    print(f"Walking network: {STUDY_AREA.name}")
     fetch(p, args.refresh)
     dest, removed, dwelling_m2 = destinations()
     out = {

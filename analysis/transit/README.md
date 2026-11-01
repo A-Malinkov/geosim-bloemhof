@@ -1,4 +1,4 @@
-# analysis/transit — public-transport stops and line frequencies
+# analysis/transit - public-transport stops and line frequencies
 
 Feeds `app/modules/transit.js`. A reference layer: today's timetable, the same
 for every design scenario.

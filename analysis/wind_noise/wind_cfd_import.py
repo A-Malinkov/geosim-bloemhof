@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-wind_cfd_import.py — a finished OpenFOAM wind run as a pedestrian-level map for the app.
+wind_cfd_import.py - a finished OpenFOAM wind run as a pedestrian-level map for the app.
 
 Reads one ronna job (the results zip you download from
 https://ronna.tudelft.nl/openfoam/, or that zip unpacked), slices the last time
@@ -90,7 +90,7 @@ class CaseFiles:
         #the zip may wrap everything in one top folder: find the case root by its mesh
         owner = [n for n in self.names if re.search(r"(^|/)constant/polyMesh/owner(\.gz)?$", n)]
         if not owner:
-            sys.exit(f"{path}: no constant/polyMesh/owner — not a reconstructed OpenFOAM case")
+            sys.exit(f"{path}: no constant/polyMesh/owner, not a reconstructed OpenFOAM case")
         self.prefix = owner[0][: owner[0].index("constant/polyMesh/owner")]
 
     def has(self, rel: str) -> bool:
@@ -119,7 +119,7 @@ class CaseFiles:
                     pass
         times.pop(0.0, None)  #0 holds the initial conditions, not a result
         if not times:
-            sys.exit(f"{self.path}: no time directory with a U field — did the solver run?")
+            sys.exit(f"{self.path}: no time directory with a U field. Did the solver run?")
         return [times[k] for k in sorted(times)]
 
 

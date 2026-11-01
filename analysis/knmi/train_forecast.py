@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-train_forecast.py — AI prediction of future weather at the study area.
+train_forecast.py - AI prediction of future weather at the study area.
 
 Component 4.4b. Trains models to predict temperature and wind speed some hours
 ahead from KNMI's own hourly station record, and reports how accurate they are.
@@ -301,7 +301,7 @@ def main():
     ap.add_argument("--no-lstm", action="store_true", help="skip the LSTM (no PyTorch needed)")
     args = ap.parse_args()
 
-    print(f"Weather prediction — KNMI station {args.station}, {STUDY_AREA.name}")
+    print(f"Weather prediction: KNMI station {args.station}, {STUDY_AREA.name}")
     times, cols = load_hourly(args.station)
     X, feature_names = build_features(times, cols)  #same 47 inputs for every model
 
@@ -348,7 +348,7 @@ def main():
             if not args.no_lstm:
                 lstm_pred, lstm_info = train_lstm(X, y, train, val)
                 if lstm_pred is None:
-                    print(f"        LSTM skipped — {lstm_info}")
+                    print(f"        LSTM skipped: {lstm_info}")
                 else:
                     preds["lstm"] = lstm_pred
                     chosen["lstm"] = lstm_info
@@ -412,7 +412,7 @@ def main():
         "model": headline_best,
         "horizon": headline,
         "method": {
-            "split": "chronological — never random; train 2021-2023, validation 2024, "
+            "split": "chronological: never random; train 2021-2023, validation 2024, "
                      "test 2025. An hour is used in a period only if the hour it "
                      "predicts is in that period too",
             "train_hours": hours["train"],  #at +24 h; shorter horizons have a few more
@@ -421,7 +421,7 @@ def main():
             "tuning": f"on the validation year: gradient boosting from "
                       f"{BOOSTING_SETTINGS} (300 trees), LSTM early stopping (patience {LSTM_PATIENCE}, at most {LSTM_MAX_EPOCHS} epochs), and "
                       f"the best model per horizon by validation MAE",
-            "features": f"{X.shape[1]} — lags {LAGS} of temperature, wind, "
+            "features": f"{X.shape[1]} features: lags {LAGS} of temperature, wind, "
                         f"humidity, pressure and dew point, plus cyclical "
                         f"hour-of-day, day-of-year and wind-direction encodings, "
                         f"and cloud cover",

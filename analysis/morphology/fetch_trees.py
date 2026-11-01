@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-fetch_trees.py — the Rotterdam municipal tree register for the study area.
+fetch_trees.py - the Rotterdam municipal tree register for the study area.
 
 SOURCE
 ------
@@ -132,7 +132,7 @@ def sample_ground(xs, ys):
     import rasterio
     path = RAW / "ahn_dtm_05m.tif"
     if not path.exists():
-        print("  ! no AHN DTM yet — run fetch_ahn.py; using 0.0 m NAP for all trees")
+        print("  ! no AHN DTM yet: run fetch_ahn.py; using 0.0 m NAP for all trees")
         return np.zeros(len(xs), dtype="float32")
 
     AHN_NODATA = 3.4028234663852886e38
@@ -180,14 +180,14 @@ def main() -> int:
     args = ap.parse_args()
 
     bbox = bbox_rd(args.pad)
-    print(f"Rotterdam tree register — {STUDY_AREA.name}")
+    print(f"Rotterdam tree register: {STUDY_AREA.name}")
     try:
         feats = load_cached(bbox) if args.from_cache else fetch_all(bbox)  #cache mode skips the network
     except requests.HTTPError as exc:
         code = exc.response.status_code if exc.response is not None else "?"
         print(f"\n  the Rotterdam tree service returned HTTP {code}.")
         print("  This host (diensten.rotterdam.nl) goes down from time to time and")
-        print("  it is nothing to do with this code — the 3D tilesets on")
+        print("  it is nothing to do with this code: the 3D tilesets on")
         print("  www.3drotterdam.nl are a different host and are unaffected.")
         print("  data/processed/trees.geojson is committed, so the app and every")
         print("  downstream analysis keep working. Try again later.")

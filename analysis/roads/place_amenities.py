@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-place_amenities.py — where in the new blocks the shops, health practices and
+place_amenities.py - where in the new blocks the shops, health practices and
 schools should go.
 
 Component 4.8. Built 2026-10-27. Uses the network, homes and destinations of

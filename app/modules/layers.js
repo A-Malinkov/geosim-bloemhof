@@ -1,12 +1,12 @@
 /* =============================================================================
- * modules/layers.js  —  component 2: data layers
+ * modules/layers.js - component 2: data layers
  * OWNER: <put your name here>
  *
  * Aerial imagery, AHN height data, existing buildings (3DBAG), Rotterdam 3D
  * trees and green surfaces. Every layer registers its own toggle.
  *
  * ---------------------------------------------------------------------------
- * THE HEIGHT OFFSET PROBLEM — read this before adding a Dutch tileset.
+ * THE HEIGHT OFFSET PROBLEM: read this before adding a Dutch tileset.
  *
  * Cesium positions everything against the WGS84 ellipsoid. Dutch municipal 3D
  * data is normally in NAP. At Bloemhof the difference is +43.62 m, so a
@@ -94,7 +94,7 @@ export async function setup(ctx) {
   /* PDOK Luchtfoto RGB, WMTS, EPSG:3857.
    * Two details that break this if you get them wrong:
    *   1. the TileMatrix identifiers are zero-padded ("00".."21"), so we must
-   *      pass explicit tileMatrixLabels — Cesium's default "0","1",… 404s;
+   *      pass explicit tileMatrixLabels: Cesium's default "0","1",… 404s;
    *   2. the matrix set is a standard WebMercatorQuad, so WebMercatorTilingScheme. */
   let aerial = null;
   try {
@@ -148,7 +148,7 @@ export async function setup(ctx) {
     console.warn("[layers] OSM basemap unavailable", err);
   }
 
-  /* AHN surface model as a draped overlay — a quick visual read on relief.
+  /* AHN surface model as a draped overlay: a quick visual read on relief.
    * Quantitative AHN work belongs in analysis/morphology (WCS, 0.5 m rasters). */
   try {
     const ahn = viewer.imageryLayers.addImageryProvider(
@@ -235,7 +235,7 @@ export async function setup(ctx) {
     show: false,
   });
 
-  /* Textured trees are much heavier — leave off until someone needs a render. */
+  /* Textured trees are much heavier: leave off until someone needs a render. */
   await addTileset(ctx, {
     key: "rotterdamTreesTextured",
     label: "Trees, textured (heavy)",
@@ -254,7 +254,7 @@ export async function setup(ctx) {
       clampToGround: true,
       fill: Cesium.Color.CYAN.withAlpha(0.06),
     });
-    /* Cesium cannot outline a polygon that is clamped to terrain — it warns and
+    /* Cesium cannot outline a polygon that is clamped to terrain: it warns and
      * silently drops the stroke. Draw each boundary as a ground polyline
      * instead, which is the supported way to get a visible edge. */
     const rings = [];
@@ -283,8 +283,8 @@ export async function setup(ctx) {
       ent.description =
         `<table>` +
         `<tr><td>buurt</td><td>${nm}</td></tr>` +
-        `<tr><td>code</td><td>${p?.buurtcode?.getValue?.() ?? "—"}</td></tr>` +
-        `<tr><td>area</td><td>${p?.area_ha?.getValue?.() ?? "—"} ha</td></tr>` +
+        `<tr><td>code</td><td>${p?.buurtcode?.getValue?.() ?? "-"}</td></tr>` +
+        `<tr><td>area</td><td>${p?.area_ha?.getValue?.() ?? "-"} ha</td></tr>` +
         `<tr><td>inhabitants</td><td>${(
           p?.inhabitants?.getValue?.() ?? 0
         ).toLocaleString("en-GB")}</td></tr>` +
@@ -293,7 +293,7 @@ export async function setup(ctx) {
     await viewer.dataSources.add(ds);
     ctx.registerLayer({
       id: "studyArea",
-      label: `Study area — ${sa.buurten.map((b) => b.name).join(" + ")}`,
+      label: `Study area: ${sa.buurten.map((b) => b.name).join(" + ")}`,
       group: "Reference",
       show: true,
       target: ds,
@@ -337,10 +337,10 @@ export async function setup(ctx) {
         ent.name = p?.name?.getValue?.() ?? site.name;
         ent.description =
           `<table>` +
-          `<tr><td>area</td><td>${p?.area_ha?.getValue?.() ?? "—"} ha</td></tr>` +
-          `<tr><td>buildings (BAG)</td><td>${n == null ? "—" : n.toLocaleString("en-GB")}</td></tr>` +
-          `<tr><td>chosen</td><td>${p?.chosen?.getValue?.() ?? "—"}</td></tr>` +
-          `<tr><td>source</td><td>${p?.source?.getValue?.() ?? "—"}</td></tr>` +
+          `<tr><td>area</td><td>${p?.area_ha?.getValue?.() ?? "-"} ha</td></tr>` +
+          `<tr><td>buildings (BAG)</td><td>${n == null ? "-" : n.toLocaleString("en-GB")}</td></tr>` +
+          `<tr><td>chosen</td><td>${p?.chosen?.getValue?.() ?? "-"}</td></tr>` +
+          `<tr><td>source</td><td>${p?.source?.getValue?.() ?? "-"}</td></tr>` +
           `</table>`;
       }
       await viewer.dataSources.add(ds);

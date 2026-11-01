@@ -6,7 +6,7 @@
     "quantity": "wind_speed_ratio",
     "level_m": 1.5,
     "bbox_rd": "[xmin, ymin, xmax, ymax] in EPSG:28992",
-    "bbox_wgs84": "[west, south, east, north] \u2014 WARP THE GRID TO EPSG:4326 FIRST and use the warped bounds. Do NOT just reproject the RD bbox corners: RD New is rotated against WGS84, so the square's four corners do not share two longitudes and a rectangle built from two of them misplaces the overlay by ~30 m. See reproject_to_wgs84() in analysis/morphology/sky_view_factor.py.",
+    "bbox_wgs84": "[west, south, east, north]: WARP THE GRID TO EPSG:4326 FIRST and use the warped bounds. Do NOT just reproject the RD bbox corners: RD New is rotated against WGS84, so the square's four corners do not share two longitudes and a rectangle built from two of them misplaces the overlay by ~30 m. See reproject_to_wgs84() in analysis/morphology/sky_view_factor.py.",
     "shape": "[ny, nx]",
     "values": "row-major 2D array, row 0 = north, |U| / undisturbed inflow at the same height, null = building or no data",
     "summary": {

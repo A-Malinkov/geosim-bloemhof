@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-import_cyrille.py — bring Cyrille's QGIS flood-vulnerability rasters into the app.
+import_cyrille.py - bring Cyrille's QGIS flood-vulnerability rasters into the app.
 
 Analysis: Cyrille Kummer (QGIS, Oct 2026, team OneDrive: SHARED AREA / QGIS /
 QGIS Files - UPDATED / BZO_NEW_*.tif). This script does not recompute it: it
@@ -11,7 +11,7 @@ USAGE
     python analysis/flood/import_cyrille.py [RASTER_DIR]
 
 RASTER_DIR defaults to cache/flood/raw/ (gitignored). It must hold the
-BZO_NEW_*.tif files listed in LAYERS below — extract them from the shared
+BZO_NEW_*.tif files listed in LAYERS below: extract them from the shared
 folder's QGIS.zip. They are 76 MB each and are NOT committed.
 
 WHAT THE LAYERS ARE (checked on every cell, see README)
@@ -101,7 +101,7 @@ def read(name):
 
 
 def warp(a, transform, crs):
-    """Warp to EPSG:4326 with NEAREST resampling — these are class rasters,
+    """Warp to EPSG:4326 with NEAREST resampling: these are class rasters,
     and bilinear would invent class 2.5 along every edge. Warping first (not
     draping the RD box) avoids the ~30 m RD rotation error (CLAUDE.md)."""
     from rasterio.warp import calculate_default_transform, reproject, Resampling
@@ -245,7 +245,7 @@ def figures(areas) -> None:
     ax.legend(handles=handles[::-1] + [Patch(facecolor="none", edgecolor="#00b4d8", label="design site")],
               title="vulnerability", loc="upper left", bbox_to_anchor=(1.01, 1), frameon=False)
     s = summary_overall
-    ax.set_title("Overall flood vulnerability (Cyrille, QGIS) — open ground, 0.5 m\n"
+    ax.set_title("Overall flood vulnerability (Cyrille, QGIS): open ground, 0.5 m\n"
                  f"classes 3–4: design site {s['Design site']:.0%}, " +
                  ", ".join(f"{n} {s[n]:.0%}" for _, n in STUDY_AREA.buurten))  #every study-area buurt, however many
     plt.tight_layout(); fig.savefig(DOCS / "fig_flood_overall.png", dpi=140); plt.close(fig)

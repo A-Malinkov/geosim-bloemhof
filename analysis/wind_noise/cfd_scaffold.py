@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-cfd_scaffold.py — build the OpenFOAM wind cases from the assignment template.
+cfd_scaffold.py - build the OpenFOAM wind cases from the assignment template.
 
 Writes four ready-to-run simpleFoam cases under analysis/wind_noise/cfd/:
 
@@ -9,8 +9,8 @@ Writes four ready-to-run simpleFoam cases under analysis/wind_noise/cfd/:
     cfd/scenario_b/    OPTION 2's massing + the same kept block
     cfd/final/         the Final Model's massing + the same kept block
 
-All cases share identical system/, constant/ and 0.orig/ — only the building
-STL differs (each case's resources/geometry/buildings.stl) — so the comparison
+All cases share identical system/, constant/ and 0.orig/, only the building
+STL differs (each case's resources/geometry/buildings.stl), so the comparison
 is fair and the only thing that changes the result is the design.
 
 The TODO blocks from the assignment template are FILLED here, with the chosen
@@ -835,7 +835,7 @@ def write_case(case: str, d: dict) -> None:
 
 
 def pack_ronna(case: str) -> pathlib.Path:
-    #zip just the inputs ronna wants: 0.orig, system, constant, resources — NO
+    #zip just the inputs ronna wants: 0.orig, system, constant, resources; NO
     #Allrun* / polyMesh / triSurface / time dirs (the server makes those itself)
     root = CFD / case
     out = ROOT / "cache" / "wind" / f"{case}_ronna.zip"
@@ -853,7 +853,7 @@ def pack_ronna(case: str) -> pathlib.Path:
 def main() -> int:
     for c in CASES:
         if not (GEO / f"b_{c}.stl").exists():
-            sys.exit(f"missing {GEO / f'b_{c}.stl'} — run wind_cfd_export.py first")
+            sys.exit(f"missing {GEO / f'b_{c}.stl'}: run wind_cfd_export.py first")
     d = domain_from_meta()
     print(f"domain (H={d['H']:.0f} m): "
           f"x [{d['xmin']}, {d['xmax']}], y [{d['ymin']}, {d['ymax']}], z [0, {d['zmax']}]  "

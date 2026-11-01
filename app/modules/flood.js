@@ -1,5 +1,5 @@
 /* =============================================================================
- * modules/flood.js  —  flood / water vulnerability (Cyrille's QGIS analysis)
+ * modules/flood.js - flood / water vulnerability (Cyrille's QGIS analysis)
  * OWNER: Cyrille Kummer (analysis) · imported by analysis/flood/import_cyrille.py
  *
  * Seven 0.5 m rasters from the team's QGIS project, warped to EPSG:4326 and
@@ -80,7 +80,7 @@ export async function setup(ctx) {
   const combined = data.layers.find((l) => l.id === "combined");
   const areas = Object.keys(overall.stats);
   const classes = overall.legend.map((x) => x.label);
-  const pct = (v) => (v == null ? "—" : `${Math.round(v * 100)}`);
+  const pct = (v) => (v == null ? "-" : `${Math.round(v * 100)}`);
   const swatch = (c) =>
     `<i style="width:10px;height:10px;background:${c};display:inline-block;border-radius:2px;vertical-align:-1px"></i>`;
 
@@ -95,7 +95,7 @@ export async function setup(ctx) {
         return (
           `<tr><td>${a}</td>` +
           classes.map((c) => `<td>${pct(s[c])}</td>`).join("") +
-          `<td>${m == null ? "—" : m.toFixed(1)}</td></tr>`
+          `<td>${m == null ? "-" : m.toFixed(1)}</td></tr>`
         );
       })
       .join("") +

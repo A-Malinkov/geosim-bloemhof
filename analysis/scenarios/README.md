@@ -1,4 +1,4 @@
-# analysis/scenarios — Design scenarios + proposed massing
+# analysis/scenarios - Design scenarios + proposed massing
 
 Component 1 + 9 · owner: _<name>_ · feeds `app/modules/scenarios.js`
 
@@ -6,7 +6,7 @@ Component 1 + 9 · owner: _<name>_ · feeds `app/modules/scenarios.js`
 
 Write `design_massing.geojson` into `data/processed/`.
 Each of those files already exists as a stub containing a `_schema` block that
-describes the exact shape `scenarios.js` expects — **read it before writing the real file**.
+describes the exact shape `scenarios.js` expects: **read it before writing the real file**.
 The app treats a stub as "no data" and shows a placeholder until you overwrite it.
 
 ## Notes

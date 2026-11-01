@@ -1,4 +1,4 @@
-# analysis/comparison — Scenario comparison
+# analysis/comparison - Scenario comparison
 
 Component 9 · owner: Atanas Malinkov (built 2026-10-27) · feeds `app/modules/comparison.js`
 

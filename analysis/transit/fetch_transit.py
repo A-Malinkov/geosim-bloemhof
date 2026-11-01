@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-fetch_transit.py — public-transport stops around Bloemhof and how often each line calls.
+fetch_transit.py - public-transport stops around Bloemhof and how often each line calls.
 
 Reads the national GTFS timetable that OVapi publishes (every operator in the
 Netherlands, rebuilt daily from the NDOV open data) and writes, for each stop

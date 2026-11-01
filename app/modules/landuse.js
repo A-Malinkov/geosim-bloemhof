@@ -1,15 +1,15 @@
 /* =============================================================================
- * modules/landuse.js  —  component 7: agent-based land-use modelling
+ * modules/landuse.js - component 7: agent-based land-use modelling
  * OWNER: Atanas Malinkov
  *
  * Shows two models of how land use could evolve, and lets you watch them run.
  *
  *   Cellular automaton   analysis/abm_landuse/ca_landuse.py   -> landuse_abm.json
- *       Rules are ASSUMED — vacant cells take the uses their 8 neighbours support
+ *       Rules are ASSUMED: vacant cells take the uses their 8 neighbours support
  *       (shops on streets next to homes). Shows what follows from those assumptions.
  *
  *   RL agent             analysis/abm_landuse/rl_landuse.py   -> landuse_rl.json
- *       Rules are LEARNED — the agent is given only the objective. Its weights
+ *       Rules are LEARNED: the agent is given only the objective. Its weights
  *       can be read off and compared with the CA's rules. A convolutional DQN
  *       (rl_dqn.py -> landuse_rl_dqn.json) is run on the same problem for
  *       comparison, with hill climbing as the baseline both should beat. Since
@@ -21,7 +21,7 @@
  * Each simulation frame is a small PNG exported by Python, already warped to
  * EPSG:4326. Rendering ~2,300 cells as Cesium polygons per frame would be slow,
  * and building the rectangle from RD corners in JS would misplace it by ~30 m
- * because RD New is rotated against WGS84 — the same trap that caught the Sky
+ * because RD New is rotated against WGS84: the same trap that caught the Sky
  * View Factor overlay. Python warps it; the browser just drapes it.
  *
  * Frames load lazily, one imagery layer per frame, cached after first use.
@@ -67,7 +67,7 @@ export async function setup(ctx) {
   /* ---- map frames ------------------------------------------------------- */
   /* Every frame is a ~3 KB PNG and there are fewer than twenty of them, so all
    * of them are loaded once when the layer is first switched on. Frame changes
-   * are then a synchronous `show` flag — no promises in the path the slider
+   * are then a synchronous `show` flag: no promises in the path the slider
    * drives. An earlier version created layers lazily per frame and the async
    * bookkeeping was subtly wrong: frames loaded and cached, but the visible
    * layer never changed. Preloading is both simpler and correct. */
@@ -191,7 +191,7 @@ export async function setup(ctx) {
 
     <div id="luRhino"></div>
 
-    <h4>Land-use programmes (CA) — not the Rhino options</h4>
+    <h4>Land-use programmes (CA), not the Rhino options</h4>
     <p class="muted">The design site cleared and rebuilt by the CA for two programmes
     set by us, scored over the site. They do not change with the scenario switch above.</p>
     <table class="kv"><thead><tr><th>programme</th><th>objective</th><th>mix</th></tr></thead>
@@ -302,7 +302,7 @@ export async function setup(ctx) {
              .map(([k, x]) => `${k} σ ${x.toFixed(4)}`).join(", ")}): the ` +
       `preference is a preference, not a large difference.</p>`;
   } else if (sens) {
-    sens.innerHTML = `<p class="muted">Weight sensitivity not computed — ` +
+    sens.innerHTML = `<p class="muted">Weight sensitivity not computed: ` +
       `<code>analysis/abm_landuse/weight_sensitivity.py</code></p>`;
   }
 
@@ -313,7 +313,7 @@ export async function setup(ctx) {
       `<p class="muted">Erase a share of developed cells, restore the original ` +
       `demand, and see how much of the real map the CA rebuilds. κ discounts ` +
       `chance agreement.</p>` : "") +
-    (rl ? `<h4>RL agent — re-plans the design site, not a Rhino option</h4>` +
+    (rl ? `<h4>RL agent: re-plans the design site, not a Rhino option</h4>` +
       `<table class="kv"><tbody>` +
       `<tr><td>algorithm</td><td>${rl.algorithm}</td></tr>` +
       `<tr><td>episodes</td><td>${rl.parameters.episodes}</td></tr>` +
@@ -337,10 +337,10 @@ export async function setup(ctx) {
       `distance to water and a few flags) and learns one weight per number for each ` +
       `use it may place, so its preferences can be read off.</p>` +
       `<p class="muted">The RL agent optimises this objective directly, while the ` +
-      `CA follows fixed rules and is merely scored on it — so a higher number is ` +
+      `CA follows fixed rules and is merely scored on it, so a higher number is ` +
       `expected and is <em>not</em> evidence that RL models cities better.</p>` +
       planInfoBlock() + comparisonTable()
-      : `<p class="muted">RL agent not run yet — ` +
+      : `<p class="muted">RL agent not run yet: ` +
         `<code>analysis/abm_landuse/rl_landuse.py</code></p>`);
 
   //the linear agent's plan in one line, pointing at its map layer
@@ -354,7 +354,7 @@ export async function setup(ctx) {
 
   function comparisonTable() {
     if (!rl || !dqn?.random_policy) return "";
-    const f = (x) => (x == null ? "—" : x.toFixed(3));
+    const f = (x) => (x == null ? "-" : x.toFixed(3));
     const rows = [["random policy, mean", dqn.random_policy.mean],
                   ["linear agent, best episode", rl.best_objective],
                   ...(rl.greedy_objective != null ? [["linear agent, learned policy", rl.greedy_objective]] : []),  //no exploration
@@ -394,11 +394,11 @@ export async function setup(ctx) {
   function renderRhino(sc) {
     const runs = ["baseline", "scenario_a", "scenario_b", "final"].filter((k) => rhino?.[k]?.open_ground_as_vacant);  //final: its shop blocks burn in as retail
     if (!runs.length) {
-      rhinoEl.innerHTML = `<p class="muted">Rhino options not scored yet — ` +
+      rhinoEl.innerHTML = `<p class="muted">Rhino options not scored yet: ` +
         `<code>analysis/abm_landuse/score_scenarios.py</code></p>`;
       return;
     }
-    const f = (x, d = 3) => (x == null ? "—" : x.toFixed(d));
+    const f = (x, d = 3) => (x == null ? "-" : x.toFixed(d));
     rhinoEl.innerHTML =
       `<h4>The design options on this objective</h4>` +
       `<table class="kv"><thead><tr><th>design site</th><th>objective</th><th>mix</th>` +

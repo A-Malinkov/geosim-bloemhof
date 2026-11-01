@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-fetch_knmi.py — real KNMI sensor observations and history for the study area.
+fetch_knmi.py - real KNMI sensor observations and history for the study area.
 
 Component 4.4a. This is the SENSOR half of the weather dashboard. The live,
 self-refreshing panel in the app is KNMI's forecast MODEL via Open-Meteo; this
@@ -98,7 +98,7 @@ def api_get(path: str, tries: int = 6) -> dict:
     GET the Open Data API, retrying on 429.
 
     The anonymous key is shared by everyone using it worldwide, so HTTP 429
-    "Too Many Requests" is routine rather than exceptional — it showed up within
+    "Too Many Requests" is routine rather than exceptional: it showed up within
     a handful of calls during development. KNMI sends no Retry-After header, and
     the limit clears in roughly 15-30 s, so back off and try again. If you hit it
     constantly, register your own key at developer.dataplatform.knmi.nl.
@@ -138,7 +138,7 @@ def fetch_current(prefer_station: int | None) -> dict | None:
     try:
         import xarray as xr
     except ImportError:
-        print("  ! xarray missing — pip install -r requirements.txt")
+        print("  ! xarray missing: pip install -r requirements.txt")
         return None
 
     listing = api_get(f"/datasets/{DATASET}/versions/{VERSION}/files"
@@ -213,7 +213,7 @@ def fetch_current(prefer_station: int | None) -> dict | None:
     tmp.unlink(missing_ok=True)
     if missing:
         print(f"  (variables absent from this file: {', '.join(missing)})")
-    print(f"  station {out['station']} {out['station_name']} — "
+    print(f"  station {out['station']} {out['station_name']}: "
           f"{dist:.1f} km from the study area")
     return out
 
@@ -224,7 +224,7 @@ def post_json(url: str, data: str, timeout: int = 300, tries: int = 4,
     """
     POST to the KNMI climatology service, retrying transient failures.
 
-    The service is intermittently slow and answers 502/503/504 under load — a
+    The service is intermittently slow and answers 502/503/504 under load: a
     teammate hit a 504 on a request that completes in two seconds from here. It
     recovers within seconds, so a single attempt is not enough and a traceback
     is the wrong response to somebody else's busy server.
@@ -276,7 +276,7 @@ def fetch_hourly(station: int, years: int) -> list[dict]:
             chunk = post_json(HOURLY, payload, label=f"{y0.year}: ")
             consecutive_failures = 0
         except Exception as exc:
-            print(f"    {y0.year}: UNAVAILABLE — {exc}")
+            print(f"    {y0.year}: UNAVAILABLE: {exc}")
             missing.append(y0.year)
             consecutive_failures += 1
             if consecutive_failures >= 2:
@@ -364,7 +364,7 @@ def main() -> int:
     ap.add_argument("--current-only", action="store_true")
     args = ap.parse_args()
 
-    print(f"KNMI sensor data — station {args.station}, "
+    print(f"KNMI sensor data: station {args.station}, "
           f"nearest to {STUDY_AREA.name}")
 
     print("\n1. latest 10-minute observation")
@@ -419,7 +419,7 @@ def main() -> int:
                   f"{sum(temps) / len(temps):.1f} degC")
 
     if missing_years or not daily:
-        print("\n  Finished with gaps — see the messages above. The current "
+        print("\n  Finished with gaps: see the messages above. The current "
               "observation was written; the history was not complete.")
         return 2
     return 0

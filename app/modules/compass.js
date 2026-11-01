@@ -1,5 +1,5 @@
 /* =============================================================================
- * modules/compass.js  —  floating compass for the map view
+ * modules/compass.js - floating compass for the map view
  *
  * A small rose in the bottom-right of the map. The dial turns with the camera so
  * its N always points at north on screen, and the label gives the bearing the

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-density_height.py — building density and height variation for the study area.
+density_height.py - building density and height variation for the study area.
 
 Owner: Atanas Malinkov
 
@@ -126,7 +126,7 @@ def main() -> int:
                     help="cells with fewer buildings are reported but flagged sparse")
     args = ap.parse_args()
 
-    print(f"Building density and height variation — {STUDY_AREA.name}")
+    print(f"Building density and height variation: {STUDY_AREA.name}")
     x, y, area, floors_raw, height = load_buildings()
     print(f"  {len(x):,} buildings with a footprint area")
 

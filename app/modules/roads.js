@@ -1,5 +1,5 @@
 /* =============================================================================
- * modules/roads.js  —  component 8: road network
+ * modules/roads.js - component 8: road network
  * OWNER: Atanas Malinkov
  *
  * The walking network per scenario, how far homes are from everyday
@@ -74,7 +74,7 @@ export async function setup(ctx) {
   body.appendChild(out);
 
   const fmt = (v, d = 0, unit = "") =>
-    v == null ? "—" : Number(v).toLocaleString("en-GB", { minimumFractionDigits: d, maximumFractionDigits: d }) + unit;
+    v == null ? "-" : Number(v).toLocaleString("en-GB", { minimumFractionDigits: d, maximumFractionDigits: d }) + unit;
   //change against baseline; for distances and betweenness, up is worse
   const delta = (v, bv, d) => {
     if (v == null || bv == null) return "";

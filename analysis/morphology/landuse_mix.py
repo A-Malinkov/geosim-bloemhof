@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-landuse_mix.py — land-use mix indices for the study area.
+landuse_mix.py - land-use mix indices for the study area.
 
 Owner: Atanas Malinkov
 
@@ -27,7 +27,7 @@ too, so the difference is visible rather than hidden in a methods choice.
 
 THE DENOMINATOR
 ---------------
-N is the full BAG gebruiksdoel vocabulary (11 categories), fixed a priori — not
+N is the full BAG gebruiksdoel vocabulary (11 categories), fixed a priori, not
 "the categories that happen to occur here". Otherwise a cell containing only
 homes and one shop would score higher than a cell containing only homes purely
 because its category list is shorter, and cells could not be compared with each
@@ -121,7 +121,7 @@ def main() -> int:
                          "a handful of units is noise")
     args = ap.parse_args()
 
-    print(f"Land-use mix — {STUDY_AREA.name}")
+    print(f"Land-use mix: {STUDY_AREA.name}")
     x, y, cats, area = load_units()
     print(f"  {len(x):,} addressable units, {N_CATEGORIES} categories in the scheme")
 

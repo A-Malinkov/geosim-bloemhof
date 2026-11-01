@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-check_docs.py — do the numbers in the READMEs still match the outputs?
+check_docs.py - do the numbers in the READMEs still match the outputs?
 
 The READMEs quote results directly: MAE tables, kappa values, GSI/FSI, Shannon
 indices, scenario objectives. Nothing forces them to agree with the JSON in
@@ -34,7 +34,7 @@ It still cannot tell you the surrounding sentence is true. A retrain can falsify
 are asserted separately at the bottom.
 
 If a check reports NO ANCHOR, the document was restructured and the check is
-dead — fix the pattern rather than ignoring it.
+dead: fix the pattern rather than ignoring it.
 """
 from __future__ import annotations
 
@@ -81,7 +81,7 @@ def main() -> int:
     #
     # The value must appear on EVERY line matching the pattern. An earlier
     # version only checked the value appeared *somewhere* in the file, which
-    # passed happily when one of two quotations went stale — the number was
+    # passed happily when one of two quotations went stale: the number was
     # still present, just not where it had been changed. Match the context.
     checks: list[tuple[str, str, str, list[pathlib.Path]]] = []
 
@@ -520,7 +520,7 @@ def main() -> int:
         nfiles = len({f for _, _, _, fs in checks for f in fs})
         print(f"checked {len(checks)} published numbers across {nfiles} files\n")
         if stale:
-            print(f"STALE — {len(stale)} number(s) no longer match the outputs:")
+            print(f"STALE: {len(stale)} number(s) no longer match the outputs:")
             for label, value, f, line in stale:
                 print(f"   {f}  expects {value}  ({label})")
                 print(f"      line reads: {line}")
@@ -528,7 +528,7 @@ def main() -> int:
         else:
             print("all published numbers match data/processed/")
         if no_anchor:
-            print(f"\nNO ANCHOR — {len(no_anchor)} check(s) could not find the line "
+            print(f"\nNO ANCHOR: {len(no_anchor)} check(s) could not find the line "
                   f"they were written against.\n  The doc was restructured; "
                   f"update the pattern in this script or the check is silently dead:")
             for label, pattern, f in no_anchor:
@@ -536,7 +536,7 @@ def main() -> int:
         if claims:
             print()
             if broken:
-                print(f"BROKEN CLAIMS — {len(broken)} sentence(s) are no longer true:")
+                print(f"BROKEN CLAIMS: {len(broken)} sentence(s) are no longer true:")
                 for c in broken:
                     print(f"   {c}")
             else:

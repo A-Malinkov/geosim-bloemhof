@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-wind_cfd_export.py — watertight building STLs for the OpenFOAM wind model.
+wind_cfd_export.py - watertight building STLs for the OpenFOAM wind model.
 
 Turns the design site's buildings into a flat-ground STL that snappyHexMesh can
 mesh. Each footprint is extruded from z=0 (the OpenFOAM ground wall) up to its

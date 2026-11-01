@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-import_rhino.py — proposed massing from the team's Rhino model into the app.
+import_rhino.py - proposed massing from the team's Rhino model into the app.
 
 USAGE
 -----

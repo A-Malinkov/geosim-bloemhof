@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-score_scenarios.py — the Rhino design options scored on the land-use objective.
+score_scenarios.py - the Rhino design options scored on the land-use objective.
 
 Component 4.7, for the scenario comparison (4.9). Owner: Atanas Malinkov.
 Built 2026-10-27.
@@ -242,7 +242,7 @@ def run(case, p, grid0, transform, site):
 
 def main() -> int:
     p = PARAMS
-    print(f"Rhino options on the land-use objective — {STUDY_AREA.name}")
+    print(f"Rhino options on the land-use objective: {STUDY_AREA.name}")
     grid0, transform, _, _ = rasterise(p["cell_m"])  #today's grid, exactly as the CA builds it
     site = centre_mask(design_site_polygon(), grid0.shape, transform)
     print(f"  grid {grid0.shape[1]} x {grid0.shape[0]}, design site {int(site.sum())} cells")

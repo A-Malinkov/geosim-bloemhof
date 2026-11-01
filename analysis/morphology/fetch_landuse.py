@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-fetch_landuse.py — BAG verblijfsobjecten (addressable units) for the study area.
+fetch_landuse.py - BAG verblijfsobjecten (addressable units) for the study area.
 
 Owner: Atanas Malinkov
 
 SOURCE
 ------
 PDOK BAG WFS, feature type `bag:verblijfsobject`. One record per addressable
-unit — a flat, a shop, an office — each with:
+unit, a flat, a shop, an office, each with:
 
     gebruiksdoel   its function (woonfunctie, winkelfunctie, kantoorfunctie, ...)
     oppervlakte    usable floor area in m2
@@ -34,7 +34,7 @@ exactly the built/unbuilt split BAG cannot see.
 
 MULTI-FUNCTION UNITS
 --------------------
-`gebruiksdoel` can be comma-separated ("winkelfunctie,woonfunctie") — a shop with
+`gebruiksdoel` can be comma-separated ("winkelfunctie,woonfunctie"): a shop with
 a flat above it, for instance. Floor area is split equally between the listed
 functions rather than dropping the record or picking the first.
 
@@ -110,7 +110,7 @@ def main() -> int:
     args = ap.parse_args()
 
     xmin, ymin, xmax, ymax = bbox_rd(args.pad)
-    print(f"BAG verblijfsobjecten — {STUDY_AREA.name}")
+    print(f"BAG verblijfsobjecten: {STUDY_AREA.name}")
 
     feats, start, t0 = [], 0, time.time()
     dropped_status, dropped_area, unknown = 0, 0, collections.Counter()
@@ -179,7 +179,7 @@ def main() -> int:
         "type": "FeatureCollection",
         "crs": {"type": "name", "properties": {"name": "urn:ogc:def:crs:EPSG::28992"}},
         "_source": "BAG via PDOK WFS (bag:verblijfsobject), public task / CC0",
-        "_note": "Addressable units only — no parks, water or streets. "
+        "_note": "Addressable units only: no parks, water or streets. "
                  "Multi-function units split their floor area evenly across "
                  "their categories.",
         "features": feats,

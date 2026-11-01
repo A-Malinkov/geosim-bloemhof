@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-noise.py — road-traffic noise (Lden) around the design site, with NoiseModelling.
+noise.py - road-traffic noise (Lden) around the design site, with NoiseModelling.
 
 USAGE
 -----
@@ -121,7 +121,7 @@ def fetch_osm(extent_rd, path: pathlib.Path) -> None:
     s, w, n, e = min(lats), min(lons), max(lats), max(lons)
     # Ways in the box and their nodes only. Recursing relations as well drags
     # in whole bus routes reaching into Belgium (25 MB instead of ~3), and
-    # Osmosis — NoiseModelling's OSM reader — needs `out meta` for versions.
+    # Osmosis, NoiseModelling's OSM reader, needs `out meta` for versions.
     q = (f"[out:xml][timeout:180];"
          f"(way({s},{w},{n},{e}););(._;>;);out meta;")
     print(f"  OSM via Overpass, bbox {s:.5f},{w:.5f},{n:.5f},{e:.5f}")
@@ -329,7 +329,7 @@ def main() -> int:
     site = design_site_polygon()
     fence = site.buffer(FENCE_BUFFER_M)
     extent = box(*fence.buffer(DATA_PAD_M).bounds)
-    print(f"Noise — {DESIGN_SITE['name']} + {FENCE_BUFFER_M} m, scenario {args.scenario}")
+    print(f"Noise: {DESIGN_SITE['name']} + {FENCE_BUFFER_M} m, scenario {args.scenario}")
 
     CACHE.mkdir(parents=True, exist_ok=True)
     osm = CACHE / "extent.osm"
@@ -470,7 +470,7 @@ def figure(grid, transform, buildings, site, fence, scenario, summ) -> None:
     ax.legend(handles=[Patch(color=cmap(i), label=f"{l} dB")
                        for i, l in reversed(list(enumerate(labels)))],
               title="Lden", loc="upper left", bbox_to_anchor=(1.01, 1), frameon=False)
-    ax.set_title(f"Road-traffic noise, Lden at {RECEIVER_HEIGHT_M} m — {scenario}\n"
+    ax.set_title(f"Road-traffic noise, Lden at {RECEIVER_HEIGHT_M} m: {scenario}\n"
                  f"mean {summ['mean']} dB, ≥{BKL_STANDARD_DB:.0f} dB on "
                  f"{summ['exceedance_frac']:.0%} of open ground (design site outlined)")
     ax.set_xlabel("RD x (m)"); ax.set_ylabel("RD y (m)")

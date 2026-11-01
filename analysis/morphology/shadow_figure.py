@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-shadow_figure.py — report figure for shadows.py: direct-sun hours on the design
+shadow_figure.py - report figure for shadows.py: direct-sun hours on the design
 site on three days (winter solstice, equinox, summer solstice).
 
 Run shadows.py first, once per day:

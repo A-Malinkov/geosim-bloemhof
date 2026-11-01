@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-fetch_landcover.py — land cover that BAG cannot see, for the land-use ABM.
+fetch_landcover.py - land cover that BAG cannot see, for the land-use ABM.
 
 Owner: Atanas Malinkov
 
@@ -53,7 +53,7 @@ def main() -> int:
     import osmnx as ox
 
     w, s, e, n = bbox_wgs()
-    print(f"OSM land cover — {STUDY_AREA.name}")
+    print(f"OSM land cover: {STUDY_AREA.name}")
     print(f"  bbox {w:.5f},{s:.5f},{e:.5f},{n:.5f}")
 
     frames = []

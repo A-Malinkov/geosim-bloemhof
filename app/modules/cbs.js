@@ -1,5 +1,5 @@
 /* =============================================================================
- * modules/cbs.js  —  component 6: CBS socio-demographic dashboards
+ * modules/cbs.js - component 6: CBS socio-demographic dashboards
  * OWNER: <put your name here>
  *
  * Source: CBS StatLine OData, table 86358NED "Kerncijfers wijken en buurten
@@ -46,7 +46,7 @@ export async function setup(ctx) {
     `</tr></thead><tbody>` +
     rows.map((r) => {
       const fmt = (v) =>
-        v == null ? "—" : typeof v === "number" ? v.toLocaleString("en-GB") : v;
+        v == null ? "-" : typeof v === "number" ? v.toLocaleString("en-GB") : v;
       return `<tr><td>${r.label}${r.unit ? ` <span class="muted">(${r.unit})</span>` : ""}</td>` +
              `<td>${fmt(r.value)}</td><td class="muted">${fmt(r.gemeente)}</td></tr>`;
     }).join("") +

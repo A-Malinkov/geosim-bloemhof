@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-sky_view_factor.py — Sky View Factor for the study area from AHN.
+sky_view_factor.py - Sky View Factor for the study area from AHN.
 
 WHAT SVF IS
 -----------
@@ -218,7 +218,7 @@ def reproject_to_wgs84(arr, transform, crs):
     Needed because the overlay is draped on a lon/lat RECTANGLE in Cesium, and
     the RD square is not one: RD New is rotated slightly against WGS84, so the
     square's four corners do not share two longitudes. Taking the SW and NE
-    corners as the rectangle misplaces the image by up to ~30 m — a third of a
+    corners as the rectangle misplaces the image by up to ~30 m: a third of a
     block. Warping first makes the rectangle exact.
 
     Returns (array, (west, south, east, north)).
@@ -321,7 +321,7 @@ def main() -> int:
             print(f"missing {p}. Run: python analysis/morphology/fetch_ahn.py")
             return 1
 
-    print(f"Sky View Factor — {STUDY_AREA.name}, {args.scenario}")
+    print(f"Sky View Factor: {STUDY_AREA.name}, {args.scenario}")
     print(f"  cell {args.resolution} m | radius {args.radius} m | "
           f"{args.directions} directions | observer {args.observer_height} m above ground")
 
@@ -407,8 +407,8 @@ def main() -> int:
         "scenario": args.scenario,  #which built environment this is
         "method": "multi-directional horizon angle (Zaksek, Ostir & Kokalj 2011)",
         "formulation": {
-            "svf": "mean(cos^2(gamma)) — cosine-weighted, urban-climate convention",
-            "svf_geometric": "1 - mean(sin(gamma)) — plain solid-angle fraction",
+            "svf": "mean(cos^2(gamma)): cosine-weighted, urban-climate convention",
+            "svf_geometric": "1 - mean(sin(gamma)): plain solid-angle fraction",
         },
         "parameters": {
             "cell_size_m": args.resolution,
@@ -422,7 +422,7 @@ def main() -> int:
             "ground": "AHN dtm_05m, gaps filled by nearest-neighbour dilation",
         },
         "bbox_rd": [round(v, 1) for v in bbox_rd()],
-        # The bbox the PNG is actually drawn on, from the warp — NOT the RD
+        # The bbox the PNG is actually drawn on, from the warp, NOT the RD
         # square reprojected corner-to-corner, which is off by up to ~30 m
         # because RD New is rotated against WGS84.
         "bbox_wgs84": [round(v, 7) for v in overlay_bbox],

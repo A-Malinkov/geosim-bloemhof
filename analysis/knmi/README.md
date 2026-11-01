@@ -1,9 +1,9 @@
-# analysis/knmi — weather dashboard and AI prediction
+# analysis/knmi - weather dashboard and AI prediction
 
 Component 4.4 · Owner: **Atanas Malinkov** · feeds `app/modules/knmi.js`
 
 > Numbers here are generated from `data/processed/knmi_forecast.json`. If you
-> retrain, regenerate this file — they go stale silently otherwise.
+> retrain, regenerate this file: they go stale silently otherwise.
 
 ## Scripts
 
@@ -19,11 +19,11 @@ python analysis/knmi/train_forecast.py               # ~5 min with the LSTM; the
 
 ## Status
 
-- [x] **4.4a real-time monitoring** — live self-refreshing panel (KNMI
+- [x] **4.4a real-time monitoring**: live self-refreshing panel (KNMI
       HARMONIE-AROME via Open-Meteo, in the browser) *and* real KNMI station
       sensor readings via Python
-- [x] **4.4a aggregated history** — 2,090 daily records, 5 years, station 344
-- [x] **4.4b AI prediction** — two models (gradient boosting, LSTM)
+- [x] **4.4a aggregated history**: 2,090 daily records, 5 years, station 344
+- [x] **4.4b AI prediction**: two models (gradient boosting, LSTM)
       against two naive baselines, accuracy reported
 
 ## Three data paths, and why there are three
@@ -34,7 +34,7 @@ python analysis/knmi/train_forecast.py               # ~5 min with the LSTM; the
 | Sensor readings | KNMI Open Data, 10-min in-situ observations | Python | what the **instruments measured** |
 | History | KNMI climatology (hourly + daily) | Python | the training set and the dashboard chart |
 
-The browser cannot call KNMI directly — the `Authorization` header triggers a
+The browser cannot call KNMI directly: the `Authorization` header triggers a
 CORS preflight KNMI does not answer, and the observations are NetCDF. Open-Meteo
 fills the live role because it needs no key and sends CORS headers.
 
@@ -61,7 +61,7 @@ Rotterdam Airport (06344), 8.0 km from the study area.
   before row *i*, which every lag feature depends on. `fetch_knmi.py`
   deduplicates; the series is now 43,848 rows with every gap exactly 1.0 h.
 
-## AI prediction — method and results
+## AI prediction: method and results
 
 Predicting **temperature** and **wind speed** at +1 h, +6 h and +24 h at KNMI
 station 344 (Rotterdam Airport). The record is split by date into three periods:
@@ -83,8 +83,8 @@ course assignments: a tree model and an LSTM, each scored against persistence.
 
 | model | what it is | tried on the validation year |
 |---|---|---|
-| persistence | the value h hours later equals the value now. The baseline every model must beat | — |
-| daily naive | the value h hours later equals the value 24 h before that, i.e. same hour yesterday | — |
+| persistence | the value h hours later equals the value now. The baseline every model must beat | - |
+| daily naive | the value h hours later equals the value 24 h before that, i.e. same hour yesterday | - |
 | gradient boosting | scikit-learn `HistGradientBoostingRegressor`, 300 trees | learning rate 0.03 or 0.1, tree depth 4 or unlimited |
 | LSTM | PyTorch, 2 layers of 64 units, dropout 0.1. Reads the last 48 hours of the feature table as a sequence. SmoothL1 loss, Adam (1e-3), batches of 256, gradients clipped at 1.0 | early stopping: up to 30 epochs, stops after 3 without a better validation error and keeps the best epoch |
 
@@ -108,7 +108,7 @@ training.
 before and the hour after a test point into training, and every model would look
 superb. This is the most common way a time-series result is quietly wrong.
 
-### Temperature — test MAE (°C), lower is better
+### Temperature: test MAE (°C), lower is better
 
 Bold is the model the validation year chose.
 
@@ -118,7 +118,7 @@ Bold is the model the validation year chose.
 | +6h | 2.830 | 2.251 | **1.314** | 1.364 |
 | +24h | 2.249 | 2.249 | **2.001** | 2.116 |
 
-### Wind speed — test MAE (m/s)
+### Wind speed: test MAE (m/s)
 
 | horizon | persistence | daily naive | grad. boosting | LSTM |
 |---|---|---|---|---|

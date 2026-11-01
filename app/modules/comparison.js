@@ -1,5 +1,5 @@
 /* =============================================================================
- * modules/comparison.js  —  component 9: scenario comparison
+ * modules/comparison.js - component 9: scenario comparison
  * OWNER: Atanas Malinkov
  *
  * Today against the two Rhino options on the design site, one row per
@@ -53,7 +53,7 @@ export async function setup(ctx) {
   }
   const better = Object.fromEntries((data.indicators || []).map((i) => [i.key, i.better]));  //"higher" / "lower" / null
 
-  const fmt = (v, d, pct) => v == null ? "—"
+  const fmt = (v, d, pct) => v == null ? "-"
     : (pct ? 100 * v : v).toLocaleString("en-GB", { minimumFractionDigits: d, maximumFractionDigits: d }) + (pct ? " %" : "");
 
   //change against today; .delta.down is the "good" colour and .delta.up the "bad" one in style.css

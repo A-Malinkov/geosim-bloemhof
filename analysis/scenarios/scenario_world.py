@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-scenario_world.py — the built environment of one scenario, for the analyses.
+scenario_world.py - the built environment of one scenario, for the analyses.
 
 Every analysis that depends on buildings (sky view factor, sun hours, street
 H/W, noise) needs the same answer to "what stands where in scenario X". This

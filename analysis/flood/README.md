@@ -1,4 +1,4 @@
-# analysis/flood — flood / water vulnerability (Cyrille's QGIS analysis)
+# analysis/flood - flood / water vulnerability (Cyrille's QGIS analysis)
 
 The analysis is Cyrille's, done in QGIS (team OneDrive: SHARED AREA / QGIS /
 QGIS Files - UPDATED, 2 Oct 2026). `import_cyrille.py` does **not** recompute

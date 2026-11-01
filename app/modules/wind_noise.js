@@ -1,5 +1,5 @@
 /* =============================================================================
- * modules/wind_noise.js  —  component 5: wind + noise simulation
+ * modules/wind_noise.js - component 5: wind + noise simulation
  * OWNER: <put your name here>
  *
  * Pedestrian-level wind comfort and road-traffic noise, baseline vs design.
@@ -7,7 +7,7 @@
  *   data/processed/wind_<scenario>.json   (wind_cfd_import.py, from an OpenFOAM run)
  *   data/processed/noise_<scenario>.json  (noise.py)
  *
- * Expected shape — a regular grid, so it can be drawn as a coloured surface:
+ * Expected shape: a regular grid, so it can be drawn as a coloured surface:
  * {
  *   "quantity": "wind_speed_ratio" | "noise_lden_db",
  *   "level_m": 1.5,
@@ -60,7 +60,7 @@ function gridImage(data, edges, colours) {
     return i;
   };
   const [ny, nx] = data.shape;
-  // Up to 4x, but keep the long side within 4096 px — a texture size every
+  // Up to 4x, but keep the long side within 4096 px: a texture size every
   // GPU accepts. At a 2 m grid that is already ~2x.
   const UPSCALE = Math.max(1, Math.min(4, Math.floor(4096 / Math.max(nx, ny))));
   const small = document.createElement("canvas");
@@ -209,7 +209,7 @@ export async function setup(ctx) {
 
     if (!data) {
       ctx.placeholder(out, {
-        what: `${q.label} — not simulated yet for "${scenario}".`,
+        what: `${q.label}, not simulated yet for "${scenario}".`,
         produces: path.replace("../", ""),
         owner: "analysis/wind_noise/ + app/modules/wind_noise.js",
       });
@@ -218,19 +218,19 @@ export async function setup(ctx) {
 
     const s = data.summary || {};
     const isNoise = q.id === "noise";
-    const db = (v) => (v == null ? "—" : `${v} dB`);
-    const pct = (v) => (v == null ? "—" : (v * 100).toFixed(1) + " %");
+    const db = (v) => (v == null ? "-" : `${v} dB`);
+    const pct = (v) => (v == null ? "-" : (v * 100).toFixed(1) + " %");
     if (!isNoise) {
       const sv = data.solver || {};
       out.innerHTML =
         `<table class="kv"><tbody>` +
-        `<tr><td>quantity</td><td>${data.label ?? data.quantity ?? "—"}</td></tr>` +
-        `<tr><td>mean ratio</td><td>${s.mean ?? "—"} (${s.mean_ms ?? "—"} m/s)</td></tr>` +
-        `<tr><td>p95 ratio</td><td>${s.p95 ?? "—"} (${s.p95_ms ?? "—"} m/s)</td></tr>` +
+        `<tr><td>quantity</td><td>${data.label ?? data.quantity ?? "-"}</td></tr>` +
+        `<tr><td>mean ratio</td><td>${s.mean ?? "-"} (${s.mean_ms ?? "-"} m/s)</td></tr>` +
+        `<tr><td>p95 ratio</td><td>${s.p95 ?? "-"} (${s.p95_ms ?? "-"} m/s)</td></tr>` +
         `<tr><td>&gt; ${s.exceedance_ratio ?? 1.1}× inflow</td><td>${pct(s.exceedance_frac)}</td></tr>` +
         `<tr><td>&lt; ${s.sheltered_ratio ?? 0.5}× inflow</td><td>${pct(s.sheltered_frac)}</td></tr>` +
-        `<tr><td>inflow at ${s.ref_height_m ?? data.level_m ?? "—"} m</td><td>${s.ref_ms ?? "—"} m/s</td></tr>` +
-        `<tr><td>solver</td><td>${sv.iterations ?? "—"} iterations, ` +
+        `<tr><td>inflow at ${s.ref_height_m ?? data.level_m ?? "-"} m</td><td>${s.ref_ms ?? "-"} m/s</td></tr>` +
+        `<tr><td>solver</td><td>${sv.iterations ?? "-"} iterations, ` +
         (sv.converged ? "converged"
           : sv.steady ? `steady (≤ ${sv.change_max_ms} m/s change since ${sv.change_since})`
           : "<b>not converged</b>") + `</td></tr>` +
@@ -243,10 +243,10 @@ export async function setup(ctx) {
     }
     out.innerHTML =
       `<table class="kv"><tbody>` +
-      `<tr><td>quantity</td><td>${data.label ?? data.quantity ?? "—"}</td></tr>` +
-      `<tr><td>level</td><td>${data.level_m ?? "—"} m</td></tr>` +
-      `<tr><td>mean</td><td>${isNoise ? db(s.mean) : s.mean ?? "—"}</td></tr>` +
-      `<tr><td>p95</td><td>${isNoise ? db(s.p95) : s.p95 ?? "—"}</td></tr>` +
+      `<tr><td>quantity</td><td>${data.label ?? data.quantity ?? "-"}</td></tr>` +
+      `<tr><td>level</td><td>${data.level_m ?? "-"} m</td></tr>` +
+      `<tr><td>mean</td><td>${isNoise ? db(s.mean) : s.mean ?? "-"}</td></tr>` +
+      `<tr><td>p95</td><td>${isNoise ? db(s.p95) : s.p95 ?? "-"}</td></tr>` +
       (isNoise
         ? `<tr><td>≥ ${s.exceedance_db ?? 53} dB</td><td>${pct(s.exceedance_frac)}</td></tr>` +
           `<tr><td>≥ ${s.limit_db ?? 70} dB</td><td>${pct(s.limit_frac)}</td></tr>`
@@ -256,7 +256,7 @@ export async function setup(ctx) {
         ? noiseLegend() +
           `<p class="muted">${s.unit ?? ""}. ${s.exceedance_db ?? 53} and ` +
           `${s.limit_db ?? 70} dB are the Bkl standard and limit values for ` +
-          `municipal roads — façade values, shown here for reference. Traffic ` +
+          `municipal roads: façade values, shown here for reference. Traffic ` +
           `is estimated from OSM road type, not counted. Map: ` +
           `<em>Analysis → Road-traffic noise</em>.</p>`
         : "");

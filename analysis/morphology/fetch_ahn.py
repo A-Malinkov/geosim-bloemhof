@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-fetch_ahn.py — download AHN elevation rasters for the study area.
+fetch_ahn.py - download AHN elevation rasters for the study area.
 
 AHN (Actueel Hoogtebestand Nederland) via the PDOK WCS, 0.5 m:
-    dsm_05m   digital SURFACE model  — includes buildings and tree crowns
-    dtm_05m   digital TERRAIN model  — bare ground
+    dsm_05m   digital SURFACE model: includes buildings and tree crowns
+    dtm_05m   digital TERRAIN model: bare ground
 
 Both are in EPSG:28992 (RD New) with heights in metres above NAP.
 The difference (nDSM = DSM - DTM) is object height above ground, which is what
@@ -104,7 +104,7 @@ def download_coverage(coverage: str, bbox: tuple[float, float, float, float],
 
         # Mosaic by hand rather than with rasterio.merge. AHN's nodata is the
         # float32 maximum (3.4e38), which merge refuses to carry ("cannot safely
-        # be represented"), and it then fills the whole output with it — a 0.2 MB
+        # be represented"), and it then fills the whole output with it: a 0.2 MB
         # constant raster that looks like a successful download. Pasting each
         # tile at its own offset sidesteps that entirely.
         res = None
@@ -172,7 +172,7 @@ def main() -> int:
     args = ap.parse_args()
 
     bbox = bbox_rd(args.pad)
-    print(f"AHN download — {STUDY_AREA.name} (+{args.pad} m context)")
+    print(f"AHN download: {STUDY_AREA.name} (+{args.pad} m context)")
     print(f"  box {bbox[2]-bbox[0]:.0f} x {bbox[3]-bbox[1]:.0f} m")
 
     want = ("dsm", "dtm") if args.which == "both" else (args.which,)

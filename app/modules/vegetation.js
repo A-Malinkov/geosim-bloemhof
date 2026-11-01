@@ -1,5 +1,5 @@
 /* =============================================================================
- * modules/vegetation.js  —  3D vegetation models
+ * modules/vegetation.js - 3D vegetation models
  * OWNER: Atanas Malinkov
  *
  * Builds our OWN 3D trees from the Rotterdam tree register, rather than only
@@ -9,7 +9,7 @@
  * Because that tileset is a sealed mesh. You cannot count it, query it, or take
  * a tree out of it for a design scenario. These trees come from the register
  * (2,172 of them in the study area, 206 species), so we can add, remove and
- * re-measure them — which is what components 5 (wind) and 9 (scenarios) need.
+ * re-measure them, which is what components 5 (wind) and 9 (scenarios) need.
  *
  * Geometry: a cylinder trunk and an ellipsoid crown per tree, batched into two
  * Cesium Primitives. One draw call each, so a couple of thousand trees costs
@@ -108,7 +108,7 @@ export async function setup(ctx) {
   const body = ctx.registerPanel({
     id: "vegetation",
     title: "Vegetation",
-    subtitle: "Rotterdam tree register — 3D models",
+    subtitle: "Rotterdam tree register: 3D models",
     order: 25,
   });
 
@@ -178,12 +178,12 @@ export async function setup(ctx) {
   body.innerHTML =
     `<table class="kv"><tbody>` +
     `<tr><td>trees</td><td>${(s.n_trees ?? geo.features.length).toLocaleString("en-GB")}</td></tr>` +
-    `<tr><td>density</td><td>${s.trees_per_hectare ?? "—"} / ha</td></tr>` +
-    `<tr><td>species</td><td>${s.n_species ?? "—"}</td></tr>` +
-    `<tr><td>mean height</td><td>${h.mean ?? "—"} m</td></tr>` +
-    `<tr><td>mean crown</td><td>${cr.mean ?? "—"} m</td></tr>` +
+    `<tr><td>density</td><td>${s.trees_per_hectare ?? "-"} / ha</td></tr>` +
+    `<tr><td>species</td><td>${s.n_species ?? "-"}</td></tr>` +
+    `<tr><td>mean height</td><td>${h.mean ?? "-"} m</td></tr>` +
+    `<tr><td>mean crown</td><td>${cr.mean ?? "-"} m</td></tr>` +
     `<tr><td>canopy cover</td><td>${
-      c.cover_fraction == null ? "—" : (c.cover_fraction * 100).toFixed(1) + " %"
+      c.cover_fraction == null ? "-" : (c.cover_fraction * 100).toFixed(1) + " %"
     }</td></tr>` +
     `</tbody></table>` +
     (s.top_species?.length
@@ -338,7 +338,7 @@ export async function setup(ctx) {
   function renderPlanting() {
     const set = planting.get(current);
     plantBox.innerHTML = !set ? "" :
-      `<h4>Proposed planting — ${current}</h4>` +
+      `<h4>Proposed planting: ${current}</h4>` +
       `<table class="kv"><tbody>` +
       `<tr><td>new trees</td><td>${set.feats.tree.length}</td></tr>` +
       `<tr><td>new shrubs</td><td>${set.feats.shrub.length}</td></tr>` +

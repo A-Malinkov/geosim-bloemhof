@@ -1,5 +1,5 @@
 """
-analysis/common/project.py — SHARED MODULE. Coordinator-owned.
+analysis/common/project.py - SHARED MODULE. Coordinator-owned.
 
 The single source of truth for the study area, coordinate systems, paths and the
 height datum, mirroring app/config.js. Import it from every analysis script so
@@ -21,7 +21,7 @@ below is a tuple, so adding a buurt back is a one-line change plus re-runs.
 Earlier versions of this file used a 600 m square around a point, which covered
 75% of Bloemhof. `bbox_rd()` now derives its box from the
 actual buurt polygons, so it cannot drift out of step with them again. It takes a
-PADDING in metres, not a radius — several analyses need context beyond the edge
+PADDING in metres, not a radius: several analyses need context beyond the edge
 (a building just outside still blocks sky inside).
 """
 from __future__ import annotations
@@ -100,7 +100,7 @@ STUDY_AREA = StudyArea()
 #:
 #: Vertices are RD New (EPSG:28992), counter-clockwise, not closed.
 DESIGN_SITE = {
-    "name": "Design site — south-west Bloemhof",
+    "name": "Design site: south-west Bloemhof",
     "chosen": "2026-09-30",
     "source": "team sketch, snapped to street blocks; edge streets included "
               "out to the facades opposite; crosses no building",
@@ -211,7 +211,7 @@ def buurt_polygons(refresh: bool = False) -> dict[str, object]:
 
 
 def buurt_properties() -> dict[str, dict]:
-    """{buurt code: CBS attributes} — inhabitants, area and the rest."""
+    """{buurt code: CBS attributes}: inhabitants, area and the rest."""
     buurt_polygons()                       # ensure the cache exists
     fc = json.loads(_CACHE.read_text())
     wanted = {code for code, _ in STUDY_AREA.buurten}  #skip cached buurten outside the study area
@@ -245,9 +245,9 @@ def bbox_rd(pad_m: float = 0.0) -> tuple[float, float, float, float]:
     """
     Bounding box of the whole study area in RD New, optionally padded.
 
-    `pad_m` is PADDING, not a radius. Analyses that see past their own edge —
-    Sky View Factor most obviously, since a building outside the boundary still
-    blocks sky inside it — should pass a pad and crop afterwards.
+    `pad_m` is PADDING, not a radius. Analyses that see past their own edge
+    (Sky View Factor most obviously, since a building outside the boundary still
+    blocks sky inside it) should pass a pad and crop afterwards.
     """
     xmin, ymin, xmax, ymax = study_area_polygon().bounds
     return (xmin - pad_m, ymin - pad_m, xmax + pad_m, ymax + pad_m)
@@ -260,7 +260,7 @@ def bbox_wgs(pad_m: float = 0.0) -> tuple[float, float, float, float]:
     Careful: RD New is rotated slightly against WGS84, so this rectangle is an
     approximation of the RD box, off by up to ~30 m at the corners. Fine for
     asking a service "give me roughly this area"; NOT fine for draping an image.
-    Warp the raster instead — see reproject_to_wgs84() in sky_view_factor.py.
+    Warp the raster instead: see reproject_to_wgs84() in sky_view_factor.py.
     """
     xmin, ymin, xmax, ymax = bbox_rd(pad_m)
     xs, ys = [], []

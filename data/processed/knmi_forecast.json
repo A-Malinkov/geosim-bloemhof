@@ -5,12 +5,12 @@
   "model": "gradient_boosting",
   "horizon": "+24h",
   "method": {
-    "split": "chronological \u2014 never random; train 2021-2023, validation 2024, test 2025. An hour is used in a period only if the hour it predicts is in that period too",
+    "split": "chronological: never random; train 2021-2023, validation 2024, test 2025. An hour is used in a period only if the hour it predicts is in that period too",
     "train_hours": 26208,
     "val_hours": 8760,
     "test_hours": 8784,
     "tuning": "on the validation year: gradient boosting from [{'learning_rate': 0.03, 'max_depth': 4}, {'learning_rate': 0.03, 'max_depth': None}, {'learning_rate': 0.1, 'max_depth': 4}, {'learning_rate': 0.1, 'max_depth': None}] (300 trees), LSTM early stopping (patience 3, at most 30 epochs), and the best model per horizon by validation MAE",
-    "features": "47 \u2014 lags [0, 1, 2, 3, 6, 12, 24, 48] of temperature, wind, humidity, pressure and dew point, plus cyclical hour-of-day, day-of-year and wind-direction encodings, and cloud cover",
+    "features": "47 features: lags [0, 1, 2, 3, 6, 12, 24, 48] of temperature, wind, humidity, pressure and dew point, plus cyclical hour-of-day, day-of-year and wind-direction encodings, and cloud cover",
     "lstm": {
       "seq_len": 48,
       "hidden": 64,

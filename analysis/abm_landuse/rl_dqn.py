@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-rl_dqn.py — a convolutional deep Q-network for the same land-use problem.
+rl_dqn.py - a convolutional deep Q-network for the same land-use problem.
 
 Component 4.7, a second RL version. Owner: Atanas Malinkov
 
 rl_landuse.py stays as it is; this is the comparison. Everything that defines
-the PROBLEM is shared with it — grid, design site, objective (with its housing
-term since 2026-10-30), reward, discount and the output schema — so the two runs
+the PROBLEM is shared with it: grid, design site, objective (with its housing
+term since 2026-10-30), reward, discount and the output schema, so the two runs
 differ only in the agent:
 
     rl_landuse.py   linear Q-learning on 13 hand-made features of a cell
@@ -18,9 +18,9 @@ THE NETWORK
 -----------
 Fully convolutional over a crop of the grid around the site (the site plus 6
 cells). Input channels: one-hot land use (8), site mask, empty-cell mask,
-road accessibility, distance to water, and broadcast "global" channels — the
+road accessibility, distance to water, and broadcast "global" channels: the
 current share of each placeable use on the site and the fraction of the site
-placed — because the objective is a site-wide sum, not a local one. Four 3x3 convolutions, two of them dilated
+placed, because the objective is a site-wide sum, not a local one. Four 3x3 convolutions, two of them dilated
 (2 and 4), give each cell a view about 15 cells across; a 1x1 convolution
 outputs one Q-value per placeable use.
 
@@ -34,10 +34,10 @@ replaced it, so every use is allowed at every step.
 
 Two numbers come out, and they are different things:
     best_objective     the best episode seen during training (what
-                       rl_landuse.py reports — it can include lucky
+                       rl_landuse.py reports: it can include lucky
                        exploration)
     greedy_objective   one run of the learned policy with no exploration at
-                       the end — what the network actually learned
+                       the end: what the network actually learned
 
 USAGE
 -----
@@ -139,7 +139,7 @@ def main() -> int:
     rng = np.random.default_rng(args.seed)
     t0 = time.time()
 
-    print(f"Deep Q-network land-use allocation — {STUDY_AREA.name}")
+    print(f"Deep Q-network land-use allocation: {STUDY_AREA.name}")
     grid_now, transform, (nx, ny), road_frac = rasterise(args.cell)
     site = burn([(design_site_polygon(), 1)], out_shape=grid_now.shape,
                 transform=transform).astype(bool)

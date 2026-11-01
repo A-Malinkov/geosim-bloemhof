@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-edge_access.py — how far every address on the design site is from the site's
+edge_access.py - how far every address on the design site is from the site's
 two main edge streets, Lange Hilleweg (north-west) and Strevelsweg (south), on
 foot and by car, along the street network.
 
@@ -581,7 +581,7 @@ def main() -> int:
     ap.add_argument("--refresh", action="store_true", help="re-fetch the OSM drive network")
     ap.add_argument("--check", action="store_true", help="verify a sample against networkx")
     args = ap.parse_args()
-    print(f"Distance to the edge streets — {STUDY_AREA.name}, design site")
+    print(f"Distance to the edge streets: {STUDY_AREA.name}, design site")
     if not rn.WALK.exists():
         sys.exit("No cached walk network: run analysis/roads/road_network.py first.")
     fetch_drive(args.refresh)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-height_width.py — street-canyon height-to-width ratio (H/W) for the study area.
+height_width.py - street-canyon height-to-width ratio (H/W) for the study area.
 
 Owner: Atanas Malinkov
 
@@ -69,8 +69,8 @@ DOCS = ROOT / "docs"
 STEP_M = 10.0          # sample spacing along each street
 MAX_RAY_M = 60.0       # how far to look for a façade on each side
 # Drop sheds, keep houses. density_height.py's "principal" filter (>= 40 m2,
-# >= 4 m) is wrong HERE: the median building on the design site is 36 m2 — a
-# terraced house is its own BAG record — so it dropped half the street wall and
+# >= 4 m) is wrong HERE: the median building on the design site is 36 m2, as a
+# terraced house is its own BAG record, so it dropped half the street wall and
 # rays slipped through the gaps (residential W 32 m instead of 20 m). With no
 # filter at all W is 20.5 m, so sheds rarely act as a street wall anyway.
 MIN_FOOTPRINT_M2 = 15
@@ -175,7 +175,7 @@ def main() -> int:
     import shapely
     from shapely.geometry import box
 
-    print(f"Street canyon H/W — {STUDY_AREA.name}, {args.scenario}")
+    print(f"Street canyon H/W: {STUDY_AREA.name}, {args.scenario}")
     b = footprints(args.refresh)
     b = buildings_for_scenario(b, args.scenario)  #demolished out, new blocks in
     walls = shapely.boundary(b.geometry.values)
@@ -292,7 +292,7 @@ def figure(seg, polys, scenario, summary) -> None:
               + [Line2D([0], [0], color="#d95f02", lw=1.6, label="design site")],
               title="H/W", loc="upper left", bbox_to_anchor=(1.01, 1), frameon=False)
     c, s = summary["combined"], summary["design_site"]
-    ax.set_title(f"Street canyon height-to-width ratio — {scenario}\n"
+    ax.set_title(f"Street canyon height-to-width ratio: {scenario}\n"
                  f"median H/W {c['hw']['median']} (both buurten), {s['hw']['median']} (design site); "
                  f"{c['canyon_share']:.0%} of street length is a canyon")
     ax.set_axis_off(); ax.set_aspect("equal")

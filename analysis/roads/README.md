@@ -1,4 +1,4 @@
-# analysis/roads — Road network
+# analysis/roads - Road network
 
 Component 8 · owner: Atanas Malinkov (built 2026-10-21) · feeds `app/modules/roads.js`
 

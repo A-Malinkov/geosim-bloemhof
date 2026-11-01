@@ -1,9 +1,9 @@
-# analysis/morphology — urban morphology indicators
+# analysis/morphology - urban morphology indicators
 
 Owner: **Atanas Malinkov** · feeds `app/modules/indicators.js` and `app/modules/vegetation.js`
 
 > Numbers here are generated from `data/processed/*.json`. Re-run an analysis and
-> they go stale silently — regenerate this file and run
+> they go stale silently: regenerate this file and run
 > `python analysis/check_docs.py`.
 
 **The study area is one buurt, Bloemhof** (78.8 ha). Until 2026-10-22 it was
@@ -54,7 +54,7 @@ python analysis/morphology/shadows.py --scenario scenario_a           # ~30 s pe
 python analysis/morphology/height_width.py --scenario scenario_a      # ~15 s
 ```
 
-## Status — all four indicators complete
+## Status: all four indicators complete
 
 | indicator | Bloemhof |
 |---|---|
@@ -77,10 +77,10 @@ green of the two (Hillesluis: GSI 0.24, Shannon 0.42, 17.7 trees/ha, SVF 0.75).
 If the design is meant to address a deficit, those are the ones the indicators
 point at.
 
-## Sky View Factor — method
+## Sky View Factor: method
 
 Multi-directional horizon angle, after Zakšek, Oštir & Kokalj (2011), *Sky-View
-Factor as a Relief Visualization Technique*, Remote Sensing 3(2):398–415 — the
+Factor as a Relief Visualization Technique*, Remote Sensing 3(2):398–415: the
 approach SAGA, RVT and SOLWEIG use.
 
 For every cell and each of N compass directions, walk outwards to a search radius
@@ -91,7 +91,7 @@ SVF_radiation = (1/N) · Σ cos²(γᵢ)       ← reported as "SVF"
 SVF_geometric = 1 − (1/N) · Σ sin(γᵢ)
 ```
 
-Both are in the literature and **they are not the same number** — here they are
+Both are in the literature and **they are not the same number**: here they are
 0.696 and 0.526. The cos² form is cosine-weighted, so sky near the
 zenith counts for more; that governs radiation exchange and is what urban
 climatology means by SVF. Both go into `svf_summary.json`.
@@ -105,7 +105,7 @@ climatology means by SVF. Both go into `svf_summary.json`.
 - **Open-ground mask** (`nDSM < 2 m`): statistics exclude roofs, where SVF is
   meaningless.
 - **0.5 m cells, 32 directions, 100 m search radius.** Resolution changes the
-  answer — coarser cells average away tree crowns and report the place as more
+  answer: coarser cells average away tree crowns and report the place as more
   open than it is. Quote the cell size with the number.
 - **150 m of context is downloaded beyond the boundary** and cropped afterwards,
   because a building just outside still blocks sky inside.
@@ -119,7 +119,7 @@ climatology means by SVF. Both go into `svf_summary.json`.
 two-buurt raster). Street trees are doing measurable work on enclosure,
 which connects the vegetation component directly to the morphology one.
 
-## Density — Spacematrix
+## Density: Spacematrix
 
 Berghauser Pont & Haupt (2010). Density is not one number: a packed low-rise
 terrace and a tower in a park can share an FSI and be nothing alike.
@@ -131,7 +131,7 @@ L   = FSI / GSI                       mean storeys
 OSR = (1 - GSI) / FSI                 open space per m² of floor space
 ```
 
-- **Storey height is measured, not assumed** — 3.06 m, the median over
+- **Storey height is measured, not assumed**: 3.06 m, the median over
   buildings where 3DBAG gives both a count and a height. It fills in the
   3,696 buildings with no storey count.
 - **Sheds count for density but not for height.** 44 % of BAG *Pand*
@@ -157,7 +157,7 @@ by buurt, so the proposed massing can later be overplotted to show the new fabri
 move relative to the existing one.
 
 Each point carries a `buurt` label, assigned by whichever polygon contains the
-cell **centre** — 81 Bloemhof,
+cell **centre**: 81 Bloemhof,
 26 outside it (the bounding box is larger
 than the buurt). Buildings outside the grid are dropped, not clamped into the
 edge cells (`np.clip` on the cell index did that after the study area shrank and
@@ -177,7 +177,7 @@ every figure. With two buurten the scales even ranked them in opposite orders;
 the app states such a reversal in the panel, generated from the data, so it only
 appears when there is one.
 
-## Land-use mix — method
+## Land-use mix: method
 
 Shannon entropy (normalised) and Simpson diversity over BAG `gebruiksdoel`,
 **weighted by usable floor area**.
@@ -186,7 +186,7 @@ Shannon entropy (normalised) and Simpson diversity over BAG `gebruiksdoel`,
   (0.144 → 0.267): most units are residential but non-residential
   ones are individually much larger. Both are reported.
 - **N is the full 11-class BAG vocabulary, fixed a priori**, not "classes present
-  here" — otherwise cells with shorter category lists score spuriously high.
+  here", otherwise cells with shorter category lists score spuriously high.
 - Multi-function units (a shop with a flat above) split their floor area evenly.
 - **BAG covers addressable units only.** Parks, water and streets are invisible
   to it, so this is a mix of *built floor space*. Pair it with GSI for the
@@ -197,11 +197,11 @@ Shannon entropy (normalised) and Simpson diversity over BAG `gebruiksdoel`,
 
 Added by Stefan. Two parts that answer different questions:
 
-- **`shadows.py` — how many hours of direct sun a place gets over a whole day.**
+- **`shadows.py`: how many hours of direct sun a place gets over a whole day.**
   It casts the sun across one clear day (equinox by default, every 30 min) over
   the AHN surface model and counts, per 1 m cell, the hours it is sunlit.
   Reported on open ground only, over the buurt and the design site, like the SVF.
-- **The "Sun & shadows" card in the app — one instant.** It opens on *Live*:
+- **The "Sun & shadows" card in the app: one instant.** It opens on *Live*:
   the sun as it stands right now in Rotterdam, clear-sky, for orientation only.
   Pick a reference day (equinox, summer or winter solstice) or drag the time, and
   the 3DBAG buildings cast live shadows in Cesium. Switch on *Plain white ground*
@@ -241,7 +241,7 @@ ignored. In the live view, fine stripes can appear on roofs when zoomed far
 out: Cesium's shadow map has limited detail over a large view. Close up the
 shadows are clean.
 
-## Street canyons — height-to-width ratio
+## Street canyons: height-to-width ratio
 
 `height_width.py` samples every street centreline every 10 m and casts a ray
 perpendicular to it on both sides, up to 60 m, to the first building façade.
@@ -302,5 +302,5 @@ wide and few, so about half of its street length is not a canyon at all.
 ## For the scenario comparison
 
 These indicators are the measuring stick. Add the proposed massing, re-run, and
-compare — the Spacematrix plot will show the new fabric moving relative to the
+compare: the Spacematrix plot will show the new fabric moving relative to the
 existing one.

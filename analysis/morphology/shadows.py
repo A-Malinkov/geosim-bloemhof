@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-shadows.py — direct-sun / shadow hours over the study area from AHN.
+shadows.py - direct-sun / shadow hours over the study area from AHN.
 
 Owner: Atanas Malinkov  (morphology, same component as sky_view_factor.py)
 
@@ -8,7 +8,7 @@ WHAT THIS IS
 ------------
 There is no "shadow dataset" to download: a shadow is geometry x sun position x
 time, so it is only valid for one instant. What you CAN import is the surface it
-is cast from — the AHN DSM — which fetch_ahn.py already fetches for the Sky View
+is cast from, the AHN DSM, which fetch_ahn.py already fetches for the Sky View
 Factor. This script casts the sun across a day over that surface and adds up, for
 every cell, how many hours of DIRECT sun it receives. It is the same horizon-ray
 idea as sky_view_factor.py, run once per sun position instead of over a full
@@ -29,8 +29,8 @@ here in plain Python so the script needs no extra dependency.
 OBSERVER SURFACE
 ----------------
 Shadows are evaluated on the AHN DSM (buildings + tree crowns block the sun),
-and the headline statistics are reported on OPEN GROUND only — streets, gardens
-and squares, the nDSM < 2 m mask — because sun hours on a roof are not what a
+and the headline statistics are reported on OPEN GROUND only: streets, gardens
+and squares, the nDSM < 2 m mask, because sun hours on a roof are not what a
 resident experiences. This mirrors sky_view_factor.py exactly.
 
 LIMITATIONS (state them, per the course rubric)
@@ -87,7 +87,7 @@ def solar_position(dt: datetime, lat_deg: float, lon_deg: float):
     Sun elevation and azimuth for a UTC instant, via the NOAA algorithm.
 
     Returns (elevation_deg, azimuth_deg) with azimuth measured clockwise from
-    north. Elevation is geometric (no atmospheric refraction) — for casting
+    north. Elevation is geometric (no atmospheric refraction): for casting
     shadows we only care whether the sun is above the horizon and from where.
     lon is east-positive.
     """
@@ -182,7 +182,7 @@ def shadow_mask(surface: np.ndarray, cellsize: float, sun_az_deg: float,
 
 
 def day_times(date: datetime, step_minutes: int):
-    """Sampled UTC instants from 02:00 to 21:00 — wide enough for NL daylight."""
+    """Sampled UTC instants from 02:00 to 21:00: wide enough for NL daylight."""
     t = date.replace(hour=2, minute=0, second=0, microsecond=0)
     end = date.replace(hour=21, minute=0, second=0, microsecond=0)
     out = []
@@ -258,7 +258,7 @@ def main() -> int:
         return 1
 
     lon, lat = centre_wgs()
-    print(f"Direct-sun hours — {STUDY_AREA.name}")
+    print(f"Direct-sun hours: {STUDY_AREA.name}")
     print(f"  {args.date} | cell {args.resolution} m | radius {args.radius} m | "
           f"sun every {args.step_minutes} min")
 
@@ -371,7 +371,7 @@ def main() -> int:
         "daylight_hours": round(daylight_h, 3),
         "n_sun_steps": sun_steps,
         "bbox_rd": [round(v, 1) for v in bbox_rd()],
-        # The bbox the PNG is actually drawn on, from the warp — NOT the RD
+        # The bbox the PNG is actually drawn on, from the warp, NOT the RD
         # square reprojected corner-to-corner, which is off by up to ~30 m.
         "bbox_wgs84": [round(v, 7) for v in overlay_bbox],
         "bbox_wgs84_rd_corners": [round(v, 7) for v in bbox_wgs()],

@@ -1,5 +1,5 @@
 /* =============================================================================
- * modules/transit.js  —  public-transport stops and how often each line calls
+ * modules/transit.js - public-transport stops and how often each line calls
  *
  * Computed in  analysis/transit/fetch_transit.py  from the national GTFS
  * timetable (OVapi) and written to  data/processed/transit_stops.json:
@@ -159,7 +159,7 @@ function describe(stop, data) {
   const rows = stop.lines.flatMap((l) =>
     l.directions.map((d, i) =>
       `<tr>${i === 0 ? `<td rowspan="${l.directions.length}"><b>${esc(MODES[l.mode]?.label ?? l.mode)} ${esc(l.line)}</b><br><small>${esc(l.operator)}</small></td>` : ""}` +
-      `<td>→ ${esc(d.headsign || "—")}</td>` +
+      `<td>→ ${esc(d.headsign || "-")}</td>` +
       PERIODS.map(([p]) => `<td>${fmtHeadway(d.headway_min[p], " min")}</td>`).join("") +
       `<td>${d.first ? `${d.first}–${d.last}` : "not on weekdays"}</td></tr>`));
   return (
@@ -185,7 +185,7 @@ export async function setup(ctx) {
   const data = await ctx.loadJson(DATA, { quiet: true });
   if (!data?.stops?.length) {
     ctx.placeholder(body, {
-      what: "Public-transport stops and line frequencies — not computed yet.",
+      what: "Public-transport stops and line frequencies, not computed yet.",
       produces: "data/processed/transit_stops.json",
       owner: "analysis/transit/fetch_transit.py + app/modules/transit.js",
     });

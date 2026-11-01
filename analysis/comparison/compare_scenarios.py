@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-compare_scenarios.py — baseline, scenario A and scenario B side by side, on the
+compare_scenarios.py - baseline, scenario A and scenario B side by side, on the
 design site (component 4.9).
 
 Built 2026-10-27. Reads what the other components already wrote to
@@ -400,7 +400,7 @@ def save(fig, name):
 def fmt(v, key, unit, d):
     #a value as the scorecard prints it
     if v is None:
-        return "—"
+        return "-"
     if key in PERCENT:
         return f"{100 * v:.0f} %"
     return f"{v:,.{d}f}{unit}"

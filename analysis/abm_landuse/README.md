@@ -1,4 +1,4 @@
-# analysis/abm_landuse — agent-based land-use modelling
+# analysis/abm_landuse - agent-based land-use modelling
 
 Component 4.7 · Owner: **Atanas Malinkov** · study area: Bloemhof · feeds `app/modules/landuse.js`
 
@@ -9,7 +9,7 @@ Component 4.7 · Owner: **Atanas Malinkov** · study area: Bloemhof · feeds `ap
 
 | Script | What it does | Writes |
 |---|---|---|
-| `fetch_landcover.py` | OSM green, water and roads — the surface BAG cannot see | `data/raw/osm_landcover.geojson`, `osm_roads.geojson` |
+| `fetch_landcover.py` | OSM green, water and roads: the surface BAG cannot see | `data/raw/osm_landcover.geojson`, `osm_roads.geojson` |
 | `ca_landuse.py` | neighbour-rule cellular automaton, land-use programmes, validation | `data/processed/landuse_abm.json` + frame PNGs |
 | `rl_landuse.py` | linear Q-learning agent that re-plans the design site, scored on the same formula | `data/processed/landuse_rl.json` |
 | `rl_dqn.py` | deep Q-network on the same problem, plus random-policy and hill-climbing baselines | `data/processed/landuse_rl_dqn.json` |
@@ -17,7 +17,7 @@ Component 4.7 · Owner: **Atanas Malinkov** · study area: Bloemhof · feeds `ap
 | `score_scenarios.py` | scores the Rhino design options on the same objective | `data/processed/landuse_scenarios.json` |
 
 ```bash
-python analysis/morphology/fetch_landuse.py      # BAG units — needed first
+python analysis/morphology/fetch_landuse.py      # BAG units: needed first
 python analysis/abm_landuse/fetch_landcover.py   # ~30 s
 python analysis/abm_landuse/ca_landuse.py        # ~2 s
 python analysis/abm_landuse/rl_landuse.py   # 400 episodes, the default
@@ -30,11 +30,11 @@ python analysis/abm_landuse/score_scenarios.py   # ~5 s, after analysis/scenario
 
 | | rules | what it tells you |
 |---|---|---|
-| **Cellular automaton** | **assumed** — four neighbour rules we wrote | what follows *from those assumptions* |
-| **RL agent** | **learned** — given only the objective | what the objective *actually implies* |
+| **Cellular automaton** | **assumed**: four neighbour rules we wrote | what follows *from those assumptions* |
+| **RL agent** | **learned**: given only the objective | what the objective *actually implies* |
 
 Where they agree, the assumption is supported. Where they disagree, one of them
-is worth arguing about — and they do disagree (below).
+is worth arguing about, and they do disagree (below).
 
 ## The cellular automaton
 
@@ -75,17 +75,17 @@ assumption to defend, so it was replaced by the rules above. Until the same day
 both CAs only added a programme of 98 cells to the buurt's vacant land and left
 everything standing; now the CA rebuilds the cleared site, like the RL agents.
 
-### Building the initial raster — a trap worth knowing
+### Building the initial raster: a trap worth knowing
 
 The first version buffered every OSM centreline by half a cell and burned it as
-road. That put **41 % of the study area under tarmac** — 44 km of road at 22.5 m
-width is 99 ha, more than the square itself — and BAG buildings then overwrote
+road. That put **41 % of the study area under tarmac**: 44 km of road at 22.5 m
+width is 99 ha, more than the square itself, and BAG buildings then overwrote
 **67 %** of it. Two errors partially cancelling, which happened to look
 plausible and was indefensible.
 
 Now: carriageway width per OSM class (primary 14 m … service 5 m), measured as
 an **area fraction** on a 5 m sub-grid, giving **23 % carriageway** across the
-study area. Priority is explicit — water, then building, then road, then land
+study area. Priority is explicit: water, then building, then road, then land
 cover.
 
 And "on a street" is read from that continuous road **surface**, not from
@@ -93,7 +93,7 @@ cells whose final state is ROAD. At 25 m most street cells also contain a
 building and are labelled residential, so the discrete state would leave most
 streets out.
 
-## Validation — erase and regrow
+## Validation: erase and regrow
 
 A CA run with demand equal to current counts converts nothing, so "the baseline
 did not change" validates **nothing**. The real test: erase a random share of
@@ -176,7 +176,7 @@ swept, because the green programme's housing term (0.75) differs from compact's 
 
 **green's win holds at the default and across 70 % of the weight
 space.** Compact takes the other 30 %, and
-baseline never wins under any positive weighting — that last part is
+baseline never wins under any positive weighting: that last part is
 the firm result. The nearest weights that flip the answer are
 0.28 · 0.15 · 0.20 · 0.37 (favouring compact),
 0.16 away on the simplex. The default is not on a knife edge. Compact wins when
@@ -229,7 +229,7 @@ best (cell, use) pair by Q or, with probability ε, a random one. ε falls from
 placement, times 100. The weights follow the TD(0) update with learning rate
 0.02 and discount 0.95, clipped to ±50.
 
-Linear rather than deep **on purpose** — the value here is that the weights can
+Linear rather than deep **on purpose**: the value here is that the weights can
 be read and argued with. The deep version is `rl_dqn.py`, below, and it does
 not score better.
 
@@ -274,7 +274,7 @@ retail→retail −44.8, amenity→amenity −45.4. That is the mix term asking 
 to be spread out.
 
 Both are defensible and the disagreement is informative. The objective rewards
-*walkability* — mean distance from homes to the nearest shop — which is minimised
+*walkability*, mean distance from homes to the nearest shop, which is minimised
 by spreading shops out. Real retail clusters for agglomeration economies, which
 this objective does not represent at all. **The model is right about the
 objective, and the objective is incomplete.**
