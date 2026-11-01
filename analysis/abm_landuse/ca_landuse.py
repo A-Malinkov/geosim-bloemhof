@@ -526,7 +526,7 @@ def main() -> int:
               f"green {100*sc['green_share']:.1f}%, "
               f"amenity {sc['mean_distance_to_amenity_m']} m")
 
-        # keep a handful of frames for the app slider, not all of them
+        # keep a handful of frames, not all of them (the app shows the last one)
         idx = sorted({0, *[round(i * args.steps / 5) for i in range(1, 6)]})
         frames = []
         for i in idx:

@@ -2,7 +2,7 @@
  * modules/landuse.js - component 7: agent-based land-use modelling
  * OWNER: Atanas Malinkov
  *
- * Shows two models of how land use could evolve, and lets you watch them run.
+ * Shows two models of how land use could evolve, and the plan each one ends with.
  *
  *   Cellular automaton   analysis/abm_landuse/ca_landuse.py   -> landuse_abm.json
  *       Rules are ASSUMED: vacant cells take the uses their 8 neighbours support
@@ -65,22 +65,16 @@ export async function setup(ctx) {
   }
 
   /* ---- map frames ------------------------------------------------------- */
-  /* Every frame is a ~3 KB PNG and there are fewer than twenty of them, so all
-   * of them are loaded once when the layer is first switched on. Frame changes
-   * are then a synchronous `show` flag: no promises in the path the slider
-   * drives. An earlier version created layers lazily per frame and the async
-   * bookkeeping was subtly wrong: frames loaded and cached, but the visible
-   * layer never changed. Preloading is both simpler and correct. */
+  /* The map shows the last frame of each programme, a ~3 KB PNG each. They are
+   * loaded once when the layer is first switched on, so switching programme is
+   * then a synchronous `show` flag. The step slider was removed on 2026-11-01. */
   const layers = new Map();         // png -> ImageryLayer
   let preloaded = null;             // the one-shot preload promise
   let layerOn = false;
 
   function allFrames() {
-    const out = [];
-    for (const sc of Object.values(ca.scenarios)) {
-      for (const f of sc.frames) out.push(f);
-    }
-    return out;
+    //the final frame of every programme
+    return Object.values(ca.scenarios).map((sc) => sc.frames[sc.frames.length - 1]);
   }
 
   async function preload() {
@@ -181,7 +175,6 @@ export async function setup(ctx) {
       `<span class="lgd"><i style="background:rgb(${c.join(",")})"></i>${k}</span>`)
     .join("");
 
-  const maxT = Math.max(...ca.scenarios[names[0]].frames.map((f) => f.t));
   body.innerHTML = `
     <table class="kv"><tbody>
       <tr><td>model</td><td>${ca.model ?? ca.method}</td></tr>
@@ -204,31 +197,23 @@ export async function setup(ctx) {
 
     <div id="luSens"></div>
 
-    <h4>Watch a programme evolve</h4>
+    <h4>Each programme's final plan</h4>
     <div class="seg" id="luScen">
       ${names.map((n, i) =>
         `<button data-s="${n}" class="${i === 0 ? "on" : ""}">${n}</button>`).join("")}
     </div>
-    <label class="slider">
-      <span>step <output id="luOut">0</output> of ${maxT}</span>
-      <input type="range" id="luStep" min="0" max="${ca.scenarios[names[0]].frames.length - 1}" value="0">
-    </label>
     <p class="lgdwrap">${legend}</p>
     <div id="luInfo"></div>
     <div id="luRl"></div>
     <p class="muted">${ca.caveat}</p>`;
 
   const segs = [...body.querySelectorAll("#luScen button")];
-  const slider = body.querySelector("#luStep");
-  const outEl = body.querySelector("#luOut");
   const info = body.querySelector("#luInfo");
   let active = names[0];
 
   function render() {
     const sc = ca.scenarios[active];
-    const i = Math.min(+slider.value, sc.frames.length - 1);
-    const fr = sc.frames[i];
-    outEl.textContent = fr.t;
+    const fr = sc.frames[sc.frames.length - 1];  //the plan the CA ends with
     showFrame(fr.png);
     const s = sc.score;
     const sh = sc.trajectory[Math.min(fr.t, sc.trajectory.length - 1)].shares;
@@ -241,7 +226,7 @@ export async function setup(ctx) {
       `<tr><td>objective</td><td>${sc.objective_best.toFixed(3)} ` +
       `<span class="muted">(± ${sc.objective_sd.toFixed(3)} over runs)</span></td></tr>` +
       `</tbody></table>` +
-      `<p class="muted">at step ${fr.t}: residential ${(sh.residential * 100).toFixed(1)} %, ` +
+      `<p class="muted">final plan, step ${fr.t}: residential ${(sh.residential * 100).toFixed(1)} %, ` +
       `green ${(sh.green * 100).toFixed(1)} %, retail ${(sh.retail * 100).toFixed(1)} %</p>`;
   }
 
@@ -251,7 +236,6 @@ export async function setup(ctx) {
     active = b.dataset.s;
     render();
   }));
-  slider.addEventListener("input", render);
 
   /* ---- validation + RL --------------------------------------------------- */
   const v = ca.validation || {};
