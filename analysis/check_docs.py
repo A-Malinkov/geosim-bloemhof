@@ -184,7 +184,7 @@ def main() -> int:
         # the per-model MAE tables: one row per horizon, every model on it
         for hz in ("+1h", "+6h", "+24h"):
             for res, what in ((t, "temperature"), (w, "wind")):
-                for model in ("persistence", "ridge", "gradient_boosting", "lstm"):
+                for model in ("persistence", "daily_naive", "gradient_boosting", "lstm"):
                     if model in res[hz]:
                         checks.append((f"{what} {hz} {model}", rf"^\| \{hz} \|",
                                        f"{res[hz][model]['mae']:.3f}", [KNMI]))
@@ -401,14 +401,15 @@ def main() -> int:
         cw = fc["results"]["wind_speed_ms"]["conditions"]["by_wind_regime"]
         ct = fc["results"]["temperature_C"]["conditions"]["by_wind_regime"]
         claims += [
-            ("KNMI README: 'the LSTM is never the best model on the test year'",
-             all(min((m for m in r[h] if m != "_best"), key=lambda m: r[h][m]["mae"]) != "lstm"
+            ("KNMI README: 'the LSTM wins once' (wind +24 h, on the validation and the test year)",
+             [(v, h) for v, r in (("temp", t), ("wind", w)) for h in r if r[h]["_best"] == "lstm"] == [("wind", "+24h")]
+             and w["+24h"]["lstm"]["mae"] < w["+24h"]["gradient_boosting"]["mae"]),
+            ("KNMI README: 'the validation year picked the test-year winner every time'",
+             all(r[h]["_best"] == min((m for m in r[h] if m != "_best"), key=lambda m: r[h][m]["mae"])
                  for r in (t, w) for h in r)),
-            ("KNMI README: 'the validation year chooses it once, for wind at +24 h'",
-             [(v, h) for v, r in (("temp", t), ("wind", w)) for h in r if r[h]["_best"] == "lstm"] == [("wind", "+24h")]),
-            ("KNMI README: 'every trained model beats both baselines at +6 h and +24 h'",
+            ("KNMI README: 'both trained models beat both baselines at +6 h and +24 h'",
              all(r[h][m]["mae"] < min(r[h]["persistence"]["mae"], r[h]["daily_naive"]["mae"])
-                 for r in (t, w) for h in ("+6h", "+24h") for m in ("ridge", "gradient_boosting", "lstm"))),
+                 for r in (t, w) for h in ("+6h", "+24h") for m in ("gradient_boosting", "lstm"))),
             ("KNMI README: 'the LSTM is at its best after 1-4 epochs in five of the six forecasts'",
              sum(1 <= r[h]["lstm"]["settings"]["epochs"] <= 4 for r in (t, w) for h in r) == 5),
             ("KNMI README: 'persistence unbeaten for wind at +1 h'",

@@ -15,7 +15,6 @@ MODELS COMPARED
 ---------------
     persistence        y(t+h) = y(t)                  the honest baseline
     daily naive        y(t+h) = y(t+h-24)             yesterday, same hour
-    ridge              linear, on lagged features
     gradient boosting  HistGradientBoostingRegressor
     LSTM               2-layer recurrent net over the last 48 hours (PyTorch)
 
@@ -37,8 +36,8 @@ point would both be in training, and any model would look superb. An hour is
 only used in a period if the hour it predicts lies in that period too, so no
 target crosses a boundary.
 
-On the validation year we choose: the ridge penalty, the gradient boosting
-learning rate and tree depth, when the LSTM stops training (early stopping),
+On the validation year we choose: the gradient boosting learning rate and
+tree depth, when the LSTM stops training (early stopping),
 and which model is "best" at each horizon.
 
 Accuracy is also broken down by season and by wind regime, because a mean error
@@ -82,7 +81,6 @@ LAGS = [0, 1, 2, 3, 6, 12, 24, 48]  #hours back each input is also given at
 VAL_START = np.datetime64("2024-01-01T00:00")  #first hour of the validation year
 TEST_START = np.datetime64("2025-01-01T00:00")  #first hour of the test year
 
-RIDGE_ALPHAS = [0.1, 1.0, 10.0, 100.0]  #ridge penalties tried on the validation year
 BOOSTING_SETTINGS = [  #gradient boosting settings tried on the validation year
     {"learning_rate": 0.03, "max_depth": 4},
     {"learning_rate": 0.03, "max_depth": None},
@@ -192,24 +190,7 @@ def metrics(y_true, y_pred):
             "r2": round(float(1 - ss_res / ss_tot), 4) if ss_tot > 0 else None}
 
 
-# -------------------------------------------------------- ridge and boosting
-def fit_ridge(X, y, train, val):
-    """Try each ridge penalty, keep the one with the lowest validation MAE."""
-    from sklearn.linear_model import Ridge
-    from sklearn.pipeline import make_pipeline
-    from sklearn.preprocessing import StandardScaler
-
-    best = None
-    for alpha in RIDGE_ALPHAS:
-        model = make_pipeline(StandardScaler(), Ridge(alpha=alpha))  #features standardised on the training rows
-        model.fit(X[train], y[train])
-        val_mae = mae(y[val], model.predict(X[val]))
-        print(f"        ridge alpha {alpha:<5}  validation MAE {val_mae:.3f}")
-        if best is None or val_mae < best["val_mae"]:
-            best = {"model": model, "val_mae": val_mae, "settings": {"alpha": alpha}}
-    return best
-
-
+# ---------------------------------------------------------- gradient boosting
 def fit_boosting(X, y, train, val):
     """Try each gradient boosting setting, keep the one with the lowest validation MAE."""
     from sklearn.ensemble import HistGradientBoostingRegressor
@@ -360,10 +341,6 @@ def main():
             daily[24 - h:] = now[:len(now) - (24 - h)]
             preds["daily_naive"] = daily
 
-            ridge = fit_ridge(X, y, train, val)
-            preds["ridge"] = ridge["model"].predict(X)
-            chosen["ridge"] = ridge
-
             boosting = fit_boosting(X, y, train, val)
             preds["gradient_boosting"] = boosting["model"].predict(X)
             chosen["gradient_boosting"] = boosting
@@ -441,9 +418,8 @@ def main():
             "train_hours": hours["train"],  #at +24 h; shorter horizons have a few more
             "val_hours": hours["val"],
             "test_hours": hours["test"],
-            "tuning": f"on the validation year: ridge alpha from {RIDGE_ALPHAS}, gradient "
-                      f"boosting from {BOOSTING_SETTINGS} (300 trees), LSTM early stopping "
-                      f"(patience {LSTM_PATIENCE}, at most {LSTM_MAX_EPOCHS} epochs), and "
+            "tuning": f"on the validation year: gradient boosting from "
+                      f"{BOOSTING_SETTINGS} (300 trees), LSTM early stopping (patience {LSTM_PATIENCE}, at most {LSTM_MAX_EPOCHS} epochs), and "
                       f"the best model per horizon by validation MAE",
             "features": f"{X.shape[1]} — lags {LAGS} of temperature, wind, "
                         f"humidity, pressure and dew point, plus cyclical "

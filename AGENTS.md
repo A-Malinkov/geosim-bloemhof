@@ -50,6 +50,6 @@ cost you time:
     buildings, surface model and streets. Scenario outputs carry a
     `_<scenario>` suffix and every missing one has a stub.
 
-12. **Know the AI results before writing about them.** The LSTM is never the best weather model on the test year; the
+12. **Know the AI results before writing about them.** The weather LSTM beats gradient boosting in only one of six forecasts; the
     land-use DQN scores below a random policy; the RL agent demolishes housing
     unless told not to. CLAUDE.md has the summary, the READMEs the detail.

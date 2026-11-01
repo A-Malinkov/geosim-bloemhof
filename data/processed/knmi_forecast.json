@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-01T14:58:22+00:00",
+  "generated_at": "2026-11-01T15:24:17+00:00",
   "station": 344,
   "source": "KNMI hourly climatology, station 344",
   "model": "gradient_boosting",
@@ -9,7 +9,7 @@
     "train_hours": 26208,
     "val_hours": 8760,
     "test_hours": 8784,
-    "tuning": "on the validation year: ridge alpha from [0.1, 1.0, 10.0, 100.0], gradient boosting from [{'learning_rate': 0.03, 'max_depth': 4}, {'learning_rate': 0.03, 'max_depth': None}, {'learning_rate': 0.1, 'max_depth': 4}, {'learning_rate': 0.1, 'max_depth': None}] (300 trees), LSTM early stopping (patience 3, at most 30 epochs), and the best model per horizon by validation MAE",
+    "tuning": "on the validation year: gradient boosting from [{'learning_rate': 0.03, 'max_depth': 4}, {'learning_rate': 0.03, 'max_depth': None}, {'learning_rate': 0.1, 'max_depth': 4}, {'learning_rate': 0.1, 'max_depth': None}] (300 trees), LSTM early stopping (patience 3, at most 30 epochs), and the best model per horizon by validation MAE",
     "features": "47 \u2014 lags [0, 1, 2, 3, 6, 12, 24, 48] of temperature, wind, humidity, pressure and dew point, plus cyclical hour-of-day, day-of-year and wind-direction encodings, and cloud cover",
     "lstm": {
       "seq_len": 48,
@@ -43,18 +43,6 @@
             "r2": 0.8087,
             "skill_vs_persistence": -2.197,
             "val_mae": 2.2627
-          },
-          "ridge": {
-            "n": 8783,
-            "mae": 0.5573,
-            "rmse": 0.7784,
-            "bias": -0.0212,
-            "r2": 0.9866,
-            "skill_vs_persistence": 0.2088,
-            "val_mae": 0.5115,
-            "settings": {
-              "alpha": 0.1
-            }
           },
           "gradient_boosting": {
             "n": 8783,
@@ -102,18 +90,6 @@
             "skill_vs_persistence": 0.2046,
             "val_mae": 2.2631
           },
-          "ridge": {
-            "n": 8778,
-            "mae": 1.6377,
-            "rmse": 2.117,
-            "bias": -0.1147,
-            "r2": 0.9007,
-            "skill_vs_persistence": 0.4213,
-            "val_mae": 1.517,
-            "settings": {
-              "alpha": 10.0
-            }
-          },
           "gradient_boosting": {
             "n": 8778,
             "mae": 1.3142,
@@ -159,18 +135,6 @@
             "r2": 0.8093,
             "skill_vs_persistence": 0.0,
             "val_mae": 2.2662
-          },
-          "ridge": {
-            "n": 8760,
-            "mae": 2.0131,
-            "rmse": 2.6123,
-            "bias": 0.0282,
-            "r2": 0.849,
-            "skill_vs_persistence": 0.1049,
-            "val_mae": 2.0566,
-            "settings": {
-              "alpha": 1.0
-            }
           },
           "gradient_boosting": {
             "n": 8760,
@@ -280,18 +244,6 @@
             "skill_vs_persistence": -2.4947,
             "val_mae": 2.0595
           },
-          "ridge": {
-            "n": 8783,
-            "mae": 0.5679,
-            "rmse": 0.75,
-            "bias": 0.0111,
-            "r2": 0.8931,
-            "skill_vs_persistence": -0.0703,
-            "val_mae": 0.5977,
-            "settings": {
-              "alpha": 10.0
-            }
-          },
           "gradient_boosting": {
             "n": 8783,
             "mae": 0.5654,
@@ -338,18 +290,6 @@
             "skill_vs_persistence": -0.2833,
             "val_mae": 2.0598
           },
-          "ridge": {
-            "n": 8778,
-            "mae": 1.1632,
-            "rmse": 1.4765,
-            "bias": 0.0275,
-            "r2": 0.5832,
-            "skill_vs_persistence": 0.1942,
-            "val_mae": 1.246,
-            "settings": {
-              "alpha": 1.0
-            }
-          },
           "gradient_boosting": {
             "n": 8778,
             "mae": 1.1256,
@@ -395,18 +335,6 @@
             "r2": -0.1665,
             "skill_vs_persistence": 0.0,
             "val_mae": 2.0581
-          },
-          "ridge": {
-            "n": 8760,
-            "mae": 1.6004,
-            "rmse": 2.0153,
-            "bias": 0.1157,
-            "r2": 0.2117,
-            "skill_vs_persistence": 0.1337,
-            "val_mae": 1.7151,
-            "settings": {
-              "alpha": 0.1
-            }
           },
           "gradient_boosting": {
             "n": 8760,

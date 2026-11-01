@@ -23,7 +23,7 @@ python analysis/knmi/train_forecast.py               # ~5 min with the LSTM; the
       HARMONIE-AROME via Open-Meteo, in the browser) *and* real KNMI station
       sensor readings via Python
 - [x] **4.4a aggregated history** — 2,090 daily records, 5 years, station 344
-- [x] **4.4b AI prediction** — three models (ridge, gradient boosting, LSTM)
+- [x] **4.4b AI prediction** — two models (gradient boosting, LSTM)
       against two naive baselines, accuracy reported
 
 ## Three data paths, and why there are three
@@ -78,13 +78,13 @@ so no target crosses from one period into the next.
 
 ### The models
 
-Two baselines and three models, all given the same inputs.
+Two baselines and two models, all given the same inputs. This follows the
+course assignments: a tree model and an LSTM, each scored against persistence.
 
 | model | what it is | tried on the validation year |
 |---|---|---|
 | persistence | the value h hours later equals the value now. The baseline every model must beat | — |
 | daily naive | the value h hours later equals the value 24 h before that, i.e. same hour yesterday | — |
-| ridge | linear regression with an L2 penalty on standardised features | penalty α 0.1, 1, 10, 100 |
 | gradient boosting | scikit-learn `HistGradientBoostingRegressor`, 300 trees | learning rate 0.03 or 0.1, tree depth 4 or unlimited |
 | LSTM | PyTorch, 2 layers of 64 units, dropout 0.1. Reads the last 48 hours of the feature table as a sequence. SmoothL1 loss, Adam (1e-3), batches of 256, gradients clipped at 1.0 | early stopping: up to 30 epochs, stops after 3 without a better validation error and keeps the best epoch |
 
@@ -112,43 +112,40 @@ superb. This is the most common way a time-series result is quietly wrong.
 
 Bold is the model the validation year chose.
 
-| horizon | persistence | daily naive | ridge | grad. boosting | LSTM |
-|---|---|---|---|---|---|
-| +1h | 0.704 | 2.252 | 0.557 | **0.523** | 0.536 |
-| +6h | 2.830 | 2.251 | 1.638 | **1.314** | 1.364 |
-| +24h | 2.249 | 2.249 | 2.013 | **2.001** | 2.116 |
+| horizon | persistence | daily naive | grad. boosting | LSTM |
+|---|---|---|---|---|
+| +1h | 0.704 | 2.252 | **0.523** | 0.536 |
+| +6h | 2.830 | 2.251 | **1.314** | 1.364 |
+| +24h | 2.249 | 2.249 | **2.001** | 2.116 |
 
 ### Wind speed — test MAE (m/s)
 
-| horizon | persistence | daily naive | ridge | grad. boosting | LSTM |
-|---|---|---|---|---|---|
-| +1h | **0.531** | 1.854 | 0.568 | 0.565 | 0.566 |
-| +6h | 1.444 | 1.852 | 1.163 | **1.126** | 1.158 |
-| +24h | 1.847 | 1.847 | 1.600 | 1.642 | **1.615** |
+| horizon | persistence | daily naive | grad. boosting | LSTM |
+|---|---|---|---|---|
+| +1h | **0.531** | 1.854 | 0.565 | 0.566 |
+| +6h | 1.444 | 1.852 | **1.126** | 1.158 |
+| +24h | 1.847 | 1.847 | 1.642 | **1.615** |
 
 ### What the validation year chose
 
-| forecast | ridge α | boosting learning rate, depth | LSTM epochs kept |
-|---|---|---|---|
-| temperature +1h | 0.1 | 0.03, unlimited | 13 |
-| temperature +6h | 10 | 0.03, unlimited | 3 |
-| temperature +24h | 1 | 0.03, 4 | 1 |
-| wind +1h | 10 | 0.03, unlimited | 4 |
-| wind +6h | 1 | 0.03, unlimited | 2 |
-| wind +24h | 0.1 | 0.03, 4 | 1 |
+| forecast | boosting learning rate, depth | LSTM epochs kept |
+|---|---|---|
+| temperature +1h | 0.03, unlimited | 13 |
+| temperature +6h | 0.03, unlimited | 3 |
+| temperature +24h | 0.03, 4 | 1 |
+| wind +1h | 0.03, unlimited | 4 |
+| wind +6h | 0.03, unlimited | 2 |
+| wind +24h | 0.03, 4 | 1 |
 
-The settings hardly matter. Across the four ridge penalties the validation error
-moves by at most 0.023, and the slower boosting learning rate wins every time.
-Early stopping matters more: in five of the six forecasts the LSTM is at its
+The slower boosting learning rate wins every time. Early stopping matters more: in five of the six forecasts the LSTM is at its
 best after 1–4 epochs and only gets worse after that. The fixed 12 epochs of
 the earlier run trained it past that point.
 
 ### What the numbers actually say
 
-**1. The LSTM is never the best model on the test year.** The validation year
-chooses it once, for wind at +24 h, by a margin of 0.025 m/s over boosting; on
-2025 ridge then does slightly better (1.600 against 1.615). Everywhere else
-gradient boosting is ahead of it. With ~26,000 training hours and strong lagged
+**1. The LSTM wins once, and only just.** For wind at +24 h it is ahead of
+gradient boosting on both years, by 0.025 m/s on 2024 and 0.027 m/s on 2025
+(1.615 against 1.642). Everywhere else gradient boosting is ahead of it. With ~26,000 training hours and strong lagged
 features, gradient boosting is a hard baseline, and the LSTM also receives the
 full 47-feature vector including all lags, which is redundant for a model that
 already sees the sequence. Its fast early stop says the same: it learns what it
@@ -160,11 +157,11 @@ test year. Wind is so autocorrelated at one hour that "the same as now" is the
 best available answer. A model that cannot beat that has learned nothing, which
 is why `skill_vs_persistence` is reported for every model rather than a bare MAE.
 
-**3. The validation choice is not always the test winner, and that is fine.**
-At temperature +24 h it chose boosting, which is also best on 2025; at wind
-+24 h it chose the LSTM, which comes second. The differences at +24 h are a few
-hundredths, so which model "wins" there is close to chance. What is robust is
-that every trained model beats both baselines at +6 h and +24 h.
+**3. The validation year picked the test-year winner every time.** In all six
+forecasts the model with the lowest 2024 error also has the lowest 2025 error.
+At +24 h the two models are a few hundredths apart, so that agreement is partly
+luck. What is robust is that both trained models beat both baselines at +6 h
+and +24 h.
 
 **4. The wind model systematically under-predicts strong winds** (gradient
 boosting at +6 h).
@@ -191,9 +188,9 @@ exploiting the annual cycle.
 
 ## Limitations to state in the report
 
-- **A small search.** Only the settings in the model table were tried, two to
-  four per model, and the LSTM's size was not searched at all. A larger search
-  might help the LSTM most.
+- **A small search.** Only the four boosting settings in the model table were
+  tried, and the LSTM's size was not searched at all. A larger search might
+  help the LSTM most.
 - **One validation year.** Settings and the best model were chosen on 2024
   alone. At +24 h the models are so close that another year could pick a
   different one.

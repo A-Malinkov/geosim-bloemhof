@@ -413,7 +413,7 @@ export async function setup(ctx) {
       `held-out hours. "vs persistence" is the improvement over assuming nothing ` +
       `changes. Chronological split — never random, or neighbouring hours leak ` +
       `across it.</p>` +
-      `<p class="muted">Models compared: ridge regression, gradient boosting and an ` +  //what was trained, in one line
+      `<p class="muted">Models compared: gradient boosting and an ` +  //what was trained, in one line
       `LSTM, against persistence and same-hour-yesterday. Inputs: ` +
       `${forecast.method?.train_hours?.toLocaleString("en-GB") ?? "—"} hours of ` +
       `KNMI station ${forecast.station ?? "—"} (Rotterdam Airport), ` +
