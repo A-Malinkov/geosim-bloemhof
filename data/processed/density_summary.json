@@ -1,6 +1,6 @@
 {
   "study_area": "Bloemhof",
-  "method": "Spacematrix (Berghauser Pont & Haupt 2010): GSI, FSI, L, OSR",
+  "method": "Spacematrix (Berghauser Pont & Haupt 2010): GSI, FSI, L",
   "source": "3DBAG v20250903 (TU Delft), attributes b3_opp_grond / b3_bouwlagen / b3_h_dak_50p / b3_h_maaiveld",
   "parameters": {
     "cell_size_m": 100.0,
@@ -48,15 +48,6 @@
       "p90": 4.486,
       "max": 5.8
     },
-    "osr": {
-      "n": 107,
-      "mean": 0.985,
-      "std": 1.145,
-      "median": 0.708,
-      "p10": 0.321,
-      "p90": 1.441,
-      "max": 8.081
-    },
     "height_mean_m": {
       "n": 107,
       "mean": 9.884,
@@ -87,7 +78,6 @@
       "gsi": 0.3334,
       "fsi": 1.003,
       "layers": 3.01,
-      "osr": 0.665,
       "height_m": {
         "n": 2617,
         "mean": 8.455,
@@ -109,7 +99,6 @@
     "gsi": 0.3334,
     "fsi": 1.003,
     "layers": 3.01,
-    "osr": 0.665,
     "height_m": {
       "n": 2617,
       "mean": 8.455,
@@ -125,7 +114,6 @@
       "gsi": 0.2691,
       "fsi": 1.0183,
       "layers": 3.78,
-      "osr": 0.718,
       "height_mean_m": 12.75,
       "height_std_m": 2.57,
       "buurt": "Bloemhof"
@@ -134,7 +122,6 @@
       "gsi": 0.1537,
       "fsi": 0.5794,
       "layers": 3.77,
-      "osr": 1.461,
       "height_mean_m": 11.76,
       "height_std_m": 1.81,
       "buurt": "Bloemhof"
@@ -143,7 +130,6 @@
       "gsi": 0.4267,
       "fsi": 2.4753,
       "layers": 5.8,
-      "osr": 0.232,
       "height_mean_m": 10.54,
       "height_std_m": 5.02,
       "buurt": "Bloemhof"
@@ -152,7 +138,6 @@
       "gsi": 0.4735,
       "fsi": 1.3868,
       "layers": 2.93,
-      "osr": 0.38,
       "height_mean_m": 9.05,
       "height_std_m": 1.65,
       "buurt": "Bloemhof"
@@ -161,7 +146,6 @@
       "gsi": 0.4361,
       "fsi": 1.2137,
       "layers": 2.78,
-      "osr": 0.465,
       "height_mean_m": 8.96,
       "height_std_m": 2.52,
       "buurt": "Bloemhof"
@@ -170,7 +154,6 @@
       "gsi": 0.2999,
       "fsi": 0.7526,
       "layers": 2.51,
-      "osr": 0.93,
       "height_mean_m": 9.37,
       "height_std_m": 2.92,
       "buurt": "Bloemhof"
@@ -179,7 +162,6 @@
       "gsi": 0.3334,
       "fsi": 0.8394,
       "layers": 2.52,
-      "osr": 0.794,
       "height_mean_m": 8.77,
       "height_std_m": 2.82,
       "buurt": "Bloemhof"
@@ -188,7 +170,6 @@
       "gsi": 0.348,
       "fsi": 0.9485,
       "layers": 2.73,
-      "osr": 0.687,
       "height_mean_m": 8.78,
       "height_std_m": 2.44,
       "buurt": "Bloemhof"
@@ -197,7 +178,6 @@
       "gsi": 0.2667,
       "fsi": 0.6262,
       "layers": 2.35,
-      "osr": 1.171,
       "height_mean_m": 7.25,
       "height_std_m": 2.06,
       "buurt": "Bloemhof"
@@ -206,7 +186,6 @@
       "gsi": 0.2428,
       "fsi": 0.9879,
       "layers": 4.07,
-      "osr": 0.766,
       "height_mean_m": 11.53,
       "height_std_m": 4.32,
       "buurt": "Bloemhof"
@@ -215,7 +194,6 @@
       "gsi": 0.338,
       "fsi": 1.3219,
       "layers": 3.91,
-      "osr": 0.501,
       "height_mean_m": 10.29,
       "height_std_m": 3.03,
       "buurt": null
@@ -224,7 +202,6 @@
       "gsi": 0.3863,
       "fsi": 1.4033,
       "layers": 3.63,
-      "osr": 0.437,
       "height_mean_m": 9.85,
       "height_std_m": 2.52,
       "buurt": "Bloemhof"
@@ -233,7 +210,6 @@
       "gsi": 0.3287,
       "fsi": 0.9038,
       "layers": 2.75,
-      "osr": 0.743,
       "height_mean_m": 8.61,
       "height_std_m": 1.74,
       "buurt": "Bloemhof"
@@ -242,7 +218,6 @@
       "gsi": 0.2348,
       "fsi": 0.7619,
       "layers": 3.25,
-      "osr": 1.004,
       "height_mean_m": 10.35,
       "height_std_m": 3.07,
       "buurt": "Bloemhof"
@@ -251,7 +226,6 @@
       "gsi": 0.3134,
       "fsi": 0.9702,
       "layers": 3.1,
-      "osr": 0.708,
       "height_mean_m": 9.28,
       "height_std_m": 2.05,
       "buurt": "Bloemhof"
@@ -260,7 +234,6 @@
       "gsi": 0.3706,
       "fsi": 0.9037,
       "layers": 2.44,
-      "osr": 0.697,
       "height_mean_m": 6.53,
       "height_std_m": 0.43,
       "buurt": "Bloemhof"
@@ -269,7 +242,6 @@
       "gsi": 0.3075,
       "fsi": 0.6782,
       "layers": 2.21,
-      "osr": 1.021,
       "height_mean_m": 6.39,
       "height_std_m": 0.41,
       "buurt": "Bloemhof"
@@ -278,7 +250,6 @@
       "gsi": 0.3726,
       "fsi": 0.9425,
       "layers": 2.53,
-      "osr": 0.666,
       "height_mean_m": 6.62,
       "height_std_m": 0.94,
       "buurt": "Bloemhof"
@@ -287,7 +258,6 @@
       "gsi": 0.3767,
       "fsi": 0.849,
       "layers": 2.25,
-      "osr": 0.734,
       "height_mean_m": 6.36,
       "height_std_m": 0.84,
       "buurt": "Bloemhof"
@@ -296,7 +266,6 @@
       "gsi": 0.349,
       "fsi": 0.6578,
       "layers": 1.88,
-      "osr": 0.99,
       "height_mean_m": 6.04,
       "height_std_m": 0.07,
       "buurt": "Bloemhof"
@@ -305,7 +274,6 @@
       "gsi": 0.4078,
       "fsi": 1.4968,
       "layers": 3.67,
-      "osr": 0.396,
       "height_mean_m": 8.89,
       "height_std_m": 3.36,
       "buurt": "Bloemhof"
@@ -314,7 +282,6 @@
       "gsi": 0.3227,
       "fsi": 1.2292,
       "layers": 3.81,
-      "osr": 0.551,
       "height_mean_m": 11.84,
       "height_std_m": 3.36,
       "buurt": null
@@ -323,7 +290,6 @@
       "gsi": 0.3356,
       "fsi": 1.1691,
       "layers": 3.48,
-      "osr": 0.568,
       "height_mean_m": 9.69,
       "height_std_m": 2.92,
       "buurt": "Bloemhof"
@@ -332,7 +298,6 @@
       "gsi": 0.3574,
       "fsi": 0.8767,
       "layers": 2.45,
-      "osr": 0.733,
       "height_mean_m": 7.03,
       "height_std_m": 0.91,
       "buurt": "Bloemhof"
@@ -341,7 +306,6 @@
       "gsi": 0.3949,
       "fsi": 0.7391,
       "layers": 1.87,
-      "osr": 0.819,
       "height_mean_m": 6.27,
       "height_std_m": 0.06,
       "buurt": "Bloemhof"
@@ -350,7 +314,6 @@
       "gsi": 0.2443,
       "fsi": 0.5629,
       "layers": 2.3,
-      "osr": 1.343,
       "height_mean_m": 6.74,
       "height_std_m": 1.15,
       "buurt": "Bloemhof"
@@ -359,7 +322,6 @@
       "gsi": 0.2717,
       "fsi": 0.7128,
       "layers": 2.62,
-      "osr": 1.022,
       "height_mean_m": 7.32,
       "height_std_m": 1.6,
       "buurt": "Bloemhof"
@@ -368,7 +330,6 @@
       "gsi": 0.3774,
       "fsi": 0.7741,
       "layers": 2.05,
-      "osr": 0.804,
       "height_mean_m": 6.09,
       "height_std_m": 0.08,
       "buurt": "Bloemhof"
@@ -377,7 +338,6 @@
       "gsi": 0.3101,
       "fsi": 0.6368,
       "layers": 2.05,
-      "osr": 1.083,
       "height_mean_m": 6.52,
       "height_std_m": 0.66,
       "buurt": "Bloemhof"
@@ -386,7 +346,6 @@
       "gsi": 0.2959,
       "fsi": 0.5596,
       "layers": 1.89,
-      "osr": 1.258,
       "height_mean_m": 6.1,
       "height_std_m": 0.11,
       "buurt": "Bloemhof"
@@ -395,7 +354,6 @@
       "gsi": 0.3362,
       "fsi": 0.6464,
       "layers": 1.92,
-      "osr": 1.027,
       "height_mean_m": 6.13,
       "height_std_m": 0.18,
       "buurt": "Bloemhof"
@@ -404,7 +362,6 @@
       "gsi": 0.3294,
       "fsi": 0.7585,
       "layers": 2.3,
-      "osr": 0.884,
       "height_mean_m": 7.65,
       "height_std_m": 2.9,
       "buurt": "Bloemhof"
@@ -413,7 +370,6 @@
       "gsi": 0.4282,
       "fsi": 1.777,
       "layers": 4.15,
-      "osr": 0.322,
       "height_mean_m": 12.01,
       "height_std_m": 2.96,
       "buurt": null
@@ -422,7 +378,6 @@
       "gsi": 0.2848,
       "fsi": 1.2025,
       "layers": 4.22,
-      "osr": 0.595,
       "height_mean_m": 12.23,
       "height_std_m": 3.29,
       "buurt": "Bloemhof"
@@ -431,7 +386,6 @@
       "gsi": 0.4615,
       "fsi": 0.9734,
       "layers": 2.11,
-      "osr": 0.553,
       "height_mean_m": 6.16,
       "height_std_m": 0.36,
       "buurt": "Bloemhof"
@@ -440,7 +394,6 @@
       "gsi": 0.3436,
       "fsi": 0.6447,
       "layers": 1.88,
-      "osr": 1.018,
       "height_mean_m": 6.52,
       "height_std_m": 0.78,
       "buurt": "Bloemhof"
@@ -449,7 +402,6 @@
       "gsi": 0.2721,
       "fsi": 0.5334,
       "layers": 1.96,
-      "osr": 1.365,
       "height_mean_m": 6.14,
       "height_std_m": 0.77,
       "buurt": "Bloemhof"
@@ -458,7 +410,6 @@
       "gsi": 0.2247,
       "fsi": 0.5538,
       "layers": 2.46,
-      "osr": 1.4,
       "height_mean_m": 6.6,
       "height_std_m": 0.99,
       "buurt": "Bloemhof"
@@ -467,7 +418,6 @@
       "gsi": 0.1773,
       "fsi": 0.3782,
       "layers": 2.13,
-      "osr": 2.175,
       "height_mean_m": 6.35,
       "height_std_m": 0.33,
       "buurt": "Bloemhof"
@@ -476,7 +426,6 @@
       "gsi": 0.4802,
       "fsi": 1.0114,
       "layers": 2.11,
-      "osr": 0.514,
       "height_mean_m": 6.34,
       "height_std_m": 0.96,
       "buurt": "Bloemhof"
@@ -485,7 +434,6 @@
       "gsi": 0.3284,
       "fsi": 0.6773,
       "layers": 2.06,
-      "osr": 0.992,
       "height_mean_m": 6.16,
       "height_std_m": 0.5,
       "buurt": "Bloemhof"
@@ -494,7 +442,6 @@
       "gsi": 0.3962,
       "fsi": 0.777,
       "layers": 1.96,
-      "osr": 0.777,
       "height_mean_m": 6.14,
       "height_std_m": 0.29,
       "buurt": "Bloemhof"
@@ -503,7 +450,6 @@
       "gsi": 0.3132,
       "fsi": 0.6217,
       "layers": 1.99,
-      "osr": 1.105,
       "height_mean_m": 6.18,
       "height_std_m": 0.06,
       "buurt": "Bloemhof"
@@ -512,7 +458,6 @@
       "gsi": 0.529,
       "fsi": 2.246,
       "layers": 4.25,
-      "osr": 0.21,
       "height_mean_m": 13.1,
       "height_std_m": 3.26,
       "buurt": null
@@ -521,7 +466,6 @@
       "gsi": 0.3718,
       "fsi": 1.4491,
       "layers": 3.9,
-      "osr": 0.434,
       "height_mean_m": 14.96,
       "height_std_m": 1.28,
       "buurt": "Bloemhof"
@@ -530,7 +474,6 @@
       "gsi": 0.3242,
       "fsi": 1.1704,
       "layers": 3.61,
-      "osr": 0.577,
       "height_mean_m": 11.28,
       "height_std_m": 2.46,
       "buurt": "Bloemhof"
@@ -539,7 +482,6 @@
       "gsi": 0.3365,
       "fsi": 0.7311,
       "layers": 2.17,
-      "osr": 0.908,
       "height_mean_m": 6.53,
       "height_std_m": 1.04,
       "buurt": "Bloemhof"
@@ -548,7 +490,6 @@
       "gsi": 0.2642,
       "fsi": 0.5169,
       "layers": 1.96,
-      "osr": 1.424,
       "height_mean_m": 6.18,
       "height_std_m": 0.36,
       "buurt": "Bloemhof"
@@ -557,7 +498,6 @@
       "gsi": 0.0647,
       "fsi": 0.1157,
       "layers": 1.79,
-      "osr": 8.081,
       "height_mean_m": 6.35,
       "height_std_m": 0.14,
       "buurt": "Bloemhof"
@@ -566,7 +506,6 @@
       "gsi": 0.3094,
       "fsi": 1.1684,
       "layers": 3.78,
-      "osr": 0.591,
       "height_mean_m": 10.55,
       "height_std_m": 1.73,
       "buurt": "Bloemhof"
@@ -575,7 +514,6 @@
       "gsi": 0.2223,
       "fsi": 0.705,
       "layers": 3.17,
-      "osr": 1.103,
       "height_mean_m": 9.65,
       "height_std_m": 2.52,
       "buurt": "Bloemhof"
@@ -584,7 +522,6 @@
       "gsi": 0.5022,
       "fsi": 1.0333,
       "layers": 2.06,
-      "osr": 0.482,
       "height_mean_m": 6.34,
       "height_std_m": 1.02,
       "buurt": "Bloemhof"
@@ -593,7 +530,6 @@
       "gsi": 0.2486,
       "fsi": 0.4827,
       "layers": 1.94,
-      "osr": 1.557,
       "height_mean_m": 6.18,
       "height_std_m": 0.11,
       "buurt": "Bloemhof"
@@ -602,7 +538,6 @@
       "gsi": 0.3508,
       "fsi": 0.782,
       "layers": 2.23,
-      "osr": 0.83,
       "height_mean_m": 6.88,
       "height_std_m": 1.68,
       "buurt": "Bloemhof"
@@ -611,7 +546,6 @@
       "gsi": 0.1832,
       "fsi": 0.5722,
       "layers": 3.12,
-      "osr": 1.427,
       "height_mean_m": 10.19,
       "height_std_m": 2.83,
       "buurt": null
@@ -620,7 +554,6 @@
       "gsi": 0.292,
       "fsi": 1.1871,
       "layers": 4.07,
-      "osr": 0.596,
       "height_mean_m": 14.57,
       "height_std_m": 1.48,
       "buurt": "Bloemhof"
@@ -629,7 +562,6 @@
       "gsi": 0.3796,
       "fsi": 1.451,
       "layers": 3.82,
-      "osr": 0.428,
       "height_mean_m": 12.68,
       "height_std_m": 0.24,
       "buurt": "Bloemhof"
@@ -638,7 +570,6 @@
       "gsi": 0.4126,
       "fsi": 1.5407,
       "layers": 3.73,
-      "osr": 0.381,
       "height_mean_m": 10.98,
       "height_std_m": 2.12,
       "buurt": "Bloemhof"
@@ -647,7 +578,6 @@
       "gsi": 0.13,
       "fsi": 0.3244,
       "layers": 2.5,
-      "osr": 2.682,
       "height_mean_m": 7.59,
       "height_std_m": 1.63,
       "buurt": "Bloemhof"
@@ -656,7 +586,6 @@
       "gsi": 0.816,
       "fsi": 2.4342,
       "layers": 2.98,
-      "osr": 0.076,
       "height_mean_m": 9.25,
       "height_std_m": 0.38,
       "buurt": "Bloemhof"
@@ -665,7 +594,6 @@
       "gsi": 0.3533,
       "fsi": 1.0197,
       "layers": 2.89,
-      "osr": 0.634,
       "height_mean_m": 8.72,
       "height_std_m": 0.84,
       "buurt": "Bloemhof"
@@ -674,7 +602,6 @@
       "gsi": 0.1508,
       "fsi": 0.4562,
       "layers": 3.03,
-      "osr": 1.861,
       "height_mean_m": 8.55,
       "height_std_m": 1.59,
       "buurt": "Bloemhof"
@@ -683,7 +610,6 @@
       "gsi": 0.1123,
       "fsi": 0.3259,
       "layers": 2.9,
-      "osr": 2.724,
       "height_mean_m": 9.65,
       "height_std_m": 1.86,
       "buurt": "Bloemhof"
@@ -692,7 +618,6 @@
       "gsi": 0.3711,
       "fsi": 1.1238,
       "layers": 3.03,
-      "osr": 0.56,
       "height_mean_m": 8.73,
       "height_std_m": 3.26,
       "buurt": "Bloemhof"
@@ -701,7 +626,6 @@
       "gsi": 0.2332,
       "fsi": 0.8579,
       "layers": 3.68,
-      "osr": 0.894,
       "height_mean_m": 10.93,
       "height_std_m": 1.95,
       "buurt": null
@@ -710,7 +634,6 @@
       "gsi": 0.447,
       "fsi": 1.9999,
       "layers": 4.47,
-      "osr": 0.277,
       "height_mean_m": 13.82,
       "height_std_m": 1.74,
       "buurt": null
@@ -719,7 +642,6 @@
       "gsi": 0.2823,
       "fsi": 1.5523,
       "layers": 5.5,
-      "osr": 0.462,
       "height_mean_m": 15.97,
       "height_std_m": 4.39,
       "buurt": "Bloemhof"
@@ -728,7 +650,6 @@
       "gsi": 0.2668,
       "fsi": 1.0132,
       "layers": 3.8,
-      "osr": 0.724,
       "height_mean_m": 11.2,
       "height_std_m": 1.84,
       "buurt": "Bloemhof"
@@ -737,7 +658,6 @@
       "gsi": 0.4919,
       "fsi": 2.5905,
       "layers": 5.27,
-      "osr": 0.196,
       "height_mean_m": 12.29,
       "height_std_m": 4.4,
       "buurt": "Bloemhof"
@@ -746,7 +666,6 @@
       "gsi": 0.31,
       "fsi": 1.06,
       "layers": 3.42,
-      "osr": 0.651,
       "height_mean_m": 10.13,
       "height_std_m": 2.03,
       "buurt": "Bloemhof"
@@ -755,7 +674,6 @@
       "gsi": 0.3513,
       "fsi": 0.9772,
       "layers": 2.78,
-      "osr": 0.664,
       "height_mean_m": 8.59,
       "height_std_m": 0.92,
       "buurt": "Bloemhof"
@@ -764,7 +682,6 @@
       "gsi": 0.3269,
       "fsi": 0.8155,
       "layers": 2.5,
-      "osr": 0.825,
       "height_mean_m": 8.24,
       "height_std_m": 1.27,
       "buurt": "Bloemhof"
@@ -773,7 +690,6 @@
       "gsi": 0.3383,
       "fsi": 0.9509,
       "layers": 2.81,
-      "osr": 0.696,
       "height_mean_m": 8.48,
       "height_std_m": 0.92,
       "buurt": "Bloemhof"
@@ -782,7 +698,6 @@
       "gsi": 0.2436,
       "fsi": 0.9277,
       "layers": 3.81,
-      "osr": 0.815,
       "height_mean_m": 11.63,
       "height_std_m": 2.39,
       "buurt": "Bloemhof"
@@ -791,7 +706,6 @@
       "gsi": 0.2374,
       "fsi": 1.1221,
       "layers": 4.73,
-      "osr": 0.68,
       "height_mean_m": 12.92,
       "height_std_m": 3.19,
       "buurt": null
@@ -800,7 +714,6 @@
       "gsi": 0.3485,
       "fsi": 1.3187,
       "layers": 3.78,
-      "osr": 0.494,
       "height_mean_m": 12.11,
       "height_std_m": 2.09,
       "buurt": null
@@ -809,7 +722,6 @@
       "gsi": 0.056,
       "fsi": 0.2767,
       "layers": 4.94,
-      "osr": 3.411,
       "height_mean_m": 16.12,
       "height_std_m": 0.09,
       "buurt": null
@@ -818,7 +730,6 @@
       "gsi": 0.2102,
       "fsi": 0.9572,
       "layers": 4.55,
-      "osr": 0.825,
       "height_mean_m": 14.47,
       "height_std_m": 2.15,
       "buurt": "Bloemhof"
@@ -827,7 +738,6 @@
       "gsi": 0.4934,
       "fsi": 1.8038,
       "layers": 3.66,
-      "osr": 0.281,
       "height_mean_m": 7.39,
       "height_std_m": 2.17,
       "buurt": "Bloemhof"
@@ -836,7 +746,6 @@
       "gsi": 0.4535,
       "fsi": 1.7434,
       "layers": 3.84,
-      "osr": 0.313,
       "height_mean_m": 12.5,
       "height_std_m": 1.26,
       "buurt": "Bloemhof"
@@ -845,7 +754,6 @@
       "gsi": 0.3092,
       "fsi": 1.1283,
       "layers": 3.65,
-      "osr": 0.612,
       "height_mean_m": 8.94,
       "height_std_m": 1.55,
       "buurt": "Bloemhof"
@@ -854,7 +762,6 @@
       "gsi": 0.3677,
       "fsi": 1.0042,
       "layers": 2.73,
-      "osr": 0.63,
       "height_mean_m": 8.6,
       "height_std_m": 1.16,
       "buurt": "Bloemhof"
@@ -863,7 +770,6 @@
       "gsi": 0.3791,
       "fsi": 1.0521,
       "layers": 2.78,
-      "osr": 0.59,
       "height_mean_m": 9.12,
       "height_std_m": 1.12,
       "buurt": "Bloemhof"
@@ -872,7 +778,6 @@
       "gsi": 0.1754,
       "fsi": 0.6663,
       "layers": 3.8,
-      "osr": 1.238,
       "height_mean_m": 12.07,
       "height_std_m": 1.85,
       "buurt": null
@@ -881,7 +786,6 @@
       "gsi": 0.5723,
       "fsi": 2.7689,
       "layers": 4.84,
-      "osr": 0.154,
       "height_mean_m": 13.03,
       "height_std_m": 1.14,
       "buurt": null
@@ -890,7 +794,6 @@
       "gsi": 0.3778,
       "fsi": 1.4448,
       "layers": 3.82,
-      "osr": 0.431,
       "height_mean_m": 12.84,
       "height_std_m": 1.46,
       "buurt": null
@@ -899,7 +802,6 @@
       "gsi": 0.2949,
       "fsi": 1.2568,
       "layers": 4.26,
-      "osr": 0.561,
       "height_mean_m": 13.99,
       "height_std_m": 0.7,
       "buurt": null
@@ -908,7 +810,6 @@
       "gsi": 0.2437,
       "fsi": 1.0977,
       "layers": 4.5,
-      "osr": 0.689,
       "height_mean_m": 15.09,
       "height_std_m": 1.91,
       "buurt": "Bloemhof"
@@ -917,7 +818,6 @@
       "gsi": 0.3537,
       "fsi": 1.5778,
       "layers": 4.46,
-      "osr": 0.41,
       "height_mean_m": 13.92,
       "height_std_m": 1.89,
       "buurt": "Bloemhof"
@@ -926,7 +826,6 @@
       "gsi": 0.3297,
       "fsi": 1.1644,
       "layers": 3.53,
-      "osr": 0.576,
       "height_mean_m": 12.98,
       "height_std_m": 1.59,
       "buurt": "Bloemhof"
@@ -935,7 +834,6 @@
       "gsi": 0.2271,
       "fsi": 0.6807,
       "layers": 3.0,
-      "osr": 1.135,
       "height_mean_m": 8.96,
       "height_std_m": 0.6,
       "buurt": "Bloemhof"
@@ -944,7 +842,6 @@
       "gsi": 0.2355,
       "fsi": 0.9201,
       "layers": 3.91,
-      "osr": 0.831,
       "height_mean_m": 10.69,
       "height_std_m": 2.49,
       "buurt": "Bloemhof"
@@ -953,7 +850,6 @@
       "gsi": 0.0433,
       "fsi": 0.1231,
       "layers": 2.84,
-      "osr": 7.773,
       "height_mean_m": 9.23,
       "height_std_m": 1.64,
       "buurt": null
@@ -962,7 +858,6 @@
       "gsi": 0.4227,
       "fsi": 1.5956,
       "layers": 3.77,
-      "osr": 0.362,
       "height_mean_m": 12.2,
       "height_std_m": 1.23,
       "buurt": null
@@ -971,7 +866,6 @@
       "gsi": 0.1755,
       "fsi": 0.6637,
       "layers": 3.78,
-      "osr": 1.242,
       "height_mean_m": 13.67,
       "height_std_m": 0.71,
       "buurt": null
@@ -980,7 +874,6 @@
       "gsi": 0.4199,
       "fsi": 1.8133,
       "layers": 4.32,
-      "osr": 0.32,
       "height_mean_m": 12.53,
       "height_std_m": 1.94,
       "buurt": null
@@ -989,7 +882,6 @@
       "gsi": 0.3602,
       "fsi": 1.5619,
       "layers": 4.34,
-      "osr": 0.41,
       "height_mean_m": 13.38,
       "height_std_m": 0.78,
       "buurt": null
@@ -998,7 +890,6 @@
       "gsi": 0.091,
       "fsi": 0.3953,
       "layers": 4.34,
-      "osr": 2.3,
       "height_mean_m": 13.71,
       "height_std_m": 0.46,
       "buurt": null
@@ -1007,7 +898,6 @@
       "gsi": 0.2267,
       "fsi": 0.9171,
       "layers": 4.05,
-      "osr": 0.843,
       "height_mean_m": 13.48,
       "height_std_m": 1.4,
       "buurt": null
@@ -1016,7 +906,6 @@
       "gsi": 0.2994,
       "fsi": 1.3249,
       "layers": 4.42,
-      "osr": 0.529,
       "height_mean_m": 13.09,
       "height_std_m": 0.79,
       "buurt": "Bloemhof"
@@ -1025,7 +914,6 @@
       "gsi": 0.2423,
       "fsi": 0.83,
       "layers": 3.43,
-      "osr": 0.913,
       "height_mean_m": 11.89,
       "height_std_m": 2.89,
       "buurt": "Bloemhof"
@@ -1034,7 +922,6 @@
       "gsi": 0.0561,
       "fsi": 0.2243,
       "layers": 4.0,
-      "osr": 4.209,
       "height_mean_m": 11.52,
       "height_std_m": 0.07,
       "buurt": "Bloemhof"
@@ -1043,7 +930,6 @@
       "gsi": 0.6459,
       "fsi": 3.6766,
       "layers": 5.69,
-      "osr": 0.096,
       "height_mean_m": 12.71,
       "height_std_m": 5.35,
       "buurt": null
@@ -1052,7 +938,6 @@
       "gsi": 0.2481,
       "fsi": 0.9289,
       "layers": 3.74,
-      "osr": 0.809,
       "height_mean_m": 11.91,
       "height_std_m": 1.81,
       "buurt": null
@@ -1061,7 +946,6 @@
       "gsi": 0.2379,
       "fsi": 1.096,
       "layers": 4.61,
-      "osr": 0.695,
       "height_mean_m": 10.0,
       "height_std_m": 4.48,
       "buurt": null
@@ -1070,7 +954,6 @@
       "gsi": 0.3025,
       "fsi": 1.1478,
       "layers": 3.79,
-      "osr": 0.608,
       "height_mean_m": 9.63,
       "height_std_m": 1.78,
       "buurt": null
@@ -1079,7 +962,6 @@
       "gsi": 0.4113,
       "fsi": 2.0751,
       "layers": 5.04,
-      "osr": 0.284,
       "height_mean_m": 12.58,
       "height_std_m": 3.06,
       "buurt": null

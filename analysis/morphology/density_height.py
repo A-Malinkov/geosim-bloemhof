@@ -8,16 +8,15 @@ METHOD: SPACEMATRIX
 -------------------
 Density is not one number. A dense low-rise terrace and a tower in a park can
 share a floor-space index and be nothing alike. Spacematrix (Berghauser Pont &
-Haupt, TU Delft, 2010) separates them with four quantities computed over a
+Haupt, TU Delft, 2010) separates them with quantities computed over a
 defined aggregation unit:
 
     GSI = built footprint / land area          coverage      0-1
     FSI = gross floor area / land area         intensity
     L   = FSI / GSI                            mean storeys
-    OSR = (1 - GSI) / FSI                      open space per m2 of floor space
 
-GSI and FSI together fix the other two, so a GSI-FSI scatter with L and OSR
-isolines characterises the urban fabric. That plot is produced by
+GSI and FSI together fix L, so a GSI-FSI scatter with L isolines
+characterises the urban fabric. That plot is produced by
 make_figures.py as fig_spacematrix.png.
 
 AGGREGATION UNIT
@@ -177,7 +176,6 @@ def main() -> int:
         gsi = sum_area / cell_area
         fsi = sum_gfa / cell_area
         L = np.where(gsi > 0, fsi / np.maximum(gsi, 1e-9), np.nan)
-        osr = np.where(fsi > 0, (1 - gsi) / np.maximum(fsi, 1e-9), np.nan)
 
     print(f"  grid {nx} x {ny} cells of {c:.0f} m; "
           f"{int((count > 0).sum())} contain buildings")
@@ -204,7 +202,6 @@ def main() -> int:
                 "gsi": round(float(gsi[i]), 4),
                 "fsi": round(float(fsi[i]), 4),
                 "layers": None if not np.isfinite(L[i]) else round(float(L[i]), 2),
-                "osr": None if not np.isfinite(osr[i]) else round(float(osr[i]), 3),
                 "height_mean_m": None if not np.isfinite(h_mean[i]) else round(float(h_mean[i]), 2),
                 "height_std_m": None if not np.isfinite(h_std[i]) else round(float(h_std[i]), 2),
                 "n_buildings": int(count[i]),
@@ -252,7 +249,6 @@ def main() -> int:
                 "gsi": round(g_, 4),
                 "fsi": round(f_, 4),
                 "layers": round(f_ / g_, 2) if g_ else None,
-                "osr": round((1 - g_) / f_, 3) if f_ else None,
                 "height_m": describe(height[bp]),
             }
             return out
@@ -298,7 +294,7 @@ def main() -> int:
     valid = count >= args.min_buildings
     summary = {
         "study_area": STUDY_AREA.name,
-        "method": "Spacematrix (Berghauser Pont & Haupt 2010): GSI, FSI, L, OSR",
+        "method": "Spacematrix (Berghauser Pont & Haupt 2010): GSI, FSI, L",
         "source": "3DBAG v20250903 (TU Delft), attributes b3_opp_grond / "
                   "b3_bouwlagen / b3_h_dak_50p / b3_h_maaiveld",
         "parameters": {
@@ -325,7 +321,6 @@ def main() -> int:
             "gsi": describe(gsi[valid]),
             "fsi": describe(fsi[valid]),
             "layers": describe(L[valid]),
-            "osr": describe(osr[valid]),
             "height_mean_m": describe(h_mean[valid]),
             "height_std_m": describe(h_std[valid]),
         },
@@ -339,7 +334,6 @@ def main() -> int:
         "spacematrix": [
             {"gsi": round(float(gsi[i]), 4), "fsi": round(float(fsi[i]), 4),
              "layers": None if not np.isfinite(L[i]) else round(float(L[i]), 2),
-             "osr": None if not np.isfinite(osr[i]) else round(float(osr[i]), 3),
              "height_mean_m": None if not np.isfinite(h_mean[i]) else round(float(h_mean[i]), 2),
              "height_std_m": None if not np.isfinite(h_std[i]) else round(float(h_std[i]), 2),
              "buurt": cell_buurt.get(i)}
@@ -361,7 +355,7 @@ def main() -> int:
     mi["baseline"]["fsi"] = head.get("fsi", summary["grid"]["fsi"].get("mean"))
     mi["baseline"]["gsi"] = head.get("gsi", summary["grid"]["gsi"].get("mean"))
     mi["baseline"]["layers"] = head.get("layers")
-    mi["baseline"]["osr"] = head.get("osr")
+    mi["baseline"].pop("osr", None)  #OSR was dropped on 2026-11-01; clear it from older files
     hstat = head.get("height_m") or summary["grid"]["height_mean_m"]
     mi["baseline"]["height_mean_m"] = hstat.get("mean")
     mi["baseline"]["height_std_m"] = hstat.get("std")
@@ -374,7 +368,7 @@ def main() -> int:
         b = combined
         print(f"  {b['name']} over {b['land_area_ha']} ha:")
         print(f"     GSI {b['gsi']:.3f}   FSI {b['fsi']:.3f}   "
-              f"L {b['layers']:.2f} storeys   OSR {b['osr']:.2f}")
+              f"L {b['layers']:.2f} storeys")
         h = b["height_m"]
         print(f"     building height {h['mean']:.1f} m mean, "
               f"sigma {h['std']:.1f} m, max {h['max']:.1f} m "

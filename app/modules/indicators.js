@@ -42,12 +42,6 @@ const INDICATORS = [
     hint: "mean number of floors",
   },
   {
-    key: "osr",
-    label: "OSR (open space ratio)",
-    unit: "",
-    hint: "open space per m² of floor space",
-  },
-  {
     key: "height_mean_m",
     label: "Mean building height",
     unit: " m",
@@ -177,7 +171,6 @@ async function addDensityGrid(ctx) {
       `<tr><td>FSI</td><td>${fsi.toFixed(2)}</td></tr>` +
       `<tr><td>GSI</td><td>${(p?.gsi?.getValue?.() ?? 0).toFixed(2)}</td></tr>` +
       `<tr><td>storeys</td><td>${p?.layers?.getValue?.() ?? "-"}</td></tr>` +
-      `<tr><td>OSR</td><td>${p?.osr?.getValue?.() ?? "-"}</td></tr>` +
       `<tr><td>mean height</td><td>${p?.height_mean_m?.getValue?.() ?? "-"} m</td></tr>` +
       `<tr><td>height σ</td><td>${p?.height_std_m?.getValue?.() ?? "-"} m</td></tr>` +
       `<tr><td>buildings</td><td>${p?.n_buildings?.getValue?.() ?? "-"}</td></tr>` +
@@ -414,9 +407,9 @@ function histogramSvg(hist, mean) {
  * The Spacematrix diagram (Berghauser Pont & Haupt 2010), drawn from the
  * per-cell points in density_summary.json.
  *
- * GSI on x, FSI on y. Those two fix the other two indicators, so the diagram
- * carries all four: L = FSI/GSI is a straight line through the origin, and
- * OSR = (1-GSI)/FSI is a curve. Plotting it is the whole point of computing
+ * GSI on x, FSI on y. Those two fix L = FSI/GSI, so the diagram carries all
+ * three: L is a straight line through the origin. (OSR was dropped on
+ * 2026-11-01.) Plotting it is the whole point of computing
  * Spacematrix rather than a bare density figure: fabric types separate by
  * WHERE they sit, not by any single number, and two cells with the same FSI
  * can be a low sprawl or a tall point block depending on GSI.
@@ -448,27 +441,6 @@ function spacematrixSvg(points, perBuurt) {
   const py = (f) => PT + ih - Math.min(f / FMAX, 1) * ih;
 
   const parts = [];
-
-  // --- OSR isolines (curves): FSI = (1 - GSI) / OSR ------------------------
-  for (const osr of [0.2, 0.5, 1.0, 2.0]) {
-    const pts = [];
-    for (let i = 0; i <= 40; i++) {
-      const g = (i / 40) * GMAX;
-      const f = (1 - g) / osr;
-      if (f > FMAX || f < 0) continue;
-      pts.push(`${px(g).toFixed(1)},${py(f).toFixed(1)}`);
-    }
-    if (pts.length < 2) continue;
-    parts.push(
-      `<polyline points="${pts.join(" ")}" fill="none" stroke="#3a4655" ` +
-        `stroke-width="0.7" stroke-dasharray="1 2"/>`,
-    );
-    const [lx, ly] = pts[0].split(",");
-    parts.push(
-      `<text x="${(+lx + 2).toFixed(1)}" y="${(+ly - 2).toFixed(1)}" ` +
-        `fill="#5d6b7d" font-size="7">OSR ${osr}</text>`,
-    );
-  }
 
   // --- L isolines (straight): FSI = L * GSI --------------------------------
   for (const L of [1, 2, 3, 4, 6]) {
@@ -550,7 +522,7 @@ function spacematrixSvg(points, perBuurt) {
     Object.keys(perBuurt || {})  //one swatch per study-area buurt present in the data
       .map((n) => `<span style="color:${COL[n] || "#e7ecf2"}">●</span> ${n} `).join("") +
     `<span style="color:#5b6675">●</span> outside the study area · crosses are the buurt ` +
-    `aggregates. Thin lines are storeys (L), dashed are open space ratio (OSR).</p>`
+    `aggregates. Thin lines are storeys (L).</p>`
   );
 }
 
@@ -957,7 +929,6 @@ export async function setup(ctx) {
       `<tr><td>GSI</td><td>${b.gsi.toFixed(3)}</td></tr>` +
       `<tr><td>FSI</td><td>${b.fsi.toFixed(3)}</td></tr>` +
       `<tr><td>storeys (L)</td><td>${b.layers.toFixed(2)}</td></tr>` +
-      `<tr><td>OSR</td><td>${b.osr.toFixed(2)}</td></tr>` +
       `<tr><td>height</td><td>${b.height_m.mean.toFixed(1)} m ± ${b.height_m.std.toFixed(1)}</td></tr>` +
       `<tr><td>tallest</td><td>${b.height_m.max.toFixed(1)} m</td></tr>` +
       `</tbody></table>` +

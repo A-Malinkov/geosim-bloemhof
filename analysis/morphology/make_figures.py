@@ -346,13 +346,14 @@ def fig_canopy_effect(svf, open_ground, transform, trees_rd):
 # ========================================================== 7. Spacematrix
 def fig_spacematrix(dens):
     """
-    The Spacematrix diagram: GSI against FSI, with L and OSR isolines.
+    The Spacematrix diagram: GSI against FSI, with L (storeys) isolines.
 
     Berghauser Pont & Haupt (2010). The point of the plot is that FSI alone
     does not describe a fabric -- where a cell sits in this space tells you
     whether it is low-rise and packed, mid-rise with courtyards, or towers in
-    open ground. L and OSR are not extra data, they are contours of the same
-    two axes, which is why they are drawn rather than plotted.
+    open ground. L is not extra data, it is a contour of the same two axes,
+    which is why it is drawn rather than plotted. (OSR, the open space ratio,
+    was dropped on 2026-11-01.)
     """
     pts = dens["spacematrix"]
     g = np.array([p["gsi"] for p in pts])
@@ -369,22 +370,13 @@ def fig_spacematrix(dens):
     for L in (1, 2, 3, 4, 6, 8):
         ax.plot([0, xmax], [0, L * xmax], color=GRID, lw=0.9, zorder=1)
         yx = L * xmax
-        tag = f"L {L}"          # "L 4" not a bare "4", so it cannot be read as OSR
+        tag = f"L {L}"          # "L 4" not a bare "4"
         if yx <= ymax:
             ax.text(xmax * 0.99, yx, tag, color=MUTED, fontsize=7.5,
                     va="center", ha="right", zorder=1)
         else:
             ax.text(ymax / L, ymax * 0.99, tag, color=MUTED, fontsize=7.5,
                     va="top", ha="center", zorder=1)
-
-    # OSR isolines: FSI = (1 - GSI) / OSR
-    gg = np.linspace(0.001, min(0.99, xmax), 200)
-    for osr in (0.2, 0.5, 1.0, 2.0):
-        ax.plot(gg, (1 - gg) / osr, color=GRID, lw=0.9, ls="-", zorder=1)
-        yi = (1 - 0.62) / osr
-        if 0.05 < yi < ymax * 0.96:
-            ax.text(0.62, yi, f" OSR {osr:g}", color=MUTED, fontsize=7.5,
-                    va="bottom", ha="left", zorder=1)
 
     sc = ax.scatter(g, f, c=h, cmap=SEQ, vmin=4, vmax=22, s=26,
                     linewidths=0.4, edgecolors=SURFACE, zorder=3)
@@ -433,7 +425,7 @@ def fig_spacematrix(dens):
     ax.set_ylabel("FSI: floor space index (floor area / land area)")
     titled(ax, "Spacematrix: what kind of density is this?",
            f"one dot per {dens['parameters']['cell_size_m']:.0f} m cell · "
-           f"grey lines are storeys (L) and open space ratio (OSR)")
+           f"grey lines are storeys (L)")
     cb = fig.colorbar(sc, ax=ax, fraction=0.04, pad=0.02)
     cb.set_label("mean building height in cell (m)", color=INK_2, fontsize=8.5)
     cb.outline.set_visible(False)

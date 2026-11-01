@@ -20,7 +20,7 @@ numerator and denominator always share one boundary.
 | `fetch_buildings.py` | 3DBAG footprint areas, storeys and heights via the OGC API | `data/raw/buildings_3dbag.geojson` |
 | `fetch_landuse.py` | BAG addressable units: function and floor area per unit | `data/raw/bag_verblijfsobjecten.geojson` |
 | `sky_view_factor.py` | SVF by the multi-directional horizon-angle method | `data/processed/svf*.tif`, `svf_overlay.png`, `svf_summary.json` |
-| `density_height.py` | Spacematrix density (GSI, FSI, L, OSR) and height variation | `data/processed/density_grid.geojson`, `density_summary.json` |
+| `density_height.py` | Spacematrix density (GSI, FSI, L) and height variation | `data/processed/density_grid.geojson`, `density_summary.json` |
 | `landuse_mix.py` | Shannon and Simpson land-use mix indices | `data/processed/landuse_grid.geojson`, `landuse_summary.json` |
 | `shadows.py` | direct-sun hours over one clear day, ray-cast from the AHN DSM | `data/processed/shadow_hours.tif` (gitignored), `shadow_overlay.png`, `shadow_summary.json` |
 | `height_width.py` | street-canyon height-to-width ratio from OSM centrelines and 3DBAG footprints | `data/processed/canyon_hw_baseline.json`, `canyon_hw_baseline.geojson`, `docs/fig_canyon_hw_baseline.png` |
@@ -62,7 +62,6 @@ python analysis/morphology/height_width.py --scenario scenario_a      # ~15 s
 | **GSI** ground space index | **0.333** |
 | **FSI** floor space index | **1.003** |
 | **L** storeys | **3.01** |
-| **OSR** | **0.67** |
 | **mean building height** | **8.5 m** |
 | **height variation σ** | **2.9 m** |
 | **land-use mix** Shannon | **0.267** |
@@ -128,7 +127,6 @@ terrace and a tower in a park can share an FSI and be nothing alike.
 GSI = built footprint / land area     coverage
 FSI = gross floor area / land area    intensity
 L   = FSI / GSI                       mean storeys
-OSR = (1 - GSI) / FSI                 open space per m² of floor space
 ```
 
 - **Storey height is measured, not assumed**: 3.06 m, the median over
@@ -148,8 +146,8 @@ OSR = (1 - GSI) / FSI                 open space per m² of floor space
 
 ### The diagram, and why it is worth plotting
 
-GSI and FSI fix the other two indicators, so a GSI–FSI scatter carries all four:
-L is a straight line through the origin, OSR is a curve. Fabric types separate by
+GSI and FSI fix the storeys, so a GSI–FSI scatter carries all three: L is a
+straight line through the origin. Fabric types separate by
 *where* they sit, which no single number shows. `make_figures.py` writes the static
 `docs/fig_spacematrix.png`; `app/modules/indicators.js` draws the same diagram in
 the dashboard from the 107 per-cell points in `density_summary.json`, coloured
