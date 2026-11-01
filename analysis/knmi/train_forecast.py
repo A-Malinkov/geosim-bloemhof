@@ -40,8 +40,8 @@ On the validation year we choose: the gradient boosting learning rate and
 tree depth, when the LSTM stops training (early stopping),
 and which model is "best" at each horizon.
 
-Accuracy is also broken down by season and by wind regime, because a mean error
-over a whole year hides that every model struggles with storms.
+Accuracy is also broken down by season, because a mean error over a whole
+year can hide a season the model struggles with.
 
 LSTM IS OPTIONAL
 ----------------
@@ -374,19 +374,14 @@ def main():
                   f"(test MAE {scores[best]['mae']:.3f}, skill "
                   f"{scores[best]['skill_vs_persistence']:+.3f})")
 
-            #breakdowns by season and wind regime, for the best model at +6 h
+            #breakdown by season, for the best model at +6 h
             if h != 6:
                 continue
             p, yt = preds[best][test], y[test]
             by_season = {s: metrics(yt[season[test] == s], p[season[test] == s])
                          for s in ("winter", "spring", "summer", "autumn")}
-            wind = cols["wind_speed_ms"][test]  #wind when the forecast is made, not at the target time
-            by_wind = {"calm (<3 m/s)": metrics(yt[wind < 3], p[wind < 3]),
-                       "moderate (3-8 m/s)": metrics(yt[(wind >= 3) & (wind < 8)],
-                                                     p[(wind >= 3) & (wind < 8)]),
-                       "strong (>=8 m/s)": metrics(yt[wind >= 8], p[wind >= 8])}
             results[target]["conditions"] = {"model": best, "horizon": f"+{h}h",
-                                             "by_season": by_season, "by_wind_regime": by_wind}
+                                             "by_season": by_season}
 
             #the first fortnight of the test year for the app's chart, temperature only
             if target == "temperature_C":

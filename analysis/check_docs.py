@@ -68,7 +68,7 @@ def main() -> int:
     ca, rl, fc = load("landuse_abm.json"), load("landuse_rl.json"), load("knmi_forecast.json")
     ws = load("landuse_weight_sensitivity.json")
     dqn = load("landuse_rl_dqn.json")
-    rm, rlinks = load("road_metrics.json"), load("road_links.json")  #4.8 road network
+    rm = load("road_metrics.json")  #4.8 road network
     edge = load("edge_access.json")  #4.8 distance to the edge streets
 
     MAIN = ROOT / "README.md"
@@ -179,15 +179,12 @@ def main() -> int:
     if fc:
         t = fc["results"]["temperature_C"]["horizons"]
         w = fc["results"]["wind_speed_ms"]["horizons"]
-        cw = fc["results"]["wind_speed_ms"]["conditions"]["by_wind_regime"]
         bt, bw = t["+6h"]["_best"], w["+6h"]["_best"]
         checks += [
             ("temp +6h headline", r"Weather forecast \(temperature", f"{t['+6h'][bt]['mae']:.2f}", [MAIN]),
             ("temp +6h skill", r"Weather forecast \(temperature",
              f"{100*t['+6h'][bt]['skill_vs_persistence']:.0f} %", [MAIN]),
             ("wind +6h headline", r"Weather forecast \(wind", f"{w['+6h'][bw]['mae']:.2f}", [MAIN]),
-            ("strong-wind bias", r"Weather forecast \(wind",
-             f"{abs(cw['strong (>=8 m/s)']['bias']):.1f}", [MAIN]),
         ]
         # the per-model MAE tables: one row per horizon, every model on it
         for hz in ("+1h", "+6h", "+24h"):
@@ -200,9 +197,6 @@ def main() -> int:
                 if "settings" in res[hz].get("lstm", {}):
                     checks.append((f"{what} {hz} LSTM epochs kept", rf"^\| {what} \{hz} \|",
                                    f"| {res[hz]['lstm']['settings']['epochs']} |", [KNMI]))
-        #the strong-wind row of the wind-regime table
-        sw = cw["strong (>=8 m/s)"]
-        checks.append(("KNMI strong-wind bias", r"^\| strong \(>=8 m/s\) \|", f"{sw['bias']:.3f}", [KNMI]))
 
     if rm and rm.get("scenario_a", {}).get("areas"):
         #road network: the site comparison and the network table, both scenarios
@@ -236,26 +230,6 @@ def main() -> int:
         if rm["scenario_a"].get("network"):
             checks.append(("roads: connectors scenario_a", r"^street end gets both\. In all, \d+ connector",
                            f"{rm['scenario_a']['network']['connectors']} connector pieces", [ROADS]))
-    for sc in ("scenario_a", "scenario_b"):
-        if not (rlinks and rlinks.get(sc, {}).get("steps")):
-            continue
-        L = rlinks[sc]
-        head = r"^\d+ candidates\. J starts"
-        checks += [
-            (f"roads: {sc} candidates", head, f"{L['n_candidates']} candidates", [ROADS]),
-            (f"roads: {sc} J before", head, f"{L['J_before_m']:.2f} m", [ROADS]),
-            (f"roads: {sc} J ceiling", head, f"{L['J_ceiling_m']:.2f} m", [ROADS]),
-        ]
-        for x in L["steps"]:  #one row per link; the two tables share row anchors, so the value must be in one of them
-            checks.append((f"roads: {sc} link {x['rank']} J", rf"^\| {x['rank']} \| \d+ m \|", f"{x['J_m']:.2f} m", [ROADS]))
-    if rlinks and rlinks.get("scenario_a", {}).get("steps"):
-        st = rlinks["scenario_a"]["steps"]
-        checks += [
-            ("roads: A two links length", r"^\*\*Two links, \d+ m", f"{sum(x['length_m'] for x in st[:2]):.0f} m", [ROADS]),
-            ("roads: A two links share", r"^\*\*Two links, \d+ m", f"{100 * st[1]['share_of_ceiling']:.0f} %", [ROADS]),
-            ("roads: A all candidates", r"^give\.\*\*|^\*\*Two links, \d+ m", f"all {rlinks['scenario_a']['n_candidates']} candidates", [ROADS]),
-        ]
-
     if edge and edge.get("baseline", {}).get("dwellings"):
         #distance to the edge streets: the baseline table and the sentences quoting it
         E = edge["baseline"]
@@ -406,8 +380,6 @@ def main() -> int:
     if fc:
         t = fc["results"]["temperature_C"]["horizons"]
         w = fc["results"]["wind_speed_ms"]["horizons"]
-        cw = fc["results"]["wind_speed_ms"]["conditions"]["by_wind_regime"]
-        ct = fc["results"]["temperature_C"]["conditions"]["by_wind_regime"]
         claims += [
             ("KNMI README: 'the LSTM wins once' (wind +24 h, on the validation and the test year)",
              [(v, h) for v, r in (("temp", t), ("wind", w)) for h in r if r[h]["_best"] == "lstm"] == [("wind", "+24h")]
@@ -422,12 +394,6 @@ def main() -> int:
              sum(1 <= r[h]["lstm"]["settings"]["epochs"] <= 4 for r in (t, w) for h in r) == 5),
             ("KNMI README: 'persistence unbeaten for wind at +1 h'",
              w["+1h"]["_best"] == "persistence"),
-            ("KNMI README: 'under-predicts strong winds'",
-             cw["strong (>=8 m/s)"]["bias"] < 0),
-            ("KNMI README: 'error grows with wind strength'",
-             cw["calm (<3 m/s)"]["mae"] < cw["strong (>=8 m/s)"]["mae"]),
-            ("KNMI README: 'temperature hardest in calm conditions'",
-             ct["calm (<3 m/s)"]["mae"] > ct["strong (>=8 m/s)"]["mae"]),
         ]
     if ws:
         claims += [
@@ -490,15 +456,6 @@ def main() -> int:
             ("roads README: 'no site dwelling has a rail stop within 5 min in either scenario'",
              all(rm[s]["areas"]["design_site"]["rail_stop"]["within_5min_frac"] == 0 for s in ("scenario_a", "scenario_b"))),
         ]
-    if rlinks and rlinks.get("scenario_a", {}).get("steps"):
-        st = rlinks["scenario_a"]["steps"]
-        claims += [
-            ("roads README: 'after link 2 each link saves under 0.03 m of J'", all(x["gain_m"] < 0.03 for x in st[2:])),
-            ("roads README: 'A stops after three links'", len(st) == 3),  #four before the dead-end fixes of 2026-10-28
-        ]
-    if rlinks and rlinks.get("scenario_b", {}).get("steps"):
-        stb = rlinks["scenario_b"]["steps"]
-        claims.append(("roads README: 'B: two links reach the ceiling'", len(stb) == 2 and stb[-1]["share_of_ceiling"] == 1.0))
     #morphology scenario table, the sentences under it
     g = lambda s, d="": (load(f"shadow_summary{s}{d}.json") or {}).get("design_site", {}).get("open_ground_sunlit_hours")
     v = lambda s: (load(f"svf_summary{s}.json") or {}).get("design_site", {}).get("open_ground")

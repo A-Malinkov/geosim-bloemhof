@@ -3,10 +3,9 @@
  * OWNER: Atanas Malinkov
  *
  * The walking network per scenario, how far homes are from everyday
- * destinations, and the footpath links an optimiser would add.
+ * destinations.
  * Computed in  analysis/roads/  ->
  *   road_network.py   -> data/processed/road_metrics.json, roads_<scenario>.geojson
- *   optimise_links.py -> data/processed/road_links.json, road_links_<scenario>.geojson
  *   edge_access.py    -> data/processed/edge_access.json, edge_access_<scenario>.geojson
  *                        (walk and drive distance from each site address to Lange Hilleweg and Strevelsweg)
  *
@@ -61,13 +60,12 @@ export async function setup(ctx) {
   const body = ctx.registerPanel({
     id: "roads",
     title: "Road network",
-    subtitle: "walking network · everyday destinations · footpath links",
+    subtitle: "walking network · everyday destinations",
     order: 60,
   });
 
-  const [data, links, edge] = await Promise.all([
+  const [data, edge] = await Promise.all([
     ctx.loadJson(ctx.config.dataSources.processed.roads),
-    ctx.loadJson(ctx.config.dataSources.processed.roadLinks),
     ctx.loadJson(EDGE, { quiet: true }),
   ]);
   const out = document.createElement("div");
@@ -85,10 +83,9 @@ export async function setup(ctx) {
 
   /* ---------------------------------------------------------- map layers */
   const nets = new Map();   //scenario -> promise of {ds, handle} for the network
-  const picks = new Map();  //scenario -> promise of {ds, handle} for the optimiser's links
   const edges = new Map();  //scenario -> promise of {ds, handle} for the edge-street distances
   //checkbox choice per kind, kept across scenario switches; the distance points start off
-  const wanted = new Map([[nets, true], [picks, true], [edges, false]]);
+  const wanted = new Map([[nets, true], [edges, false]]);
   let edgePick = { mode: "walk", street: "lange_hilleweg" };  //which distance colours the points
   //a tick or untick on the current scenario's layer is the user's choice; the switch's own hiding is not
   const remember = (map, scenario) => (v) => { if (scenario === ctx.scenario()) wanted.set(map, v); };
@@ -112,40 +109,6 @@ export async function setup(ctx) {
       show: wanted.get(nets),  //start as the user last left it, so registering does not reset the choice
       target: ds,
       onToggle: remember(nets, scenario),
-    });
-    return { ds, handle };
-  }
-
-  async function loadLinks(scenario) {
-    //the optimiser's footpath links with their rank
-    const path = links?.[scenario]?.geojson;
-    if (!path) return null;
-    const ds = await Cesium.GeoJsonDataSource.load(path, { clampToGround: true });
-    const green = Cesium.Color.fromCssColorString("#1a9850");
-    for (const e of ds.entities.values) {
-      e.polyline.material = new Cesium.PolylineDashMaterialProperty({ color: green, dashLength: 12 });
-      e.polyline.width = 5;
-      const pos = e.polyline.positions.getValue(Cesium.JulianDate.now());
-      e.position = Cesium.Cartesian3.midpoint(pos[0], pos[pos.length - 1], new Cesium.Cartesian3());  //label at the middle
-      e.label = new Cesium.LabelGraphics({
-        text: String(e.properties.rank.getValue()),
-        font: "bold 15px sans-serif",
-        fillColor: Cesium.Color.WHITE,
-        outlineColor: green,
-        outlineWidth: 4,
-        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-        heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-        disableDepthTestDistance: Number.POSITIVE_INFINITY,
-      });
-    }
-    await ctx.viewer.dataSources.add(ds);
-    const handle = ctx.registerLayer({
-      id: `roads-links-${scenario}`,
-      label: `Optimiser footpath links (${scenario})`,
-      group: "Mobility",  //with the walk network and the transit stops
-      show: wanted.get(picks),  //start as the user last left it
-      target: ds,
-      onToggle: remember(picks, scenario),
     });
     return { ds, handle };
   }
@@ -202,7 +165,7 @@ export async function setup(ctx) {
 
   async function showLayers(scenario) {
     //only the current scenario's layers on, checkboxes kept in step
-    for (const [map, load] of [[nets, loadNetwork], [picks, loadLinks], [edges, loadEdge]]) {
+    for (const [map, load] of [[nets, loadNetwork], [edges, loadEdge]]) {
       if (!map.has(scenario)) {  //store the promise at once, so two quick switches load a layer only once
         map.set(scenario, load(scenario).catch((err) => {
           console.warn(`[roads] could not load layer for ${scenario}`, err);
@@ -265,29 +228,6 @@ export async function setup(ctx) {
       `in every scenario, so it moves with the network alone. ≤ 5 min is 400 m. ` +
       `Every home in the study area reaches all four within 15 min in every scenario ` +
       `(${fmt(100 * data[sc].metrics.walk_15min_reach_frac, 0, " %")}).</p>`;
-  }
-
-  function linksBlock(sc) {
-    const L = links?.[sc];
-    if (!L?.steps) return "";
-    const total = L.steps.reduce((s, x) => s + x.length_m, 0);
-    return `<h4>Footpath links the optimiser adds</h4>` +
-      `<table class="kv"><thead><tr><th>#</th><th>length</th><th>J saved</th><th>site dwellings</th><th>of ceiling</th></tr></thead><tbody>` +
-      L.steps.map((x) =>
-        `<tr><td>${x.rank}</td><td>${fmt(x.length_m, 0, " m")}</td><td>${fmt(x.gain_m, 2, " m")}</td>` +
-        `<td>${fmt(x.site_dwellings_m, 0, " m")}</td><td>${fmt(100 * x.share_of_ceiling, 0, " %")}</td></tr>`).join("") +
-      `</tbody></table>` +
-      `<p class="muted">Objective J: mean walk from a dwelling to the nearest shop, education, health care and ` +
-      `rail stop, ${L.destinations === "with the placed amenities" ? "the placed ones included, "
-        : L.destinations === "with the shops the Rhino model labels" ? "the labelled shops included, " : ""}` +  //the option as proposed
-      `over all ${fmt(data[sc].areas.study_area.dwellings)} dwellings, now ${fmt(L.J_before_m, 2, " m")}. ` +
-      `Greedy, one straight footpath at a time, from ${L.n_candidates} candidates that cross no block or water, ` +
-      `start or end on the design's own streets and save a detour of at least ${L.candidate_rule.detour_min}×; ` +
-      `it stops when no link saves 1 mm any more. All candidates together would reach ` +  //rules since 2026-10-23
-      `${fmt(L.J_ceiling_m, 2, " m")} (the ceiling). Site dwellings start at ${fmt(L.site_dwellings_before_m, 0, " m")}, ` +
-      `today gives ${fmt((data.baseline.with_amenities ?? data.baseline).areas.design_site.mean_of_types_m, 0, " m")}. ` +  //today with its own amenities
-      `${L.steps.length} links, ${fmt(total, 0, " m")} in all. ` +
-      `Assumes the ground between blocks is public. Dashed green on the map, numbered by rank.</p>`;
   }
 
   function edgeBlock(sc) {
@@ -367,7 +307,7 @@ export async function setup(ctx) {
       showLayers(sc);
       return;
     }
-    out.innerHTML = networkTable(sc) + accessTable(sc) + edgeBlock(sc) + linksBlock(sc) +
+    out.innerHTML = networkTable(sc) + accessTable(sc) + edgeBlock(sc) +
       `<p class="muted">OSM walk network, 500 m beyond the buurten. Betweenness: share of shortest walks ` +
       `between all node pairs that use an edge. The map colours edges by it, light to dark. ` +
       `Destinations on the design site are left out in every scenario, so the comparison is the network ` +

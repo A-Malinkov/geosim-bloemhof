@@ -202,7 +202,7 @@ def green_total(sc):
 
 
 def mobility(sc):
-    #walking to everyday destinations, from road_network.py and optimise_links.py
+    #walking to everyday destinations, from road_network.py and place_amenities.py
     rm = J("road_metrics.json")[sc]
     a, g = rm["areas"]["design_site"], rm["site_grid"]
     out = {"walk_dwellings_m": a["mean_of_types_m"], "walk_grid_m": g["mean_of_types_m"],
@@ -211,11 +211,6 @@ def mobility(sc):
         out[f"walk_{t}_m"] = a[t]["mean_m"]
         out[f"walk_grid_{t}_m"] = g[t]["mean_m"]
         out[f"near5_{t}"] = a[t]["within_5min_frac"]
-    links = (J("road_links.json") or {}).get(sc) or {}
-    if links.get("steps"):
-        out["links_n"] = len(links["steps"])
-        out["links_m"] = round(sum(s["length_m"] for s in links["steps"]))
-        out["walk_grid_after_links_m"] = links["steps"][-1]["site_grid_m"]
     out["walk_grid_network_m"] = g["mean_of_types_m"]  #network only: the site's own amenities left out in every scenario
     ap = J("amenity_placement.json") or {}
     am = ap.get(sc) or {}
@@ -304,7 +299,6 @@ INDICATORS = [
     ("walk_dwellings_amen_m", "Walking", "Residents, with placed amenities", " m", "lower", 0, "amenity_placement.json"),
     ("walk_grid_amen_m", "Walking", "Site grid, with placed amenities", " m", "lower", 0, "amenity_placement.json"),
     ("walk_grid_network_m", "Walking", "Site grid, network only", " m", "lower", 0, "road_metrics.json"),
-    ("walk_grid_after_links_m", "Walking", "Site grid, amenities + optimiser footpaths", " m", "lower", 0, "road_links.json"),  #the optimiser walks to the placed amenities since 2026-10-27
     ("intersections_km2", "Walking", "Intersection density", " /km²", "higher", 0, "road_metrics.json"),
     ("lu_objective", "Land use", "Land-use objective J", "", "higher", 3, "landuse_scenarios.json"),
     ("lu_mix", "Land use", "Land-use mix", "", "higher", 3, "landuse_scenarios.json"),
@@ -316,7 +310,7 @@ INDICATORS = [
 NOT_RUN = [("Wind", "pedestrian wind comfort", "OpenFOAM cases set up, not run"),
            ("Noise", "road-traffic noise, Lden", "baseline only, scenarios not run"),
            ("CBS", "socio-demographics", "not started")]
-NOT_TODAY = {"green_area_m2", "water_area_m2", "walk_grid_after_links_m",  #no today value: proposed planting, optimiser
+NOT_TODAY = {"green_area_m2", "water_area_m2",  #no today value: proposed planting
              "lu_objective_amen", "lu_mix_amen"}  #and the land use with placed amenities
 PERCENT = {"sun_under2h_0320", "sun_under2h_1221", "lu_green_share", "flood_high"}
 

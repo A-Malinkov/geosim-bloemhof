@@ -3,27 +3,24 @@
 Component 8 · owner: Atanas Malinkov (built 2026-10-21) · feeds `app/modules/roads.js`
 
 The walking network per scenario, how far homes are from everyday destinations,
-which new footpaths through the design site would shorten those walks most,
 and where on the new blocks' ground floors shops and health practices shorten
 them most (the kept school stays fixed; the second school is placed).
 
 | script | does | writes |
 |---|---|---|
 | `road_network.py` | network metrics and walking distances per scenario | `data/processed/road_metrics.json`, `roads_<scenario>.geojson` |
-| `optimise_links.py` | greedy choice of new footpaths on the site | `data/processed/road_links.json`, `road_links_<scenario>.geojson` |
 | `place_amenities.py` | p-median placement of shops, health care and the second school on the new ground floors; the kept school stays fixed | `data/processed/amenity_placement.json`, `design_amenities.geojson`, `docs/fig_amenities.png` |
 | `edge_access.py` | walk and drive distance from each site address to Lange Hilleweg and Strevelsweg | `data/processed/edge_access.json`, `edge_access_<scenario>.geojson` |
 
 ```bash
 python analysis/roads/road_network.py      # first run fetches OSM into cache/roads/, about 3 min
-python analysis/roads/optimise_links.py    # needs road_network.py's output, about 15 s
 python analysis/roads/place_amenities.py   # about 10 s
 python analysis/roads/edge_access.py       # baseline; first run fetches the OSM drive network, about 1 min
 python analysis/roads/edge_access.py --scenario scenario_a --check   # a design option, verified against networkx
 ```
 
-Both have one case dict per scenario in `CASES`: baseline, scenario_a and
-scenario_b (the optimiser skips the baseline, see below).
+`road_network.py` has one case dict per scenario in `CASES`: baseline,
+scenario_a, scenario_b and final.
 
 ## Method
 
@@ -74,8 +71,7 @@ block corner. The path is walked here and drawn in the app; it is not a street
 canyon, so `height_width.py` leaves it out.
 Before 2026-10-23 the graph made no junction at those crossings and split two
 ends 0.1 m apart into two nodes, so Scenario A's main street was cut in two and
-its new streets did not meet Lange Hilleweg, Strevelsweg or Dubbelstraat. Eight
-of the ten footpath links the optimiser chose then only repaired that. The edge streets themselves (Lange Hilleweg,
+its new streets did not meet Lange Hilleweg, Strevelsweg or Dubbelstraat. The edge streets themselves (Lange Hilleweg,
 Sandelingstraat, Dortsmondstraat, Dubbelstraat, Strevelsweg) are kept whole by
 name, because Strevelsweg runs up to 20 m inside the site outline.
 
@@ -98,7 +94,7 @@ to the site on 2026-10-21) stays a destination, school included.
 and schools on the site (baseline), or with the ones `place_amenities.py` puts
 on the option's ground floors. Those are the numbers to quote for residents; the
 per-type tables below leave the site's amenities out everywhere and show the
-network alone. The footpath optimiser walks to the "as lived" destinations.
+network alone.
 
 **Distance.** Each home and destination is snapped to the nearest point on the
 nearest edge. Walking distance is the access leg plus the network distance, by
@@ -109,23 +105,6 @@ and two destination types, max difference 0.000000 m.
 **Two sets of origins on the site.** *Dwellings* move with who lives there, so
 they mix the network effect with the new housing. The *site grid* is the same
 332 points every 20 m in every scenario, so it moves with the network alone.
-
-**Optimiser.** Objective J is the mean walking distance from a dwelling to the
-nearest shop, education, health care and rail stop, equal weights over the
-four, dwelling-weighted over the whole study area. Candidates are straight
-footpaths between two network nodes on the site or within 20 m of it, 10 to
-150 m long, at most 20 m off the site, crossing no building and no water,
-starting or ending on the design's own network (a new street or connector),
-meeting the network only at their two nodes, and saving a detour of at least
-1.5× the straight line. The own-network rule keeps out links that only mend a
-gap OSM has today too, such as a footway ending 2 m short of Lange Hilleweg at
-the site's west tip. A candidate that runs within 6 m of a street, at under 30°
-to it, for more than half its length is no new route and is left out: once the
-kerb joins below gave Strevelsweg's south carriageway a node, the optimiser
-picked 144 m and 150 m "footpaths" down the road's central reservation
-(2026-10-28). Greedy adds the candidate that lowers J most, re-scores the
-rest, and repeats up to ten times, stopping when no candidate lowers J by 1 mm.
-The ceiling is J with all candidates at once.
 
 ## Results
 
@@ -182,56 +161,9 @@ study area reaches all four types within 15 min (1,200 m) in every scenario. The
 5-minute share (400 m) is what varies. On the site no dwelling has a rail stop
 within 5 min in either scenario, 2 % do today.
 
-### Footpath links, with the placed amenities
-
-The optimiser walks to the options as proposed: the existing destinations plus
-the shops, health practices and school `place_amenities.py` puts on their ground
-floors (the kept school is in both). Housing only, the same runs found 4 links
-(123 m) in A and 3 (135 m) in B, saving 0.81 m and 0.75 m of J; with the
-amenities there is less to gain, because the new shops sit inside the blocks.
-
-#### Scenario A
-
-9 candidates. J starts at 255.27 m, the ceiling is 255.03 m.
-
-| # | length | J saved | J | site dwellings | site grid | of ceiling |
-|---|---|---|---|---|---|---|
-| 1 | 11 m | 0.16 m | 255.11 m | 253.1 m | 248.1 m | 69 % |
-| 2 | 32 m | 0.07 m | 255.04 m | 252.8 m | 247.8 m | 98 % |
-| 3 | 35 m | 0.00 m | 255.03 m | 252.8 m | 247.8 m | 100 % |
-
-**Two links, 43 m of footpath, take 98 % of what all 9 candidates could
-give.** Link 1 is a crossing of Strevelsweg in line with Jagerslaan: the road is
-a dual carriageway and OSM has no crossing near there. Link 2 is new with the
-amenities: it joins two east-west streets near the north-east edge, between a
-placed shop and a placed health practice. The diagonal across the south-west
-park that led the housing-only run is no longer picked. The optimiser stops
-after three, when no candidate saves 1 mm.
-
-#### Scenario B
-
-8 candidates. J starts at 257.65 m, the ceiling is 257.54 m.
-
-| # | length | J saved | J | site dwellings | site grid | of ceiling |
-|---|---|---|---|---|---|---|
-| 1 | 17 m | 0.06 m | 257.59 m | 262.9 m | 258.3 m | 54 % |
-| 2 | 48 m | 0.05 m | 257.54 m | 262.7 m | 257.7 m | 100 % |
-
-**Two links reach the ceiling.** Link 1 crosses Strevelsweg from the south
-corner to Jagerslaan. Link 2 joins the end of a new street to the north-east
-edge street. The park path towards the kept school block that the housing-only
-run picked is not needed once the amenities are placed.
-
-J is over the whole study area, so its changes look small. The site columns
-show where they land. With the amenities placed, footpaths add little: the
-ceilings are 0.24 m (A) and 0.11 m (B) below J. The optimiser could not have
-found the path through the school green in A: a candidate must join two street
-junctions, and that green had none.
-
 ### Final design
 
-Run 2026-10-30 with `road_network.py --scenario final` and `optimise_links.py
---scenario final`, on the 30.10 model. A and B are on 27.10, which 30.10 leaves unchanged.
+Run 2026-10-30 with `road_network.py --scenario final`, on the 30.10 model. A and B are on 27.10, which 30.10 leaves unchanged.
 
 Its destinations are its own 50 shop units from the Rhino block names (31
 podiums, 18 terraced houses split into a shop with flats on it, the shopping
@@ -250,8 +182,7 @@ practices). The 7 picked units bring the buurt-wide walk to health care from
 321.7 to 271.5 m; 7 units picked at random do 283.3 m on average.
 The curvy walkway the model draws on its vegetation layer is walked along its
 centreline (670 m). The other pedestrian and bike surfaces are not walked separately:
-all of them run within 5 m of a street. The optimiser's 8 links (320 m) lower J from
-262.72 to 262.37 m and the site residents' walk from 269.1 to 267.6 m.
+all of them run within 5 m of a street.
 
 ## Amenities on the new ground floors
 
@@ -426,9 +357,4 @@ the app shows it under the table.
   a traffic forecast. Betweenness and the destination walks use the walk
   network only (the drive network is `edge_access.py`'s alone), and noise
   traffic still runs on the OSM roads (see `analysis/wind_noise/`).
-- Greedy is not guaranteed optimal. A pair of links that only help together is
-  never picked unless one helps alone.
-- The optimiser assumes the ground between the new blocks is public and
-  walkable. In the baseline that ground is back gardens, so the baseline is not
-  optimised.
 - Distance only. Lighting, overlooking, steps and gradient are not modelled.

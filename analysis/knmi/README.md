@@ -163,26 +163,7 @@ At +24 h the two models are a few hundredths apart, so that agreement is partly
 luck. What is robust is that both trained models beat both baselines at +6 h
 and +24 h.
 
-**4. The wind model systematically under-predicts strong winds** (gradient
-boosting at +6 h).
-
-| condition | MAE (m/s) | bias |
-|---|---|---|
-| calm (<3 m/s) | 0.933 | +0.097 |
-| moderate (3-8 m/s) | 1.149 | +0.039 |
-| strong (>=8 m/s) | 1.616 | -0.413 |
-
-Error grows by 1.7× from calm to strong winds and the bias turns sharply
-negative: the model shaves about 0.4 m/s off exactly the conditions that
-matter for pedestrian wind comfort. **Anyone using these forecasts to drive
-component 4.5 should know they are conservative in precisely the wrong
-direction.**
-
-**5. Temperature is hardest in calm conditions** (MAE 1.47 °C against
-1.13 °C in strong wind), which is physically sensible: calm clear nights
-produce radiative cooling and inversions an hourly model cannot resolve.
-
-Accuracy is broken down by season too. It varies by about a fifth (temperature
+**4. Accuracy changes with the season, but not much.** It varies by about a fifth (temperature
 +6 h: 1.22 °C in autumn to 1.47 °C in spring), so the model is not simply
 exploiting the annual cycle.
 
@@ -194,7 +175,7 @@ exploiting the annual cycle.
 - **One validation year.** Settings and the best model were chosen on 2024
   alone. At +24 h the models are so close that another year could pick a
   different one.
-- The condition breakdowns (by season and by wind regime) are for the
+- The season breakdown is for the
   **gradient boosting model at +6 h**, the model the validation year chose at
   the middle horizon.
 - The LSTM fills nothing in: the record has no missing values after the first

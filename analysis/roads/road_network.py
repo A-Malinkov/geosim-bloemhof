@@ -33,8 +33,7 @@ METHOD
             5 m of a new street, or a new end within 5 m of an old street,
             is joined to it. Graph nodes closer than 0.5 m are one junction.
             Without these the graph had streets that cross on the map but not
-            in the network, and the footpath optimiser picked links that only
-            repaired them (fixed 2026-10-23).
+            in the network (fixed 2026-10-23).
   homes     BAG addresses with woonfunctie inside the buurten or the site, one
             per dwelling. A scenario drops the addresses in demolished
             buildings and adds the new blocks' dwellings, estimated as
@@ -333,7 +332,7 @@ def join_kerb_gaps(lines, edges, scenario, p):
         for piece in split_at(g, cuts.get(i, [])):
             rows.append({**lines.iloc[i].drop("geometry").to_dict(), "geometry": piece})
     rows += [{"highway": "footway", "name": f"{scenario} kerb join", "kind": "osm", "geometry": g}
-             for g in joins]  #today's pavement OSM leaves out, so OSM-kind: not the design's network, the optimiser starts no link on it
+             for g in joins]  #today's pavement OSM leaves out, so OSM-kind: not the design's network
     print(f"  {scenario}: {len(joins)} footway ends joined across the kerb ({sum(g.length for g in joins):.0f} m)")
     return gpd.GeoDataFrame(rows, geometry="geometry", crs=lines.crs)
 
@@ -598,7 +597,7 @@ def access(dist, homes, mask, p):
                   "within_15min_frac": round(float(np.average(dk <= reach, weights=w)), 3),
                   "within_5min_frac": round(float(np.average(dk <= near, weights=w)), 3)}
         all_ok &= dk <= reach
-    out["mean_of_types_m"] = round(float(np.mean([out[k]["mean_m"] for k in dist])), 1)  #the optimiser's objective
+    out["mean_of_types_m"] = round(float(np.mean([out[k]["mean_m"] for k in dist])), 1)  #the mean over the four types
     out["walk_15min_reach_frac"] = round(float(np.average(all_ok, weights=w)), 3)
     return out
 
@@ -633,7 +632,7 @@ def write_geojson(net, eb, scenario):
 
 # --------------------------------------------------------------------- run
 def network_for(scenario, p):
-    #the scenario's graph, ready to route on; shared with optimise_links.py
+    #the scenario's graph, ready to route on; shared with place_amenities.py
     return build_graph(lines_for_scenario(osm_edges(), scenario, p))
 
 

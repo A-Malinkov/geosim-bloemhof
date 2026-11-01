@@ -83,7 +83,6 @@ a row that says so. Flood vulnerability is today only.
 | residents, with the placed amenities | 317 m | 254 m | 263 m | 269 m | lower |
 | site grid, with the placed amenities | 314 m | 251 m | 260 m | 278 m | lower |
 | site grid, network only | 376 m | 371 m | 377 m | 368 m | lower |
-| site grid, with the placed amenities and the optimiser's footpaths | n/a | 248 m | 258 m | 274 m | lower |
 | intersection density | 446 /km² | 582 /km² | 310 /km² | 702 /km² | higher |
 | land-use objective J | 2.100 | 2.196 | 2.840 | 2.955 | higher |
 | land-use mix | 0.229 | 0.318 | 0.530 | 0.728 | higher |
@@ -99,7 +98,7 @@ storeys = round(height above ground / 3 m) (flats stood on a shop podium: their 
 height, and no ground cover of their own), sky and sun from `svf_summary*.json`
 and `shadow_summary*.json`, H/W from `canyon_hw_*.json`, trees from
 `trees.geojson` / `trees_<scenario>.geojson` plus the proposed trees in
-`design_planting.geojson`, walking from `road_metrics.json`, `road_links.json` and
+`design_planting.geojson`, walking from `road_metrics.json` and
 `amenity_placement.json` (today with its own amenities, and the placed ones),
 land use from `landuse_scenarios.json` (the site, open ground between blocks
 counted vacant as on today's grid), flood from `flood_summary.json`.
