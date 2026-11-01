@@ -310,7 +310,7 @@ python analysis/morphology/landuse_mix.py        # land-use mix indices      (~5
 python analysis/morphology/make_figures.py       # report figures into docs/ (~40 s)
 
 python analysis/knmi/fetch_knmi.py               # sensors + 5 y history     (~2 min)
-python analysis/knmi/train_forecast.py           # train + score the models  (~6 min)
+python analysis/knmi/train_forecast.py           # train + score the models  (~5 min)
 
 python analysis/abm_landuse/fetch_landcover.py   # OSM green/water/roads     (~30 s)
 python analysis/abm_landuse/ca_landuse.py        # cellular automaton        (~5 s)
@@ -353,8 +353,8 @@ Other results:
 | | |
 |---|---|
 | SVF under a tree crown vs 15 m from any tree | **0.35 vs 0.70** — trees remove 50 % of visible sky |
-| Weather forecast (temperature, +6 h) | MAE 1.29 °C, 54 % better than assuming no change |
-| Weather forecast (wind, +6 h) | MAE 1.13 m/s — but it under-predicts strong winds by 0.5 m/s |
+| Weather forecast (temperature, +6 h) | MAE 1.31 °C, 54 % better than assuming no change |
+| Weather forecast (wind, +6 h) | MAE 1.13 m/s — but it under-predicts strong winds by 0.4 m/s |
 | Land-use model | CA prefers the **green** programme (mix 0.577); RL agent re-planning the design site reaches mix 0.804, but keeps only 76 of its 160 residential cells, even with homes in the objective |
 
 ### Figures (`docs/`)

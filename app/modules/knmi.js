@@ -419,7 +419,8 @@ export async function setup(ctx) {
       `KNMI station ${forecast.station ?? "—"} (Rotterdam Airport), ` +
       `${(forecast.method?.features ?? "").split(" ")[0] || "—"} features per hour: ` +  //count from the training run
       `recent temperature, wind, humidity, pressure and dew point, plus time of day, ` +
-      `season, wind direction and cloud. Settings were not tuned.</p>`;
+      `season, wind direction and cloud. Trained on 2021–2023; settings, early ` +  //the validation year picks settings and the best model
+      `stopping and the best model chosen on 2024; scored on 2025.</p>`;
   } else {
     ctx.placeholder(predEl, {
       what: "Predictive model not trained yet. Report MAE/RMSE against a "

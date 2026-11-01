@@ -188,6 +188,13 @@ def main() -> int:
                     if model in res[hz]:
                         checks.append((f"{what} {hz} {model}", rf"^\| \{hz} \|",
                                        f"{res[hz][model]['mae']:.3f}", [KNMI]))
+                #the settings the validation year chose, one row per forecast
+                if "settings" in res[hz].get("lstm", {}):
+                    checks.append((f"{what} {hz} LSTM epochs kept", rf"^\| {what} \{hz} \|",
+                                   f"| {res[hz]['lstm']['settings']['epochs']} |", [KNMI]))
+        #the strong-wind row of the wind-regime table
+        sw = cw["strong (>=8 m/s)"]
+        checks.append(("KNMI strong-wind bias", r"^\| strong \(>=8 m/s\) \|", f"{sw['bias']:.3f}", [KNMI]))
 
     if rm and rm.get("scenario_a", {}).get("areas"):
         #road network: the site comparison and the network table, both scenarios
@@ -394,8 +401,16 @@ def main() -> int:
         cw = fc["results"]["wind_speed_ms"]["conditions"]["by_wind_regime"]
         ct = fc["results"]["temperature_C"]["conditions"]["by_wind_regime"]
         claims += [
-            ("KNMI README: 'the LSTM never wins'",
-             all(r[h]["_best"] != "lstm" for r in (t, w) for h in r)),
+            ("KNMI README: 'the LSTM is never the best model on the test year'",
+             all(min((m for m in r[h] if m != "_best"), key=lambda m: r[h][m]["mae"]) != "lstm"
+                 for r in (t, w) for h in r)),
+            ("KNMI README: 'the validation year chooses it once, for wind at +24 h'",
+             [(v, h) for v, r in (("temp", t), ("wind", w)) for h in r if r[h]["_best"] == "lstm"] == [("wind", "+24h")]),
+            ("KNMI README: 'every trained model beats both baselines at +6 h and +24 h'",
+             all(r[h][m]["mae"] < min(r[h]["persistence"]["mae"], r[h]["daily_naive"]["mae"])
+                 for r in (t, w) for h in ("+6h", "+24h") for m in ("ridge", "gradient_boosting", "lstm"))),
+            ("KNMI README: 'the LSTM is at its best after 1-4 epochs in five of the six forecasts'",
+             sum(1 <= r[h]["lstm"]["settings"]["epochs"] <= 4 for r in (t, w) for h in r) == 5),
             ("KNMI README: 'persistence unbeaten for wind at +1 h'",
              w["+1h"]["_best"] == "persistence"),
             ("KNMI README: 'under-predicts strong winds'",

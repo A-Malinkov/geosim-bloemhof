@@ -14,7 +14,7 @@ Component 4.4 · Owner: **Atanas Malinkov** · feeds `app/modules/knmi.js`
 
 ```bash
 python analysis/knmi/fetch_knmi.py        # ~2 min for 5 years of history
-python analysis/knmi/train_forecast.py --epochs 12   # ~6 min with the LSTM; 12 epochs is the published run
+python analysis/knmi/train_forecast.py               # ~5 min with the LSTM; the published run
 ```
 
 ## Status
@@ -64,20 +64,29 @@ Rotterdam Airport (06344), 8.0 km from the study area.
 ## AI prediction — method and results
 
 Predicting **temperature** and **wind speed** at +1 h, +6 h and +24 h at KNMI
-station 344 (Rotterdam Airport). Trained on 35,064 hours (2021–2024) and tested
-on the 8,784 hours that follow (1 January 2025 to 1 January 2026).
+station 344 (Rotterdam Airport). The record is split by date into three periods:
+
+| period | years | hours (at +24 h) | used for |
+|---|---|---|---|
+| train | 2021–2023 | 26,208 | fitting the models |
+| validation | 2024 | 8,760 | choosing settings, when to stop the LSTM, and the best model |
+| test | 2025 | 8,784 | the scores below; never used to choose anything |
+
+The first 48 hours of 2021 are dropped because they have no full lag history.
+An hour only counts in a period if the hour it predicts is in that period too,
+so no target crosses from one period into the next.
 
 ### The models
 
 Two baselines and three models, all given the same inputs.
 
-| model | what it is |
-|---|---|
-| persistence | the value h hours later equals the value now. The baseline every model must beat |
-| daily naive | the value h hours later equals the value 24 h before that, i.e. same hour yesterday |
-| ridge | linear regression with an L2 penalty (α = 1) on standardised features, gaps filled with the training median |
-| gradient boosting | scikit-learn `HistGradientBoostingRegressor`, 300 trees, learning rate 0.08 |
-| LSTM | PyTorch, 2 layers of 64 units, dropout 0.1. Reads the last 48 hours of the feature table as a sequence. SmoothL1 loss, Adam (1e-3), batches of 256, 12 epochs, gradients clipped at 1.0 |
+| model | what it is | tried on the validation year |
+|---|---|---|
+| persistence | the value h hours later equals the value now. The baseline every model must beat | — |
+| daily naive | the value h hours later equals the value 24 h before that, i.e. same hour yesterday | — |
+| ridge | linear regression with an L2 penalty on standardised features | penalty α 0.1, 1, 10, 100 |
+| gradient boosting | scikit-learn `HistGradientBoostingRegressor`, 300 trees | learning rate 0.03 or 0.1, tree depth 4 or unlimited |
+| LSTM | PyTorch, 2 layers of 64 units, dropout 0.1. Reads the last 48 hours of the feature table as a sequence. SmoothL1 loss, Adam (1e-3), batches of 256, gradients clipped at 1.0 | early stopping: up to 30 epochs, stops after 3 without a better validation error and keeps the best epoch |
 
 **Inputs, 47 features per hour.** Temperature, wind speed, humidity, pressure
 and dew point, each now and 1, 2, 3, 6, 12, 24 and 48 hours ago (40). Wind
@@ -90,81 +99,109 @@ and horizon, so 2 × 3 fits of each.
 
 **Score.** Mean absolute error on the test year, and skill against persistence,
 `1 − MAE_model / MAE_persistence`. Positive skill means the model beats "nothing
-changes". The LSTM is scored on 47 fewer hours than the others, because the
-first 47 hours of the test year have no full 48-hour window behind them.
+changes". The **best model** at each horizon is the one with the lowest error
+on the **validation** year, baselines included, and only then is it scored on
+2025. Picking it by its test score would make the test year part of the
+training.
 
 **The split is chronological, never random.** Shuffling hours would put the hour
 before and the hour after a test point into training, and every model would look
 superb. This is the most common way a time-series result is quietly wrong.
 
-### Temperature — MAE (°C), lower is better
+### Temperature — test MAE (°C), lower is better
+
+Bold is the model the validation year chose.
 
 | horizon | persistence | daily naive | ridge | grad. boosting | LSTM |
 |---|---|---|---|---|---|
-| +1h | 0.704 | 2.252 | 0.557 | **0.520** | 0.528 |
-| +6h | 2.830 | 2.251 | 1.631 | **1.293** | 1.461 |
-| +24h | 2.249 | 2.249 | **2.010** | 2.074 | 2.530 |
+| +1h | 0.704 | 2.252 | 0.557 | **0.523** | 0.536 |
+| +6h | 2.830 | 2.251 | 1.638 | **1.314** | 1.364 |
+| +24h | 2.249 | 2.249 | 2.013 | **2.001** | 2.116 |
 
-### Wind speed — MAE (m/s)
+### Wind speed — test MAE (m/s)
 
 | horizon | persistence | daily naive | ridge | grad. boosting | LSTM |
 |---|---|---|---|---|---|
-| +1h | **0.531** | 1.854 | 0.568 | 0.564 | 0.560 |
-| +6h | 1.444 | 1.852 | 1.161 | **1.125** | 1.290 |
-| +24h | 1.847 | 1.847 | **1.598** | 1.661 | 2.044 |
+| +1h | **0.531** | 1.854 | 0.568 | 0.565 | 0.566 |
+| +6h | 1.444 | 1.852 | 1.163 | **1.126** | 1.158 |
+| +24h | 1.847 | 1.847 | 1.600 | 1.642 | **1.615** |
+
+### What the validation year chose
+
+| forecast | ridge α | boosting learning rate, depth | LSTM epochs kept |
+|---|---|---|---|
+| temperature +1h | 0.1 | 0.03, unlimited | 13 |
+| temperature +6h | 10 | 0.03, unlimited | 3 |
+| temperature +24h | 1 | 0.03, 4 | 1 |
+| wind +1h | 10 | 0.03, unlimited | 4 |
+| wind +6h | 1 | 0.03, unlimited | 2 |
+| wind +24h | 0.1 | 0.03, 4 | 1 |
+
+The settings hardly matter. Across the four ridge penalties the validation error
+moves by at most 0.023, and the slower boosting learning rate wins every time.
+Early stopping matters more: in five of the six forecasts the LSTM is at its
+best after 1–4 epochs and only gets worse after that. The fixed 12 epochs of
+the earlier run trained it past that point.
 
 ### What the numbers actually say
 
-**1. The LSTM never wins.** Competitive at +1 h and +6 h, and at +24 h it does
-not even beat persistence. A real result, not a failed experiment: with ~35,000
-training hours and strong lagged features, gradient boosting is a hard baseline,
-and a 2-layer LSTM at 12 epochs does not clear it. It is also under-tuned — it
-receives the full 47-feature vector including all lags, which is redundant for a
-model that already sees the sequence. More epochs, a cleaner input
-representation and a hyper-parameter search are the obvious next steps, and
-honest "further work".
+**1. The LSTM is never the best model on the test year.** The validation year
+chooses it once, for wind at +24 h, by a margin of 0.025 m/s over boosting; on
+2025 ridge then does slightly better (1.600 against 1.615). Everywhere else
+gradient boosting is ahead of it. With ~26,000 training hours and strong lagged
+features, gradient boosting is a hard baseline, and the LSTM also receives the
+full 47-feature vector including all lags, which is redundant for a model that
+already sees the sequence. Its fast early stop says the same: it learns what it
+can in a few passes and then starts to overfit. A cleaner input and a search
+over its size are the obvious next steps, and honest "further work".
 
-**2. At +1 h nothing beats persistence for wind.** Wind is so autocorrelated at
-one hour that "the same as now" is the best available answer. A model that
-cannot beat that has learned nothing — which is why `skill_vs_persistence` is
-reported for every model rather than a bare MAE.
+**2. At +1 h nothing beats persistence for wind,** on the validation year or the
+test year. Wind is so autocorrelated at one hour that "the same as now" is the
+best available answer. A model that cannot beat that has learned nothing, which
+is why `skill_vs_persistence` is reported for every model rather than a bare MAE.
 
-**3. The wind model systematically under-predicts strong winds** (gradient
+**3. The validation choice is not always the test winner, and that is fine.**
+At temperature +24 h it chose boosting, which is also best on 2025; at wind
++24 h it chose the LSTM, which comes second. The differences at +24 h are a few
+hundredths, so which model "wins" there is close to chance. What is robust is
+that every trained model beats both baselines at +6 h and +24 h.
+
+**4. The wind model systematically under-predicts strong winds** (gradient
 boosting at +6 h).
 
 | condition | MAE (m/s) | bias |
 |---|---|---|
-| calm (<3 m/s) | 0.920 | +0.084 |
-| moderate (3-8 m/s) | 1.150 | +0.032 |
-| strong (>=8 m/s) | 1.651 | -0.527 |
+| calm (<3 m/s) | 0.933 | +0.097 |
+| moderate (3-8 m/s) | 1.149 | +0.039 |
+| strong (>=8 m/s) | 1.616 | -0.413 |
 
-Error grows by 1.8× from calm to strong winds and the bias turns sharply
-negative: the model shaves about 0.5 m/s off exactly the conditions that
+Error grows by 1.7× from calm to strong winds and the bias turns sharply
+negative: the model shaves about 0.4 m/s off exactly the conditions that
 matter for pedestrian wind comfort. **Anyone using these forecasts to drive
 component 4.5 should know they are conservative in precisely the wrong
 direction.**
 
-**4. Temperature is hardest in calm conditions** (MAE 1.45 °C against
-1.13 °C in strong wind), which is physically sensible — calm clear nights
+**5. Temperature is hardest in calm conditions** (MAE 1.47 °C against
+1.13 °C in strong wind), which is physically sensible: calm clear nights
 produce radiative cooling and inversions an hourly model cannot resolve.
 
-Accuracy is broken down by season too, and is stable, so the model is not simply
+Accuracy is broken down by season too. It varies by about a fifth (temperature
++6 h: 1.22 °C in autumn to 1.47 °C in spring), so the model is not simply
 exploiting the annual cycle.
 
 ## Limitations to state in the report
 
-- **Nothing was tuned.** There is a training period and a test period, no
-  validation period. The settings in the model table were chosen once and not
-  searched, so the test year was never used to pick them. It also means every
-  model, the LSTM most of all, might do better with tuning. A held-out
-  validation year and a small search are the obvious next step.
-- **A small overlap at the split.** For the last h hours of the training period
-  the target lies in the first h hours of the test year (at most 24 of 35,064
-  rows). The effect on the scores is negligible, but it is a leak and is named
-  here.
+- **A small search.** Only the settings in the model table were tried, two to
+  four per model, and the LSTM's size was not searched at all. A larger search
+  might help the LSTM most.
+- **One validation year.** Settings and the best model were chosen on 2024
+  alone. At +24 h the models are so close that another year could pick a
+  different one.
 - The condition breakdowns (by season and by wind regime) are for the
-  **gradient boosting model at +6 h**, the best model at the middle horizon.
-
+  **gradient boosting model at +6 h**, the model the validation year chose at
+  the middle horizon.
+- The LSTM fills nothing in: the record has no missing values after the first
+  48 hours are dropped, so every input window is complete.
 - The station is **8.0 km** from the study area, at an airport. Wind over an
   open airfield is stronger and less obstructed than in a Rotterdam street. Do
   not feed these numbers into a pedestrian-level model without a roughness
