@@ -15,9 +15,8 @@ defined aggregation unit:
     FSI = gross floor area / land area         intensity
     L   = FSI / GSI                            mean storeys
 
-GSI and FSI together fix L, so a GSI-FSI scatter with L isolines
-characterises the urban fabric. That plot is produced by
-make_figures.py as fig_spacematrix.png.
+GSI and FSI together fix L. make_figures.py maps GSI and FSI per cell as
+fig_density_maps.png (the Spacematrix scatter was dropped on 2026-11-01).
 
 AGGREGATION UNIT
 ----------------

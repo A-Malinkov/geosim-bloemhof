@@ -144,15 +144,12 @@ L   = FSI / GSI                       mean storeys
 - **Spacematrix is scale-sensitive.** An FSI at 100 m cells is not comparable
   with one at 50 m. Quote the cell size.
 
-### The diagram, and why it is worth plotting
+### The maps
 
-GSI and FSI fix the storeys, so a GSI–FSI scatter carries all three: L is a
-straight line through the origin. Fabric types separate by
-*where* they sit, which no single number shows. `make_figures.py` writes the static
-`docs/fig_spacematrix.png`; `app/modules/indicators.js` draws the same diagram in
-the dashboard from the 107 per-cell points in `density_summary.json`, coloured
-by buurt, so the proposed massing can later be overplotted to show the new fabric
-move relative to the existing one.
+`make_figures.py` writes `docs/fig_density_maps.png`: GSI and FSI per 100 m
+cell, with the buurt boundary. The Spacematrix scatter (GSI against FSI) was
+dropped from the report and the app on 2026-11-01 as more than the project
+needs. The 107 per-cell points in `density_summary.json` it was drawn from are kept.
 
 Each point carries a `buurt` label, assigned by whichever polygon contains the
 cell **centre**: 81 Bloemhof,
@@ -319,6 +316,6 @@ wide and few, so about half of its street length is not a canyon at all.
 
 ## For the scenario comparison
 
-These indicators are the measuring stick. Add the proposed massing, re-run, and
-compare: the Spacematrix plot will show the new fabric moving relative to the
-existing one.
+These indicators are the measuring stick. Density on the design site per
+scenario is in `density_site.py` (above); SVF, sun hours and H/W have their own
+scenario runs.

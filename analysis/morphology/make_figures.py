@@ -196,7 +196,16 @@ def fig_svf_distribution(svf, open_ground, stats):
 
 
 # ====================================================== 4. tree height classes
-def fig_height_classes(trees):
+def in_bloemhof(trees_rd):
+    """The register trees inside the buurt polygon, the same clip as the statistics."""
+    from shapely.geometry import Point
+    from common.project import study_area_polygon
+    area = study_area_polygon()
+    return [f for f in trees_rd["features"] if area.contains(Point(f["geometry"]["coordinates"]))]
+
+
+def fig_height_classes(trees_rd):
+    trees = {"features": in_bloemhof(trees_rd)}  #Bloemhof only, not the whole download box (2026-11-01)
     order = ["<6 m.", "6-9 m.", "9-12 m.", "12-15 m.", "15-18 m.", "18-24 m.", "> 24 m."]
     labels = ["< 6", "6–9", "9–12", "12–15", "15–18", "18–24", "> 24"]
     counts = []
@@ -213,7 +222,7 @@ def fig_height_classes(trees):
     ax.set_xticks(x, labels)
     ax.set_xlabel("height class (m)")
     ax.set_ylabel("trees")
-    titled(ax, "Tree height distribution",
+    titled(ax, f"Tree height distribution: {len(trees['features']):,} trees in {STUDY_AREA.name}",
            "the register records a class, not a measured height"
            + (f" · {unknown} trees unclassified" if unknown else ""))
     peak = int(np.argmax(counts))
@@ -224,10 +233,13 @@ def fig_height_classes(trees):
 
 # ============================================================= 5. tree map
 def fig_tree_map(trees_rd, veg):
-    xs = np.array([f["geometry"]["coordinates"][0] for f in trees_rd["features"]])
-    ys = np.array([f["geometry"]["coordinates"][1] for f in trees_rd["features"]])
-    hs = np.array([f["properties"]["height_m"] for f in trees_rd["features"]])
-    cr = np.array([f["properties"]["crown_m"] for f in trees_rd["features"]])
+    from common.project import study_area_polygon
+    feats = in_bloemhof(trees_rd)  #Bloemhof only, not the whole download box (2026-11-01)
+    xs = np.array([f["geometry"]["coordinates"][0] for f in feats])
+    ys = np.array([f["geometry"]["coordinates"][1] for f in feats])
+    hs = np.array([f["properties"]["height_m"] for f in feats])
+    cr = np.array([f["properties"]["crown_m"] for f in feats])
+    b = veg.get("combined") or {}  #the clipped statistics, so the title matches the dots
 
     fig, ax = plt.subplots(figsize=(7.2, 6.8))
     sc = ax.scatter(xs, ys, c=hs, s=(cr / 2) ** 2 * 1.6, cmap=SEQ,
@@ -236,9 +248,13 @@ def fig_tree_map(trees_rd, veg):
     ax.set_xticks([]); ax.set_yticks([])
     for s in ax.spines.values():
         s.set_visible(False)
-    titled(ax, f"Where the trees are: {veg['n_trees']:,} trees, "
-               f"{veg['trees_per_hectare']} per hectare",
-           "dot size is crown diameter · colour is height class midpoint")
+    area = study_area_polygon()
+    for r in ([area] if area.geom_type == "Polygon" else list(area.geoms)):  #the buurt boundary
+        bx, by = r.exterior.xy
+        ax.plot(bx, by, color=INK, lw=1.0, zorder=0)
+    titled(ax, f"Where the trees are: {len(feats):,} trees in {STUDY_AREA.name}, "
+               f"{b.get('trees_per_hectare', '-')} per hectare",
+           "dot size is crown diameter · colour is height class midpoint · black line: buurt boundary")
 
     cb = fig.colorbar(sc, ax=ax, fraction=0.035, pad=0.02)
     cb.set_label("tree height (m)", color=INK_2, fontsize=8.5)
@@ -317,97 +333,7 @@ def fig_canopy_effect(svf, open_ground, transform, trees_rd):
             "n_open_cells": int(away.size), "n_canopy_cells": int(under.size)}
 
 
-# ========================================================== 7. Spacematrix
-def fig_spacematrix(dens):
-    """
-    The Spacematrix diagram: GSI against FSI, with L (storeys) isolines.
-
-    Berghauser Pont & Haupt (2010). The point of the plot is that FSI alone
-    does not describe a fabric -- where a cell sits in this space tells you
-    whether it is low-rise and packed, mid-rise with courtyards, or towers in
-    open ground. L is not extra data, it is a contour of the same two axes,
-    which is why it is drawn rather than plotted. (OSR, the open space ratio,
-    was dropped on 2026-11-01.)
-    """
-    pts = dens["spacematrix"]
-    g = np.array([p["gsi"] for p in pts])
-    f = np.array([p["fsi"] for p in pts])
-    h = np.array([p["height_mean_m"] if p["height_mean_m"] is not None else np.nan
-                  for p in pts])
-
-    fig, ax = plt.subplots(figsize=(7.2, 6.2))
-    tidy(ax, xgrid=True, ygrid=True)
-    xmax = max(0.75, float(g.max()) * 1.12)
-    ymax = max(2.5, float(f.max()) * 1.12)
-
-    # L isolines: FSI = L * GSI, straight through the origin
-    for L in (1, 2, 3, 4, 6, 8):
-        ax.plot([0, xmax], [0, L * xmax], color=GRID, lw=0.9, zorder=1)
-        yx = L * xmax
-        tag = f"L {L}"          # "L 4" not a bare "4"
-        if yx <= ymax:
-            ax.text(xmax * 0.99, yx, tag, color=MUTED, fontsize=7.5,
-                    va="center", ha="right", zorder=1)
-        else:
-            ax.text(ymax / L, ymax * 0.99, tag, color=MUTED, fontsize=7.5,
-                    va="top", ha="center", zorder=1)
-
-    sc = ax.scatter(g, f, c=h, cmap=SEQ, vmin=4, vmax=22, s=26,
-                    linewidths=0.4, edgecolors=SURFACE, zorder=3)
-
-    # Mark each buurt, and the two together. Two adjacent buurten with different
-    # fabric is the point of the plot: a single combined star would hide that one
-    # is low and packed while the other is taller and more open.
-    #
-    # The labels go in a corner block, not beside the stars. Annotating each
-    # point put text straight through the data cloud and the three captions
-    # overlapped each other.
-    marks = list((dens.get("per_buurt") or {}).values())
-    comb = dens.get("combined") if len(marks) > 1 else None  #one buurt: its star IS the combined figure
-    entries = [(b, False) for b in marks if b] + ([(comb, True)] if comb else [])
-    for b, is_comb in entries:
-        ax.scatter([b["gsi"]], [b["fsi"]], marker="*",
-                   s=460 if is_comb else 320,
-                   color=SERIES_2 if is_comb else INK,
-                   edgecolors=SURFACE, linewidths=1.2, zorder=5)
-
-    if entries:
-        # One text line per entry, drawn separately so each star glyph carries
-        # the colour of the marker it refers to. Two identical black stars with
-        # a shared caption leaves the reader guessing which is which.
-        # An explicit patch, not a text bbox: a bbox sized to placeholder
-        # whitespace ends up far narrower than the lines drawn over it.
-        import matplotlib.patches as mpatch
-        h = 0.042 * len(entries) + 0.030
-        ax.add_patch(mpatch.FancyBboxPatch(
-            (0.012, 0.988 - h), 0.80, h,
-            boxstyle="round,pad=0.006", transform=ax.transAxes,
-            facecolor=SURFACE, edgecolor=GRID, linewidth=0.8, zorder=4))
-        for i, (b, is_comb) in enumerate(entries):
-            y = 0.972 - i * 0.042
-            col = SERIES_2 if is_comb else INK
-            ax.text(0.028, y, "\u2605", transform=ax.transAxes, va="top",
-                    ha="left", fontsize=11, color=col, zorder=6)
-            ax.text(0.058, y, f"{b['name']}:  GSI {b['gsi']:.2f}   "
-                              f"FSI {b['fsi']:.2f}   {b['layers']:.1f} storeys",
-                    transform=ax.transAxes, va="top", ha="left", fontsize=8.5,
-                    color=INK, zorder=6,
-                    fontweight="bold" if is_comb else "normal")
-
-    ax.set_xlim(0, xmax); ax.set_ylim(0, ymax)
-    ax.set_xlabel("GSI: ground space index (built footprint / land area)")
-    ax.set_ylabel("FSI: floor space index (floor area / land area)")
-    titled(ax, "Spacematrix: what kind of density is this?",
-           f"one dot per {dens['parameters']['cell_size_m']:.0f} m cell · "
-           f"grey lines are storeys (L)")
-    cb = fig.colorbar(sc, ax=ax, fraction=0.04, pad=0.02)
-    cb.set_label("mean building height in cell (m)", color=INK_2, fontsize=8.5)
-    cb.outline.set_visible(False)
-    cb.ax.tick_params(colors=MUTED, length=0)
-    save(fig, "fig_spacematrix.png")
-
-
-# ================================================ 8. density + height maps
+# ======================================================== 7. density maps
 def fig_density_maps(dens, grid_geo):
     """GSI and FSI per 100 m cell as two plain maps, with the buurt outline.
 
@@ -899,7 +825,7 @@ def main() -> int:
 
     fig_svf_map(svf, open_ground, stats)
     fig_svf_distribution(svf, open_ground, stats)
-    fig_height_classes(trees)
+    fig_height_classes(trees_rd)
     fig_tree_map(trees_rd, veg)
     effect = fig_canopy_effect(svf, open_ground, transform, trees_rd)
 
@@ -908,7 +834,6 @@ def main() -> int:
     if dens_path.exists() and grid_path.exists():
         dens = json.loads(dens_path.read_text())
         grid_geo = json.loads(grid_path.read_text())
-        fig_spacematrix(dens)
         fig_density_maps(dens, grid_geo)
         site_path = PROCESSED / "density_site.json"  #the scenarios on the design site, density_site.py
         if site_path.exists():

@@ -366,8 +366,8 @@ Other results:
 | `fig_canopy_effect.png` | SVF under canopy vs in the open: the vegetation finding |
 | `fig_tree_heights.png` | tree height-class distribution |
 | `fig_tree_map.png` | where the trees are, sized by crown, coloured by height |
-| `fig_spacematrix.png` | GSI–FSI scatter with storey and OSR isolines: what kind of density this is |
-| `fig_density_maps.png` | FSI and within-cell height variation across the study area |
+| `fig_density_maps.png` | GSI and FSI per 100 m cell, with the buurt boundary |
+| `fig_density_site.png` | GSI and FSI on the design site, today and in each scenario |
 | `fig_landuse_mix.png` | what the floor space is used for, and where the mix is |
 | `fig_landuse_abm.png` | the CA's land-use scenarios over the study area, design site outlined |
 | `fig_landuse_rl_site.png` | the design site today vs the RL agent's plan, what changed, and the learning curve |
