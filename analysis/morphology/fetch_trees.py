@@ -6,7 +6,7 @@ SOURCE
 ------
 Gemeente Rotterdam publishes its tree register as an ArcGIS MapServer layer:
     https://diensten.rotterdam.nl/arcgis/rest/services/SB_Infra/Bomen/MapServer/0
-Points in EPSG:28992, one per managed tree, with species, height class, crown
+Points in EPSG:28992, one per managed tree, with height class, crown
 size, trunk diameter, planting year and condition.
 
 WHY NOT JUST USE THE 3D TILES?
@@ -16,7 +16,8 @@ is a sealed mesh: you cannot query it, count it, or remove a tree for a design
 scenario. This register is the underlying data, so with it we can
   * place our own 3D vegetation that scenarios can add to and subtract from,
   * feed tree crowns into the Sky View Factor and wind calculations,
-  * report species mix and canopy cover as indicators.
+  * report tree count, heights and canopy cover as indicators.
+Species are not kept (dropped 2026-11-01: more detail than the project needs).
 
 HEIGHTS
 -------
@@ -34,11 +35,10 @@ OUTPUTS
 -------
     data/raw/rotterdam_trees_rd.geojson      as delivered, EPSG:28992
     data/processed/trees.geojson             WGS84, for the Cesium app
-    data/processed/vegetation_summary.json   species mix, canopy cover, stats
+    data/processed/vegetation_summary.json   canopy cover, heights, stats
 """
 from __future__ import annotations
 
-import collections
 import json
 import math
 import pathlib
@@ -79,8 +79,7 @@ def fetch_all(bbox) -> list[dict]:
         "inSR": 28992, "outSR": 28992,
         "spatialRel": "esriSpatialRelIntersects",
         "outFields": ",".join([
-            "ID", "BOOMSORTIMENT", "BOOMSORTIMENT_NEDERLANDS", "GESLACHT",
-            "HOOGTE", "KROONOMVANG", "DIAMETER", "STAMLENGTE", "AANLEGJAAR",
+            "ID", "HOOGTE", "KROONOMVANG", "DIAMETER", "STAMLENGTE", "AANLEGJAAR",
             "CONDITIE", "BOOMSTATUS", "STRAAT", "WIJK", "BEHEERGROEP",
         ]),
         "returnGeometry": "true",
@@ -117,8 +116,7 @@ def load_cached(bbox) -> list[dict]:
             continue
         p = f["properties"]
         feats.append({"geometry": {"x": x, "y": y}, "attributes": {  #props back to the service's field names
-            "ID": p.get("id"), "BOOMSORTIMENT": p.get("species"),
-            "BOOMSORTIMENT_NEDERLANDS": p.get("species_nl"), "GESLACHT": p.get("genus"),
+            "ID": p.get("id"),
             "HOOGTE": p.get("height_class"), "KROONOMVANG": p.get("crown_m"),
             "DIAMETER": p.get("trunk_diameter_cm"), "STAMLENGTE": p.get("trunk_height_m"),
             "AANLEGJAAR": p.get("planted"), "CONDITIE": p.get("condition"),
@@ -206,7 +204,6 @@ def main() -> int:
     ground = sample_ground(xs, ys)
 
     raw_features, app_features = [], []
-    species = collections.Counter()
     heights, crowns, no_height = [], [], 0
 
     for f, x, y, gz in zip(feats, xs, ys, ground):
@@ -225,17 +222,12 @@ def main() -> int:
             trunk_m = round(mid * 0.4, 1)
         trunk_m = min(trunk_m, mid * 0.8)
 
-        sp = (a.get("BOOMSORTIMENT") or "onbekend").strip()
-        species[sp] += 1
         heights.append(mid)
         crowns.append(crown_m)
 
         lon, lat = to_wgs(x, y)
         props = {
             "id": a.get("ID"),
-            "species": sp,
-            "species_nl": a.get("BOOMSORTIMENT_NEDERLANDS"),
-            "genus": a.get("GESLACHT"),
             "height_class": cls or None,
             "height_m": mid,
             "height_min_m": lo,
@@ -290,7 +282,6 @@ def main() -> int:
     polys = buurt_polygons()
     xs_rd = np.array([f["geometry"]["coordinates"][0] for f in raw_features])
     ys_rd = np.array([f["geometry"]["coordinates"][1] for f in raw_features])
-    species_of = [f["properties"]["species"] for f in raw_features]
 
     def clip_stats(geom, label, code=None):
         pg = prep(geom)
@@ -307,7 +298,6 @@ def main() -> int:
             "canopy_cover_fraction": round(canopy / geom.area, 4),
             "height_mean_m": round(float(heights[m].mean()), 2),
             "crown_mean_m": round(float(c.mean()), 2),
-            "n_species": len({species_of[i] for i in np.flatnonzero(m)}),
         }
 
     per_buurt = {}
@@ -355,10 +345,6 @@ def main() -> int:
             "median": round(float(np.median(crowns)), 2),
             "max": round(float(crowns.max()), 2),
         },
-        "top_species": [{"species": s, "n": n,
-                         "share": round(n / len(app_features), 4)}
-                        for s, n in species.most_common(12)],
-        "n_species": len(species),
     }
     (PROCESSED / "vegetation_summary.json").write_text(json.dumps(summary, indent=2) + "\n")
     print("  wrote data/processed/vegetation_summary.json")
@@ -367,18 +353,14 @@ def main() -> int:
     print(f"  {summary['n_trees']:,} trees fetched over the bounding box")
     for name, st in per_buurt.items():
         print(f"     {name:12} {st['n_trees']:5,} trees  {st['trees_per_hectare']:5.1f}/ha  "
-              f"canopy {100*st['canopy_cover_fraction']:4.1f}%  {st['n_species']} species")
+              f"canopy {100*st['canopy_cover_fraction']:4.1f}%")
     if combined:
         print(f"     {'combined':12} {combined['n_trees']:5,} trees  "
               f"{combined['trees_per_hectare']:5.1f}/ha  "
-              f"canopy {100*combined['canopy_cover_fraction']:4.1f}%  "
-              f"{combined['n_species']} species")
+              f"canopy {100*combined['canopy_cover_fraction']:4.1f}%")
     print(f"  mean height {summary['height_m']['mean']} m, "
           f"mean crown {summary['crown_m']['mean']} m")
     print(f"  canopy cover {100 * summary['canopy']['cover_fraction']:.1f}% (upper bound)")
-    print("  most common:")
-    for s in summary["top_species"][:5]:
-        print(f"     {s['n']:5d}  {s['species']}")
     return 0
 
 

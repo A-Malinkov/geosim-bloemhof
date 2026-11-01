@@ -11,8 +11,7 @@
       "trees_per_hectare": 15.27,
       "canopy_cover_fraction": 0.0656,
       "height_mean_m": 10.12,
-      "crown_mean_m": 5.95,
-      "n_species": 134
+      "crown_mean_m": 5.95
     }
   },
   "combined": {
@@ -23,8 +22,7 @@
     "trees_per_hectare": 15.27,
     "canopy_cover_fraction": 0.0656,
     "height_mean_m": 10.12,
-    "crown_mean_m": 5.95,
-    "n_species": 134
+    "crown_mean_m": 5.95
   },
   "n_trees": 1671,
   "n_trees_in_buurten": 1204,
@@ -47,69 +45,6 @@
     "median": 5.0,
     "max": 18.0
   },
-  "top_species": [
-    {
-      "species": "Platanus \u00d7 hispanica",
-      "n": 235,
-      "share": 0.1406
-    },
-    {
-      "species": "Acer saccharinum 'Pyramidale'",
-      "n": 134,
-      "share": 0.0802
-    },
-    {
-      "species": "Pyrus calleryana 'Chanticleer'",
-      "n": 98,
-      "share": 0.0586
-    },
-    {
-      "species": "Robinia pseudoacacia 'Bessoniana'",
-      "n": 71,
-      "share": 0.0425
-    },
-    {
-      "species": "Tilia \u00d7 europaea 'Euchlora'",
-      "n": 57,
-      "share": 0.0341
-    },
-    {
-      "species": "Styphnolobium japonicum",
-      "n": 56,
-      "share": 0.0335
-    },
-    {
-      "species": "Acer campestre 'Elsrijk'",
-      "n": 44,
-      "share": 0.0263
-    },
-    {
-      "species": "Prunus avium 'Plena'",
-      "n": 41,
-      "share": 0.0245
-    },
-    {
-      "species": "Robinia pseudoacacia 'Appalachia'",
-      "n": 33,
-      "share": 0.0197
-    },
-    {
-      "species": "Sorbus \u00d7 thuringiaca 'Fastigiata'",
-      "n": 32,
-      "share": 0.0192
-    },
-    {
-      "species": "Robinia pseudoacacia",
-      "n": 29,
-      "share": 0.0174
-    },
-    {
-      "species": "Alnus \u00d7 spaethii 'Spaeth'",
-      "n": 29,
-      "share": 0.0174
-    }
-  ],
-  "n_species": 174,
   "svf_canopy_effect": {
     "svf_open": 0.7032,
     "svf_under_canopy": 0.3531,

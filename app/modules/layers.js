@@ -235,14 +235,6 @@ export async function setup(ctx) {
     show: false,
   });
 
-  /* Textured trees are much heavier: leave off until someone needs a render. */
-  await addTileset(ctx, {
-    key: "rotterdamTreesTextured",
-    label: "Trees, textured (heavy)",
-    group: "Vegetation",
-    show: false,
-  });
-
   /* ---------------------------------------------------- study area boundaries */
   /* The real buurt polygons, written by analysis/common/project.py. Drawing a
    * circle round a centre point was fine when the study area WAS a circle; it

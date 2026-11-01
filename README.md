@@ -202,7 +202,7 @@ All verified reachable on 2026-09-21. URLs live in `config.js` and
 | Aerial imagery | PDOK Luchtfoto RGB WMTS, `Actueel_orthoHR` | EPSG:3857. TileMatrix labels are zero-padded (`"00"`…`"21"`): Cesium's defaults 404. |
 | Buildings | 3DBAG v20250903 LoD2.2, TU Delft | CC BY 4.0 |
 | Trees, green (3D Tiles) | Rotterdam 3D | NAP heights, see above |
-| Tree register | Gemeente Rotterdam `SB_Infra/Bomen` ArcGIS | 2,172 trees in the study area, 206 species |
+| Tree register | Gemeente Rotterdam `SB_Infra/Bomen` ArcGIS | 1,204 trees in Bloemhof |
 | Elevation | AHN via PDOK WCS, `dsm_05m` / `dtm_05m` | 0.5 m, EPSG:28992, NAP heights |
 | Neighbourhoods | PDOK CBS wijkenbuurten 2025 WFS | ⚠ ignores `cql_filter`; needs an OGC Filter XML |
 | Demographics | CBS StatLine OData `86358NED` (2026) | 2025 = `86165NED`, 2024 = `85984NED` |
@@ -364,7 +364,6 @@ Other results:
 | `fig_svf_map.png` | SVF across the study area, buildings and water excluded |
 | `fig_svf_distribution.png` | how enclosed open ground is, with mean and p05 |
 | `fig_canopy_effect.png` | SVF under canopy vs in the open: the vegetation finding |
-| `fig_tree_species.png` | the 12 commonest species |
 | `fig_tree_heights.png` | tree height-class distribution |
 | `fig_tree_map.png` | where the trees are, sized by crown, coloured by height |
 | `fig_spacematrix.png` | GSI–FSI scatter with storey and OSR isolines: what kind of density this is |

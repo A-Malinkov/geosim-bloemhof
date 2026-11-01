@@ -8,7 +8,7 @@
  * Why bother, when layers.js already loads Rotterdam's 3D tree tileset?
  * Because that tileset is a sealed mesh. You cannot count it, query it, or take
  * a tree out of it for a design scenario. These trees come from the register
- * (2,172 of them in the study area, 206 species), so we can add, remove and
+ * (1,204 of them in Bloemhof), so we can add, remove and
  * re-measure them, which is what components 5 (wind) and 9 (scenarios) need.
  *
  * Geometry: a cylinder trunk and an ellipsoid crown per tree, batched into two
@@ -179,20 +179,12 @@ export async function setup(ctx) {
     `<table class="kv"><tbody>` +
     `<tr><td>trees</td><td>${(s.n_trees ?? geo.features.length).toLocaleString("en-GB")}</td></tr>` +
     `<tr><td>density</td><td>${s.trees_per_hectare ?? "-"} / ha</td></tr>` +
-    `<tr><td>species</td><td>${s.n_species ?? "-"}</td></tr>` +
     `<tr><td>mean height</td><td>${h.mean ?? "-"} m</td></tr>` +
     `<tr><td>mean crown</td><td>${cr.mean ?? "-"} m</td></tr>` +
     `<tr><td>canopy cover</td><td>${
       c.cover_fraction == null ? "-" : (c.cover_fraction * 100).toFixed(1) + " %"
     }</td></tr>` +
     `</tbody></table>` +
-    (s.top_species?.length
-      ? `<h4>Most common species</h4>` +
-        `<table class="kv"><tbody>` +
-        s.top_species.slice(0, 6).map((x) =>
-          `<tr><td>${x.species}</td><td>${x.n}</td></tr>`).join("") +
-        `</tbody></table>`
-      : "") +
     `<p class="muted">Crown area is an upper bound: overlapping crowns count twice.</p>`;
 
   /* ---- click anything to show what is selected -------------------------- */
@@ -211,11 +203,11 @@ export async function setup(ctx) {
   function describe(picked) {
     if (!picked) return null;
     const id = picked.id;
-    if (id && id.proposed)  //planting from the Rhino model: a generic block, no species
+    if (id && id.proposed)  //planting from the Rhino model: a generic block
       return `Proposed ${id.kind} (${id.block}) · ${id.height_m} m, crown ${id.crown_m} m · ${id.scenario}`;
     if (id && (id.kind === "tree" || id.kind === "tree-trunk"))
       return (
-        `${id.species_nl || id.species} · ${id.height_class || id.height_m + " m"}` +
+        `Tree · ${id.height_class || id.height_m + " m"}` +  //species dropped 2026-11-01
         `${id.street ? " · " + id.street : ""}`
       );
     if (id && id.__photo) return id.__photo.caption || "Photo";
@@ -345,7 +337,7 @@ export async function setup(ctx) {
       `<tr><td>green areas</td><td>${set.feats.green.length} · ${(set.area / 1e4).toFixed(2)} ha</td></tr>` +
       (set.waterArea ? `<tr><td>water</td><td>${set.waterArea.toLocaleString("en-GB")} m²</td></tr>` : "") +  //"Water feature?" layer
       `</tbody></table>` +
-      `<p class="muted">From the Rhino model's generic blocks: sizes as drawn, no species.</p>`;
+      `<p class="muted">From the Rhino model's generic blocks: sizes as drawn.</p>`;
   }
 
   ctx.onScenarioChange((scenario) => { current = scenario; applyPlanting(); });  //not relying on handler order

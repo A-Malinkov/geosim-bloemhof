@@ -195,32 +195,6 @@ def fig_svf_distribution(svf, open_ground, stats):
     save(fig, "fig_svf_distribution.png")
 
 
-# =========================================================== 3. tree species
-def fig_species(veg):
-    top = veg["top_species"][:12][::-1]
-    names = [s["species"] for s in top]
-    vals = [s["n"] for s in top]
-
-    fig, ax = plt.subplots(figsize=(7.2, 4.4))
-    tidy(ax, xgrid=True)
-    y = np.arange(len(top))
-    # one colour: the bars are nominal categories, not a value ramp
-    ax.barh(y, vals, color=SERIES_1, height=0.68, linewidth=0)
-    ax.set_yticks(y, names, fontsize=8.5, color=INK)
-    ax.set_xlabel("trees")
-    titled(ax, f"Most common street trees: {veg['n_trees']:,} trees, "
-               f"{veg['n_species']} species",
-           f"the top 12 are {100 * sum(vals) / veg['n_trees']:.0f}% of all trees; "
-           f"plane alone is {100 * max(vals) / veg['n_trees']:.0f}%")
-    # label only the ends that carry the story
-    for yi, v in zip(y, vals):
-        if v == max(vals) or yi == 0:
-            ax.text(v + max(vals) * 0.012, yi, f"{v}", va="center",
-                    fontsize=8.5, color=INK, fontweight="bold")
-    ax.set_xlim(0, max(vals) * 1.09)
-    save(fig, "fig_tree_species.png")
-
-
 # ====================================================== 4. tree height classes
 def fig_height_classes(trees):
     order = ["<6 m.", "6-9 m.", "9-12 m.", "12-15 m.", "15-18 m.", "18-24 m.", "> 24 m."]
@@ -435,44 +409,59 @@ def fig_spacematrix(dens):
 
 # ================================================ 8. density + height maps
 def fig_density_maps(dens, grid_geo):
-    """FSI and within-cell height variation, as two small choropleths."""
+    """GSI and FSI per 100 m cell as two plain maps, with the buurt outline.
+
+    The simple student version of density (2026-11-01): how much ground is
+    built on, and how much floor space there is, cell by cell. Replaces the
+    Spacematrix scatter in the report.
+    """
+    from common.project import study_area_polygon
     cell = dens["parameters"]["cell_size_m"]
     feats = grid_geo["features"]
     g = grid_geo.get("_grid") or {}
-    nx, ny = g.get("nx"), g.get("ny")
-    if not nx or "row" not in feats[0]["properties"]:
+    nx, ny, origin = g.get("nx"), g.get("ny"), g.get("origin_rd")
+    if not nx or not origin or "row" not in feats[0]["properties"]:
         print("  (density maps skipped: regenerate density_grid.geojson)")
         return
 
     def raster(key):
         a = np.full((ny, nx), np.nan)
         for f in feats:
-            p = f["properties"]
-            v = p.get(key)
-            if v is None or p.get("sparse"):
+            q = f["properties"]
+            v = q.get(key)
+            if v is None or q.get("sparse"):
                 continue
-            a[p["row"], p["col"]] = v
-        return a[::-1]           # row 0 is the south edge; flip so north is up
+            a[q["row"], q["col"]] = v  #row 0 is the south edge
+        return a
+
+    x0, y0 = origin
+    extent = [x0, x0 + nx * cell, y0, y0 + ny * cell]  #RD metres, so the outline fits
+    area = study_area_polygon()
+    rings = [area] if area.geom_type == "Polygon" else list(area.geoms)
+    b = dens.get("combined") or {}
 
     fig, axes = plt.subplots(1, 2, figsize=(7.4, 4.2))
-    for ax, key, label in (
-            (axes[0], "fsi", "FSI: floor space index"),
-            (axes[1], "height_std_m", "height variation within cell (σ, m)")):
-        a = raster(key)
-        vm = float(np.nanpercentile(a, 97))
-        im = ax.imshow(a, cmap=SEQ, vmin=0, vmax=vm, interpolation="nearest")
+    for ax, key, label, vmax, whole in (
+            (axes[0], "gsi", "GSI: share of the land built on", 0.6, b.get("gsi")),
+            (axes[1], "fsi", "FSI: floor area per m² of land", 2.5, b.get("fsi"))):
+        im = ax.imshow(raster(key), cmap=SEQ, vmin=0, vmax=vmax, origin="lower",
+                       extent=extent, interpolation="nearest")
+        for r in rings:  #the buurt boundary the statistics are clipped to
+            xs, ys = r.exterior.xy
+            ax.plot(xs, ys, color=INK, lw=1.0)
+        ax.set_aspect("equal")
         ax.set_xticks([]); ax.set_yticks([])
         for sp in ax.spines.values():
             sp.set_visible(False)
-        ax.set_title(label, loc="left", fontsize=9.5, color=INK, pad=6)
+        title = label if whole is None else f"{label}\nwhole buurt: {whole:.2f}"
+        ax.set_title(title, loc="left", fontsize=9.5, color=INK, pad=6)
         cb = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.02)
         cb.outline.set_visible(False)
         cb.ax.tick_params(colors=MUTED, length=0, labelsize=7.5)
-    fig.suptitle(f"Density and height variation: {STUDY_AREA.name}, "
-                 f"{cell:.0f} m cells",
+    fig.suptitle(f"Density of {STUDY_AREA.name}, {cell:.0f} m cells",
                  x=0.012, ha="left", fontsize=11, fontweight="bold", color=INK)
-    fig.text(0.012, 0.905, "cells with fewer than 3 buildings are left blank",
-             fontsize=8.5, color=INK_2, ha="left")
+    fig.text(0.012, 0.905, "black line: buurt boundary · cells with fewer than 3 "
+             "buildings are left blank", fontsize=8.5, color=INK_2, ha="left")
     fig.tight_layout(rect=[0, 0, 1, 0.89])
     save(fig, "fig_density_maps.png")
 
@@ -885,7 +874,6 @@ def main() -> int:
 
     fig_svf_map(svf, open_ground, stats)
     fig_svf_distribution(svf, open_ground, stats)
-    fig_species(veg)
     fig_height_classes(trees)
     fig_tree_map(trees_rd, veg)
     effect = fig_canopy_effect(svf, open_ground, transform, trees_rd)

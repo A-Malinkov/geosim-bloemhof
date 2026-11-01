@@ -91,8 +91,8 @@ WHAT IT CANNOT TELL YOU
   from the block's mesh after its instance transform; the flat surfaces
   become green patches. The one surface on the top-level "Water feature?"
   layer is the pond of both options, cut out of their green. Closed solids
-  on the layer (OPTION 2's 86 bushes) become shrub points, not green. Species are not
-  modelled and the blocks are generic shapes, so the sizes are what was
+  on the layer (OPTION 2's 86 bushes) become shrub points, not green. The blocks are
+  generic shapes, so the sizes are what was
   drawn, not a planting plan.
 """
 from __future__ import annotations

@@ -126,13 +126,6 @@ export const CONFIG = {
       credit: "Rotterdam 3D / gemeente Rotterdam",
     },
 
-    // ---- Rotterdam 3D trees, textured variant (heavier; off by default).
-    rotterdamTreesTextured: {
-      url: "https://www.3drotterdam.nl/bomen/datasource-data/8c6167e5-e84b-4b57-9c03-b8b7bcc3a2b7/tileset.json",
-      heightOffsetM: 43.62,
-      credit: "Rotterdam 3D / gemeente Rotterdam",
-    },
-
     // ---- Rotterdam 3D green surfaces (same NAP caveat).
     rotterdamGreen: {
       url: "https://www.3drotterdam.nl/bomen/datasource-data/5a93f1a4-7151-4fa8-b7de-56ba50417be2/tileset.json",
