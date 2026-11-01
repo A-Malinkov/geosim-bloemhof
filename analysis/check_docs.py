@@ -168,6 +168,14 @@ def main() -> int:
                 ("spacematrix point count", r"per-cell points in", f"{len(sm)}", [MORPH]),
                 ("grid FSI Bloemhof", r"^\| Bloemhof \|", f"{gm['Bloemhof']:.2f}", [MORPH]),
             ]
+    dsite = load("density_site.json")  #density on the design site per scenario, density_site.py
+    if dsite:
+        for sc, label in (("baseline", "today"), ("scenario_a", "scenario_a"),
+                          ("scenario_b", "scenario_b"), ("final", "final")):
+            if sc in dsite:
+                d = dsite[sc]
+                checks.append((f"site density {sc}", rf"^\| {label} \| ",
+                               f"| {d['gsi']:.2f} | {d['fsi']:.2f} | {d['layers']:.1f} |", [MORPH]))
     if fc:
         t = fc["results"]["temperature_C"]["horizons"]
         w = fc["results"]["wind_speed_ms"]["horizons"]
@@ -456,6 +464,14 @@ def main() -> int:
         if dqn.get("hill_climb"):
             claims.append(("ABM README: 'hill climbing beats both agents'",
                            dqn["hill_climb"]["best_objective"] > max(rl["best_objective"], dqn["best_objective"])))
+    if dsite and all(k in dsite for k in ("baseline", "scenario_a", "scenario_b", "final")):
+        designs = ("scenario_a", "scenario_b", "final")
+        claims += [
+            ("morphology README: 'every design covers less of the site than today'",
+             all(dsite[k]["gsi"] < dsite["baseline"]["gsi"] for k in designs)),
+            ("morphology README: 'only scenario_a adds floor space'",
+             [k for k in designs if dsite[k]["fsi"] > dsite["baseline"]["fsi"]] == ["scenario_a"]),
+        ]
     if rm and rm.get("scenario_b", {}).get("areas"):
         b, a, bb = rm["baseline"], rm["scenario_a"], rm["scenario_b"]
         g = lambda x: x["site_grid"]["mean_of_types_m"]

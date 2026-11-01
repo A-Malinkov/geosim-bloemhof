@@ -1,0 +1,38 @@
+{
+  "_source": "analysis/morphology/density_site.py",
+  "_method": "GSI, FSI and L over the design site, same rule as density_height.py: 3DBAG storeys, else height / storey height; new blocks height / storey height; flats on a shop podium add floors, not ground cover",
+  "site_area_ha": 13.24,
+  "storey_height_m": 3.063,
+  "baseline": {
+    "buildings": 1156,
+    "footprint_m2": 42573,
+    "floor_area_m2": 121998,
+    "gsi": 0.322,
+    "fsi": 0.921,
+    "layers": 2.87
+  },
+  "scenario_a": {
+    "buildings": 28,
+    "footprint_m2": 35802,
+    "floor_area_m2": 180951,
+    "gsi": 0.27,
+    "fsi": 1.367,
+    "layers": 5.05
+  },
+  "scenario_b": {
+    "buildings": 16,
+    "footprint_m2": 22739,
+    "floor_area_m2": 113920,
+    "gsi": 0.172,
+    "fsi": 0.86,
+    "layers": 5.01
+  },
+  "final": {
+    "buildings": 258,
+    "footprint_m2": 22104,
+    "floor_area_m2": 99331,
+    "gsi": 0.167,
+    "fsi": 0.75,
+    "layers": 4.49
+  }
+}

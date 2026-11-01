@@ -466,6 +466,31 @@ def fig_density_maps(dens, grid_geo):
     save(fig, "fig_density_maps.png")
 
 
+def fig_density_site(site):
+    """GSI and FSI on the design site, today and in each scenario, as two bar charts."""
+    names = [("baseline", "Today"), ("scenario_a", "Scenario A"),
+             ("scenario_b", "Scenario B"), ("final", "Final design")]
+    names = [(k, label) for k, label in names if k in site]
+    labels = [label for _, label in names]
+    colors = [NEUTRAL] + [SERIES_1] * (len(names) - 1)  #today in grey, the designs in blue
+
+    fig, axes = plt.subplots(1, 2, figsize=(7.4, 3.4))
+    for ax, key, title in ((axes[0], "gsi", "GSI: share of the site built on"),
+                           (axes[1], "fsi", "FSI: floor area per m² of site")):
+        tidy(ax, ygrid=True)
+        vals = [site[k][key] for k, _ in names]
+        ax.bar(labels, vals, color=colors, width=0.62, linewidth=0)
+        for i, v in enumerate(vals):  #the value on each bar
+            ax.text(i, v, f"{v:.2f}", ha="center", va="bottom", fontsize=8.5, color=INK)
+        ax.set_ylim(0, max(vals) * 1.18)
+        ax.tick_params(axis="x", labelsize=8)
+        ax.set_title(title, loc="left", fontsize=9.5, color=INK, pad=6)
+    fig.suptitle(f"Density on the design site ({site['site_area_ha']} ha)",
+                 x=0.012, ha="left", fontsize=11, fontweight="bold", color=INK)
+    fig.tight_layout(rect=[0, 0, 1, 0.92])
+    save(fig, "fig_density_site.png")
+
+
 def fig_building_heights(dens):
     """One plain map: every building in the buurt, coloured by height class."""
     from shapely.geometry import Point
@@ -885,6 +910,9 @@ def main() -> int:
         grid_geo = json.loads(grid_path.read_text())
         fig_spacematrix(dens)
         fig_density_maps(dens, grid_geo)
+        site_path = PROCESSED / "density_site.json"  #the scenarios on the design site, density_site.py
+        if site_path.exists():
+            fig_density_site(json.loads(site_path.read_text()))
     else:
         print("  (skipping density figures: run density_height.py first)")
 

@@ -175,6 +175,26 @@ every figure. With two buurten the scales even ranked them in opposite orders;
 the app states such a reversal in the panel, generated from the data, so it only
 appears when there is one.
 
+### Density on the design site, per scenario
+
+`density_site.py` computes GSI, FSI and L over the 13.24 ha design site, today and
+in each scenario, with the same storey rule as above. A scenario keeps the
+buildings it does not demolish and adds its new blocks (height / 3.06 m storeys);
+flats on a shop podium add floors but no ground cover. Output:
+`data/processed/density_site.json`, shown in the app's density card (it follows
+the scenario switch) and in `docs/fig_density_site.png`.
+
+| design site | GSI | FSI | storeys |
+|---|---|---|---|
+| today | 0.32 | 0.92 | 2.9 |
+| scenario_a | 0.27 | 1.37 | 5.0 |
+| scenario_b | 0.17 | 0.86 | 5.0 |
+| final | 0.17 | 0.75 | 4.5 |
+
+Every design covers less of the site than today and builds higher; only
+scenario_a adds floor space. The comparison (`analysis/comparison/`) uses height /
+3 m for every building, so its FSI differs from these by up to 0.05.
+
 ## Land-use mix: method
 
 Shannon entropy (normalised) and Simpson diversity over BAG `gebruiksdoel`,

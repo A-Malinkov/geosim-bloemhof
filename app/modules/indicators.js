@@ -951,6 +951,31 @@ export async function setup(ctx) {
     });
   }
 
+  // density on the design site, today next to the chosen scenario (density_site.py)
+  const site = await ctx.loadJson("../data/processed/density_site.json", { quiet: true });
+  if (site?.baseline) {
+    const siteBox = document.createElement("div");
+    body.appendChild(siteBox);
+    const renderSite = (sc) => {
+      const now = site[sc] ? sc : "baseline";  //a scenario without massing shows today only
+      const t = site.baseline, s = site[now];
+      const row = (label, k, d) =>
+        `<tr><td>${label}</td><td>${t[k].toFixed(d)}</td>` +
+        (now === "baseline" ? "" : `<td>${s[k].toFixed(d)}</td>`) + `</tr>`;
+      siteBox.innerHTML =
+        `<h4>Density on the design site</h4>` +
+        `<table class="kv"><thead><tr><th></th><th>today</th>` +
+        (now === "baseline" ? "" :
+          `<th>${(ctx.config.scenarios || []).find((x) => x.id === now)?.label ?? now}</th>`) +  //label from config.js
+        `</tr></thead><tbody>` +
+        row("GSI", "gsi", 2) + row("FSI", "fsi", 2) + row("storeys (L)", "layers", 1) +
+        `</tbody></table>` +
+        `<p class="muted">Over the ${site.site_area_ha} ha design site, same storey rule as above. ` +
+        `Follows the scenario switch.</p>`;
+    };
+    ctx.onScenarioChange(renderSite);  //also runs once at startup
+  }
+
   /* ---- land-use mix ------------------------------------------------------ */
   const lu = await ctx.loadJson("../data/processed/landuse_summary.json", {
     quiet: true,
