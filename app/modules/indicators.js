@@ -144,22 +144,66 @@ function addScenarioOverlay(ctx, { id, label, base }) {
 }
 
 /* ---------------------------------------------------------------------------
- * Density grid overlay: one polygon per 100 m cell, shaded by FSI.
- * Written by analysis/morphology/density_height.py.
+ * Vector grids that follow the scenario switch, like the raster overlays above:
+ * one checkbox, showing the current scenario's <base>[_scenario].geojson. Each
+ * scenario's file loads the first time it is shown; one that is not computed
+ * yet (a stub) shows nothing, with a notice, rather than today's grid under a
+ * new design. `style(ds, geo)` colours the entities of one loaded grid.
  * ------------------------------------------------------------------------ */
-async function addDensityGrid(ctx) {
+function addScenarioGrid(ctx, { id, label, base, style }) {
   const { Cesium, viewer } = ctx;
-  const geo = await ctx.loadJson("../data/processed/density_grid.geojson", {
-    quiet: true,
-  });
-  if (!geo?.features?.length) return null;
+  const grids = new Map();  //scenario -> Promise of its DataSource, or null when there is no run
+  let shown = false;  //layer checkbox state
+  let current = ctx.scenario();
 
+  function load(scenario) {
+    if (!grids.has(scenario)) {
+      grids.set(scenario, (async () => {
+        const geo = await ctx.loadJson(`../data/processed/${base}${runSuffix(scenario)}.geojson`, { quiet: true });
+        if (!geo?.features?.length) return null;  //no run for this scenario
+        const ds = await Cesium.GeoJsonDataSource.load(geo, { clampToGround: true });
+        style(ds, geo);
+        ds.show = false;  //refresh() decides
+        await viewer.dataSources.add(ds);
+        return ds;
+      })().catch((err) => {
+        console.warn(`[indicators] ${label} failed to load for ${scenario}`, err);
+        return null;
+      }));
+    }
+    return grids.get(scenario);
+  }
+
+  function refresh() {
+    const want = current;
+    if (shown) load(want).then((ds) => {
+      if (!ds && shown && want === current) ctx.note(`${label}: no run for ${want}`, "warn");
+    });
+    //each grid decides when it resolves, from the state at that moment
+    for (const [sc, p] of grids) p.then((ds) => {
+      if (ds) ds.show = shown && sc === current;
+      viewer.scene.requestRender();
+    });
+  }
+
+  ctx.registerLayer({
+    id,
+    label,
+    group: "Analysis",
+    show: false,
+    onToggle: (visible) => { shown = visible; refresh(); },  //checkbox
+  });
+  ctx.onScenarioChange((sc) => { current = sc; refresh(); });  //scenario switch
+}
+
+/* Density grid: one polygon per 100 m cell, shaded by FSI.
+ * Written by analysis/morphology/density_height.py. */
+function styleDensity(ds, geo) {
+  const { Cesium } = window;
   const vals = geo.features
     .filter((f) => !f.properties.sparse)
     .map((f) => f.properties.fsi);
   const hi = vals.length ? Math.max(...vals) : 2;
-
-  const ds = await Cesium.GeoJsonDataSource.load(geo, { clampToGround: true });
   for (const e of ds.entities.values) {
     const p = e.properties;
     const fsi = p?.fsi?.getValue?.() ?? 0;
@@ -170,7 +214,7 @@ async function addDensityGrid(ctx) {
       `hsl(213, ${Math.round(45 + 40 * t)}%, ${Math.round(88 - 48 * t)}%)`,
     ).withAlpha(sparse ? 0.25 : 0.72);
     e.polygon.outline = false;
-    // Without a name the info box title falls back to the entity's UUID.
+    // Without a name the selection box falls back to the entity's UUID.
     e.name = `Density cell · FSI ${fsi.toFixed(2)}`;
     e.description =
       `<table>` +
@@ -183,35 +227,28 @@ async function addDensityGrid(ctx) {
       `<tr><td>buildings</td><td>${p?.n_buildings?.getValue?.() ?? "—"}</td></tr>` +
       `</table>`;
   }
-  await viewer.dataSources.add(ds);
-  ds.show = false;
-  ctx.registerLayer({
-    id: "densityGrid",
-    label: `Density grid, FSI (${geo._cell_size_m ?? 100} m, baseline)`,  //not re-run per scenario, so say which
-    group: "Analysis",
-    show: false,
-    target: ds,
-  });
-  return ds;
 }
 
-/* ---------------------------------------------------------------------------
- * Land-use mix grid: one polygon per cell, shaded by Shannon entropy.
- * Written by analysis/morphology/landuse_mix.py.
- * ------------------------------------------------------------------------ */
-async function addLanduseGrid(ctx) {
-  const { Cesium, viewer } = ctx;
-  const geo = await ctx.loadJson("../data/processed/landuse_grid.geojson", {
-    quiet: true,
+async function addDensityGrid(ctx) {
+  //the baseline file decides whether there is a layer at all, and gives the cell size for the label
+  const geo = await ctx.loadJson("../data/processed/density_grid.geojson", { quiet: true });
+  if (!geo?.features?.length) return;
+  addScenarioGrid(ctx, {
+    id: "densityGrid",
+    label: `Density grid, FSI (${geo._cell_size_m ?? 100} m)`,
+    base: "density_grid",
+    style: styleDensity,
   });
-  if (!geo?.features?.length) return null;
+}
 
+/* Land-use mix grid: one polygon per cell, shaded by Shannon entropy.
+ * Written by analysis/morphology/landuse_mix.py. */
+function styleLanduse(ds, geo) {
+  const { Cesium } = window;
   const vals = geo.features
     .filter((f) => !f.properties.sparse)
     .map((f) => f.properties.shannon);
   const hi = vals.length ? Math.max(...vals) : 1;
-
-  const ds = await Cesium.GeoJsonDataSource.load(geo, { clampToGround: true });
   for (const e of ds.entities.values) {
     const p = e.properties;
     const sh = p?.shannon?.getValue?.() ?? 0;
@@ -250,16 +287,17 @@ async function addLanduseGrid(ctx) {
         .join("") +
       `</table>`;
   }
-  await viewer.dataSources.add(ds);
-  ds.show = false;
-  ctx.registerLayer({
+}
+
+async function addLanduseGrid(ctx) {
+  const geo = await ctx.loadJson("../data/processed/landuse_grid.geojson", { quiet: true });
+  if (!geo?.features?.length) return;
+  addScenarioGrid(ctx, {
     id: "landuseGrid",
-    label: `Land-use mix (${geo._cell_size_m ?? 100} m, baseline)`,  //not re-run per scenario, so say which
-    group: "Analysis",
-    show: false,
-    target: ds,
+    label: `Land-use mix (${geo._cell_size_m ?? 100} m)`,
+    base: "landuse_grid",
+    style: styleLanduse,
   });
-  return ds;
 }
 
 /**
@@ -940,38 +978,59 @@ export async function setup(ctx) {
     startLive();
   }
 
-  /* ---- density and height variation ------------------------------------- */
-  const dens = await ctx.loadJson("../data/processed/density_summary.json", {
-    quiet: true,
-  });
+  /* ---- density and height variation, land-use mix ------------------------
+   * Both follow the scenario switch: the selected scenario's summary
+   * (density_summary[_scenario].json, landuse_summary[_scenario].json), with
+   * today's figure beside each headline value; today's alone, said so, when a
+   * scenario has no run. */
+  const summaries = new Map();  //file -> Promise of its JSON, or null for a stub
+  const summaryFile = (base, sc) => {
+    const f = `../data/processed/${base}${runSuffix(sc)}.json`;
+    if (!summaries.has(f)) summaries.set(f, ctx.loadJson(f, { quiet: true }));
+    return summaries.get(f);
+  };
+  const vsBase = (v, b, d, sc) =>  //today's value beside a scenario's
+    sc === "baseline" || b == null || v == null ? "" : ` <span class="muted">(today ${b.toFixed(d)})</span>`;
+  const noRun = (what, sc) =>
+    `<p class="muted"><b>No ${what} run for ${sc}.</b> Showing today's figures.</p>`;
+
+  const dens = await summaryFile("density_summary", "baseline");
   const densBox = document.createElement("div");
   body.appendChild(densBox);
 
-  if (dens?.combined) {
-    await addDensityGrid(ctx);
-    const b = dens.combined;
-    const g = dens.grid;
-    densBox.innerHTML =
+  function densHtml(d, sc) {
+    const b = d.combined;
+    const t = dens.combined;  //today
+    const g = d.grid;
+    return (
       `<h4>Density &amp; height</h4>` +
       `<table class="kv"><tbody>` +
-      `<tr><td>GSI</td><td>${b.gsi.toFixed(3)}</td></tr>` +
-      `<tr><td>FSI</td><td>${b.fsi.toFixed(3)}</td></tr>` +
-      `<tr><td>storeys (L)</td><td>${b.layers.toFixed(2)}</td></tr>` +
-      `<tr><td>OSR</td><td>${b.osr.toFixed(2)}</td></tr>` +
+      `<tr><td>GSI</td><td>${b.gsi.toFixed(3)}${vsBase(b.gsi, t.gsi, 3, sc)}</td></tr>` +
+      `<tr><td>FSI</td><td>${b.fsi.toFixed(3)}${vsBase(b.fsi, t.fsi, 3, sc)}</td></tr>` +
+      `<tr><td>storeys (L)</td><td>${b.layers.toFixed(2)}${vsBase(b.layers, t.layers, 2, sc)}</td></tr>` +
+      `<tr><td>OSR</td><td>${b.osr.toFixed(2)}${vsBase(b.osr, t.osr, 2, sc)}</td></tr>` +
       `<tr><td>height</td><td>${b.height_m.mean.toFixed(1)} m ± ${b.height_m.std.toFixed(1)}</td></tr>` +
       `<tr><td>tallest</td><td>${b.height_m.max.toFixed(1)} m</td></tr>` +
       `</tbody></table>` +
-      perBuurtTable(dens.per_buurt, [
+      perBuurtTable(d.per_buurt, [
         ["gsi", "GSI", 3],
         ["fsi", "FSI", 3],
         ["layers", "storeys", 2],
       ]) +
-      spacematrixSvg(dens.spacematrix, dens.per_buurt) +
+      spacematrixSvg(d.spacematrix, d.per_buurt) +
       `<p class="muted">Spacematrix over ${b.land_area_ha} ha, ` +
       `${b.n_buildings.toLocaleString("en-GB")} buildings. Grid mean FSI ` +
       `${g.fsi.mean.toFixed(2)} across ${g.n_cells_used} cells of ` +
-      `${dens.parameters.cell_size_m} m. Toggle the grid under <em>Analysis</em>.</p>` +
-      scaleEffectNote(dens);
+      `${d.parameters.cell_size_m} m. Toggle the grid under <em>Morphology</em>.` +
+      (d.scenario ? ` ${d.scenario}: today's buildings minus the ones it demolishes, plus its new blocks, ` +
+        `storeys from their height.` : "") + `</p>` +
+      scaleEffectNote(d)
+    );
+  }
+
+  if (dens?.combined) {
+    await addDensityGrid(ctx);
+    densBox.innerHTML = densHtml(dens, "baseline");
   } else {
     ctx.placeholder(densBox, {
       what: "Building density and height variation not computed yet.",
@@ -980,25 +1039,23 @@ export async function setup(ctx) {
     });
   }
 
-  /* ---- land-use mix ------------------------------------------------------ */
-  const lu = await ctx.loadJson("../data/processed/landuse_summary.json", {
-    quiet: true,
-  });
+  const lu = await summaryFile("landuse_summary", "baseline");
   const luBox = document.createElement("div");
   body.appendChild(luBox);
 
-  if (lu?.overall) {
-    await addLanduseGrid(ctx);
-    const o = lu.overall;
-    const b = lu.combined || {};
-    const comp = (b.composition || lu.composition || []).slice(0, 6);
+  function luHtml(l, sc) {
+    const o = l.overall;
+    const b = l.combined || {};
+    const t = lu.combined || lu.overall;  //today
+    const comp = (b.composition || l.composition || []).slice(0, 6);
     const head = b.shannon_area ?? o.shannon_area;
-    luBox.innerHTML =
+    const si = l.scenario_inputs;
+    return (
       `<h4>Land-use mix</h4>` +
       `<table class="kv"><tbody>` +
-      `<tr><td>Shannon (area)</td><td>${head.toFixed(3)}</td></tr>` +
-      `<tr><td>Shannon (units)</td><td>${(b.shannon_count ?? o.shannon_count).toFixed(3)}</td></tr>` +
-      `<tr><td>Simpson</td><td>${(b.simpson_area ?? o.simpson_area).toFixed(3)}</td></tr>` +
+      `<tr><td>Shannon (area)</td><td>${head.toFixed(3)}${vsBase(head, t.shannon_area, 3, sc)}</td></tr>` +
+      `<tr><td>Shannon (units)</td><td>${(b.shannon_count ?? o.shannon_count).toFixed(3)}${vsBase(b.shannon_count ?? o.shannon_count, t.shannon_count, 3, sc)}</td></tr>` +
+      `<tr><td>Simpson</td><td>${(b.simpson_area ?? o.simpson_area).toFixed(3)}${vsBase(b.simpson_area ?? o.simpson_area, t.simpson_area, 3, sc)}</td></tr>` +
       `<tr><td>dominant use</td><td>${o.dominant} (${(o.dominant_share * 100).toFixed(0)} %)</td></tr>` +
       `</tbody></table>` +
       `<table class="kv"><thead><tr><th>use</th><th>floor area</th></tr></thead><tbody>` +
@@ -1009,16 +1066,26 @@ export async function setup(ctx) {
         )
         .join("") +
       `</tbody></table>` +
-      perBuurtTable(lu.per_buurt, [
+      perBuurtTable(l.per_buurt, [
         ["shannon_area", "Shannon", 3],
         ["simpson_area", "Simpson", 3],
       ]) +
       `<p class="muted">Normalised Shannon entropy over ` +
-      `${lu.parameters.n_categories_in_scheme} BAG use classes, weighted by ` +
+      `${l.parameters.n_categories_in_scheme} BAG use classes, weighted by ` +
       `usable floor area. 0 = one use only, 1 = an even mix. ` +
       `Built floor space only — parks, water and streets are not in BAG; ` +
       `use GSI above for the built/unbuilt split. ` +
-      `Toggle the grid under <em>Analysis</em>.</p>`;
+      `Toggle the grid under <em>Land use</em>.` +
+      (si ? ` ${sc}: the units in demolished buildings out, ${si.new_units_est.toLocaleString("en-GB")} ` +
+        `estimated in the new blocks, their floor space by the use the Rhino model gives ` +
+        (sc === "final" ? "each block" : "(none here: housing, plus the placed amenities)") + `.` : "") +
+      `</p>`
+    );
+  }
+
+  if (lu?.overall) {
+    await addLanduseGrid(ctx);
+    luBox.innerHTML = luHtml(lu, "baseline");
   } else {
     ctx.placeholder(luBox, {
       what: "Land-use mix not computed yet.",
@@ -1026,6 +1093,16 @@ export async function setup(ctx) {
       owner: "analysis/morphology/landuse_mix.py",
     });
   }
+
+  ctx.onScenarioChange(async (sc) => {
+    const [d, l] = await Promise.all([
+      dens?.combined ? summaryFile("density_summary", sc) : null,
+      lu?.overall ? summaryFile("landuse_summary", sc) : null,
+    ]);
+    if (sc !== ctx.scenario()) return;  //switched again while loading
+    if (dens?.combined) densBox.innerHTML = d?.combined ? densHtml(d, sc) : noRun("density", sc) + densHtml(dens, "baseline");
+    if (lu?.overall) luBox.innerHTML = l?.overall ? luHtml(l, sc) : noRun("land-use mix", sc) + luHtml(lu, "baseline");
+  });
 
   /* ---- street canyon height-to-width -------------------------------------- */
   const hw = await ctx.loadJson("../data/processed/canyon_hw_baseline.json", {

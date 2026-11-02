@@ -1,0 +1,280 @@
+{
+  "study_area": "Bloemhof",
+  "scenario": "scenario_b",
+  "scenario_inputs": {
+    "demolished_units": 1086,
+    "new_volumes": 10,
+    "new_units_est": 1055,
+    "usable_to_gross": 0.791,
+    "storey_height_m": 3.063,
+    "new_floor_m2_by_use": {
+      "residential": 81775,
+      "retail": 1380,
+      "education": 2183,
+      "healthcare": 231
+    },
+    "amenity_floor_m2": {
+      "education": 2183,
+      "healthcare": 231,
+      "retail": 1380
+    },
+    "unmapped_uses": []
+  },
+  "method": "normalised Shannon entropy and Simpson diversity over BAG gebruiksdoel, weighted by usable floor area",
+  "source": "BAG verblijfsobjecten via PDOK WFS",
+  "parameters": {
+    "cell_size_m": 100.0,
+    "min_units_per_cell": 10,
+    "n_categories_in_scheme": 11,
+    "categories": [
+      "residential",
+      "retail",
+      "office",
+      "industry",
+      "education",
+      "healthcare",
+      "sport",
+      "accommodation",
+      "assembly",
+      "detention",
+      "other"
+    ],
+    "weighting": "usable floor area (oppervlakte); multi-function units split their area evenly across their functions"
+  },
+  "caveat": "BAG covers addressable units only. Parks, water, streets and squares are invisible to it, so this is a mix of BUILT FLOOR SPACE, not of land cover. Pair with GSI from density_height.py.",
+  "overall": {
+    "shannon_area": 0.2516,
+    "shannon_count": 0.1302,
+    "simpson_area": 0.2373,
+    "simpson_count": 0.1104,
+    "n_categories_in_scheme": 11,
+    "n_categories_present": 10,
+    "dominant": "residential",
+    "dominant_share": 0.8712
+  },
+  "composition": [
+    {
+      "category": "residential",
+      "floor_area_m2": 508862.1,
+      "share": 0.8712,
+      "units": 6339
+    },
+    {
+      "category": "retail",
+      "floor_area_m2": 26577.0,
+      "share": 0.0455,
+      "units": 162
+    },
+    {
+      "category": "education",
+      "floor_area_m2": 18225.5,
+      "share": 0.0312,
+      "units": 56
+    },
+    {
+      "category": "assembly",
+      "floor_area_m2": 12617.0,
+      "share": 0.0216,
+      "units": 51
+    },
+    {
+      "category": "industry",
+      "floor_area_m2": 7149.0,
+      "share": 0.0122,
+      "units": 77
+    },
+    {
+      "category": "other",
+      "floor_area_m2": 4902.0,
+      "share": 0.0084,
+      "units": 6
+    },
+    {
+      "category": "sport",
+      "floor_area_m2": 2850.0,
+      "share": 0.0049,
+      "units": 5
+    },
+    {
+      "category": "accommodation",
+      "floor_area_m2": 1443.0,
+      "share": 0.0025,
+      "units": 14
+    },
+    {
+      "category": "healthcare",
+      "floor_area_m2": 1012.0,
+      "share": 0.0017,
+      "units": 8
+    },
+    {
+      "category": "office",
+      "floor_area_m2": 469.0,
+      "share": 0.0008,
+      "units": 6
+    }
+  ],
+  "grid": {
+    "n_cells": 108,
+    "n_cells_used": 103,
+    "shannon": {
+      "mean": 0.1701,
+      "std": 0.1558,
+      "min": 0.0,
+      "median": 0.1317,
+      "max": 0.6078
+    }
+  },
+  "per_buurt": {
+    "Bloemhof": {
+      "name": "Bloemhof",
+      "code": "BU05991081",
+      "land_area_ha": 78.84,
+      "inhabitants": 13740,
+      "n_units": 6724,
+      "floor_area_m2": 584106.6,
+      "shannon_area": 0.2516,
+      "shannon_count": 0.1302,
+      "simpson_area": 0.2373,
+      "dominant": "residential",
+      "dominant_share": 0.8712,
+      "composition": [
+        {
+          "category": "residential",
+          "floor_area_m2": 508862.1,
+          "share": 0.8712,
+          "units": 6339
+        },
+        {
+          "category": "retail",
+          "floor_area_m2": 26577.0,
+          "share": 0.0455,
+          "units": 162
+        },
+        {
+          "category": "education",
+          "floor_area_m2": 18225.5,
+          "share": 0.0312,
+          "units": 56
+        },
+        {
+          "category": "assembly",
+          "floor_area_m2": 12617.0,
+          "share": 0.0216,
+          "units": 51
+        },
+        {
+          "category": "industry",
+          "floor_area_m2": 7149.0,
+          "share": 0.0122,
+          "units": 77
+        },
+        {
+          "category": "other",
+          "floor_area_m2": 4902.0,
+          "share": 0.0084,
+          "units": 6
+        },
+        {
+          "category": "sport",
+          "floor_area_m2": 2850.0,
+          "share": 0.0049,
+          "units": 5
+        },
+        {
+          "category": "accommodation",
+          "floor_area_m2": 1443.0,
+          "share": 0.0025,
+          "units": 14
+        },
+        {
+          "category": "healthcare",
+          "floor_area_m2": 1012.0,
+          "share": 0.0017,
+          "units": 8
+        },
+        {
+          "category": "office",
+          "floor_area_m2": 469.0,
+          "share": 0.0008,
+          "units": 6
+        }
+      ]
+    }
+  },
+  "combined": {
+    "name": "Bloemhof",
+    "code": null,
+    "land_area_ha": 78.84,
+    "inhabitants": null,
+    "n_units": 6724,
+    "floor_area_m2": 584106.6,
+    "shannon_area": 0.2516,
+    "shannon_count": 0.1302,
+    "simpson_area": 0.2373,
+    "dominant": "residential",
+    "dominant_share": 0.8712,
+    "composition": [
+      {
+        "category": "residential",
+        "floor_area_m2": 508862.1,
+        "share": 0.8712,
+        "units": 6339
+      },
+      {
+        "category": "retail",
+        "floor_area_m2": 26577.0,
+        "share": 0.0455,
+        "units": 162
+      },
+      {
+        "category": "education",
+        "floor_area_m2": 18225.5,
+        "share": 0.0312,
+        "units": 56
+      },
+      {
+        "category": "assembly",
+        "floor_area_m2": 12617.0,
+        "share": 0.0216,
+        "units": 51
+      },
+      {
+        "category": "industry",
+        "floor_area_m2": 7149.0,
+        "share": 0.0122,
+        "units": 77
+      },
+      {
+        "category": "other",
+        "floor_area_m2": 4902.0,
+        "share": 0.0084,
+        "units": 6
+      },
+      {
+        "category": "sport",
+        "floor_area_m2": 2850.0,
+        "share": 0.0049,
+        "units": 5
+      },
+      {
+        "category": "accommodation",
+        "floor_area_m2": 1443.0,
+        "share": 0.0025,
+        "units": 14
+      },
+      {
+        "category": "healthcare",
+        "floor_area_m2": 1012.0,
+        "share": 0.0017,
+        "units": 8
+      },
+      {
+        "category": "office",
+        "floor_area_m2": 469.0,
+        "share": 0.0008,
+        "units": 6
+      }
+    ]
+  }
+}

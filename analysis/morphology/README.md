@@ -20,8 +20,8 @@ numerator and denominator always share one boundary.
 | `fetch_buildings.py` | 3DBAG footprint areas, storeys and heights via the OGC API | `data/raw/buildings_3dbag.geojson` |
 | `fetch_landuse.py` | BAG addressable units: function and floor area per unit | `data/raw/bag_verblijfsobjecten.geojson` |
 | `sky_view_factor.py` | SVF by the multi-directional horizon-angle method | `data/processed/svf*.tif`, `svf_overlay.png`, `svf_summary.json` |
-| `density_height.py` | Spacematrix density (GSI, FSI, L, OSR) and height variation | `data/processed/density_grid.geojson`, `density_summary.json` |
-| `landuse_mix.py` | Shannon and Simpson land-use mix indices | `data/processed/landuse_grid.geojson`, `landuse_summary.json` |
+| `density_height.py` | Spacematrix density (GSI, FSI, L, OSR) and height variation | `data/processed/density_grid[_<scenario>].geojson`, `density_summary[_<scenario>].json` |
+| `landuse_mix.py` | Shannon and Simpson land-use mix indices | `data/processed/landuse_grid[_<scenario>].geojson`, `landuse_summary[_<scenario>].json` |
 | `shadows.py` | direct-sun hours over one clear day, ray-cast from the AHN DSM | `data/processed/shadow_hours.tif` (gitignored), `shadow_overlay.png`, `shadow_summary.json` |
 | `height_width.py` | street-canyon height-to-width ratio from OSM centrelines and 3DBAG footprints | `data/processed/canyon_hw_baseline.json`, `canyon_hw_baseline.geojson`, `docs/fig_canyon_hw_baseline.png` |
 | `make_figures.py` | every report figure | `docs/fig_*.png` |
@@ -40,18 +40,21 @@ python analysis/morphology/height_width.py      # ~90 s first time (fetches foot
 python analysis/morphology/make_figures.py      # ~1 min
 ```
 
-Design scenarios. `sky_view_factor.py`, `shadows.py` and `height_width.py` take
-`--scenario scenario_a` (or `scenario_b`). The scenario's demolition and new
+Design scenarios. Every script that measures the built city takes
+`--scenario scenario_a` (or `scenario_b`, `final`). The scenario's demolition and new
 blocks come from `analysis/scenarios/scenario_world.py`, which reads what
 `import_rhino.py` wrote. SVF and sun hours burn them into the AHN surface. H/W
 swaps the buildings and replaces the old streets inside the site with the new
-ones. Outputs get a `_<scenario>` suffix, the baseline keeps its names, and the
-app switches between them.
+ones. Density and land-use mix take the demolished buildings out and add the new
+blocks (see *Density and land-use mix per scenario* below). Outputs get a
+`_<scenario>` suffix, the baseline keeps its names, and the app switches between them.
 
 ```bash
 python analysis/morphology/sky_view_factor.py --scenario scenario_a   # ~6 min
 python analysis/morphology/shadows.py --scenario scenario_a           # ~30 s per day
 python analysis/morphology/height_width.py --scenario scenario_a      # ~15 s
+python analysis/morphology/density_height.py --scenario scenario_a    # ~1 min
+python analysis/morphology/landuse_mix.py --scenario scenario_a       # ~1 min, after density_height.py
 ```
 
 ## Status — all four indicators complete
@@ -298,6 +301,43 @@ rows of 12 to 20 m blocks close the site in, with less sky and nearly twice
 today's share of open ground under 2 h of equinox sun. Scenario B puts a smaller
 built footprint in a park and opens it up on every measure. Its streets are
 wide and few, so about half of its street length is not a canyon at all.
+
+## Density and land-use mix per scenario
+
+Over the whole buurt (78.8 ha), so a design moves these less than the design-site
+figures above. Generated from `density_summary*.json` and `landuse_summary*.json`;
+checked by `analysis/check_docs.py`.
+
+| | baseline | Scenario A | Scenario B | Final design |
+|---|---|---|---|---|
+| GSI, whole buurt | 0.333 | 0.325 | 0.308 | 0.307 |
+| FSI, whole buurt | 1.003 | 1.078 | 0.993 | 0.974 |
+| storeys (L), whole buurt | 3.01 | 3.32 | 3.22 | 3.17 |
+| land-use mix, Shannon (floor area) | 0.267 | 0.235 | 0.252 | 0.282 |
+| land-use mix, Shannon (units) | 0.144 | 0.122 | 0.130 | 0.166 |
+| floor space not housing | 13.7 % | 11.8 % | 12.9 % | 15.6 % |
+
+How a scenario is built:
+
+- **Density.** The 3DBAG buildings a design demolishes leave, its new blocks
+  join. A block's storeys are its own height over the storey height measured
+  from 3DBAG (3.06 m), the rule 3DBAG buildings without a storey count get.
+  Flats on a shop podium (final design) add floor area but no ground cover and
+  count as one building with the podium, as in `compare_scenarios.py`. That
+  script uses a flat 3 m storey, so its design-site FSI for B (0.905) is higher
+  than the same site summed here with 3.06 m (0.860); the GSI is identical.
+- **Land-use mix.** The BAG units in demolished buildings leave (by `pand_id`).
+  A new block's floor space is footprint × storeys × the usable/gross ratio
+  measured from today's all-housing buildings (0.791), given to the use the Rhino
+  model names: housing, or retail for shops and the shopping centre. The
+  amenities `place_amenities.py` places take their floor area out of their
+  block's housing; the final design's seven shop units it makes health practices
+  move from retail to healthcare. Units are estimated from today's median unit
+  size per use, so unit counts and the sparse-cell flag stay comparable.
+- **A and B name no uses.** Their blocks are all housing except the placed
+  amenities (20 shops, 7 health practices, one school), so their mix is the
+  p-median's, not the team's: it falls below today's because they add homes and
+  little else. The final design names every block, so its figure is the design's.
 
 ## For the scenario comparison
 

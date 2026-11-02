@@ -40,5 +40,28 @@ water-proximity score is real: OSM has a 772 m water body there.
   overall cover open ground only (62 % of cells).
 - "Buildings per cell" counts buildings, not floor area or coverage, so many
   small buildings score higher than one large one.
-- Baseline only. To compare scenarios it would have to be ported to Python and
-  re-run with the massing; the scoring rules above are all it needs.
+- Baseline only. The app's layers already follow the scenario switch and show
+  nothing (with a notice) on a scenario without a run; `flood_summary_<scenario>.json`
+  are stubs.
+
+## Adding a design scenario
+
+Of the three factors, a design changes **building density** (its buildings
+replace today's) and, where it adds water (the shared pond in every option,
+`design_planting.geojson`), **water proximity**. Ground level is today's AHN in
+every scenario. So a scenario run is Cyrille's QGIS model re-run with:
+
+1. the scenario's buildings instead of today's: 3DBAG minus
+   `design_massing.geojson`'s `demolishes[<scenario>]`, plus its blocks
+   (`scenario_world.buildings_for_scenario()` gives the table in Python);
+2. the scenario's water added to the water layer (the pond polygon in
+   `design_planting.geojson`, `kind: water`);
+3. the same scoring rules and the same raster grid as today's run.
+
+Export the same seven `BZO_NEW_*.tif` files per scenario. `import_cyrille.py` does
+not take a scenario yet: it needs a `--scenario` flag that reads them from
+`cache/flood/raw_<scenario>/` and writes `flood_<layer>_<scenario>.png` and
+`flood_summary_<scenario>.json` (with `"scenario": "<scenario>"`). Then `flood.js`
+picks them up unchanged. Alternatively, port the three scoring rules above to
+Python and compute every scenario here; that would also let the app compare
+them on the same footing as density and SVF.

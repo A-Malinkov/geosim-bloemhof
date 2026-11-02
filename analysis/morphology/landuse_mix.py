@@ -40,16 +40,36 @@ to it. This is a mix of BUILT FLOOR SPACE. For the built/unbuilt split use GSI
 from density_height.py. See fetch_landuse.py for why CBS Bestand Bodemgebruik
 was rejected for this job.
 
+SCENARIOS
+---------
+--scenario scenario_a|scenario_b|final removes the units in the buildings the
+design demolishes (by pand_id) and adds the new blocks' floor space by use:
+    floor area  footprint x storeys (own height / 3.06 m, density_height.py's
+                measured storey height), times the usable/gross ratio measured
+                from today's residential buildings (BAG unit area over 3DBAG
+                footprint x storeys)
+    use         the block's `use` from the Rhino model: housing (residential,
+                elderly, student) or retail (shop, shopping centre)
+    amenities   place_amenities.py's placed shops, health practices and school
+                take their floor area out of their block's housing; the final
+                design's shop units it converts to health practices move from
+                retail to healthcare
+    units       floor area / today's median unit area of that use in Bloemhof
+A and B name no uses in Rhino, so their blocks are housing except the placed
+amenities: the mix there is the p-median's, not the team's.
+Outputs carry a _<scenario> suffix; the baseline keeps the plain names.
+
 USAGE
 -----
     python analysis/morphology/fetch_landuse.py     # first
     python analysis/morphology/landuse_mix.py
+    python analysis/morphology/landuse_mix.py --scenario final
 
 OUTPUTS
 -------
-    data/processed/landuse_grid.geojson   100 m grid, WGS84, for the app
-    data/processed/landuse_summary.json   indices, composition, per-cell values
-    ... and merges landuse_mix into morphology_indicators.json under "baseline"
+    data/processed/landuse_grid[_<scenario>].geojson   100 m grid, WGS84, for the app
+    data/processed/landuse_summary[_<scenario>].json   indices, composition, per-cell values
+    ... and merges landuse_mix into morphology_indicators.json under the scenario's key
 """
 from __future__ import annotations
 
@@ -112,6 +132,100 @@ def load_units():
     return np.array(x), np.array(y), cats, np.array(area, dtype="float64")
 
 
+#Rhino block uses (import_rhino.py BLOCK_USE) and place_amenities.py types -> BAG categories
+USE_TO_CATEGORY = {"residential": "residential", "elderly housing": "residential", "student housing": "residential",
+                   "shop": "retail", "shopping centre": "retail"}
+AMENITY_TO_CATEGORY = {"shop": "retail", "health": "healthcare", "education": "education", "community": "assembly"}
+
+
+def usable_ratio(storey_m: float) -> float:
+    #usable floor area (BAG) over gross floor area (3DBAG footprint x storeys), median over today's
+    #all-residential buildings; measured, so the new blocks' floor space is on BAG's footing
+    units = json.loads((RAW / "bag_verblijfsobjecten.geojson").read_text())["features"]
+    per_pand, other = Counter(), set()
+    for f in units:
+        p = f["properties"]
+        if p["categories"] == ["residential"]:
+            per_pand[p["pand_id"]] += p["area_m2"]
+        else:
+            other.add(p["pand_id"])  #a building with any other use is left out
+    ratios = []
+    for f in json.loads((RAW / "buildings_3dbag.geojson").read_text())["features"]:
+        p = f["properties"]
+        pid = str(p.get("identificatie", "")).split(".")[-1]
+        if pid not in per_pand or pid in other or not p.get("b3_opp_grond") or not p.get("height_m"):
+            continue
+        floors = p.get("b3_bouwlagen") or max(1, round(p["height_m"] / storey_m))
+        ratios.append(per_pand[pid] / (p["b3_opp_grond"] * floors))
+    r = np.array(ratios)
+    r = r[(r > 0.2) & (r < 1.5)]  #drop mismatched joins (a unit counted on the wrong building)
+    return float(np.median(r)) if r.size >= 100 else 0.8
+
+
+def scenario_units(scenario, x, y, cats, area):
+    #today's units minus the demolished buildings', plus the scenario's new floor space by use
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "scenarios"))
+    from scenario_world import load_scenario
+    import shapely
+    storey_m = json.loads((PROCESSED / "density_summary.json").read_text())["parameters"]["storey_height_m"]
+    new, gone = load_scenario(scenario)  #RD, own_height_m = the block itself
+    gone_pand = {str(g).split(".")[-1] for g in gone}
+    pand = [f["properties"]["pand_id"] for f in json.loads((RAW / "bag_verblijfsobjecten.geojson").read_text())["features"]]
+    keep = np.array([p not in gone_pand for p in pand])
+    ratio = usable_ratio(storey_m)
+
+    #floor space per new block and use
+    floors = np.maximum(1.0, np.round(new["own_height_m"].to_numpy(dtype=float) / storey_m))
+    floor_m2 = new.geometry.area.to_numpy() * floors * ratio
+    block_use = [USE_TO_CATEGORY.get(u, "residential") for u in new["use"]]
+    space = [Counter({u: a}) for u, a in zip(block_use, floor_m2)]  #per block: category -> usable m2
+    unknown = sorted({u for u in new["use"] if u not in USE_TO_CATEGORY})
+
+    #amenities on the ground floors (place_amenities.py): placed ones replace housing, converted shops retail
+    am = json.loads((PROCESSED / "design_amenities.geojson").read_text())["features"]
+    from pyproj import Transformer
+    to_rd = Transformer.from_crs(4326, 28992, always_xy=True).transform
+    moved = Counter()
+    for f in am:
+        q = f["properties"]
+        if q["scenario"] != scenario or not (q["status"] == "placed" or q.get("converted")):
+            continue  #kept ones stay in today's units; labelled shops are already shop blocks
+        px, py = to_rd(*f["geometry"]["coordinates"])
+        hit = np.flatnonzero(shapely.contains_xy(new.geometry.to_numpy(), px, py))
+        j = int(hit[0]) if hit.size else int(np.argmin(new.geometry.distance(shapely.Point(px, py)).to_numpy()))
+        src = "residential" if q["status"] == "placed" else "retail"
+        dst = AMENITY_TO_CATEGORY[q["type"]]
+        a = min(float(q["floor_m2"]), space[j][src])  #never more than the block holds
+        space[j][src] -= a
+        space[j][dst] += a
+        moved[dst] += a
+
+    #today's median unit size per category, to turn floor space into a unit count
+    med = {}
+    for cat in ALL_CATEGORIES:
+        v = [a for cs, a in zip(cats, area) if cs == [cat]]
+        med[cat] = float(np.median(v)) if v else 100.0
+    pts = new.geometry.representative_point()
+    nx_, ny_, ncats, narea = [], [], [], []
+    for (px, py), sp in zip(zip(pts.x, pts.y), space):
+        for cat, a in sp.items():
+            n = max(1, round(a / med[cat])) if a > 0 else 0
+            for _ in range(n):  #one record per estimated unit, so unit counts and the sparse flag stay comparable
+                nx_.append(px); ny_.append(py); ncats.append([cat]); narea.append(a / n)
+    info = {
+        "demolished_units": int((~keep).sum()),
+        "new_volumes": len(new),
+        "new_units_est": len(nx_),
+        "usable_to_gross": round(ratio, 3),
+        "storey_height_m": storey_m,
+        "new_floor_m2_by_use": {k: round(v) for k, v in sum(space, Counter()).items() if v > 0},
+        "amenity_floor_m2": {k: round(v) for k, v in moved.items()},
+        "unmapped_uses": unknown,
+    }
+    return (np.concatenate([x[keep], nx_]), np.concatenate([y[keep], ny_]),
+            [c for c, k in zip(cats, keep) if k] + ncats, np.concatenate([area[keep], narea]), info)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -119,11 +233,22 @@ def main() -> int:
     ap.add_argument("--min-units", type=int, default=10,
                     help="cells with fewer units are flagged sparse; entropy on "
                          "a handful of units is noise")
+    ap.add_argument("--scenario", default="baseline", choices=["baseline", "scenario_a", "scenario_b", "final"],
+                    help="design scenario: its demolished units out, its new floor space in (default: today)")
     args = ap.parse_args()
+    sfx = "" if args.scenario == "baseline" else f"_{args.scenario}"  #output file suffix
 
-    print(f"Land-use mix — {STUDY_AREA.name}")
+    print(f"Land-use mix — {STUDY_AREA.name}, {args.scenario}")
     x, y, cats, area = load_units()
     print(f"  {len(x):,} addressable units, {N_CATEGORIES} categories in the scheme")
+    scen = None
+    if args.scenario != "baseline":
+        x, y, cats, area, scen = scenario_units(args.scenario, x, y, cats, area)
+        print(f"  {args.scenario}: {scen['demolished_units']:,} units demolished, {scen['new_units_est']:,} estimated "
+              f"in {scen['new_volumes']} new volumes (usable/gross {scen['usable_to_gross']}); "
+              f"new floor space {scen['new_floor_m2_by_use']}")
+        if scen["unmapped_uses"]:
+            print(f"  ! uses counted as housing: {scen['unmapped_uses']}")
 
     # ------------------------------------------------------------ whole area
     import shapely
@@ -201,15 +326,16 @@ def main() -> int:
         if not props["sparse"]:
             spacem.append(props["shannon"])
 
-    (PROCESSED / "landuse_grid.geojson").write_text(json.dumps({
+    (PROCESSED / f"landuse_grid{sfx}.geojson").write_text(json.dumps({
         "type": "FeatureCollection",
         "_source": "BAG verblijfsobjecten, aggregated by "
-                   "analysis/morphology/landuse_mix.py",
+                   "analysis/morphology/landuse_mix.py"
+                   + ("" if not sfx else f"; {args.scenario}: demolished units out, new blocks' floor space by use in"),
         "_cell_size_m": c,
         "_grid": {"nx": nx, "ny": ny, "origin_rd": [xmin, ymin]},
         "features": cells,
     }) + "\n")
-    print(f"  wrote landuse_grid.geojson ({len(cells)} cells, "
+    print(f"  wrote landuse_grid{sfx}.geojson ({len(cells)} cells, "
           f"{len(spacem)} with >= {args.min_units} units)")
 
     # ------------------------------------------- aggregate per buurt and overall
@@ -272,6 +398,7 @@ def main() -> int:
     arr = np.array(spacem) if spacem else np.array([0.0])
     summary = {
         "study_area": STUDY_AREA.name,
+        **({} if scen is None else {"scenario": args.scenario, "scenario_inputs": scen}),
         "method": "normalised Shannon entropy and Simpson diversity over BAG "
                   "gebruiksdoel, weighted by usable floor area",
         "source": "BAG verblijfsobjecten via PDOK WFS",
@@ -306,8 +433,8 @@ def main() -> int:
         "per_buurt": per_buurt,
         "combined": combined,
     }
-    (PROCESSED / "landuse_summary.json").write_text(json.dumps(summary, indent=2) + "\n")
-    print("  wrote landuse_summary.json")
+    (PROCESSED / f"landuse_summary{sfx}.json").write_text(json.dumps(summary, indent=2) + "\n")
+    print(f"  wrote landuse_summary{sfx}.json")
 
     mi_path = PROCESSED / "morphology_indicators.json"
     try:
@@ -315,10 +442,10 @@ def main() -> int:
     except Exception:
         mi = {}
     mi.pop("_status", None)
-    mi.setdefault("baseline", {})
+    mi.setdefault(args.scenario, {})
     head = combined or overall
-    mi["baseline"]["landuse_mix"] = head.get("shannon_area", overall["shannon_area"])
-    mi["baseline"]["landuse_simpson"] = head.get("simpson_area", overall["simpson_area"])
+    mi[args.scenario]["landuse_mix"] = head.get("shannon_area", overall["shannon_area"])
+    mi[args.scenario]["landuse_simpson"] = head.get("simpson_area", overall["simpson_area"])
     mi["_landuse_source"] = "analysis/morphology/landuse_mix.py"
     mi_path.write_text(json.dumps(mi, indent=2) + "\n")
     print("  merged landuse_mix into morphology_indicators.json")

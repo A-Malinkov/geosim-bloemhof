@@ -1,0 +1,1036 @@
+{
+  "study_area": "Bloemhof",
+  "scenario": "scenario_a",
+  "scenario_rule": "3DBAG minus the buildings design_massing.geojson demolishes, plus its new blocks: storeys = own height / measured storey height; flats on a shop podium add floors, not ground cover, and count as one building with the podium",
+  "method": "Spacematrix (Berghauser Pont & Haupt 2010): GSI, FSI, L, OSR",
+  "source": "3DBAG v20250903 (TU Delft), attributes b3_opp_grond / b3_bouwlagen / b3_h_dak_50p / b3_h_maaiveld",
+  "parameters": {
+    "cell_size_m": 100.0,
+    "storey_height_m": 3.063,
+    "storey_height_source": "median of 5511 buildings with both b3_bouwlagen and a height",
+    "principal_min_footprint_m2": 40.0,
+    "principal_min_height_m": 4.0,
+    "min_buildings_per_cell": 3
+  },
+  "counts": {
+    "buildings_total": 8101,
+    "buildings_principal": 4752,
+    "floors_from_3dbag": 4880,
+    "floors_estimated": 3221,
+    "outbuilding_share_of_count": 0.413,
+    "outbuilding_share_of_built_area": 0.08
+  },
+  "grid": {
+    "n_cells_with_buildings": 108,
+    "n_cells_used": 101,
+    "gsi": {
+      "n": 101,
+      "mean": 0.322,
+      "std": 0.126,
+      "median": 0.328,
+      "p10": 0.175,
+      "p90": 0.472,
+      "max": 0.816
+    },
+    "fsi": {
+      "n": 101,
+      "mean": 1.123,
+      "std": 0.624,
+      "median": 1.004,
+      "p10": 0.533,
+      "p90": 2.0,
+      "max": 3.677
+    },
+    "layers": {
+      "n": 101,
+      "mean": 3.448,
+      "std": 1.031,
+      "median": 3.656,
+      "p10": 1.985,
+      "p90": 4.607,
+      "max": 6.628
+    },
+    "osr": {
+      "n": 101,
+      "mean": 0.972,
+      "std": 1.179,
+      "median": 0.689,
+      "p10": 0.281,
+      "p90": 1.427,
+      "max": 8.081
+    },
+    "height_mean_m": {
+      "n": 101,
+      "mean": 10.384,
+      "std": 3.169,
+      "median": 10.194,
+      "p10": 6.267,
+      "p90": 13.92,
+      "max": 22.205
+    },
+    "height_std_m": {
+      "n": 100,
+      "mean": 1.829,
+      "std": 1.46,
+      "median": 1.705,
+      "p10": 0.234,
+      "p90": 3.267,
+      "max": 10.602
+    }
+  },
+  "per_buurt": {
+    "Bloemhof": {
+      "name": "Bloemhof",
+      "code": "BU05991081",
+      "land_area_ha": 78.84,
+      "inhabitants": 13740,
+      "n_buildings": 4256,
+      "n_principal": 2162,
+      "gsi": 0.3248,
+      "fsi": 1.0778,
+      "layers": 3.32,
+      "osr": 0.626,
+      "height_m": {
+        "n": 2162,
+        "mean": 8.634,
+        "std": 3.159,
+        "median": 7.625,
+        "p10": 6.02,
+        "p90": 13.29,
+        "max": 40.0
+      }
+    }
+  },
+  "combined": {
+    "name": "Bloemhof",
+    "code": null,
+    "land_area_ha": 78.84,
+    "inhabitants": null,
+    "n_buildings": 4256,
+    "n_principal": 2162,
+    "gsi": 0.3248,
+    "fsi": 1.0778,
+    "layers": 3.32,
+    "osr": 0.626,
+    "height_m": {
+      "n": 2162,
+      "mean": 8.634,
+      "std": 3.159,
+      "median": 7.625,
+      "p10": 6.02,
+      "p90": 13.29,
+      "max": 40.0
+    }
+  },
+  "spacematrix": [
+    {
+      "gsi": 0.2691,
+      "fsi": 1.0183,
+      "layers": 3.78,
+      "osr": 0.718,
+      "height_mean_m": 12.75,
+      "height_std_m": 2.57,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.1537,
+      "fsi": 0.5794,
+      "layers": 3.77,
+      "osr": 1.461,
+      "height_mean_m": 11.76,
+      "height_std_m": 1.81,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.4193,
+      "fsi": 2.7787,
+      "layers": 6.63,
+      "osr": 0.209,
+      "height_mean_m": 22.2,
+      "height_std_m": 10.6,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.5162,
+      "fsi": 2.5347,
+      "layers": 4.91,
+      "osr": 0.191,
+      "height_mean_m": 14.67,
+      "height_std_m": 3.77,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.1783,
+      "fsi": 1.0752,
+      "layers": 6.03,
+      "osr": 0.764,
+      "height_mean_m": 20.0,
+      "height_std_m": null,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.2289,
+      "fsi": 0.5704,
+      "layers": 2.49,
+      "osr": 1.352,
+      "height_mean_m": 8.57,
+      "height_std_m": 2.89,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.348,
+      "fsi": 0.9485,
+      "layers": 2.73,
+      "osr": 0.687,
+      "height_mean_m": 8.78,
+      "height_std_m": 2.44,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.2667,
+      "fsi": 0.6262,
+      "layers": 2.35,
+      "osr": 1.171,
+      "height_mean_m": 7.25,
+      "height_std_m": 2.06,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.2428,
+      "fsi": 0.9879,
+      "layers": 4.07,
+      "osr": 0.766,
+      "height_mean_m": 11.53,
+      "height_std_m": 4.32,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.338,
+      "fsi": 1.3219,
+      "layers": 3.91,
+      "osr": 0.501,
+      "height_mean_m": 10.29,
+      "height_std_m": 3.03,
+      "buurt": null
+    },
+    {
+      "gsi": 0.3863,
+      "fsi": 1.4033,
+      "layers": 3.63,
+      "osr": 0.437,
+      "height_mean_m": 9.85,
+      "height_std_m": 2.52,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.3287,
+      "fsi": 0.9038,
+      "layers": 2.75,
+      "osr": 0.743,
+      "height_mean_m": 8.61,
+      "height_std_m": 1.74,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.2054,
+      "fsi": 0.6431,
+      "layers": 3.13,
+      "osr": 1.236,
+      "height_mean_m": 10.23,
+      "height_std_m": 3.16,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.5748,
+      "fsi": 2.2991,
+      "layers": 4.0,
+      "osr": 0.185,
+      "height_mean_m": 12.0,
+      "height_std_m": 0.0,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.5309,
+      "fsi": 2.0295,
+      "layers": 3.82,
+      "osr": 0.231,
+      "height_mean_m": 8.47,
+      "height_std_m": 2.59,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.3457,
+      "fsi": 0.7891,
+      "layers": 2.28,
+      "osr": 0.829,
+      "height_mean_m": 6.36,
+      "height_std_m": 0.91,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.349,
+      "fsi": 0.6578,
+      "layers": 1.88,
+      "osr": 0.99,
+      "height_mean_m": 6.04,
+      "height_std_m": 0.07,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.4078,
+      "fsi": 1.4968,
+      "layers": 3.67,
+      "osr": 0.396,
+      "height_mean_m": 8.89,
+      "height_std_m": 3.36,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.3227,
+      "fsi": 1.2292,
+      "layers": 3.81,
+      "osr": 0.551,
+      "height_mean_m": 11.84,
+      "height_std_m": 3.36,
+      "buurt": null
+    },
+    {
+      "gsi": 0.3356,
+      "fsi": 1.1691,
+      "layers": 3.48,
+      "osr": 0.568,
+      "height_mean_m": 9.69,
+      "height_std_m": 2.92,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.3574,
+      "fsi": 0.8767,
+      "layers": 2.45,
+      "osr": 0.733,
+      "height_mean_m": 7.03,
+      "height_std_m": 0.91,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.3949,
+      "fsi": 0.7391,
+      "layers": 1.87,
+      "osr": 0.819,
+      "height_mean_m": 6.27,
+      "height_std_m": 0.06,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.2377,
+      "fsi": 0.5364,
+      "layers": 2.26,
+      "osr": 1.421,
+      "height_mean_m": 6.62,
+      "height_std_m": 0.98,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.4335,
+      "fsi": 1.5614,
+      "layers": 3.6,
+      "osr": 0.363,
+      "height_mean_m": 7.25,
+      "height_std_m": 2.18,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.2959,
+      "fsi": 0.5596,
+      "layers": 1.89,
+      "osr": 1.258,
+      "height_mean_m": 6.1,
+      "height_std_m": 0.11,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.3362,
+      "fsi": 0.6464,
+      "layers": 1.92,
+      "osr": 1.027,
+      "height_mean_m": 6.13,
+      "height_std_m": 0.18,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.3294,
+      "fsi": 0.7585,
+      "layers": 2.3,
+      "osr": 0.884,
+      "height_mean_m": 7.65,
+      "height_std_m": 2.9,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.4282,
+      "fsi": 1.777,
+      "layers": 4.15,
+      "osr": 0.322,
+      "height_mean_m": 12.01,
+      "height_std_m": 2.96,
+      "buurt": null
+    },
+    {
+      "gsi": 0.2848,
+      "fsi": 1.2025,
+      "layers": 4.22,
+      "osr": 0.595,
+      "height_mean_m": 12.23,
+      "height_std_m": 3.29,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.4615,
+      "fsi": 0.9734,
+      "layers": 2.11,
+      "osr": 0.553,
+      "height_mean_m": 6.16,
+      "height_std_m": 0.36,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.3436,
+      "fsi": 0.6447,
+      "layers": 1.88,
+      "osr": 1.018,
+      "height_mean_m": 6.52,
+      "height_std_m": 0.78,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.2721,
+      "fsi": 0.5334,
+      "layers": 1.96,
+      "osr": 1.365,
+      "height_mean_m": 6.14,
+      "height_std_m": 0.77,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.2247,
+      "fsi": 0.5538,
+      "layers": 2.46,
+      "osr": 1.4,
+      "height_mean_m": 6.6,
+      "height_std_m": 0.99,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.4721,
+      "fsi": 0.9955,
+      "layers": 2.11,
+      "osr": 0.53,
+      "height_mean_m": 6.34,
+      "height_std_m": 0.96,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.3284,
+      "fsi": 0.6773,
+      "layers": 2.06,
+      "osr": 0.992,
+      "height_mean_m": 6.16,
+      "height_std_m": 0.5,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.3962,
+      "fsi": 0.777,
+      "layers": 1.96,
+      "osr": 0.777,
+      "height_mean_m": 6.14,
+      "height_std_m": 0.29,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.3132,
+      "fsi": 0.6217,
+      "layers": 1.99,
+      "osr": 1.105,
+      "height_mean_m": 6.18,
+      "height_std_m": 0.06,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.529,
+      "fsi": 2.246,
+      "layers": 4.25,
+      "osr": 0.21,
+      "height_mean_m": 13.1,
+      "height_std_m": 3.26,
+      "buurt": null
+    },
+    {
+      "gsi": 0.3718,
+      "fsi": 1.4491,
+      "layers": 3.9,
+      "osr": 0.434,
+      "height_mean_m": 14.96,
+      "height_std_m": 1.28,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.3242,
+      "fsi": 1.1704,
+      "layers": 3.61,
+      "osr": 0.577,
+      "height_mean_m": 11.28,
+      "height_std_m": 2.46,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.3365,
+      "fsi": 0.7311,
+      "layers": 2.17,
+      "osr": 0.908,
+      "height_mean_m": 6.53,
+      "height_std_m": 1.04,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.2642,
+      "fsi": 0.5169,
+      "layers": 1.96,
+      "osr": 1.424,
+      "height_mean_m": 6.18,
+      "height_std_m": 0.36,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.0647,
+      "fsi": 0.1157,
+      "layers": 1.79,
+      "osr": 8.081,
+      "height_mean_m": 6.35,
+      "height_std_m": 0.14,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.3094,
+      "fsi": 1.1684,
+      "layers": 3.78,
+      "osr": 0.591,
+      "height_mean_m": 10.55,
+      "height_std_m": 1.73,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.2223,
+      "fsi": 0.705,
+      "layers": 3.17,
+      "osr": 1.103,
+      "height_mean_m": 9.65,
+      "height_std_m": 2.52,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.5022,
+      "fsi": 1.0333,
+      "layers": 2.06,
+      "osr": 0.482,
+      "height_mean_m": 6.34,
+      "height_std_m": 1.02,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.2486,
+      "fsi": 0.4827,
+      "layers": 1.94,
+      "osr": 1.557,
+      "height_mean_m": 6.18,
+      "height_std_m": 0.11,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.3508,
+      "fsi": 0.782,
+      "layers": 2.23,
+      "osr": 0.83,
+      "height_mean_m": 6.88,
+      "height_std_m": 1.68,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.1832,
+      "fsi": 0.5722,
+      "layers": 3.12,
+      "osr": 1.427,
+      "height_mean_m": 10.19,
+      "height_std_m": 2.83,
+      "buurt": null
+    },
+    {
+      "gsi": 0.292,
+      "fsi": 1.1871,
+      "layers": 4.07,
+      "osr": 0.596,
+      "height_mean_m": 14.57,
+      "height_std_m": 1.48,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.3796,
+      "fsi": 1.451,
+      "layers": 3.82,
+      "osr": 0.428,
+      "height_mean_m": 12.68,
+      "height_std_m": 0.24,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.4126,
+      "fsi": 1.5407,
+      "layers": 3.73,
+      "osr": 0.381,
+      "height_mean_m": 10.98,
+      "height_std_m": 2.12,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.13,
+      "fsi": 0.3244,
+      "layers": 2.5,
+      "osr": 2.682,
+      "height_mean_m": 7.59,
+      "height_std_m": 1.63,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.816,
+      "fsi": 2.4342,
+      "layers": 2.98,
+      "osr": 0.076,
+      "height_mean_m": 9.25,
+      "height_std_m": 0.38,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.3533,
+      "fsi": 1.0197,
+      "layers": 2.89,
+      "osr": 0.634,
+      "height_mean_m": 8.72,
+      "height_std_m": 0.84,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.1508,
+      "fsi": 0.4562,
+      "layers": 3.03,
+      "osr": 1.861,
+      "height_mean_m": 8.55,
+      "height_std_m": 1.59,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.1123,
+      "fsi": 0.3259,
+      "layers": 2.9,
+      "osr": 2.724,
+      "height_mean_m": 9.65,
+      "height_std_m": 1.86,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.3711,
+      "fsi": 1.1238,
+      "layers": 3.03,
+      "osr": 0.56,
+      "height_mean_m": 8.73,
+      "height_std_m": 3.26,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.2332,
+      "fsi": 0.8579,
+      "layers": 3.68,
+      "osr": 0.894,
+      "height_mean_m": 10.93,
+      "height_std_m": 1.95,
+      "buurt": null
+    },
+    {
+      "gsi": 0.447,
+      "fsi": 1.9999,
+      "layers": 4.47,
+      "osr": 0.277,
+      "height_mean_m": 13.82,
+      "height_std_m": 1.74,
+      "buurt": null
+    },
+    {
+      "gsi": 0.2823,
+      "fsi": 1.5523,
+      "layers": 5.5,
+      "osr": 0.462,
+      "height_mean_m": 15.97,
+      "height_std_m": 4.39,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.2668,
+      "fsi": 1.0132,
+      "layers": 3.8,
+      "osr": 0.724,
+      "height_mean_m": 11.2,
+      "height_std_m": 1.84,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.4919,
+      "fsi": 2.5905,
+      "layers": 5.27,
+      "osr": 0.196,
+      "height_mean_m": 12.29,
+      "height_std_m": 4.4,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.31,
+      "fsi": 1.06,
+      "layers": 3.42,
+      "osr": 0.651,
+      "height_mean_m": 10.13,
+      "height_std_m": 2.03,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.3513,
+      "fsi": 0.9772,
+      "layers": 2.78,
+      "osr": 0.664,
+      "height_mean_m": 8.59,
+      "height_std_m": 0.92,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.3269,
+      "fsi": 0.8155,
+      "layers": 2.5,
+      "osr": 0.825,
+      "height_mean_m": 8.24,
+      "height_std_m": 1.27,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.3383,
+      "fsi": 0.9509,
+      "layers": 2.81,
+      "osr": 0.696,
+      "height_mean_m": 8.48,
+      "height_std_m": 0.92,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.2436,
+      "fsi": 0.9277,
+      "layers": 3.81,
+      "osr": 0.815,
+      "height_mean_m": 11.63,
+      "height_std_m": 2.39,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.2374,
+      "fsi": 1.1221,
+      "layers": 4.73,
+      "osr": 0.68,
+      "height_mean_m": 12.92,
+      "height_std_m": 3.19,
+      "buurt": null
+    },
+    {
+      "gsi": 0.3485,
+      "fsi": 1.3187,
+      "layers": 3.78,
+      "osr": 0.494,
+      "height_mean_m": 12.11,
+      "height_std_m": 2.09,
+      "buurt": null
+    },
+    {
+      "gsi": 0.056,
+      "fsi": 0.2767,
+      "layers": 4.94,
+      "osr": 3.411,
+      "height_mean_m": 16.12,
+      "height_std_m": 0.09,
+      "buurt": null
+    },
+    {
+      "gsi": 0.2102,
+      "fsi": 0.9572,
+      "layers": 4.55,
+      "osr": 0.825,
+      "height_mean_m": 14.47,
+      "height_std_m": 2.15,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.4934,
+      "fsi": 1.8038,
+      "layers": 3.66,
+      "osr": 0.281,
+      "height_mean_m": 7.39,
+      "height_std_m": 2.17,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.4535,
+      "fsi": 1.7434,
+      "layers": 3.84,
+      "osr": 0.313,
+      "height_mean_m": 12.5,
+      "height_std_m": 1.26,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.3092,
+      "fsi": 1.1283,
+      "layers": 3.65,
+      "osr": 0.612,
+      "height_mean_m": 8.94,
+      "height_std_m": 1.55,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.3677,
+      "fsi": 1.0042,
+      "layers": 2.73,
+      "osr": 0.63,
+      "height_mean_m": 8.6,
+      "height_std_m": 1.16,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.3791,
+      "fsi": 1.0521,
+      "layers": 2.78,
+      "osr": 0.59,
+      "height_mean_m": 9.12,
+      "height_std_m": 1.12,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.1754,
+      "fsi": 0.6663,
+      "layers": 3.8,
+      "osr": 1.238,
+      "height_mean_m": 12.07,
+      "height_std_m": 1.85,
+      "buurt": null
+    },
+    {
+      "gsi": 0.5723,
+      "fsi": 2.7689,
+      "layers": 4.84,
+      "osr": 0.154,
+      "height_mean_m": 13.03,
+      "height_std_m": 1.14,
+      "buurt": null
+    },
+    {
+      "gsi": 0.3778,
+      "fsi": 1.4448,
+      "layers": 3.82,
+      "osr": 0.431,
+      "height_mean_m": 12.84,
+      "height_std_m": 1.46,
+      "buurt": null
+    },
+    {
+      "gsi": 0.2949,
+      "fsi": 1.2568,
+      "layers": 4.26,
+      "osr": 0.561,
+      "height_mean_m": 13.99,
+      "height_std_m": 0.7,
+      "buurt": null
+    },
+    {
+      "gsi": 0.2437,
+      "fsi": 1.0977,
+      "layers": 4.5,
+      "osr": 0.689,
+      "height_mean_m": 15.09,
+      "height_std_m": 1.91,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.3537,
+      "fsi": 1.5778,
+      "layers": 4.46,
+      "osr": 0.41,
+      "height_mean_m": 13.92,
+      "height_std_m": 1.89,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.3297,
+      "fsi": 1.1644,
+      "layers": 3.53,
+      "osr": 0.576,
+      "height_mean_m": 12.98,
+      "height_std_m": 1.59,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.2271,
+      "fsi": 0.6807,
+      "layers": 3.0,
+      "osr": 1.135,
+      "height_mean_m": 8.96,
+      "height_std_m": 0.6,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.2355,
+      "fsi": 0.9201,
+      "layers": 3.91,
+      "osr": 0.831,
+      "height_mean_m": 10.69,
+      "height_std_m": 2.49,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.0433,
+      "fsi": 0.1231,
+      "layers": 2.84,
+      "osr": 7.773,
+      "height_mean_m": 9.23,
+      "height_std_m": 1.64,
+      "buurt": null
+    },
+    {
+      "gsi": 0.4227,
+      "fsi": 1.5956,
+      "layers": 3.77,
+      "osr": 0.362,
+      "height_mean_m": 12.2,
+      "height_std_m": 1.23,
+      "buurt": null
+    },
+    {
+      "gsi": 0.1755,
+      "fsi": 0.6637,
+      "layers": 3.78,
+      "osr": 1.242,
+      "height_mean_m": 13.67,
+      "height_std_m": 0.71,
+      "buurt": null
+    },
+    {
+      "gsi": 0.4199,
+      "fsi": 1.8133,
+      "layers": 4.32,
+      "osr": 0.32,
+      "height_mean_m": 12.53,
+      "height_std_m": 1.94,
+      "buurt": null
+    },
+    {
+      "gsi": 0.3602,
+      "fsi": 1.5619,
+      "layers": 4.34,
+      "osr": 0.41,
+      "height_mean_m": 13.38,
+      "height_std_m": 0.78,
+      "buurt": null
+    },
+    {
+      "gsi": 0.091,
+      "fsi": 0.3953,
+      "layers": 4.34,
+      "osr": 2.3,
+      "height_mean_m": 13.71,
+      "height_std_m": 0.46,
+      "buurt": null
+    },
+    {
+      "gsi": 0.2267,
+      "fsi": 0.9171,
+      "layers": 4.05,
+      "osr": 0.843,
+      "height_mean_m": 13.48,
+      "height_std_m": 1.4,
+      "buurt": null
+    },
+    {
+      "gsi": 0.2994,
+      "fsi": 1.3249,
+      "layers": 4.42,
+      "osr": 0.529,
+      "height_mean_m": 13.09,
+      "height_std_m": 0.79,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.2423,
+      "fsi": 0.83,
+      "layers": 3.43,
+      "osr": 0.913,
+      "height_mean_m": 11.89,
+      "height_std_m": 2.89,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.0561,
+      "fsi": 0.2243,
+      "layers": 4.0,
+      "osr": 4.209,
+      "height_mean_m": 11.52,
+      "height_std_m": 0.07,
+      "buurt": "Bloemhof"
+    },
+    {
+      "gsi": 0.6459,
+      "fsi": 3.6766,
+      "layers": 5.69,
+      "osr": 0.096,
+      "height_mean_m": 12.71,
+      "height_std_m": 5.35,
+      "buurt": null
+    },
+    {
+      "gsi": 0.2481,
+      "fsi": 0.9289,
+      "layers": 3.74,
+      "osr": 0.809,
+      "height_mean_m": 11.91,
+      "height_std_m": 1.81,
+      "buurt": null
+    },
+    {
+      "gsi": 0.2379,
+      "fsi": 1.096,
+      "layers": 4.61,
+      "osr": 0.695,
+      "height_mean_m": 10.0,
+      "height_std_m": 4.48,
+      "buurt": null
+    },
+    {
+      "gsi": 0.3025,
+      "fsi": 1.1478,
+      "layers": 3.79,
+      "osr": 0.608,
+      "height_mean_m": 9.63,
+      "height_std_m": 1.78,
+      "buurt": null
+    },
+    {
+      "gsi": 0.4113,
+      "fsi": 2.0751,
+      "layers": 5.04,
+      "osr": 0.284,
+      "height_mean_m": 12.58,
+      "height_std_m": 3.06,
+      "buurt": null
+    }
+  ]
+}

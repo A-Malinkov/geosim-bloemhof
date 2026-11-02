@@ -42,17 +42,30 @@ FSI. They are NOT buildings in the sense that "mean building height" means, so
 height statistics are computed over principal buildings only -- footprint
 >= 40 m2 and height >= 4 m by default. Both filters are reported.
 
+SCENARIOS
+---------
+--scenario scenario_a|scenario_b|final takes the 3DBAG buildings the design
+demolishes out and its new blocks in (design_massing.geojson, via
+scenario_world.load_scenario). A new block's storeys are its own height over the
+storey height measured above, the rule the 3DBAG buildings without a storey
+count get. Flats stood on a shop podium (final design) add floors but no ground
+cover, and count as one building with their podium, as in
+compare_scenarios.py; the podium leaves the height statistics, the flats' roof
+stands for the pair. Outputs carry a _<scenario> suffix; the baseline keeps the
+plain names.
+
 USAGE
 -----
     python analysis/morphology/fetch_buildings.py      # first
     python analysis/morphology/density_height.py
+    python analysis/morphology/density_height.py --scenario scenario_a
 
 OUTPUTS
 -------
-    data/processed/density_grid.geojson   100 m grid, WGS84, for the app
-    data/processed/density_summary.json   headline figures + Spacematrix points
+    data/processed/density_grid[_<scenario>].geojson   100 m grid, WGS84, for the app
+    data/processed/density_summary[_<scenario>].json   headline figures + Spacematrix points
     ... and merges fsi / gsi / height_mean_m / height_std_m into
-        morphology_indicators.json under "baseline"
+        morphology_indicators.json under the scenario's key
 """
 from __future__ import annotations
 
@@ -79,7 +92,7 @@ def load_buildings():
         print(f"missing {path}\nRun: python analysis/morphology/fetch_buildings.py")
         sys.exit(1)
     feats = json.loads(path.read_text())["features"]
-    x, y, area, floors_raw, height = [], [], [], [], []
+    x, y, area, floors_raw, height, ids = [], [], [], [], [], []
     for f in feats:
         p = f["properties"]
         a, h = p.get("b3_opp_grond"), p.get("height_m")
@@ -90,9 +103,36 @@ def load_buildings():
         area.append(a)
         floors_raw.append(p.get("b3_bouwlagen"))
         height.append(h if h is not None else np.nan)
+        ids.append(p.get("identificatie"))  #to take out what a scenario demolishes
     return (np.array(x), np.array(y), np.array(area, dtype="float64"),
             np.array([f if f else np.nan for f in floors_raw], dtype="float64"),
-            np.array(height, dtype="float64"))
+            np.array(height, dtype="float64"), np.array(ids, dtype=object))
+
+
+def scenario_blocks(scenario: str, storey_m: float):
+    #the scenario's new blocks as building records: x, y, footprint, storeys, roof height above
+    #ground, ground cover, building count, and whether they enter the height statistics
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "scenarios"))
+    from scenario_world import load_scenario
+    new, gone = load_scenario(scenario)  #RD, height_m = roof above ground, own_height_m = the block itself
+    raised = (new["height_m"] - new["own_height_m"]).to_numpy() > 0.5  #flats stood on a shop podium
+    podium = np.zeros(len(new), dtype=bool)
+    for g in new.geometry[raised]:  #the podium under a raised block: its roof is not the building's
+        for j, h in enumerate(new.geometry):
+            if not raised[j] and h.intersects(g) and h.intersection(g).area > 0.5 * h.area:
+                podium[j] = True
+    pt = new.geometry.representative_point()
+    foot = new.geometry.area.to_numpy()
+    rec = {
+        "x": pt.x.to_numpy(), "y": pt.y.to_numpy(),
+        "area": foot,
+        "floors": np.maximum(1.0, np.round(new["own_height_m"].to_numpy(dtype=float) / storey_m)),
+        "height": new["height_m"].to_numpy(dtype=float),
+        "cover": np.where(raised, 0.0, foot),  #flats on a podium add floors, not ground cover
+        "bcount": np.where(raised, 0, 1),  #a podium and the flats on it are one building
+        "hstat": ~podium,
+    }
+    return rec, gone, int(raised.sum())
 
 
 def measured_storey_height(floors, height):
@@ -124,13 +164,16 @@ def main() -> int:
     ap.add_argument("--min-height", type=float, default=MIN_HEIGHT_M)
     ap.add_argument("--min-buildings", type=int, default=3,
                     help="cells with fewer buildings are reported but flagged sparse")
+    ap.add_argument("--scenario", default="baseline", choices=["baseline", "scenario_a", "scenario_b", "final"],
+                    help="design scenario: its demolition out, its new blocks in (default: today)")
     args = ap.parse_args()
+    sfx = "" if args.scenario == "baseline" else f"_{args.scenario}"  #output file suffix
 
-    print(f"Building density and height variation — {STUDY_AREA.name}")
-    x, y, area, floors_raw, height = load_buildings()
+    print(f"Building density and height variation — {STUDY_AREA.name}, {args.scenario}")
+    x, y, area, floors_raw, height, ids = load_buildings()
     print(f"  {len(x):,} buildings with a footprint area")
 
-    sh, n_sh = measured_storey_height(floors_raw, height)
+    sh, n_sh = measured_storey_height(floors_raw, height)  #from today's 3DBAG in every scenario
     print(f"  storey height measured from {n_sh:,} buildings: {sh:.2f} m/floor")
 
     floors = floors_raw.copy()
@@ -141,9 +184,24 @@ def main() -> int:
     print(f"  floors: {int((~missing).sum()):,} from 3DBAG, "
           f"{int(missing.sum()):,} estimated from height")
 
+    cover = area.copy()  #ground cover, for GSI; equal to the footprint for every 3DBAG building
+    bcount = np.ones(len(x), dtype=int)  #buildings each record counts as
+    hstat = np.ones(len(x), dtype=bool)  #records that enter the height statistics
+    if args.scenario != "baseline":
+        rec, gone, n_raised = scenario_blocks(args.scenario, sh)
+        keep = ~np.isin(ids, list(gone))  #demolished buildings out
+        print(f"  {args.scenario}: {int((~keep).sum()):,} buildings demolished, "
+              f"{len(rec['x'])} new volumes ({n_raised} flats on a shop podium)")
+        x, y, area, floors, height = (np.concatenate([v[keep], rec[k]]) for v, k in
+                                      [(x, "x"), (y, "y"), (area, "area"), (floors, "floors"), (height, "height")])
+        cover = np.concatenate([cover[keep], rec["cover"]])
+        bcount = np.concatenate([bcount[keep], rec["bcount"]])
+        hstat = np.concatenate([hstat[keep], rec["hstat"]])
+        missing = np.concatenate([missing[keep], np.zeros(len(rec["x"]), dtype=bool)])  #new storeys are set, not missing
+
     gfa = area * floors
 
-    principal = (area >= args.min_footprint) & (height >= args.min_height)
+    principal = (area >= args.min_footprint) & (height >= args.min_height) & hstat
     print(f"  principal buildings (>= {args.min_footprint:.0f} m2 and "
           f">= {args.min_height:.0f} m): {int(principal.sum()):,} "
           f"({100 * principal.mean():.0f}%), holding "
@@ -161,9 +219,9 @@ def main() -> int:
     ncell = nx * ny
     cell_area = c * c
 
-    sum_area = np.bincount(flat, weights=np.where(on_grid, area, 0), minlength=ncell)  #off-grid buildings weigh nothing
+    sum_area = np.bincount(flat, weights=np.where(on_grid, cover, 0), minlength=ncell)  #off-grid buildings weigh nothing
     sum_gfa = np.bincount(flat, weights=np.where(on_grid, gfa, 0), minlength=ncell)
-    count = np.bincount(flat, weights=on_grid.astype(float), minlength=ncell).astype(int)  #and are not counted
+    count = np.bincount(flat, weights=np.where(on_grid, bcount, 0).astype(float), minlength=ncell).astype(int)  #and are not counted
 
     pm = principal & np.isfinite(height) & on_grid  #height stats on grid buildings only
     p_flat, p_h = flat[pm], height[pm]
@@ -212,14 +270,15 @@ def main() -> int:
                 "sparse": bool(count[i] < args.min_buildings),
             },
         })
-    (PROCESSED / "density_grid.geojson").write_text(json.dumps({
+    (PROCESSED / f"density_grid{sfx}.geojson").write_text(json.dumps({
         "type": "FeatureCollection",
-        "_source": "3DBAG v20250903, aggregated by analysis/morphology/density_height.py",
+        "_source": "3DBAG v20250903, aggregated by analysis/morphology/density_height.py"
+                   + ("" if not sfx else f"; {args.scenario}: design_massing.geojson's demolition and new blocks"),
         "_cell_size_m": c,
         "_grid": {"nx": nx, "ny": ny, "origin_rd": [xmin, ymin]},
         "features": cells,
     }) + "\n")
-    print(f"  wrote density_grid.geojson ({len(cells)} cells)")
+    print(f"  wrote density_grid{sfx}.geojson ({len(cells)} cells)")
 
     # ------------------------------------------- aggregate per buurt and overall
     # The study area is two whole buurten, so each is reported separately and
@@ -240,14 +299,14 @@ def main() -> int:
             if inside.sum() == 0 or land <= 0:
                 return None
             bp = inside & principal & np.isfinite(height)
-            g_ = float(area[inside].sum() / land)
+            g_ = float(cover[inside].sum() / land)
             f_ = float(gfa[inside].sum() / land)
             out = {
                 "name": label,
                 "code": code,
                 "land_area_ha": round(land / 10_000, 2),
                 "inhabitants": (props.get(code, {}) or {}).get("aantalInwoners"),
-                "n_buildings": int(inside.sum()),
+                "n_buildings": int(bcount[inside].sum()),
                 "n_principal": int(bp.sum()),
                 "gsi": round(g_, 4),
                 "fsi": round(f_, 4),
@@ -298,6 +357,10 @@ def main() -> int:
     valid = count >= args.min_buildings
     summary = {
         "study_area": STUDY_AREA.name,
+        **({} if not sfx else {"scenario": args.scenario,
+            "scenario_rule": "3DBAG minus the buildings design_massing.geojson demolishes, plus its new "
+                             "blocks: storeys = own height / measured storey height; flats on a shop podium "
+                             "add floors, not ground cover, and count as one building with the podium"}),
         "method": "Spacematrix (Berghauser Pont & Haupt 2010): GSI, FSI, L, OSR",
         "source": "3DBAG v20250903 (TU Delft), attributes b3_opp_grond / "
                   "b3_bouwlagen / b3_h_dak_50p / b3_h_maaiveld",
@@ -311,7 +374,7 @@ def main() -> int:
             "min_buildings_per_cell": args.min_buildings,
         },
         "counts": {
-            "buildings_total": int(len(x)),
+            "buildings_total": int(bcount.sum()),
             "buildings_principal": int(principal.sum()),
             "floors_from_3dbag": int((~missing).sum()),
             "floors_estimated": int(missing.sum()),
@@ -346,8 +409,8 @@ def main() -> int:
             for i in range(ncell) if valid[i]
         ],
     }
-    (PROCESSED / "density_summary.json").write_text(json.dumps(summary, indent=2) + "\n")
-    print("  wrote density_summary.json")
+    (PROCESSED / f"density_summary{sfx}.json").write_text(json.dumps(summary, indent=2) + "\n")
+    print(f"  wrote density_summary{sfx}.json")
 
     # merge the headline numbers into the shared indicators file
     mi_path = PROCESSED / "morphology_indicators.json"
@@ -356,15 +419,15 @@ def main() -> int:
     except Exception:
         mi = {}
     mi.pop("_status", None)
-    mi.setdefault("baseline", {})
+    mi.setdefault(args.scenario, {})
     head = combined or {}
-    mi["baseline"]["fsi"] = head.get("fsi", summary["grid"]["fsi"].get("mean"))
-    mi["baseline"]["gsi"] = head.get("gsi", summary["grid"]["gsi"].get("mean"))
-    mi["baseline"]["layers"] = head.get("layers")
-    mi["baseline"]["osr"] = head.get("osr")
-    hstat = head.get("height_m") or summary["grid"]["height_mean_m"]
-    mi["baseline"]["height_mean_m"] = hstat.get("mean")
-    mi["baseline"]["height_std_m"] = hstat.get("std")
+    mi[args.scenario]["fsi"] = head.get("fsi", summary["grid"]["fsi"].get("mean"))
+    mi[args.scenario]["gsi"] = head.get("gsi", summary["grid"]["gsi"].get("mean"))
+    mi[args.scenario]["layers"] = head.get("layers")
+    mi[args.scenario]["osr"] = head.get("osr")
+    hs = head.get("height_m") or summary["grid"]["height_mean_m"]
+    mi[args.scenario]["height_mean_m"] = hs.get("mean")
+    mi[args.scenario]["height_std_m"] = hs.get("std")
     mi["_density_source"] = "analysis/morphology/density_height.py"
     mi_path.write_text(json.dumps(mi, indent=2) + "\n")
     print("  merged fsi / gsi / height into morphology_indicators.json")

@@ -35,16 +35,40 @@
   "scenario_a": {
     "svf_mean": 0.6834,
     "svf_median": 0.7093,
-    "svf_site_mean": 0.6469
+    "svf_site_mean": 0.6469,
+    "fsi": 1.0778,
+    "gsi": 0.3248,
+    "layers": 3.32,
+    "osr": 0.626,
+    "height_mean_m": 8.634,
+    "height_std_m": 3.159,
+    "landuse_mix": 0.2352,
+    "landuse_simpson": 0.2191
   },
   "scenario_b": {
     "svf_mean": 0.7101,
     "svf_median": 0.7439,
-    "svf_site_mean": 0.7837
+    "svf_site_mean": 0.7837,
+    "fsi": 0.9928,
+    "gsi": 0.3082,
+    "layers": 3.22,
+    "osr": 0.697,
+    "height_mean_m": 8.587,
+    "height_std_m": 3.057,
+    "landuse_mix": 0.2516,
+    "landuse_simpson": 0.2373
   },
   "final": {
     "svf_mean": 0.7066,
     "svf_median": 0.7406,
-    "svf_site_mean": 0.765
+    "svf_site_mean": 0.765,
+    "fsi": 0.9743,
+    "gsi": 0.3074,
+    "layers": 3.17,
+    "osr": 0.711,
+    "height_mean_m": 8.926,
+    "height_std_m": 3.131,
+    "landuse_mix": 0.2824,
+    "landuse_simpson": 0.2808
   }
 }

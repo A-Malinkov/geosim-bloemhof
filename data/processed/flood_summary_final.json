@@ -1,0 +1,9 @@
+{
+  "_status": "not_computed_yet",
+  "_note": "Placeholder. The app treats _status=not_computed_yet as 'no data': the layer shows nothing on this scenario, with a notice. Overwrite this file with real output.",
+  "_written_by": "analysis/flood/import_cyrille.py (only today's city has been analysed)",
+  "_schema": {
+    "scenario": "<scenario>",
+    "layers": "as flood_summary.json: [{id, label, png (flood_<id>_<scenario>.png, warped to EPSG:4326), bbox_wgs84, legend, stats}]"
+  }
+}

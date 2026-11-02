@@ -83,15 +83,50 @@ export async function setup(ctx) {
     return `<span class="delta ${cls}">${x >= 0 ? "+" : ""}${x.toFixed(d)}</span>`;
   };
 
-  /* ---------------------------------------------------------- map layers */
-  const nets = new Map();   //scenario -> promise of {ds, handle} for the network
-  const picks = new Map();  //scenario -> promise of {ds, handle} for the optimiser's links
-  const edges = new Map();  //scenario -> promise of {ds, handle} for the edge-street distances
-  //checkbox choice per kind, kept across scenario switches; the distance points start off
-  const wanted = new Map([[nets, true], [picks, true], [edges, false]]);
+  /* ---------------------------------------------------------- map layers
+   * One checkbox per analysis, like the wind and noise maps: it shows the
+   * selected scenario's run and follows the scenario switch. Each scenario's
+   * data is loaded the first time it is shown, then kept. A scenario without
+   * a run shows nothing, with a notice, rather than another scenario's map. */
   let edgePick = { mode: "walk", street: "lange_hilleweg" };  //which distance colours the points
-  //a tick or untick on the current scenario's layer is the user's choice; the switch's own hiding is not
-  const remember = (map, scenario) => (v) => { if (scenario === ctx.scenario()) wanted.set(map, v); };
+
+  function scenarioLayer({ id, label, show, load, none }) {
+    const cache = new Map();  //scenario -> promise of its DataSource, or null when there is no run
+    let on = show;
+    const get = (sc) => {
+      if (!cache.has(sc)) {  //store the promise at once, so two quick switches load a layer only once
+        cache.set(sc, load(sc).catch((err) => {
+          console.warn(`[roads] could not load ${id} for ${sc}`, err);
+          return null;
+        }));
+      }
+      return cache.get(sc);
+    };
+    function refresh() {
+      const sc = ctx.scenario();
+      if (on) get(sc).then((ds) => {
+        const msg = !ds && on && sc === ctx.scenario() ? none(sc) : null;
+        if (msg) ctx.note(msg, "warn");  //ticked, but this scenario has no run
+      });
+      //each layer decides when it resolves, from the state at that moment, so a slow load cannot show a stale scenario
+      for (const [s, p] of cache) p.then((ds) => {
+        if (ds) ds.show = on && s === ctx.scenario();
+        ctx.viewer.scene.requestRender();  //layers load asynchronously, so ask for a redraw
+      });
+    }
+    const handle = ctx.registerLayer({
+      id, label, group: "Mobility", show,  //with the transit stops
+      onToggle: (v) => { on = v; refresh(); },
+    });
+    return { refresh, handle, loaded: () => [...cache.values()] };
+  }
+
+  async function addHidden(ds) {
+    //added hidden: refresh() decides what shows
+    ds.show = false;
+    await ctx.viewer.dataSources.add(ds);
+    return ds;
+  }
 
   async function loadNetwork(scenario) {
     //the scenario's walk network, coloured by edge betweenness
@@ -104,16 +139,7 @@ export async function setup(ctx) {
       e.polyline.material = Cesium.Color.fromCssColorString(RAMP[k]);
       e.polyline.width = 1.5 + k;  //busier edges drawn wider
     }
-    await ctx.viewer.dataSources.add(ds);
-    const handle = ctx.registerLayer({
-      id: `roads-${scenario}`,
-      label: `Walk network, betweenness (${scenario})`,
-      group: "Mobility",  //with the transit stops; there is no separate Roads group any more
-      show: wanted.get(nets),  //start as the user last left it, so registering does not reset the choice
-      target: ds,
-      onToggle: remember(nets, scenario),
-    });
-    return { ds, handle };
+    return addHidden(ds);
   }
 
   async function loadLinks(scenario) {
@@ -138,16 +164,7 @@ export async function setup(ctx) {
         disableDepthTestDistance: Number.POSITIVE_INFINITY,
       });
     }
-    await ctx.viewer.dataSources.add(ds);
-    const handle = ctx.registerLayer({
-      id: `roads-links-${scenario}`,
-      label: `Optimiser footpath links (${scenario})`,
-      group: "Mobility",  //with the walk network and the transit stops
-      show: wanted.get(picks),  //start as the user last left it
-      target: ds,
-      onToggle: remember(picks, scenario),
-    });
-    return { ds, handle };
+    return addHidden(ds);
   }
 
   const edgeColour = (m) => Cesium.Color.fromCssColorString(
@@ -188,34 +205,23 @@ export async function setup(ctx) {
       e.edgeProps = p;
     }
     paintEdge(ds);
-    await ctx.viewer.dataSources.add(ds);
-    const handle = ctx.registerLayer({
-      id: `roads-edge-${scenario}`,
-      label: `Distance to edge streets (${scenario})`,
-      group: "Mobility",
-      show: wanted.get(edges),
-      target: ds,
-      onToggle: remember(edges, scenario),
-    });
-    return { ds, handle };
+    return addHidden(ds);
   }
 
-  async function showLayers(scenario) {
-    //only the current scenario's layers on, checkboxes kept in step
-    for (const [map, load] of [[nets, loadNetwork], [picks, loadLinks], [edges, loadEdge]]) {
-      if (!map.has(scenario)) {  //store the promise at once, so two quick switches load a layer only once
-        map.set(scenario, load(scenario).catch((err) => {
-          console.warn(`[roads] could not load layer for ${scenario}`, err);
-          return null;
-        }));
-      }
-      for (const [s, p] of map) {
-        const layer = await p;
-        if (ctx.scenario() !== scenario) return;  //switched again while loading, the newer call sets visibility
-        layer?.handle.setVisible(s === scenario && wanted.get(map));  //only the current scenario's, and only if wanted
-      }
-    }
-    ctx.viewer.scene.requestRender();  //layers loaded asynchronously, so ask for a redraw
+  const netLayer = scenarioLayer({
+    id: "roadsNetwork", label: "Walk network, betweenness", show: true, load: loadNetwork,
+    none: (sc) => `Walk network: no run for ${sc}`,
+  });
+  const linkLayer = scenarioLayer({
+    id: "roadsLinks", label: "Optimiser footpath links", show: true, load: loadLinks,
+    none: (sc) => (sc === "baseline" ? null : `Footpath links: no run for ${sc}`),  //the optimiser only runs on the designs
+  });
+  const edgeLayer = scenarioLayer({
+    id: "roadsEdge", label: "Distance to edge streets", show: false, load: loadEdge,
+    none: (sc) => `Distance to edge streets: no run for ${sc}`,
+  });
+  function showLayers() {
+    for (const l of [netLayer, linkLayer, edgeLayer]) l.refresh();
   }
 
   /* ------------------------------------------------------------- the card */
@@ -338,12 +344,11 @@ export async function setup(ctx) {
         if (b.dataset.mode) edgePick.mode = b.dataset.mode;
         if (b.dataset.street) edgePick.street = b.dataset.street;
         for (const x of b.parentElement.children) x.classList.toggle("on", x === b);
-        for (const p of edges.values()) {
-          const layer = await p;
-          if (layer) paintEdge(layer.ds);
+        for (const p of edgeLayer.loaded()) {
+          const ds = await p;
+          if (ds) paintEdge(ds);
         }
-        wanted.set(edges, true);
-        (await edges.get(sc))?.handle.setVisible(sc === ctx.scenario());
+        edgeLayer.handle.setVisible(true);  //ticks the checkbox and shows the selected scenario's points
         ctx.viewer.scene.requestRender();
       });
     }
@@ -364,7 +369,7 @@ export async function setup(ctx) {
         produces: `data/processed/road_metrics.json → ${sc}`,
         owner: "analysis/roads/road_network.py, CASES",
       });
-      showLayers(sc);
+      showLayers();
       return;
     }
     out.innerHTML = networkTable(sc) + accessTable(sc) + edgeBlock(sc) + linksBlock(sc) +
@@ -374,7 +379,7 @@ export async function setup(ctx) {
       `and the homes, not the shops the design removes ` +
       `(${Object.entries(data.destinations_on_site_today || {}).filter(([, n]) => n).map(([k, n]) => `${n} ${k.replace("_", " ")}`).join(", ")} today).</p>`;
     bindEdge(sc);
-    showLayers(sc);
+    showLayers();
   }
 
   ctx.onScenarioChange(render);

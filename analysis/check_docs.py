@@ -121,6 +121,28 @@ def main() -> int:
              f"{svf['per_buurt']['Bloemhof']['open_ground']['mean']:.3f}", [MAIN]),
             ("Shannon row", r"\*\*land-use mix\*\* Shannon", f"{b['shannon_area']:.3f}", [MORPH]),
         ]
+    #density and land-use mix per scenario, the morphology README's table
+    for sfx in ["", "_scenario_a", "_scenario_b", "_final"]:
+        ds_, ls_ = load(f"density_summary{sfx}.json"), load(f"landuse_summary{sfx}.json")
+        name = sfx.lstrip("_") or "baseline"
+        if ds_:
+            c = ds_["combined"]
+            checks += [
+                (f"GSI {name}", r"^\| GSI, whole buurt \|", f"{c['gsi']:.3f}", [MORPH]),
+                (f"FSI {name}", r"^\| FSI, whole buurt \|", f"{c['fsi']:.3f}", [MORPH]),
+                (f"storeys {name}", r"^\| storeys \(L\), whole buurt \|", f"{c['layers']:.2f}", [MORPH]),
+            ]
+        if ls_:
+            c = ls_["combined"]
+            nonres = 1 - next(x["share"] for x in c["composition"] if x["category"] == "residential")
+            checks += [
+                (f"mix {name}", r"^\| land-use mix, Shannon \(floor area\) \|", f"{c['shannon_area']:.3f}", [MORPH]),
+                (f"mix units {name}", r"^\| land-use mix, Shannon \(units\) \|", f"{c['shannon_count']:.3f}", [MORPH]),
+                (f"not housing {name}", r"^\| floor space not housing \|", f"{100 * nonres:.1f} %", [MORPH]),
+            ]
+            if ls_.get("scenario_inputs"):
+                checks.append((f"usable/gross {name}", r"usable/gross ratio\s*$|measured from today's all-housing buildings",
+                               f"{ls_['scenario_inputs']['usable_to_gross']:.3f}", [MORPH]))
     if ca:
         pref = ca["preferred"]
         sc = ca["scenarios"][pref]
