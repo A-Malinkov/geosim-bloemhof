@@ -1,43 +1,25 @@
 #!/usr/bin/env python3
 """
-fetch_trees.py - the Rotterdam municipal tree register for the study area.
+fetch_trees.py - the Rotterdam municipal tree register for Bloemhof.
 
-SOURCE
-------
-Gemeente Rotterdam publishes its tree register as an ArcGIS MapServer layer:
+Owner: Atanas Malinkov
+
+From the city's ArcGIS layer
     https://diensten.rotterdam.nl/arcgis/rest/services/SB_Infra/Bomen/MapServer/0
-Points in EPSG:28992, one per managed tree, with height class, crown
-size, trunk diameter, planting year and condition.
+one point per tree with height class, crown, trunk, planting year and state.
+The city's 3D tree tiles are a sealed mesh, the register is data we can count
+and edit per scenario. Species were dropped on 2026-11-01.
 
-WHY NOT JUST USE THE 3D TILES?
-------------------------------
-The app also loads Rotterdam's ready-made 3D tree tileset, which looks good but
-is a sealed mesh: you cannot query it, count it, or remove a tree for a design
-scenario. This register is the underlying data, so with it we can
-  * place our own 3D vegetation that scenarios can add to and subtract from,
-  * feed tree crowns into the Sky View Factor and wind calculations,
-  * report tree count, heights and canopy cover as indicators.
-Species are not kept (dropped 2026-11-01: more detail than the project needs).
+HOOGTE is a class ("12-15 m."). We use its midpoint and keep the bounds. Ground
+under each tree is sampled from the AHN DTM.
 
-HEIGHTS
--------
-HOOGTE is a class ("12-15 m."), not a number, so it is mapped to the class
-midpoint and the class bounds are kept alongside it so nobody mistakes the
-midpoint for a measurement. Ground level under each tree is sampled from the
-AHN DTM, so the app can place trees without querying terrain at runtime.
-
-USAGE
------
-    python analysis/morphology/fetch_ahn.py      # for the ground heights
+    python analysis/morphology/fetch_ahn.py                   #ground heights first
     python analysis/morphology/fetch_trees.py
+    python analysis/morphology/fetch_trees.py --from-cache    #when the service is down
 
-OUTPUTS
--------
-    data/raw/rotterdam_trees_rd.geojson      as delivered, EPSG:28992
-    data/processed/trees.geojson             WGS84, for the Cesium app
-    data/processed/vegetation_summary.json   canopy cover, heights, stats
+Writes data/raw/rotterdam_trees_rd.geojson, data/processed/trees.geojson and
+data/processed/vegetation_summary.json.
 """
-from __future__ import annotations
 
 import json
 import math
@@ -48,7 +30,7 @@ import numpy as np
 import requests
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
-from common.project import (  # noqa: E402
+from common.project import (  #noqa: E402
     PROCESSED, RAW, STUDY_AREA, bbox_rd, buurt_polygons,
     study_area_polygon, to_wgs,
 )
@@ -57,7 +39,7 @@ SERVICE = ("https://diensten.rotterdam.nl/arcgis/rest/services"
            "/SB_Infra/Bomen/MapServer/0/query")
 PAGE = 1000
 
-#: HOOGTE class -> (low, high, representative height in metres).
+#HOOGTE class -> (low, high, representative height in metres).
 HEIGHT_CLASSES = {
     "<6 m.":     (0.0, 6.0, 4.5),
     "6-9 m.":    (6.0, 9.0, 7.5),
@@ -67,11 +49,11 @@ HEIGHT_CLASSES = {
     "18-24 m.":  (18.0, 24.0, 21.0),
     "> 24 m.":   (24.0, 30.0, 26.5),
 }
-DEFAULT_HEIGHT_M = 9.0          # used when HOOGTE is empty
+DEFAULT_HEIGHT_M = 9.0          #used when HOOGTE is empty
 
 
-def fetch_all(bbox) -> list[dict]:
-    """Page through the service; it caps each response at 2000 records."""
+def fetch_all(bbox):
+    #Page through the service; it caps each response at 2000 records.
     xmin, ymin, xmax, ymax = bbox
     base = {
         "geometry": f"{xmin},{ymin},{xmax},{ymax}",
@@ -105,7 +87,7 @@ def fetch_all(bbox) -> list[dict]:
     return feats
 
 
-def load_cached(bbox) -> list[dict]:
+def load_cached(bbox):
     #rebuild service-shaped records from data/raw/rotterdam_trees_rd.geojson, for when the service is down
     xmin, ymin, xmax, ymax = bbox
     fc = json.loads((RAW / "rotterdam_trees_rd.geojson").read_text())
@@ -126,7 +108,7 @@ def load_cached(bbox) -> list[dict]:
 
 
 def sample_ground(xs, ys):
-    """Ground level (m NAP) under each tree, from the AHN DTM."""
+    #Ground level (m NAP) under each tree, from the AHN DTM.
     import rasterio
     path = RAW / "ahn_dtm_05m.tif"
     if not path.exists():
@@ -139,16 +121,16 @@ def sample_ground(xs, ys):
         arr[arr >= AHN_NODATA * 0.5] = np.nan
         arr[arr < -100] = np.nan
         t = src.transform
-    # src.index() does not vectorise in rasterio 1.5, so invert the affine
-    # transform ourselves: for a north-up raster a > 0 and e < 0.
+    #src.index() does not vectorise in rasterio 1.5, so invert the affine
+    #transform ourselves: for a north-up raster a > 0 and e < 0.
     cols = np.floor((xs - t.c) / t.a).astype(int)
     rows = np.floor((ys - t.f) / t.e).astype(int)
     rows = np.clip(rows, 0, arr.shape[0] - 1)
     cols = np.clip(cols, 0, arr.shape[1] - 1)
     g = arr[rows, cols]
 
-    # The DTM is empty under buildings and over water. Widen the search for
-    # those trees until a real ground value turns up.
+    #The DTM is empty under buildings and over water. Widen the search for
+    #those trees until a real ground value turns up.
     missing = ~np.isfinite(g)
     for win in (2, 4, 8, 16, 32):
         if not missing.any():
@@ -167,20 +149,19 @@ def sample_ground(xs, ys):
     return g.astype("float32")
 
 
-def main() -> int:
-    import argparse
-    ap = argparse.ArgumentParser(description=__doc__,
-                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--pad", type=int, default=0,
-                    help="extra context beyond the study-area edge, in metres")
-    ap.add_argument("--from-cache", action="store_true",
-                    help="use data/raw/rotterdam_trees_rd.geojson instead of the service")  #service answered 404 on 2026-10-22
-    args = ap.parse_args()
+PARAMS = {
+    "pad": 0,  #extra context beyond the study-area edge, m
+    "from_cache": "--from-cache" in sys.argv,  #use data/raw/rotterdam_trees_rd.geojson, the service answered 404 on 2026-10-22
+}
 
-    bbox = bbox_rd(args.pad)
+
+def main():
+    p = PARAMS
+
+    bbox = bbox_rd(p["pad"])
     print(f"Rotterdam tree register: {STUDY_AREA.name}")
     try:
-        feats = load_cached(bbox) if args.from_cache else fetch_all(bbox)  #cache mode skips the network
+        feats = load_cached(bbox) if p["from_cache"] else fetch_all(bbox)  #cache mode skips the network
     except requests.HTTPError as exc:
         code = exc.response.status_code if exc.response is not None else "?"
         print(f"\n  the Rotterdam tree service returned HTTP {code}.")
@@ -252,7 +233,7 @@ def main() -> int:
             "properties": props,
         })
 
-    if not args.from_cache:  #in cache mode keep the full raw download rather than overwrite it with a subset
+    if not p["from_cache"]:  #in cache mode keep the full raw download rather than overwrite it with a subset
         (RAW / "rotterdam_trees_rd.geojson").write_text(json.dumps({
             "type": "FeatureCollection",
             "crs": {"type": "name", "properties": {"name": "urn:ogc:def:crs:EPSG::28992"}},
@@ -273,10 +254,10 @@ def main() -> int:
     heights = np.array(heights)
     crowns = np.array(crowns)
 
-    # Density and canopy cover must use the SAME extent for numerator and
-    # denominator. The register is queried over the bounding box, which is
-    # larger than the buurten, so counting every tree fetched against the buurt
-    # area overstates density by about two thirds. Clip to the polygons.
+    #Density and canopy cover must use the SAME extent for numerator and
+    #denominator. The register is queried over the bounding box, which is
+    #larger than the buurten, so counting every tree fetched against the buurt
+    #area overstates density by about two thirds. Clip to the polygons.
     import shapely.geometry as sg
     from shapely.prepared import prep
     polys = buurt_polygons()
@@ -324,7 +305,7 @@ def main() -> int:
         "trees_per_hectare": (combined or {}).get("trees_per_hectare"),
         "area_m2": area_m2,
         "canopy": {
-            # the clipped figure, so numerator and denominator share a polygon
+            #the clipped figure, so numerator and denominator share a polygon
             "cover_fraction": (combined or {}).get("canopy_cover_fraction"),
             "total_m2_bounding_box": round(canopy_m2, 1),
             "_note": "cover_fraction is measured inside the buurten. Crowns are "

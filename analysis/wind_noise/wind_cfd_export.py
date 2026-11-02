@@ -2,42 +2,24 @@
 """
 wind_cfd_export.py - watertight building STLs for the OpenFOAM wind model.
 
-Turns the design site's buildings into a flat-ground STL that snappyHexMesh can
-mesh. Each footprint is extruded from z=0 (the OpenFOAM ground wall) up to its
-height ABOVE GROUND. There is no NAP offset here: unlike the Cesium app, the
-OpenFOAM domain stands on a flat ground plane at z=0, so heights above ground
-are exactly what the solver wants.
+Each footprint on the design site is extruded from z = 0, the OpenFOAM ground,
+to its height above ground. No NAP offset, the domain is flat.
+    baseline     today's 3DBAG buildings on the site
+    scenario_a   those demolished except the kept block, plus the 22 new blocks
+    scenario_b   the same with OPTION 2's 10 blocks
+    final        the same with the Final Model's 301 volumes. Where footprints
+                 overlap the lower one loses the overlap, so podiums and flats
+                 become touching stepped prisms.
+The geometry moves to a local frame on the site centre and is rotated so the
+wind (from 225 deg, SW) blows along +x, the inlet the OpenFOAM case expects.
 
-Per case:
-    baseline     the 3DBAG buildings now standing on the design site
-    scenario_a   those demolished (the keep_rd survivors stay), the 22 new
-                 massing blocks added. The kept block (school, halls and
-                 workshops, circled on the BAG) is NOT in the demolition list,
-                 so it survives buildings_for_scenario() and is welded into the
-                 STL as a solid obstacle.
-    scenario_b   the same, with OPTION 2's 10 blocks
-    final        the same, with the Final Model's 301 volumes. Flats stood on a
-                 shop podium share its footprint; where footprints overlap the
-                 lower one loses the overlap, so the STL holds touching stepped
-                 prisms rather than solids nested inside each other.
+    python analysis/wind_noise/wind_cfd_export.py                         #every case
+    python analysis/wind_noise/wind_cfd_export.py --scenario scenario_a   #only these
 
-The geometry is moved to a local metric frame centred on the site and ROTATED so
-the prevailing wind (from the SW, 225 deg) blows along +x. That is the inlet
-direction the OpenFOAM ABL case expects (flowDir (1 0 0)): the SW edge of the
-site becomes the inlet side (xMin), the NE edge the outlet (xMax).
-
-Writes, per case, into cache/wind/geometry/ (gitignored, regenerable):
-    b_<case>.stl         one watertight solid per building, concatenated
-    b_<case>.meta.json   centre, rotation, local bounds, counts, kept ids
-
-Run:
-    python analysis/wind_noise/wind_cfd_export.py                 # all four cases
-    python analysis/wind_noise/wind_cfd_export.py --wind-from 225 # pick a wind
-    python analysis/wind_noise/wind_cfd_export.py --cases scenario_a
+Writes b_<case>.stl and b_<case>.meta.json per case into cache/wind/geometry/
+(gitignored).
 """
-from __future__ import annotations
 
-import argparse
 import json
 import pathlib
 import sys
@@ -47,9 +29,9 @@ import numpy as np
 HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 sys.path.insert(0, str(HERE.parent / "scenarios"))
-from common.project import ROOT, design_site_polygon  # noqa: E402
-from scenario_world import load_scenario, site_footprints  # noqa: E402
-from scenario_world import FOOTPRINTS  # noqa: E402
+from common.project import ROOT, design_site_polygon  #noqa: E402
+from scenario_world import load_scenario, site_footprints  #noqa: E402
+from scenario_world import FOOTPRINTS  #noqa: E402
 
 OUT = ROOT / "cache" / "wind" / "geometry"
 DEFAULT_WIND_FROM = 225.0  #prevailing wind in the Netherlands is from the south-west
@@ -66,7 +48,7 @@ def load_footprints():
     return b
 
 
-def buildings_for_case(b, case: str, site):
+def buildings_for_case(b, case, site):
     #the buildings standing on the site for one case, as (id, height_m, shapely geom in RD)
     if case == "baseline":
         on_site = b[b.representative_point().within(site)].copy()
@@ -107,7 +89,7 @@ def polygons(geom):
                 yield from polygons(g)
 
 
-def cut_overlaps(rows, min_area_m2: float = 1.0):
+def cut_overlaps(rows, min_area_m2=1.0):
     #rows whose footprint overlaps a taller one lose that part, so no solid hides inside another
     #(final: flats on a shop podium, two volumes on one footprint; baseline, A and B have none)
     from shapely.ops import unary_union
@@ -143,7 +125,7 @@ def build_mesh(rows, cx, cy, alpha_deg):
     return trimesh.util.concatenate(meshes)
 
 
-def export_case(b, case: str, site, cx, cy, alpha_deg, wind_from):
+def export_case(b, case, site, cx, cy, alpha_deg, wind_from):
     rows, kept = buildings_for_case(b, case, site)
     print(f"  {case}: {len(rows)} buildings on the site"
           + (f", {len(kept)} kept 3DBAG survivors" if case != "baseline" else ""))
@@ -185,20 +167,21 @@ def export_case(b, case: str, site, cx, cy, alpha_deg, wind_from):
     return meta
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__,
-                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--wind-from", type=float, default=DEFAULT_WIND_FROM,
-                    help="bearing the wind blows FROM, met. degrees (225 = SW, default)")
-    ap.add_argument("--cases", nargs="+", default=["baseline", "scenario_a", "scenario_b", "final"],
-                    help="cases to export (default: all four)")
-    args = ap.parse_args()
+PARAMS = {
+    "wind_from": DEFAULT_WIND_FROM,  #bearing the wind blows FROM, met. degrees, 225 is SW
+}
+
+CASES = ["baseline", "scenario_a", "scenario_b", "final"]
+
+
+def main():
+    p = PARAMS
 
     #a wind FROM bearing B must be turned (B+90) deg ccw to point downwind along +x
-    alpha_deg = (args.wind_from + 90.0) % 360.0
+    alpha_deg = (p["wind_from"] + 90.0) % 360.0
     site = design_site_polygon()
     cx, cy = site.centroid.x, site.centroid.y
-    print(f"site centre RD ({cx:.1f}, {cy:.1f}); wind from {args.wind_from:.0f} deg "
+    print(f"site centre RD ({cx:.1f}, {cy:.1f}); wind from {p['wind_from']:.0f} deg "
           f"-> rotate {alpha_deg:.0f} deg ccw so it blows along +x")
 
     b = load_footprints()
@@ -207,8 +190,9 @@ def main() -> int:
     demolished = keep[1]
     print(f"scenario_a demolishes {len(demolished)} 3DBAG ids; the keep_rd block is excluded from that list")
 
-    metas = {case: export_case(b, case, site, cx, cy, alpha_deg, args.wind_from)
-             for case in args.cases}
+    only = sys.argv[sys.argv.index("--scenario") + 1:] if "--scenario" in sys.argv else CASES  #run only these cases
+    metas = {case: export_case(b, case, site, cx, cy, alpha_deg, p["wind_from"])
+             for case in CASES if case in only}
 
     if "scenario_a" in metas:
         kept = metas["scenario_a"]["kept_bag_ids"]

@@ -1,80 +1,36 @@
 #!/usr/bin/env python3
 """
-place_amenities.py - where in the new blocks the shops, health practices and
-schools should go.
+place_amenities.py - where in the new blocks shops, health practices and a
+school should go.
 
-Component 4.8. Built 2026-10-27. Uses the network, homes and destinations of
-road_network.py.
+Component 4.8. Built 2026-10-27. Uses road_network.py's network, homes and
+destinations.
 
-USAGE
------
     python analysis/roads/place_amenities.py
-    python analysis/roads/place_amenities.py --labelled-only   #only the final design's shops from the Rhino
-                                                               #block names, A and B left as written
+    python analysis/roads/place_amenities.py --labelled-only   #only the final design, A and B left as written
 
-The final design (Rhino "Final Model") names its shop blocks, so its shops are
-not placed: they are read from design_massing.geojson (use "shop" or "mixed"),
-one marker per shop volume, plus the kept block's school and halls.
+Options A and B are housing only, while their cleared ground holds 20 shops, 7
+health practices and a school today. This puts them back on the ground floors.
+The final design names its shop blocks, so those are read from
+design_massing.geojson and the p-median turns some of them into health
+practices (CONVERT).
 
-WHY
----
-Both Rhino options are housing only. The ground they clear holds 20 shops, 7
-health-care addresses and 1 school today (BAG), and none come back. This puts
-them back on the ground floors of the new blocks, where they shorten everyday
-walks the most.
+A p-median per type (Hakimi 1964). Choose p_k sites to minimise the dwelling-
+weighted mean walk from every home to its nearest destination of type k,
+existing or new. Candidates are points every 15 m along each new block within
+40 m of a path, outside the kept block. B's blocks stand 11-36 m back from
+their paths, so a tighter limit shuts B out. p_k is what the cleared ground
+holds today, shop 20, health 7, school 1. The school in the kept community
+centre stays where it is (Atanas, 2026-10-27), one more replaces the demolished
+one. Greedy, then vertex substitution (Teitz and Bart 1968), health then shop.
+Floor area lost to housing is reported but not fed back. J for p = 0 to 2 p_k
+is written too, to show diminishing returns.
 
-PROBLEM
--------
-A p-median problem per amenity type (Hakimi 1964). For type k, choose p_k
-sites S_k from the candidates to minimise
+Writes design_amenities.geojson and amenity_placement.json in data/processed/.
 
-    J_k = sum_h w_h * min( d_h(existing k), min_{s in S_k} d_h(s) ) / sum_h w_h
-
-the dwelling-weighted mean walking distance from every dwelling in the buurt
-(and on the site) to its nearest destination of type k, existing or new. w_h is
-one per BAG dwelling and the estimated dwellings for each new block. One
-candidate holds one amenity.
-
-  candidates  points every 15 m along the outline of each new block, kept only
-              where a street or path is within 40 m, outside the kept block
-              (never touched), snapped to the walk
-              network like the homes, so the walk from the door to the path
-              counts. B's blocks stand 11-36 m back from their paths (median
-              per block), A's 3-18 m; a tighter limit shuts B out.
-  budget      p_k = what the cleared ground holds today: shop 20, health 7,
-              school 1. Like-for-like replacement, a choice we state.
-  school      today the site has two schools. The one in the kept community
-              centre stays exactly where it is, untouched, and is never moved
-              (Atanas, 2026-10-27); it is an existing destination. The other,
-              demolished, is replaced by one placed school like any other type.
-  method      greedy (each pick the candidate that lowers J_k most), then
-              vertex substitution (Teitz and Bart 1968): swap a chosen site for
-              an unchosen one while that lowers J_k. Types are placed in the
-              order health, shop, each taking only free candidates.
-  floor area  each amenity takes the median ground-floor area of its type on
-              the cleared ground today (BAG), lost to housing at 73 m2 per
-              dwelling and 0.8 usable/gross. Reported, not fed back into the
-              dwelling counts the weights use (a few dozen of ~1,900).
-
-Also reported: J_k for p = 0 .. 2 p_k, so the diminishing returns show.
-
-OUTPUT
-------
-    data/processed/design_amenities.geojson   placed amenities (points), per scenario
-    data/processed/amenity_placement.json     per scenario and type: J before and after,
-                                              site dwellings and site grid before/after,
-                                              the p curve, floor area and dwellings lost
-
-WHAT IT CANNOT TELL YOU
------------------------
-* Distance only. Whether a shop survives at a spot (footfall, rent, clustering
-  with other shops) is not modelled, and the objective rewards spreading shops
-  out, the opposite of how real retail behaves (see analysis/abm_landuse/).
-* A school needs far more floor than a shop. Education is placed as a point;
-  whether a block's ground floor can hold a school is a design question.
-* One amenity per 15 m of facade, of any size.
+Limits. Distance only. Footfall and rent are not modelled, and the objective
+spreads shops out where real shops cluster. A school is placed as a point.
 """
-from __future__ import annotations
 
 import json
 import pathlib
@@ -85,8 +41,8 @@ import numpy as np
 HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent / "scenarios"))
-import road_network as rn  # noqa: E402
-from common.project import PROCESSED, RAW, ROOT, design_site_polygon, to_wgs, write_processed  # noqa: E402
+import road_network as rn  #noqa: E402
+from common.project import PROCESSED, RAW, ROOT, design_site_polygon, to_wgs, write_processed  #noqa: E402
 
 CASES = [
     {"scenario": "scenario_a"},
@@ -109,7 +65,7 @@ PARAMS = {
 }
 
 
-# --------------------------------------------------------------- the inputs
+#--- the inputs
 def budgets():
     #what the cleared ground holds today per type (BAG), and their median floor area
     import geopandas as gpd
@@ -286,7 +242,7 @@ def fixed_school(p):
     return g.x, g.y
 
 
-# ------------------------------------------------------------ the p-median
+#--- the p-median
 def mean_dist(D, w):
     #dwelling-weighted mean of the nearest-destination distance
     return float(np.average(D, weights=w))
@@ -326,7 +282,7 @@ def substitute(base, C, w, chosen, free):
     return chosen, best
 
 
-# --------------------------------------------------------------------- run
+#--- run
 def run(case, p, dest, bud, dwelling_m2, rp):
     #one scenario: candidates, distance matrices, placement per type, the p curves
     sc = case["scenario"]
@@ -440,7 +396,7 @@ def today_with_own(dest, dwelling_m2, rp):
     return out
 
 
-# ------------------------------------------------------------------ figure
+#--- figure
 TYPE_STYLE = {"shop": ("#7b4fd0", "o", "shop"), "health": ("#d63c7b", "P", "health care"),
               "education": ("#1f2a44", "*", "school"), "community": ("#b8860b", "s", "community hall")}  #colour, marker, label
 
@@ -521,7 +477,7 @@ def figure(out, feats):
     plt.close(fig)
 
 
-def main() -> int:
+def main():
     p, rp = PARAMS, rn.PARAMS
     print("Amenity placement on the new ground floors")
     dest, _, dwelling_m2 = rn.destinations()

@@ -1,33 +1,18 @@
 #!/usr/bin/env python3
 """
-density_site.py - GSI, FSI and storeys on the design site, today and in every scenario.
+density_site.py - GSI, FSI and storeys on the design site, today and per scenario.
 
-The same method as density_height.py, so the numbers can stand next to the
-buurt figures in the report:
+Owner: Atanas Malinkov
 
-    GSI = built footprint / site area
-    FSI = floor area / site area          floor area = footprint x storeys
-    L   = FSI / GSI                       mean storeys
+Same method as density_height.py. GSI = footprint / site, FSI = floor area /
+site, L = FSI / GSI. Today is every 3DBAG building on the site. A scenario is
+today minus what it demolishes plus its new blocks, with height / storey height
+storeys. Flats on a shop podium add floors but no ground cover.
 
-TODAY: every 3DBAG building whose point lies on the design site. Storeys from
-3DBAG where it gives them, otherwise height / storey height, rounded, at least
-one, with the storey height measured from the buildings that have both (as in
-density_height.py).
-
-A SCENARIO: today's buildings minus the ones it demolishes, plus its new blocks
-from design_massing.geojson. A new block has height / storey height storeys.
-Flats stood on a shop podium (blocks with a base height) add floors but no
-ground cover, because the podium below them is already counted.
-
-USAGE
------
     python analysis/morphology/density_site.py
 
-OUTPUT
-------
-    data/processed/density_site.json   one entry per scenario
+Writes data/processed/density_site.json, one entry per scenario.
 """
-from __future__ import annotations
 
 import json
 import pathlib
@@ -37,8 +22,8 @@ import numpy as np
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "scenarios"))
-from common.project import PROCESSED, RAW, design_site_polygon  # noqa: E402
-from density_height import measured_storey_height  # noqa: E402
+from common.project import PROCESSED, RAW, design_site_polygon  #noqa: E402
+from density_height import measured_storey_height  #noqa: E402
 
 SCENARIOS = ["baseline", "scenario_a", "scenario_b", "final"]
 

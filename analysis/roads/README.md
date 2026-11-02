@@ -15,7 +15,7 @@ them most (the kept school stays fixed; the second school is placed).
 ```bash
 python analysis/roads/road_network.py      # first run fetches OSM into cache/roads/, about 3 min
 python analysis/roads/place_amenities.py   # about 10 s
-python analysis/roads/edge_access.py       # baseline; first run fetches the OSM drive network, about 1 min
+python analysis/roads/edge_access.py       # every case; first run fetches the OSM drive network, about 1 min
 python analysis/roads/edge_access.py --scenario scenario_a --check   # a design option, verified against networkx
 ```
 

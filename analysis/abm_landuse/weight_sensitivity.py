@@ -1,62 +1,27 @@
 #!/usr/bin/env python3
 """
-weight_sensitivity.py -- does the green programme win because it is better, or
-because of the four weights we picked?
+weight_sensitivity.py - does the green programme win on merit or on our weights?
 
-THE PROBLEM
------------
-ca_landuse.py ranks the scenarios on
+Owner: Atanas Malinkov
 
-    objective = 1.6*landuse_mix + 1.0*green_share + 0.8*max(0, 1 - d/400)
-              + 1.1*min(1, homes / homes today)
+The CA programmes are ranked on
+    1.6 mix + 1.0 green share + 0.8 max(0, 1 - d / 400) + 1.1 min(1, homes / homes today)
+and green wins by about 0.02, against a spread of about 0.003 between
+replicates. The weights are ours, so we sweep them.
 
-and the green programme wins. Since 2026-10-30 the CA clears the design site and
-rebuilds it, and the green programme asks for 120 housing cells against today's
-160, so the housing term differs between programmes: the sweep varies all four
-weights. Those weights were chosen by us. The README said so
-and called a sensitivity sweep "the obvious next step", which is this file.
+Every stored CA replicate keeps its raw terms, so nothing is re-run. Scaling all
+weights changes no ranking, so we walk the simplex where the four weights sum
+to 1 and re-pick the best replicate at each point, as ca_landuse.py does. We
+report the winner per point, each programme's share of the simplex and how far
+the default weights are from a change of winner.
 
-The margin is the reason it matters: green beats compact by about 0.02
-while the spread between replicates of one scenario is about 0.003. A gap that
-small is not obviously larger than the arbitrariness in the weights.
+Limits. This re-scores the CA only. An RL agent trained on one weight vector
+cannot be re-scored on another, it would need retraining. And a sweep cannot
+say whether the four terms are the right ones.
 
-WHAT IT DOES
-------------
-Every CA replicate already stores its raw components, so the sweep needs
-no re-run of the model: it re-scores the stored replicates under many weight
-vectors and re-picks the best replicate each time, exactly as ca_landuse.py
-does. Re-running the CA would give the same answer and take minutes.
-
-Scaling all four weights leaves the ranking unchanged, so only the DIRECTION
-matters. The sweep therefore walks the normalised simplex w_mix + w_green +
-w_prox + w_housing = 1 on a lattice. A grid over raw weights would spend most of
-its points re-testing the same ratios.
-
-The CA's programmes are baseline, compact and green (keyed scenario_a and
-scenario_b until 2026-10-27). They are not the Rhino design options.
-
-Reported: which programme wins at each point, what share of the simplex each one
-takes, where the default weights sit, and how far you have to move from them to
-change the answer.
-
-WHAT IT CANNOT TELL YOU
------------------------
-This sweeps the SCORING of the CA, which follows fixed transition rules and is
-merely measured against the objective. It says nothing about the RL agent, which
-optimises the objective directly: re-scoring a policy trained on one weight
-vector under a different one is not the same experiment as training under that
-vector, and pretending otherwise would flatter or damn the agent for free.
-Retraining across the simplex is a separate, much slower job.
-
-It also cannot tell you the objective contains the right four terms. A weight
-sweep explores the space we chose; it does not question it.
-
-    python analysis/abm_landuse/weight_sensitivity.py
-    python analysis/abm_landuse/weight_sensitivity.py --step 0.01   # finer
+    python analysis/abm_landuse/weight_sensitivity.py   #~2 s
 """
-from __future__ import annotations
 
-import argparse
 import json
 import pathlib
 
@@ -65,22 +30,21 @@ import numpy as np
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 PROCESSED = ROOT / "data" / "processed"
 
-#: The objective's weights: mix, green, walkability, housing; every model scores with these via components().
+#The objective's weights: mix, green, walkability, housing; every model scores with these via components().
 DEFAULT_W = (1.6, 1.0, 0.8, 1.1)  #housing added 2026-10-30, a bit above green and below mix (Atanas)
 D_NORM = 400.0
 
 
-def components(rep: dict, homes: float, homes_today: float) -> tuple[float, float, float, float]:
-    """The four terms of the objective, before weighting.
-
-    The one place the objective is defined: ca_landuse.py, rl_landuse.py and
-    score_scenarios.py all score through it. A missing distance (no residential
-    cell to measure from) scores as the worst case, not dropped, or scenarios get
-    compared on different terms. Housing is homes against today, capped at 1: no
-    net loss scores full marks, more homes earn nothing extra. Homes are housing
-    cells for the grid models (CA, RL) and dwellings for the Rhino designs; each
-    caller passes its own unit and its own today.
-    """
+def components(rep, homes, homes_today):
+    #The four terms of the objective, before weighting.
+    #
+    #The one place the objective is defined: ca_landuse.py, rl_landuse.py and
+    #score_scenarios.py all score through it. A missing distance (no residential
+    #cell to measure from) scores as the worst case, not dropped, or scenarios get
+    #compared on different terms. Housing is homes against today, capped at 1: no
+    #net loss scores full marks, more homes earn nothing extra. Homes are housing
+    #cells for the grid models (CA, RL) and dwellings for the Rhino designs; each
+    #caller passes its own unit and its own today.
     d = rep.get("mean_distance_to_amenity_m")
     d = D_NORM if d is None else d
     return (float(rep["landuse_mix"]),
@@ -89,12 +53,11 @@ def components(rep: dict, homes: float, homes_today: float) -> tuple[float, floa
             min(1.0, homes / homes_today))  #no net loss of homes = 1
 
 
-def simplex(step: float, d: int = 4) -> np.ndarray:
-    """Lattice points on w_1 + ... + w_d = 1, all strictly positive.
-
-    Zero weights are excluded: dropping a term is a different model, not a
-    sensitivity of this one, and the corners would dominate the win shares.
-    """
+def simplex(step, d=4):
+    #Lattice points on w_1 + ... + w_d = 1, all strictly positive.
+    #
+    #Zero weights are excluded: dropping a term is a different model, not a
+    #sensitivity of this one, and the corners would dominate the win shares.
     from itertools import combinations
     n = int(round(1.0 / step))
     pts = []
@@ -104,12 +67,13 @@ def simplex(step: float, d: int = 4) -> np.ndarray:
     return np.array(pts, dtype=float)
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__,
-                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--step", type=float, default=0.02,
-                    help="lattice spacing on the weight simplex (default 0.02)")
-    args = ap.parse_args()
+PARAMS = {
+    "step": 0.01,  #lattice spacing on the weight simplex, 0.01 is the published lattice
+}
+
+
+def main():
+    p = PARAMS
 
     src = PROCESSED / "landuse_abm.json"
     if not src.exists():
@@ -122,22 +86,22 @@ def main() -> int:
 
     names = list(abm["scenarios"])
     homes_today = abm.get("homes_today_cells", abm["initial"]["score"]["residential_cells"])  #the CA counts housing cells on the site
-    # components of every replicate, per scenario: (n_replicates, 4)
+    #components of every replicate, per scenario: (n_replicates, 4)
     comp4 = {k: np.array([components(r, r["residential_cells"], homes_today) for r in abm["scenarios"][k]["replicates"]])
              for k in names}
     n_rep = {k: len(v) for k, v in comp4.items()}
     print(f"re-scoring {sum(n_rep.values())} stored replicates "
           f"({', '.join(f'{k} {v}' for k, v in n_rep.items())})")
 
-    # --- reproduce the published ranking, as a check on this script ----------
+    #--- reproduce the published ranking, as a check on this script ----------
     w04 = np.array(DEFAULT_W)
     best0 = {k: float((comp4[k] @ w04).max()) for k in names}
     published = {r["scenario"]: r["objective_best"] for r in abm["ranking"]}
     drift = {k: abs(best0[k] - published[k]) for k in names}
     worst = max(drift.values())
     if worst > 5e-4:
-        # If this fires, the objective here and the one in ca_landuse.py have
-        # diverged and every number below is measuring the wrong thing.
+        #If this fires, the objective here and the one in ca_landuse.py have
+        #diverged and every number below is measuring the wrong thing.
         print("! FAILED to reproduce the published objectives from the stored "
               "replicates -- the objective in this script no longer matches "
               "ca_landuse.py:")
@@ -147,9 +111,9 @@ def main() -> int:
     print(f"  reproduced the published objectives (max drift {worst:.2e})")
 
     comp, w0 = comp4, w04  #all four terms are swept
-    # --- sweep ---------------------------------------------------------------
-    W = simplex(args.step)
-    # best replicate per scenario at every weight point: (n_points, n_scenarios)
+    #--- sweep ---------------------------------------------------------------
+    W = simplex(p["step"])
+    #best replicate per scenario at every weight point: (n_points, n_scenarios)
     best = np.column_stack([(W @ comp[k].T).max(axis=1) for k in names])
     win = np.argmax(best, axis=1)
     order = np.sort(best, axis=1)
@@ -157,11 +121,11 @@ def main() -> int:
 
     counts = {names[i]: int((win == i).sum()) for i in range(len(names))}
     total = len(W)
-    print(f"\n  {total:,} weight vectors on the simplex (step {args.step})")
+    print(f"\n  {total:,} weight vectors on the simplex (step {p['step']})")
     for k, c in sorted(counts.items(), key=lambda kv: -kv[1]):
         print(f"    {k:12} wins {c:6,}  ({100*c/total:5.1f} % of the simplex)")
 
-    # where the default sits, and the nearest point that flips the winner
+    #where the default sits, and the nearest point that flips the winner
     w0n = w0 / w0.sum()
     i0 = int(np.argmin(((W - w0n) ** 2).sum(axis=1)))
     default_winner = names[win[i0]]
@@ -184,7 +148,7 @@ def main() -> int:
     else:
         print("  no weight vector on the lattice changes the winner")
 
-    # a readable slice: how the winner changes as the mix weight varies alone
+    #a readable slice: how the winner changes as the mix weight varies alone
     print("\n  holding green:prox:housing at the default ratio, varying the mix weight:")
     others = w0n[1:] / w0n[1:].sum()  #the other three weights' default proportions
     rows = []
@@ -214,7 +178,7 @@ def main() -> int:
                          "are swept.",
         "default_weights_normalised": [round(float(v), 4) for v in w0n],
         "parameters": {
-            "simplex_step": args.step,
+            "simplex_step": p["step"],
             "n_weight_vectors": total,
             "replicates_per_scenario": n_rep,
             "zero_weights_excluded": True,
@@ -249,7 +213,7 @@ def main() -> int:
     path.write_text(json.dumps(out, indent=2) + "\n")
     print(f"\n  wrote {path.relative_to(ROOT)}")
 
-    # the headline, stated plainly
+    #the headline, stated plainly
     share = counts[default_winner] / total
     print(f"\n  {default_winner} wins at the default weights and across "
           f"{100*share:.1f} % of the weight simplex.")

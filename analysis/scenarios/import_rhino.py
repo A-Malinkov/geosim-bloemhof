@@ -1,108 +1,49 @@
 #!/usr/bin/env python3
 """
-import_rhino.py - proposed massing from the team's Rhino model into the app.
+import_rhino.py - the team's Rhino model into the app, one case per scenario.
 
-USAGE
------
     python analysis/scenarios/import_rhino.py
 
-Reads the building solids of one Rhino layer tree per scenario and writes them
-as extrudable footprints to data/processed/design_massing.geojson, and the flat
-road surfaces of the same tree to data/processed/design_streets.geojson. Both
-are drawn by app/modules/scenarios.js. Proposed planting goes to
-data/processed/design_planting.geojson, drawn by app/modules/vegetation.js.
+The model is ~120 MB and stays out of git. Copy the newest one from the shared
+drive to data/raw/ (30.10 came as a OneDrive zip). It is in RD New, in
+millimetres, with z = 0 at NAP 0.
 
-INPUT
------
-The Rhino model is ~105 MB and stays out of git (data/raw/*.3dm). Get it from
-the shared drive (30.10 came as a OneDrive zip):
-    Group Project Q1 - Proposal Modelling_30.10.26.3dm  ->  data/raw/
-The model is in RD New (EPSG:28992), in MILLIMETRES, with z = 0 at NAP 0.
+Writes, all keyed by scenario,
+    design_massing.geojson    block footprints with heights, plus the 3DBAG ids
+                              each scenario demolishes and its keep_rd ring
+    design_streets.geojson    new street surfaces, link surfaces and paths
+    design_planting.geojson   proposed trees, shrubs, green and the pond
+    trees_<scenario>.geojson  the tree register minus trees under new blocks
+                              or streets
 
-FIXES APPLIED ON THE WAY IN
----------------------------
-* Datum. The blocks stand on z = 0 (NAP 0) in Rhino, but the site ground is
-  DESIGN_SITE["ground_nap_m"] (-0.93 m NAP). We keep each block's modelled
-  height and stand it on the ground: roof height_m = ground + (zmax - zmin).
-  base_height_m is left out so scenarios.js defaults it to the site ground.
-* Strays. A solid whose footprint does not touch the design site (one block was
-  left at the model origin) is dropped and reported.
-* Site edge. Footprints are clipped to the design site; the clipped area is
-  reported per block.
-* OPTION 2's freeform blocks. One is drawn as an open roof surface plus a
-  separate wall: the roof is stood on the model ground and the wall, which has
-  no plan area, is skipped. One has a roof that slopes everywhere: it becomes a
-  single flat block at the area-weighted mean roof height (same volume), and
-  the importer prints the peak it loses.
+Fixes on the way in. Each block keeps its modelled height but stands on the site
+ground (-0.93 m NAP). A block that misses the site (one sat at the origin) is
+dropped. Footprints are clipped to the site. rhino3dm's Brep boxes are loose
+(12 m read as 13.2 m), so heights come from the roof faces of the render mesh
+and each roof level becomes its own flat part. A roof that slopes everywhere
+becomes one flat block at its mean height. OPTION 1's boxes in 25.10 and 27.10
+are Extrusions without a mesh and are read from their profile and path.
 
-WHAT EACH SCENARIO DEMOLISHES
------------------------------
-The output also lists, per scenario, the 3DBAG buildings the design removes
-(`demolishes` in design_massing.geojson, BAG pand ids). The app hides those
-when the massing is shown; noise.py and height_width.py are meant to drop them
-too. Rule per case:
-  "site"     every 3DBAG building on the design site. OPTION 1 lays a new
-             street grid over the whole site, so keeping only the buildings it
-             does not overlap would leave old rows standing in new courtyards.
-             OPTION 2 is cleared the same way: its blocks, roads and green
-             cover 55 % of the site and overlap 1,008 of its 1,156 buildings.
-             Both keep the same KEEP_RD block (school, community buildings).
-  "overlap"  only buildings a new block overlaps by more than 1 m2.
-A case can also name a "keep_rd" ring: part of the site the scenario leaves
-standing (no demolition, old streets kept). It is written to the output as
-`keep_rd` so scenario_world.py cuts streets only in the cleared part.
-Footprints come from the 3DBAG API (cached in cache/scenarios/, gitignored).
+Demolition per case. "site" removes every 3DBAG building on the site (OPTION 1
+lays a new street grid over all of it), "overlap" only what a new block covers.
+A keep_rd ring is left standing, the school block for A and B.
 
-WHAT IT CANNOT TELL YOU
------------------------
-* Heights come from the roof faces, not the bounding box: rhino3dm's Brep
-  boxes are loose (a flat 12 m block reported 13.2 m). Each horizontal roof
-  level becomes its own flat extrusion from the ground, so a stepped block
-  becomes stepped parts. Sloping roofs are not modelled; the importer reports
-  any sloping area it skipped, or averages a roof that is all slope (above).
-* The Rhino layers say tall / medium / short, not a use. use is set to
-  "residential" because that is the brief, not because the model says so.
-  The exception is the Final Model, which places named Rhino blocks: "Shops"
-  (a 4 m podium, with a "flats over shops" block stood on it via
-  base_height_m), "Terraced House (4 storey) WITH SHOPS" (one 12 m solid,
-  residential on every floor despite its name, Atanas 2026-10-30) and plain houses.
-  In 30.10, 18 of those are split into a 4 m "ground Floor shops" block with
-  an 8 m "(3 storey) above shops" block on it, and many houses are renamed
-  copies ("Terraced House (4 storey) 12", "... copy copy"): block_use() strips
-  the copy suffix before looking the name up. BLOCK_USE maps block names to
-  uses, NAME_USE the two named solids (Elderly Home, Student accom building).
-* OPTION 1's 18 boxes are Extrusions saved without render meshes in 25.10 and
-  27.10. They are read from their profile and path instead (exact), which
-  moves their footprints by at most 2 m2 against the meshed 23.10 import.
-* Trees: data/processed/trees_<scenario>.geojson is the existing tree register
-  minus the trees standing in a new block, on a new street or in new water.
-  Proposed planting goes to its own file, see below.
-* Streets are the flat surfaces on the "New ROADS" sublayer, merged (several
-  are drawn twice) and clipped to the site. The Final Model's "One- Way Roads"
-  count as street too. Its pedestrian paths, bike paths and parking become
-  kind "pedestrian", "bike", "parking" (CASES surface_layers): drawn by the
-  app, not traced or walked by any analysis yet. The road outline curves on that
-  layer are not used. Fences are not imported.
-* Planting comes from each option's "Proposed Vegetation" sublayer and goes
-  to data/processed/design_planting.geojson, drawn by
-  app/modules/vegetation.js. It is kept apart from the massing, so no
-  analysis (SVF, sun hours, H/W) sees the proposed trees: the team's choice.
-  Tree and bush blocks become points with a height and crown size measured
-  from the block's mesh after its instance transform; the flat surfaces
-  become green patches. The one surface on the top-level "Water feature?"
-  layer is the pond of both options, cut out of their green. Closed solids
-  on the layer (OPTION 2's 86 bushes) become shrub points, not green. The blocks are
-  generic shapes, so the sizes are what was
-  drawn, not a planting plan.
+Uses. The Rhino layers say tall, medium, short, so OPTION 1 and 2 blocks are
+residential because that is the brief. The Final Model places named blocks and
+BLOCK_USE maps their names to uses. block_use() reads 30.10's renamed copies
+("Terraced House (4 storey) 12") as the original. The WITH SHOPS terraced
+houses are homes on every floor (Atanas, 2026-10-30).
+
+Planting is kept out of the massing on purpose, so no analysis sees the
+proposed trees. The block sizes are what was drawn, not a planting plan.
 """
-from __future__ import annotations
 
 import pathlib
 import re  #copy suffixes on Rhino block names
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
-from common.project import RAW, DESIGN_SITE, design_site_polygon, to_rd, to_wgs, write_processed  # noqa: E402
+from common.project import RAW, DESIGN_SITE, design_site_polygon, to_rd, to_wgs, write_processed  #noqa: E402
 
 import rhino3dm  #reads .3dm without Rhino installed
 from shapely.geometry import Point, Polygon, mapping  #footprint geometry, planting points

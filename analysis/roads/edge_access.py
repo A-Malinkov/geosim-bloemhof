@@ -1,73 +1,33 @@
 #!/usr/bin/env python3
 """
-edge_access.py - how far every address on the design site is from the site's
-two main edge streets, Lange Hilleweg (north-west) and Strevelsweg (south), on
-foot and by car, along the street network.
+edge_access.py - how far every address on the design site is from Lange
+Hilleweg and Strevelsweg, on foot and by car, along the streets.
 
 Component 4.8. Built 2026-10-27.
 
-USAGE
------
-    python analysis/roads/edge_access.py                          # baseline
-    python analysis/roads/edge_access.py --scenario scenario_a    # a design option
-    python analysis/roads/edge_access.py --scenario baseline scenario_a scenario_b
-    python analysis/roads/edge_access.py --check                  # also verify against networkx
+    python analysis/roads/edge_access.py                          #every case
+    python analysis/roads/edge_access.py --scenario scenario_a    #only these
+    python analysis/roads/edge_access.py --check                  #also verify against networkx
 
-Needs road_network.py's cached OSM walk network (cache/roads/walk_osm.graphml);
-fetches the OSM drive network into cache/roads/drive_osm.graphml on first run.
-Writes data/processed/edge_access.json (one entry per scenario, others kept)
-and edge_access_<scenario>.geojson (one point per address or entrance).
+Needs road_network.py's cached walk network, fetches the OSM drive network into
+cache/roads/ on first run. Writes data/processed/edge_access.json and
+edge_access_<scenario>.geojson.
 
-METHOD
-------
-  targets   the stretch of each edge street along the site: the network nodes
-            of streets with that OSM name within 15 m of the site outline (the
-            outline already takes in the edge streets). Reaching any of them
-            counts as arriving; an address whose own street piece is one of
-            them is 0 m away by network.
-  walk      road_network.py's walk network for the scenario, clipped to the
-            site + 15 m, so a walk follows the streets and paths on the site
-            and cannot go round the outside. Undirected.
-  drive     OSM drive network (osmnx network_type="drive": no footways, alleys
-            or service roads), one-way streets kept, over the buurt + 500 m and
-            not clipped, because a one-way street can force a car out and back.
-            A scenario uses the same street surgery as the walk network
-            (road_network.lines_for_scenario) minus the hand-drawn footpaths;
-            its new streets are two-way car streets unless CASES says otherwise.
-            A one-way piece that leads into a dead end with no way out (an
-            old one-way street the design cuts short, or the edge of the
-            fetched area) is made two-way: a car turns round there.
-  origins   baseline: BAG addresses with woonfunctie on the site, one dwelling
-            each. A scenario keeps those not demolished and adds the new
-            blocks' entrances: points drawn by the team in
-            data/processed/design_entrances.geojson, or, for a block with none,
-            one every 15 m along walls within 20 m of a street. A block's
-            estimated dwellings (road_network.py's formula) are shared evenly
-            over its entrances.
-  snapping  an address goes to the nearest piece of the street named in its
-            BAG address if one is within 60 m, else to the nearest piece of
-            any street. The BAG point lies inside the building, and the
-            nearest piece is often a back alley or a side street.
-  distance  one Dijkstra per street and mode, from a super-source joined to
-            the target nodes, run on the reversed graph so the distance is
-            FROM the address TO the street (they differ on one-way streets).
-            Walk: access leg from the BAG point + network. Drive: network
-            only, from the point on the street; on a one-way street the car
-            can leave only by the end the traffic runs to.
+Targets are the network nodes of each edge street within 15 m of the site. The
+walk uses road_network.py's network clipped to the site plus 15 m, so a walk
+cannot go round the outside. The drive network keeps one-way streets and is not
+clipped. A scenario gets the same street surgery minus the footpaths, its new
+streets two-way unless CASES says otherwise, and a one-way dead end is made
+two-way since a car turns round there. Origins are BAG dwellings, plus the new
+blocks' entrances (drawn by the team, else one every 15 m along a street). An
+address snaps to its own street if within 60 m. One Dijkstra per street and
+mode on the reversed graph, so it is address to street.
 
-WHAT IT CANNOT TELL YOU
------------------------
-* No turn restrictions, no traffic, no parking: a car starts on the street at
-  the address and the distance is metres, not minutes.
-* OSM is only as complete as OSM. The walk network has no separate pavements
-  here, so a crossing of Strevelsweg is free.
-* The new blocks' entrances and their streets' car access are design
-  decisions. Until the team draws them, the assumptions are recorded in the
-  output under "assumptions" and shown in the app.
+Limits. No turns, traffic or parking, metres and not minutes. No separate
+pavements, so crossing Strevelsweg is free. Entrances and car access of new
+blocks are assumptions, written under "assumptions".
 """
-from __future__ import annotations
 
-import argparse
 import json
 import pathlib
 import sys
@@ -82,8 +42,8 @@ HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 sys.path.insert(0, str(HERE.parent / "scenarios"))
 sys.path.insert(0, str(HERE))
-import road_network as rn  # noqa: E402
-from common.project import (PROCESSED, RAW, ROOT, STUDY_AREA, design_site_polygon,  # noqa: E402
+import road_network as rn  #noqa: E402
+from common.project import (PROCESSED, RAW, ROOT, STUDY_AREA, design_site_polygon,  #noqa: E402
                             study_area_polygon, to_rd, to_wgs)
 
 DRIVE = rn.CACHE / "drive_osm.graphml"  #OSM drive network, buffered
@@ -109,10 +69,10 @@ TARGETS = {  #output key -> OSM / BAG street name
 MODES = ("walk", "drive")
 
 #Car access of each scenario's new streets, filled in by hand once the team decides it.
-#  car_free_rd: RD polygons (lists of (x, y)); a new street, link or connector whose midpoint
-#               lies inside one is not driven. Hand-drawn footpaths are never driven.
-#  oneway_rd:   RD lines (lists of (x, y)) drawn in the direction of travel; a new street piece
-#               whose midpoint lies within oneway_match_m of one is one-way that way.
+# car_free_rd: RD polygons (lists of (x, y)); a new street, link or connector whose midpoint
+#              lies inside one is not driven. Hand-drawn footpaths are never driven.
+# oneway_rd:   RD lines (lists of (x, y)) drawn in the direction of travel; a new street piece
+#              whose midpoint lies within oneway_match_m of one is one-way that way.
 #Left empty, every new street is a two-way car street, and the output says so.
 CASES = {
     "baseline": {},
@@ -121,12 +81,12 @@ CASES = {
 }
 
 
-def norm(s) -> str:
+def norm(s):
     #street names compared without case or accent encoding differences
     return unicodedata.normalize("NFC", str(s)).casefold()
 
 
-# ------------------------------------------------------------------- inputs
+#--- inputs
 def fetch_drive(refresh=False):
     #OSM drive network over the buurten + buffer, cached next to the walk network
     import osmnx as ox
@@ -224,7 +184,7 @@ def lines_for(mode, scenario, case, notes):
     return gpd.GeoDataFrame(lines, crs=28992)
 
 
-# ------------------------------------------------------------------ origins
+#--- origins
 def blocks_for(scenario, dwelling_m2):
     #the scenario's new blocks merged per building (a stepped tower comes as parts), with estimated dwellings
     import geopandas as gpd
@@ -326,7 +286,7 @@ def origins_for(scenario, dwelling_m2, notes):
     return gpd.GeoDataFrame(pd.concat([o, new], ignore_index=True), crs=28992), info
 
 
-# ------------------------------------------------------------------ routing
+#--- routing
 def snap_named(net, pts, streets):
     #points -> (edge index, distance along it, access distance), on the point's own street where possible
     import shapely
@@ -435,7 +395,7 @@ def straight_to(net, tedge, pts):
     return shapely.distance(g, pts)
 
 
-# ------------------------------------------------------------------ metrics
+#--- metrics
 def wquantile(d, w, q):
     o = np.argsort(d)
     cw = np.cumsum(w[o])
@@ -496,7 +456,7 @@ def check(net, A, snapped, tnodes, tedge, mode, got, n):
     return worst
 
 
-# --------------------------------------------------------------------- run
+#--- run
 def run(scenario, dwelling_m2, do_check):
     print(f"\n{scenario}")
     notes = []
@@ -575,16 +535,14 @@ def write_points(o, cols, scenario):
     print(f"  wrote {path.relative_to(ROOT)} ({len(feats)} points)")
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--scenario", nargs="+", default=["baseline"], choices=list(CASES))
-    ap.add_argument("--refresh", action="store_true", help="re-fetch the OSM drive network")
-    ap.add_argument("--check", action="store_true", help="verify a sample against networkx")
-    args = ap.parse_args()
+def main():
+    only = sys.argv[sys.argv.index("--scenario") + 1:] if "--scenario" in sys.argv else list(CASES)  #run only these cases
+    refresh = "--refresh" in sys.argv  #re-fetch the OSM drive network
+    check = "--check" in sys.argv  #verify a sample against networkx
     print(f"Distance to the edge streets: {STUDY_AREA.name}, design site")
     if not rn.WALK.exists():
         sys.exit("No cached walk network: run analysis/roads/road_network.py first.")
-    fetch_drive(args.refresh)
+    fetch_drive(refresh)
     _, _, dwelling_m2 = rn.destinations()
     out = json.loads(OUT.read_text()) if OUT.exists() else {}
     out.update({
@@ -598,8 +556,9 @@ def main() -> int:
     })
     for sc in CASES:
         out.setdefault(sc, {"_status": "not_computed_yet"})
-    for sc in args.scenario:
-        out[sc] = run(sc, dwelling_m2, args.check)
+    for sc in CASES:
+        if sc in only:
+            out[sc] = run(sc, dwelling_m2, check)
     OUT.write_text(json.dumps(out, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
     print(f"\nwrote {OUT.relative_to(ROOT)}")
     return 0

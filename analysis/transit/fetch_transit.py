@@ -1,42 +1,25 @@
 #!/usr/bin/env python3
 """
-fetch_transit.py - public-transport stops around Bloemhof and how often each line calls.
+fetch_transit.py - transit stops around Bloemhof and how often each line calls.
 
-Reads the national GTFS timetable that OVapi publishes (every operator in the
-Netherlands, rebuilt daily from the NDOV open data) and writes, for each stop
-near the study area, every line that calls there and its frequency per
-direction, for a representative weekday and Saturday.
+Reads OVapi's national GTFS timetable and writes, per stop near Bloemhof, every
+line that calls there and how often per direction. Bus and tram stops within
+400 m of the boundary, metro and train within 800 m. Platforms of one stop are
+merged through parent_station.
 
-Which stops: bus and tram stops within 400 m of the Bloemhof boundary, metro
-and train within 800 m. Those are the usual walk-to-stop catchments, so a stop
-just over the edge that residents use still counts. Platforms of one stop (one
-per direction) are merged into a single landmark through GTFS `parent_station`.
+Departures per hour per line and direction in four periods, weekday peak 07-09,
+day 10-16, evening 20-23 and Saturday 10-16. The headway is 60 / departures,
+the average wait. The weekday and Saturday are the busiest Tue-Thu and Saturday
+in the feed's first three weeks, so a holiday timetable is not taken as normal.
+The same in every scenario, a reference layer.
 
-How often: departures per hour per line and direction, counted from the
-timetable, in four periods:
-    peak       weekday 07:00-09:00
-    day        weekday 10:00-16:00
-    evening    weekday 20:00-23:00
-    saturday   Saturday 10:00-16:00
-The headway shown is 60 / departures per hour, i.e. the AVERAGE wait between
-vehicles, not a guaranteed interval. The weekday and Saturday are picked from
-the feed as the Tuesday-Thursday and Saturday with the most scheduled trips in
-its first three weeks, so a holiday timetable is not mistaken for the norm.
-
-The timetable is the current one and does not change with the design
-scenarios: this is a reference layer, identical for baseline / scenario_a /
-scenario_b.
+    python analysis/transit/fetch_transit.py
+    python analysis/transit/fetch_transit.py --refresh   #re-download if newer
 
 Writes data/processed/transit_stops.json. The 242 MB feed is cached in
-cache/transit/ (gitignored); pass --refresh to re-download it when newer.
-
-Run:
-    python analysis/transit/fetch_transit.py
-    python analysis/transit/fetch_transit.py --refresh
+cache/transit/ (gitignored).
 """
-from __future__ import annotations
 
-import argparse
 import datetime as dt
 import email.utils
 import io
@@ -50,7 +33,7 @@ import pandas as pd
 
 HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
-from common.project import ROOT, RD, STUDY_AREA, study_area_polygon, write_processed  # noqa: E402
+from common.project import ROOT, RD, STUDY_AREA, study_area_polygon, write_processed  #noqa: E402
 
 GTFS_URL = "https://gtfs.ovapi.nl/nl/gtfs-nl.zip"
 #OVapi's usage policy asks clients to say who they are
@@ -76,7 +59,7 @@ MERGE_M = 250  #same-named stop areas closer than this are one landmark (metro +
 PLATFORM_RE = re.compile(r"\s*(\[[^\]]*\]|\(?\s*perron\s+\w+\s*\)?)\s*$", re.IGNORECASE)
 
 
-def mode_of(route_type) -> str:
+def mode_of(route_type):
     #map a GTFS route_type, basic or extended, to one of our five modes
     t = int(route_type)
     if t in BASIC_TYPES:
@@ -86,8 +69,8 @@ def mode_of(route_type) -> str:
     return EXTENDED_TYPES.get(t // 100, "bus")
 
 
-# --------------------------------------------------------------- download
-def download(refresh: bool) -> pathlib.Path:
+#--- download
+def download(refresh):
     #fetch the feed once; with --refresh, only re-download when the server has a newer one
     import requests
     if CACHE.exists() and not refresh:
@@ -112,14 +95,14 @@ def download(refresh: bool) -> pathlib.Path:
     return CACHE
 
 
-def read(z: zipfile.ZipFile, name: str, **kw) -> pd.DataFrame:
+def read(z, name, **kw):
     #one GTFS table as strings, so ids keep their leading zeros
     with z.open(name) as f:
         return pd.read_csv(io.TextIOWrapper(f, encoding="utf-8-sig"), dtype=str, keep_default_na=False, **kw)
 
 
-# ------------------------------------------------------------ which stops
-def nearby_stops(z) -> pd.DataFrame:
+#--- which stops
+def nearby_stops(z):
     #every boarding point within the widest catchment, with its distance to the study area
     import geopandas as gpd
     stops = read(z, "stops.txt")
@@ -141,12 +124,12 @@ def nearby_stops(z) -> pd.DataFrame:
     return g
 
 
-def base_name(name: str) -> str:
+def base_name(name):
     #"Rotterdam, Zuidplein (perron L)" -> "Zuidplein": the place prefix and the platform go
     return PLATFORM_RE.sub("", name.split(", ", 1)[-1]).strip()
 
 
-def merge_same_name(g: pd.DataFrame) -> pd.DataFrame:
+def merge_same_name(g):
     #the feed gives metro, tram and bus at one place separate stop areas (Maashaven has four);
     #stop areas sharing a base name within MERGE_M of each other become one landmark
     g["base"] = g["stop_name"].map(base_name)
@@ -169,8 +152,8 @@ def merge_same_name(g: pd.DataFrame) -> pd.DataFrame:
     return g
 
 
-# ------------------------------------------------------------ which days
-def active_services(z) -> pd.DataFrame:
+#--- which days
+def active_services(z):
     #(service_id, date) rows for every day a service runs; NL feeds use calendar_dates only
     cd = read(z, "calendar_dates.txt")
     added = cd[cd["exception_type"] == "1"][["service_id", "date"]]
@@ -191,7 +174,7 @@ def active_services(z) -> pd.DataFrame:
     return added
 
 
-def pick_days(services: pd.DataFrame, trips: pd.DataFrame) -> dict[str, str]:
+def pick_days(services, trips):
     #the busiest Tue-Thu and Saturday in the feed's first three weeks: a normal timetable, not a holiday one
     per_service = trips.groupby("service_id").size().rename("n")
     per_day = services.join(per_service, on="service_id").groupby("date")["n"].sum()
@@ -206,8 +189,8 @@ def pick_days(services: pd.DataFrame, trips: pd.DataFrame) -> dict[str, str]:
     return pick
 
 
-# ------------------------------------------------------------ frequencies
-def departures(z, stop_ids: set[str], trip_ids: set[str]) -> pd.DataFrame:
+#--- frequencies
+def departures(z, stop_ids, trip_ids):
     #stream the ~1 GB stop_times and keep only boardings at our stops on our days' trips
     keep = []
     cols = ["trip_id", "stop_id", "departure_time", "pickup_type"]
@@ -226,18 +209,18 @@ def departures(z, stop_ids: set[str], trip_ids: set[str]) -> pd.DataFrame:
     return st
 
 
-def headway(per_hour: float) -> float | None:
+def headway(per_hour):
     #average minutes between vehicles; None when nothing runs in the period
     return round(60.0 / per_hour, 1) if per_hour > 0 else None
 
 
-def clock(t: str) -> str:
+def clock(t):
     #"25:10:00" -> "01:10", for first/last departure
     h, m, _ = t.split(":")
     return f"{int(h) % 24:02d}:{m}"
 
 
-def line_entry(ls: pd.DataFrame, agency: pd.Series) -> dict:
+def line_entry(ls, agency):
     #one line at one stop: frequency per direction, and the busiest direction's as the line's
     r = ls.iloc[0]
     dirs = []
@@ -275,7 +258,7 @@ def line_entry(ls: pd.DataFrame, agency: pd.Series) -> dict:
     }
 
 
-def build(z) -> dict:
+def build(z):
     stops = nearby_stops(z)
     routes = read(z, "routes.txt")
     agency = read(z, "agency.txt").set_index("agency_id")["agency_name"]
@@ -321,7 +304,7 @@ def build(z) -> dict:
     out_stops.sort(key=lambda s: (s["dist_to_study_area_m"], s["name"]))
 
     feed = read(z, "feed_info.txt").iloc[0]
-    iso = lambda d: f"{d[:4]}-{d[4:6]}-{d[6:]}"  # noqa: E731
+    iso = lambda d: f"{d[:4]}-{d[4:6]}-{d[6:]}"  #noqa: E731
     return {
         "label": "Public transport stops and line frequencies",
         "source": f"OVapi GTFS-NL ({GTFS_URL}), from NDOV open data; best-effort, no SLA",
@@ -341,11 +324,8 @@ def build(z) -> dict:
     }
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--refresh", action="store_true", help="re-download the feed if the server has a newer one")
-    args = ap.parse_args()
-    path = download(args.refresh)
+def main():
+    path = download("--refresh" in sys.argv)  #--refresh re-downloads the feed if the server has a newer one
     with zipfile.ZipFile(path) as z:
         payload = build(z)
     write_processed(OUT, payload)

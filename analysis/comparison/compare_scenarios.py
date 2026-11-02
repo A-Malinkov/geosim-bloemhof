@@ -1,52 +1,27 @@
 #!/usr/bin/env python3
 """
-compare_scenarios.py - baseline, scenario A and scenario B side by side, on the
+compare_scenarios.py - today, A, B and the final design side by side on the
 design site (component 4.9).
 
-Built 2026-10-27. Reads what the other components already wrote to
-data/processed/ and the SVF and sun-hours rasters, so run those first.
+Built 2026-10-27. Reads what the other components wrote to data/processed/ and
+the SVF and sun-hours rasters, so run those first. The rasters are gitignored,
+sky_view_factor.py and shadows.py rebuild them.
 
-USAGE
------
     python analysis/comparison/compare_scenarios.py
 
-The rasters (svf*.tif, shadow_hours*.tif) are gitignored. Rebuild them with
-sky_view_factor.py and shadows.py, per scenario and day (see their docstrings).
+One value per scenario and indicator, over the design site (13.24 ha) unless
+the label says otherwise, with its source file and which way is better. Some
+have no better way (density, height, summer sun) and are shown uncoloured.
+There is no overall score on purpose, the weights would pick the winner. Wind,
+noise and demographics are listed as not computed.
 
-WHAT IT DOES
-------------
-  indicators  one value per scenario for each indicator, every one over the
-              design site (13.24 ha) unless the label says otherwise, each with
-              its source file and the direction that counts as better. Some
-              have no better direction (density, height, summer sun): they are
-              context, shown but not coloured.
-  no ranking  there is deliberately no overall score. Adding the indicators up
-              needs weights, and the weights would decide the winner (the
-              land-use sweep in analysis/abm_landuse/ showed how much). The
-              figures show each indicator and the trade-offs instead.
-  not run     wind and noise for the scenarios, and CBS demographics, have no
-              results. They are listed as not computed, not left out.
+Writes data/processed/scenario_comparison.json and six docs/fig_compare_*.png
+(scorecard, tradeoff, distributions, difference_maps, walking, canyon).
 
-OUTPUTS
--------
-  data/processed/scenario_comparison.json   indicator values keyed baseline / scenario_a / scenario_b
-  docs/fig_compare_scorecard.png            every indicator, coloured better / worse than today
-  docs/fig_compare_tradeoff.png             homes against shade and against walking distance
-  docs/fig_compare_distributions.png        sun hours (3 days) and SVF on the site's open ground
-  docs/fig_compare_difference_maps.png      scenario minus today, sun hours and SVF, maps
-  docs/fig_compare_walking.png              walk to each destination type
-  docs/fig_compare_canyon.png               street H/W classes by street length
-
-WHAT IT CANNOT TELL YOU
------------------------
-* Means over open ground cover different ground in each scenario, because
-  demolition opens up land and new blocks cover it. Shares are given beside them.
-* Dwellings in the scenarios are an estimate (road_network.py), and floor area
-  uses one storey rule for every building (height / 3 m, rounded).
-* No wind, noise or social indicator yet, which are the ones a jury asks about
-  first for towers and main-road frontages.
+Limits. Means over open ground cover different ground per scenario, so shares
+go beside them. Scenario dwellings are an estimate and floor area uses one
+storey rule (height / 3 m). No wind, noise or social indicator yet.
 """
-from __future__ import annotations
 
 import json
 import pathlib
@@ -58,7 +33,7 @@ HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 sys.path.insert(0, str(HERE.parent / "scenarios"))
 sys.path.insert(0, str(HERE.parent / "morphology"))
-from common.project import PROCESSED, RAW, ROOT, design_site_polygon, to_rd  # noqa: E402
+from common.project import PROCESSED, RAW, ROOT, design_site_polygon, to_rd  #noqa: E402
 
 DOCS = ROOT / "docs"
 SCEN = ["baseline", "scenario_a", "scenario_b", "final"]  #final: the Rhino Final Model, 2026-10-28
@@ -90,7 +65,7 @@ def sfx(sc):
     return "" if sc == "baseline" else f"_{sc}"
 
 
-# ------------------------------------------------------------------ indicators
+#--- indicators
 def programme(sc):
     #what stands on the site: buildings, floor area, dwellings
     import geopandas as gpd
@@ -327,7 +302,7 @@ def collect():
     return out
 
 
-# --------------------------------------------------------------------- rasters
+#--- rasters
 def site_open_ground(sc, res, keep_pad):
     #open ground on the design site, on the grid of the published raster: the scripts' own rule, re-applied
     from rasterio.features import geometry_mask
@@ -372,7 +347,7 @@ RASTERS = {  #raster -> how to read it, and the published mean it must reproduce
 }
 
 
-# ---------------------------------------------------------------------- figures
+#--- figures
 def style():
     #one light style for every figure, sized to read on a slide
     import matplotlib as mpl
@@ -623,8 +598,8 @@ FIGURES = [  #one dict per figure: the function and its control parameters
 ]
 
 
-# ------------------------------------------------------------------------- run
-def main() -> int:
+#--- run
+def main():
     print("Scenario comparison, design site")
     data = collect()
     out = {

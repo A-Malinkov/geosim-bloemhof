@@ -32,16 +32,16 @@ python analysis/morphology/fetch_ahn.py         # ~30 s, tiled
 python analysis/morphology/fetch_trees.py       # ~20 s
 python analysis/morphology/fetch_buildings.py   # ~80 s
 python analysis/morphology/fetch_landuse.py     # ~10 s
-python analysis/morphology/sky_view_factor.py   # ~6 min
+python analysis/morphology/sky_view_factor.py   # ~6 min per scenario, all four
 python analysis/morphology/density_height.py    # ~1 min
 python analysis/morphology/landuse_mix.py       # ~1 min
-python analysis/morphology/shadows.py           # ~30 s, equinox; --date 2026-06-21 for summer
-python analysis/morphology/height_width.py      # ~90 s first time (fetches footprints), then ~15 s
+python analysis/morphology/shadows.py           # ~30 s per scenario and day, 12 runs
+python analysis/morphology/height_width.py      # ~90 s first time (fetches footprints), then ~15 s per scenario
 python analysis/morphology/make_figures.py      # ~1 min
 ```
 
-Design scenarios. `sky_view_factor.py`, `shadows.py` and `height_width.py` take
-`--scenario scenario_a` (or `scenario_b`). The scenario's demolition and new
+Design scenarios. `sky_view_factor.py`, `shadows.py` and `height_width.py` run
+every case in their `CASES`, and `--scenario scenario_a` (or any list) runs only those. The scenario's demolition and new
 blocks come from `analysis/scenarios/scenario_world.py`, which reads what
 `import_rhino.py` wrote. SVF and sun hours burn them into the AHN surface. H/W
 swaps the buildings and replaces the old streets inside the site with the new
@@ -50,7 +50,7 @@ app switches between them.
 
 ```bash
 python analysis/morphology/sky_view_factor.py --scenario scenario_a   # ~6 min
-python analysis/morphology/shadows.py --scenario scenario_a           # ~30 s per day
+python analysis/morphology/shadows.py --scenario scenario_a           # ~30 s per day, all three days
 python analysis/morphology/height_width.py --scenario scenario_a      # ~15 s
 ```
 
@@ -228,8 +228,8 @@ shadow in the right direction (within 1°) and to the right length in both.
 
 Results, direct sun on open ground (clear sky, 1 m cells, sun every 30 min).
 All three days are app overlays, picked with the day buttons in the Direct sun
-section of the morphology card. The solstices use `--suffix` so they do not
-overwrite the equinox:
+section of the morphology card. The solstices carry their date as a file suffix
+(`DAYS` in `shadows.py`) so they do not overwrite the equinox:
 
 | Day | Daylight | Bloemhof | Design site (median, share < 2 h) |
 |---|---|---|---|
@@ -251,7 +251,7 @@ The script keeps 50 m of the 150 m padding in its outputs, because the design
 site's south edge (Strevelsweg) runs ~31 m past the buurt bounding box.
 
 Limits, as the script states: a clear-sky upper bound, not measured sunshine;
-tree crowns block as if solid; obstructions beyond `--radius` (300 m) are
+tree crowns block as if solid; obstructions beyond the search radius (300 m) are
 ignored. In the live view, fine stripes can appear on roofs when zoomed far
 out: Cesium's shadow map has limited detail over a large view. Close up the
 shadows are clean.

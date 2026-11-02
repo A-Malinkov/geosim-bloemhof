@@ -1,67 +1,34 @@
 #!/usr/bin/env python3
 """
-train_forecast.py - AI prediction of future weather at the study area.
+train_forecast.py - AI forecast of temperature and wind at the study area.
 
-Component 4.4b. Trains models to predict temperature and wind speed some hours
-ahead from KNMI's own hourly station record, and reports how accurate they are.
+Component 4.4b. Predicts temperature and wind speed at +1, +6 and +24 h from
+KNMI's hourly record at station 344 and reports how accurate it is. Wind feeds
+the comfort work (4.5), temperature the heat story SVF feeds.
 
-WHAT IS PREDICTED, AND WHY THOSE TWO
-------------------------------------
-Temperature and wind speed, at +1 h, +6 h and +24 h. They are the two variables
-the rest of this project actually consumes: wind drives the pedestrian comfort
-work (4.5) and temperature drives the heat argument that Sky View Factor feeds.
-
-MODELS COMPARED
----------------
-    persistence        y(t+h) = y(t)                  the honest baseline
-    daily naive        y(t+h) = y(t+h-24)             yesterday, same hour
+Models
+    persistence        y(t+h) = y(t)
+    daily naive        y(t+h) = y(t+h-24), yesterday same hour
     gradient boosting  HistGradientBoostingRegressor
-    LSTM               2-layer recurrent net over the last 48 hours (PyTorch)
+    LSTM               2 layers over the last 48 hours (PyTorch)
+Weather is autocorrelated, so a model is only worth something if it beats
+persistence. Skill = 1 - MAE_model / MAE_persistence.
 
-A model is only interesting if it beats persistence. Weather is highly
-autocorrelated: at +1 h "same as now" is already excellent, and a model that
-cannot beat it has learned nothing. Skill score = 1 - MAE_model / MAE_persistence
-is reported for exactly that reason.
+The split is by time. Train 2021-2023, validation 2024 (boosting settings, LSTM
+early stopping and the best model per horizon), test 2025 scored once. A random
+split would leak the neighbouring hours. A sample only counts in a period if
+its target lies there too. Errors are also given per season.
 
-TRAIN, VALIDATION, TEST
------------------------
-The split is chronological, never random:
-
-    train       2021-2023   the models learn from these hours
-    validation  2024        settings and the best model are chosen here
-    test        2025        scored once, at the end, and never used to choose
-
-Shuffling hours would leak the answer: the hour before and the hour after a test
-point would both be in training, and any model would look superb. An hour is
-only used in a period if the hour it predicts lies in that period too, so no
-target crosses a boundary.
-
-On the validation year we choose: the gradient boosting learning rate and
-tree depth, when the LSTM stops training (early stopping),
-and which model is "best" at each horizon.
-
-Accuracy is also broken down by season, because a mean error over a whole
-year can hide a season the model struggles with.
-
-LSTM IS OPTIONAL
-----------------
-PyTorch is ~780 MB, so it is not in the core requirements. Without it the script
-runs everything else and says the LSTM was skipped. To include it:
+PyTorch is ~780 MB and not in requirements.txt. Without it the LSTM is skipped.
     pip install --index-url https://download.pytorch.org/whl/cpu torch
 
-USAGE
------
-    python analysis/knmi/fetch_knmi.py          # first, for the training data
-    python analysis/knmi/train_forecast.py      # the published run, ~15 min with the LSTM
+    python analysis/knmi/fetch_knmi.py          #first, the training data
+    python analysis/knmi/train_forecast.py      #the published run, ~15 min with the LSTM
     python analysis/knmi/train_forecast.py --no-lstm
 
-OUTPUT
-------
-    data/processed/knmi_forecast.json   metrics, breakdowns, predicted vs actual
+Writes data/processed/knmi_forecast.json.
 """
-from __future__ import annotations
 
-import argparse
 import copy
 import datetime as dt
 import json
@@ -71,7 +38,7 @@ import sys
 import numpy as np
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
-from common.project import PROCESSED, RAW, STUDY_AREA  # noqa: E402
+from common.project import PROCESSED, RAW, STUDY_AREA  #noqa: E402
 
 TARGETS = {"temperature_C": "temperature (degC)",  #the two variables predicted, one model per variable and horizon
            "wind_speed_ms": "wind speed (m/s)"}
@@ -95,7 +62,7 @@ LSTM_PATIENCE = 3  #stop after this many epochs without a better validation erro
 BATCH_SIZE = 256
 
 
-# ------------------------------------------------------------------- loading
+#--- loading
 #hourly station record written by fetch_knmi.py -> times and one array per variable
 def load_hourly(station):
     path = RAW / f"knmi_hourly_{station}.json"
@@ -114,9 +81,9 @@ def load_hourly(station):
     return times, cols
 
 
-# ------------------------------------------------------------------ features
+#--- features
 def build_features(times, cols):
-    """47 columns: 5 variables at 8 lags, wind direction, time of day, season, cloud."""
+    #47 columns: 5 variables at 8 lags, wind direction, time of day, season, cloud.
     features = {}
 
     #each core variable now and at every lag in LAGS
@@ -152,14 +119,14 @@ def build_features(times, cols):
 
 
 def shift_ahead(values, h):
-    """The value h hours later, NaN where the record ends."""
+    #The value h hours later, NaN where the record ends.
     ahead = np.full(len(values), np.nan)
     ahead[:len(values) - h] = values[h:]
     return ahead
 
 
 def split_rows(times, h):
-    """Which rows are train, validation and test, for a forecast h hours ahead."""
+    #Which rows are train, validation and test, for a forecast h hours ahead.
     target_time = times + np.timedelta64(h, "h")  #the hour each row's forecast is about
     train = target_time < VAL_START
     val = (times >= VAL_START) & (target_time < TEST_START)
@@ -167,15 +134,15 @@ def split_rows(times, h):
     return train, val, test
 
 
-# ------------------------------------------------------------------- scoring
+#--- scoring
 def mae(y_true, y_pred):
-    """Mean absolute error over the hours where both values exist."""
+    #Mean absolute error over the hours where both values exist.
     ok = np.isfinite(y_true) & np.isfinite(y_pred)
     return float(np.mean(np.abs(y_pred[ok] - y_true[ok])))
 
 
 def metrics(y_true, y_pred):
-    """MAE, RMSE, bias and R2 over the hours where both values exist."""
+    #MAE, RMSE, bias and R2 over the hours where both values exist.
     ok = np.isfinite(y_true) & np.isfinite(y_pred)
     if ok.sum() < 2:
         return {}
@@ -190,9 +157,9 @@ def metrics(y_true, y_pred):
             "r2": round(float(1 - ss_res / ss_tot), 4) if ss_tot > 0 else None}
 
 
-# ---------------------------------------------------------- gradient boosting
+#--- gradient boosting
 def fit_boosting(X, y, train, val):
-    """Try each gradient boosting setting, keep the one with the lowest validation MAE."""
+    #Try each gradient boosting setting, keep the one with the lowest validation MAE.
     from sklearn.ensemble import HistGradientBoostingRegressor
 
     best = None
@@ -206,16 +173,14 @@ def fit_boosting(X, y, train, val):
     return best
 
 
-# ---------------------------------------------------------------------- LSTM
+#--- LSTM
 def train_lstm(X, y, train, val, seed=0):
-    """
-    Two-layer LSTM over the last SEQ_LEN hours of the feature table.
-
-    Trains on the training rows and stops when the validation error has not
-    improved for LSTM_PATIENCE epochs, keeping the best epoch's weights.
-    Returns a prediction for every row (NaN where there is no full window
-    behind it) and the number of the epoch kept, or None and a reason.
-    """
+    #Two-layer LSTM over the last SEQ_LEN hours of the feature table.
+    #
+    #Trains on the training rows and stops when the validation error has not
+    #improved for LSTM_PATIENCE epochs, keeping the best epoch's weights.
+    #Returns a prediction for every row (NaN where there is no full window
+    #behind it) and the number of the epoch kept, or None and a reason.
     try:
         import torch
         import torch.nn as nn
@@ -293,16 +258,18 @@ def train_lstm(X, y, train, val, seed=0):
     return pred, {"val_mae": best_val, "settings": {"epochs": best_epoch}}
 
 
-# ---------------------------------------------------------------------- main
-def main():
-    ap = argparse.ArgumentParser(description=__doc__,
-                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--station", type=int, default=STUDY_AREA.knmi_station)
-    ap.add_argument("--no-lstm", action="store_true", help="skip the LSTM (no PyTorch needed)")
-    args = ap.parse_args()
+#--- main
+PARAMS = {
+    "station": STUDY_AREA.knmi_station,
+    "no_lstm": "--no-lstm" in sys.argv,  #skip the LSTM, no PyTorch needed
+}
 
-    print(f"Weather prediction: KNMI station {args.station}, {STUDY_AREA.name}")
-    times, cols = load_hourly(args.station)
+
+def main():
+    p = PARAMS
+
+    print(f"Weather prediction: KNMI station {p['station']}, {STUDY_AREA.name}")
+    times, cols = load_hourly(p["station"])
     X, feature_names = build_features(times, cols)  #same 47 inputs for every model
 
     #drop the first 48 hours: they have no full lag history
@@ -345,7 +312,7 @@ def main():
             preds["gradient_boosting"] = boosting["model"].predict(X)
             chosen["gradient_boosting"] = boosting
 
-            if not args.no_lstm:
+            if not p["no_lstm"]:
                 lstm_pred, lstm_info = train_lstm(X, y, train, val)
                 if lstm_pred is None:
                     print(f"        LSTM skipped: {lstm_info}")
@@ -356,10 +323,10 @@ def main():
             #score every model on the test year, and record its validation error
             persistence_mae = metrics(y[test], preds["persistence"][test])["mae"]
             scores = {}
-            for name, p in preds.items():
-                m = metrics(y[test], p[test])
+            for name, pred in preds.items():
+                m = metrics(y[test], pred[test])
                 m["skill_vs_persistence"] = round(1 - m["mae"] / persistence_mae, 4)
-                m["val_mae"] = round(mae(y[val], p[val]), 4)
+                m["val_mae"] = round(mae(y[val], pred[val]), 4)
                 if name in chosen:
                     m["settings"] = chosen[name]["settings"]
                 scores[name] = m
@@ -377,8 +344,8 @@ def main():
             #breakdown by season, for the best model at +6 h
             if h != 6:
                 continue
-            p, yt = preds[best][test], y[test]
-            by_season = {s: metrics(yt[season[test] == s], p[season[test] == s])
+            pred, yt = preds[best][test], y[test]
+            by_season = {s: metrics(yt[season[test] == s], pred[season[test] == s])
                          for s in ("winter", "spring", "summer", "autumn")}
             results[target]["conditions"] = {"model": best, "horizon": f"+{h}h",
                                              "by_season": by_season}
@@ -393,7 +360,7 @@ def main():
                                    "time the forecast was issued",
                         "time": [str(t)[:16] for t in t_about],
                         "actual": [round(float(v), 2) for v in yt[:k]],
-                        "predicted": [round(float(v), 2) for v in p[:k]]}
+                        "predicted": [round(float(v), 2) for v in pred[:k]]}
 
     #the dashboard's headline: temperature at the longest horizon
     headline = f"+{HORIZONS[-1]}h"
@@ -402,8 +369,8 @@ def main():
 
     out = {
         "generated_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
-        "station": args.station,
-        "source": f"KNMI hourly climatology, station {args.station}",
+        "station": p["station"],
+        "source": f"KNMI hourly climatology, station {p['station']}",
         "model": headline_best,
         "horizon": headline,
         "method": {

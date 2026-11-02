@@ -1,85 +1,42 @@
 #!/usr/bin/env python3
 """
-road_network.py - the walking network per scenario, its structure and how far
-homes are from everyday destinations.
+road_network.py - the walk network per scenario and how far homes are from
+everyday destinations.
 
 Component 4.8. Built 2026-10-21.
 
-USAGE
------
-    python analysis/roads/road_network.py               # every case in CASES
-    python analysis/roads/road_network.py --refresh     # re-fetch the OSM network and stops
-    python analysis/roads/road_network.py --scenario final   # only these cases, the rest kept as written
+    python analysis/roads/road_network.py                     #every case in CASES
+    python analysis/roads/road_network.py --refresh           #re-fetch the OSM network and stops
+    python analysis/roads/road_network.py --scenario final    #only these cases, the rest kept as written
 
-The first run fetches the OSM walk network and the public-transport stops
-(about three minutes) into cache/roads/ (gitignored).
+The first run fetches the OSM walk network and the transit stops into
+cache/roads/ (gitignored), about three minutes.
 
-METHOD
-------
-  network   OSM walk network (osmnx network_type="walk": streets, footways,
-            paths, pedestrian areas), fetched over the two buurten plus a
-            500 m buffer so betweenness and distances near the edge see the
-            streets beyond it. Undirected, edge weight = length in RD.
-  scenario  streets_for_scenario() (analysis/scenarios/scenario_world.py)
-            cuts the old streets out of the site interior and adds centrelines
-            of the new street surfaces. Those surfaces stop short of the edge
-            streets in places, so every free end of a new centreline is joined
-            to the nearest other street by a straight connector if one is
-            within 35 m and the connector crosses no new block. The connectors
-            are an assumption that the design's streets meet the edge streets.
-            Then every crossing or touch between a scenario street and any
-            other street becomes a junction (OSM's own crossings are left
-            alone: those are mostly bridges), and an old street end within
-            5 m of a new street, or a new end within 5 m of an old street,
-            is joined to it. Graph nodes closer than 0.5 m are one junction.
-            Without these the graph had streets that cross on the map but not
-            in the network (fixed 2026-10-23).
-  homes     BAG addresses with woonfunctie inside the buurten or the site, one
-            per dwelling. A scenario drops the addresses in demolished
-            buildings and adds the new blocks' dwellings, estimated as
-            footprint x storeys (height / 3 m) x 0.8 net/gross / the median
-            BAG dwelling size on the site today, placed at the block centroid.
-  dest.     shops (BAG winkelfunctie), education (onderwijsfunctie), health
-            care (gezondheidszorgfunctie) and rail stops (OSM tram, metro and
-            train stops). THE SAME SET IN EVERY SCENARIO: destinations on
-            ground a scenario clears are left out of all of them, so a
-            difference between scenarios is the network and the homes, not
-            shops the design removes. How many that ground holds today is
-            reported. Buildings a scenario keeps stay destinations.
-  distance  each home and destination is snapped to the nearest point on the
-            nearest edge. Walking distance = access to the edge + network
-            distance, by Dijkstra from all destinations of a type at once.
+Network. OSM walk network over Bloemhof plus 500 m, undirected, weighted by
+length. A scenario cuts the old streets out of the cleared site
+(streets_for_scenario) and adds the new street centrelines. A free end within
+35 m of another street gets a straight connector unless it crosses a block,
+which assumes the new streets meet the edge streets. Crossings with scenario
+streets become junctions and ends within 5 m are joined, or streets crossed on
+the map but not in the graph (fixed 2026-10-23).
 
-Metrics, per area (each buurt, both together, the design site). An edge
-belongs to an area if its midpoint lies in it, a node if it lies in it, so
-numerator and denominator share one polygon (CLAUDE.md rule 5).
+Homes are BAG dwellings. A scenario drops demolished ones and adds its blocks'
+dwellings, footprint x storeys (height / 3 m) x 0.8 / the median BAG dwelling
+on the site, at the block centroid. Destinations are BAG shops, schools and
+health care plus OSM rail stops, the same set in every scenario. Those on
+cleared ground are left out of all of them, so scenarios differ by network and
+homes only. Distance is the walk to the nearest edge plus Dijkstra.
 
-  n_nodes, n_edges           graph nodes and edges in the area
-  avg_street_length_m        mean edge length
-  intersection_density_km2   nodes joining 3+ streets, per km2 of the area
-  circuity                   total edge length / total straight end-to-end length
-  betweenness_max            highest edge betweenness in the area (exact,
-                             length-weighted, normalised, over the whole
-                             buffered network)
-  walk_15min_reach_frac      share of homes with all four destination types
-                             within 15 min walk (1,200 m at 4.8 km/h)
+Metrics per area, an edge counts where its midpoint lies. Nodes, edges, mean
+street length, intersection density, circuity, highest edge betweenness and
+the share of homes with all four types within 15 min (1,200 m).
 
-WHAT IT CANNOT TELL YOU
------------------------
-* OSM's walk network is only as complete as OSM. Pavements are mostly not
-  mapped separately here, so the street centreline stands for both pavements.
-* Destinations come from BAG over the study bounding box only. Homes near the
-  outer edge have shops just outside it that are not counted, so their
-  distances are too long. Equal in every scenario.
-* BAG says what a building is registered for, not whether a shop is open.
-* The new blocks' dwelling count is an estimate, and every dwelling of a block
-  sits at its centroid.
-* Betweenness weights every pair of nodes equally. It is a measure of network
-  position, not a traffic forecast.
+Limits. OSM has few separate pavements here. Shops just outside the box are
+missed near the edge. BAG says what a building is registered for, not whether
+a shop is open. The new dwelling count is an estimate. Betweenness weighs every
+pair equally, it is network position and not traffic.
 """
-from __future__ import annotations
 
-import argparse
 import json
 import pathlib
 import sys
@@ -92,7 +49,7 @@ warnings.filterwarnings("ignore")
 HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 sys.path.insert(0, str(HERE.parent / "scenarios"))
-from common.project import (PROCESSED, RAW, ROOT, STUDY_AREA, buurt_polygons,  # noqa: E402
+from common.project import (PROCESSED, RAW, ROOT, STUDY_AREA, buurt_polygons,  #noqa: E402
                             design_site_polygon, study_area_polygon, to_rd, to_wgs, write_processed)
 
 CACHE = ROOT / "cache" / "roads"  #gitignored
@@ -136,7 +93,7 @@ CASES = [
 ]
 
 
-# ------------------------------------------------------------------- inputs
+#--- inputs
 def fetch(p, refresh=False):
     #OSM walk network and stops over the buurten + buffer, cached in cache/roads/
     import osmnx as ox
@@ -242,7 +199,7 @@ def homes_for_scenario(scenario, dwelling_m2, p):
     return h.reset_index(drop=True)
 
 
-# ------------------------------------------------------------------ network
+#--- network
 def lines_for_scenario(edges, scenario, p):
     #edge lines for the scenario, with connectors joining the new streets' free ends to the network
     import geopandas as gpd
@@ -536,7 +493,7 @@ def to_points(net, D, snapped):
     return acc + np.minimum(D[i] + t, D[j] + net["L"][idx] - t)
 
 
-# ------------------------------------------------------------------ metrics
+#--- metrics
 def areas():
     #name -> polygon (RD) for every area reported
     by_code = buurt_polygons()
@@ -630,7 +587,7 @@ def write_geojson(net, eb, scenario):
     print(f"  wrote {path.relative_to(ROOT)} ({len(feats)} edges)")
 
 
-# --------------------------------------------------------------------- run
+#--- run
 def network_for(scenario, p):
     #the scenario's graph, ready to route on; shared with place_amenities.py
     return build_graph(lines_for_scenario(osm_edges(), scenario, p))
@@ -692,14 +649,12 @@ def run(case, p, dest, dwelling_m2):
     return res
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--refresh", action="store_true", help="re-fetch the OSM walk network and stops")
-    ap.add_argument("--scenario", nargs="+", help="run only these cases; the others stay as in road_metrics.json")
-    args = ap.parse_args()
+def main():
     p = PARAMS
+    refresh = "--refresh" in sys.argv  #re-fetch the OSM walk network and stops
+    only = sys.argv[sys.argv.index("--scenario") + 1:] if "--scenario" in sys.argv else None  #run only these cases, the others stay as in road_metrics.json
     print(f"Walking network: {STUDY_AREA.name}")
-    fetch(p, args.refresh)
+    fetch(p, refresh)
     dest, removed, dwelling_m2 = destinations()
     out = {
         "study_area": STUDY_AREA.name,
@@ -710,9 +665,9 @@ def main() -> int:
         "destinations_on_site_today": removed,
         "dwelling_m2_site_median": dwelling_m2,
     }
-    old = json.loads((PROCESSED / "road_metrics.json").read_text()) if args.scenario else {}
+    old = json.loads((PROCESSED / "road_metrics.json").read_text()) if only else {}
     for case in CASES:  #one scenario per case
-        if args.scenario and case["scenario"] not in args.scenario:
+        if only and case["scenario"] not in only:
             out[case["scenario"]] = old.get(case["scenario"], {"_status": "not_computed_yet"})  #kept as written
             continue
         out[case["scenario"]] = run(case, p, dest, dwelling_m2)

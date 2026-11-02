@@ -303,7 +303,7 @@ python analysis/common/project.py                # buurt boundaries          (~5
 python analysis/morphology/fetch_ahn.py          # AHN DSM + DTM, tiled      (~30 s)
 python analysis/morphology/fetch_trees.py        # tree register; --from-cache if the service is down
 python analysis/morphology/fetch_buildings.py    # 5,804 buildings from 3DBAG(~1 min)
-python analysis/morphology/sky_view_factor.py    # SVF raster + statistics   (~40 s)
+python analysis/morphology/sky_view_factor.py    # SVF raster + statistics, every scenario
 python analysis/morphology/density_height.py     # Spacematrix density       (~15 s)
 python analysis/morphology/fetch_landuse.py      # 9,880 BAG units           (~5 s)
 python analysis/morphology/landuse_mix.py        # land-use mix indices      (~5 s)
@@ -318,7 +318,7 @@ python analysis/abm_landuse/rl_landuse.py  # RL agent, design site, 400 episodes
 python analysis/abm_landuse/weight_sensitivity.py # objective-weight sweep    (~2 s)
 
 python analysis/roads/road_network.py            # walk network, per scenario (~3 min first run)
-python analysis/roads/edge_access.py             # walk/drive distance to the edge streets, baseline (~1 min)
+python analysis/roads/edge_access.py             # walk/drive distance to the edge streets, every scenario
 
 python analysis/transit/fetch_transit.py         # stops + line frequencies (~2 min, 242 MB feed on first run)
 ```

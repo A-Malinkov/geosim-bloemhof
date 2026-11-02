@@ -248,6 +248,7 @@ export const CONFIG = {
     //switching on any layer of the key group switches off the listed groups, restored when its last layer goes off
     hides: { Morphology: ["Vegetation"] },
     regroup: {
+      ahn:            "Morphology",  //AHN surface heights, baseline
       svfOverlay:     "Morphology",
       shadowOverlay:  "Morphology",
       densityGrid:    "Morphology",

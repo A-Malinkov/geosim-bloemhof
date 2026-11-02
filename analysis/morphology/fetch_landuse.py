@@ -1,54 +1,23 @@
 #!/usr/bin/env python3
 """
-fetch_landuse.py - BAG verblijfsobjecten (addressable units) for the study area.
+fetch_landuse.py - BAG verblijfsobjecten (addressable units) for Bloemhof.
 
 Owner: Atanas Malinkov
 
-SOURCE
-------
-PDOK BAG WFS, feature type `bag:verblijfsobject`. One record per addressable
-unit, a flat, a shop, an office, each with:
+From the PDOK BAG WFS. One point per flat, shop or office, with gebruiksdoel
+(its use), oppervlakte (floor area) and status. A use and a size is what a mix
+index needs. A comma-separated gebruiksdoel (a shop with a flat above) splits
+its floor area equally between the uses.
 
-    gebruiksdoel   its function (woonfunctie, winkelfunctie, kantoorfunctie, ...)
-    oppervlakte    usable floor area in m2
-    status         whether the unit is actually in use
-    geom           a point, EPSG:28992
+We tried CBS Bestand Bodemgebruik first. Its newest edition is 2017 and it
+covers the old study square with 10 polygons, too coarse to vary inside a
+neighbourhood. BAG only sees buildings, so parks and streets are missing.
 
-That combination is what a land-use mix index needs: a function AND a size.
-Counting units alone would let a 40 m2 studio outweigh a 5,000 m2 supermarket.
-
-WHY NOT CBS BESTAND BODEMGEBRUIK?
----------------------------------
-It is the obvious "land use" dataset, and it was tried first. It is the wrong
-tool at this scale: the newest edition on PDOK is **2017**, it resolves the
-whole 144 ha study square into **10 polygons of 4 categories**, and its minimum
-mapping unit (~1 ha) is larger than a city block here. It would produce a
-land-use mix index that cannot vary within the neighbourhood. BAG gives ten
-thousand records with current functions, so the index can actually resolve where
-the mix is.
-
-The trade-off, stated plainly: BAG only covers buildings with addressable units.
-Parks, water, streets and squares are absent, so this is a mix of **built floor
-space**, not of land cover. Pair it with GSI from density_height.py, which is
-exactly the built/unbuilt split BAG cannot see.
-
-MULTI-FUNCTION UNITS
---------------------
-`gebruiksdoel` can be comma-separated ("winkelfunctie,woonfunctie"): a shop with
-a flat above it, for instance. Floor area is split equally between the listed
-functions rather than dropping the record or picking the first.
-
-USAGE
------
     python analysis/morphology/fetch_landuse.py
 
-OUTPUT
-------
-    data/raw/bag_verblijfsobjecten.geojson   points, EPSG:28992
+Writes data/raw/bag_verblijfsobjecten.geojson, points in RD New.
 """
-from __future__ import annotations
 
-import argparse
 import collections
 import json
 import pathlib
@@ -58,13 +27,13 @@ import urllib.parse
 import urllib.request
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
-from common.project import RAW, STUDY_AREA, bbox_rd  # noqa: E402
+from common.project import RAW, STUDY_AREA, bbox_rd  #noqa: E402
 
 WFS = "https://service.pdok.nl/lv/bag/wfs/v2_0"
-PAGE = 1000                                   # the server caps a page here
+PAGE = 1000                                   #the server caps a page here
 
-#: BAG gebruiksdoel -> the category we report. Keeps the plain BAG vocabulary
-#: rather than inventing one, so the numbers can be checked against the source.
+#BAG gebruiksdoel -> the category we report. Keeps the plain BAG vocabulary
+#rather than inventing one, so the numbers can be checked against the source.
 CATEGORIES = {
     "woonfunctie": "residential",
     "winkelfunctie": "retail",
@@ -79,15 +48,15 @@ CATEGORIES = {
     "overige gebruiksfunctie": "other",
 }
 
-#: Only units that actually exist and are in use. BAG also carries planned,
-#: under-construction and withdrawn records, which would inflate the mix.
+#Only units that actually exist and are in use. BAG also carries planned,
+#under-construction and withdrawn records, which would inflate the mix.
 STATUS_KEEP = {
     "Verblijfsobject in gebruik",
     "Verblijfsobject in gebruik (niet ingemeten)",
 }
 
 
-def get(url: str, tries: int = 4) -> dict:
+def get(url, tries=4):
     for attempt in range(tries):
         try:
             with urllib.request.urlopen(
@@ -102,14 +71,15 @@ def get(url: str, tries: int = 4) -> dict:
     raise RuntimeError("unreachable")
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__,
-                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--pad", type=int, default=0,
-                    help="extra context beyond the study-area edge, in metres")
-    args = ap.parse_args()
+PARAMS = {
+    "pad": 0,  #extra context beyond the study-area edge, m
+}
 
-    xmin, ymin, xmax, ymax = bbox_rd(args.pad)
+
+def main():
+    p = PARAMS
+
+    xmin, ymin, xmax, ymax = bbox_rd(p["pad"])
     print(f"BAG verblijfsobjecten: {STUDY_AREA.name}")
 
     feats, start, t0 = [], 0, time.time()
@@ -130,16 +100,16 @@ def main() -> int:
             break
 
         for f in page:
-            p = f["properties"]
-            if p.get("status") not in STATUS_KEEP:
+            pr = f["properties"]
+            if pr.get("status") not in STATUS_KEEP:
                 dropped_status += 1
                 continue
-            area = p.get("oppervlakte")
+            area = pr.get("oppervlakte")
             if not area or area <= 0:
                 dropped_area += 1
                 continue
 
-            raw = (p.get("gebruiksdoel") or "").strip()
+            raw = (pr.get("gebruiksdoel") or "").strip()
             funcs = [g.strip().lower() for g in raw.split(",") if g.strip()]
             cats = []
             for g in funcs:
@@ -156,15 +126,15 @@ def main() -> int:
                 "type": "Feature",
                 "geometry": {"type": "Point", "coordinates": [round(x, 2), round(y, 2)]},
                 "properties": {
-                    "id": p.get("identificatie"),
-                    "categories": cats,               # 1+ per unit
+                    "id": pr.get("identificatie"),
+                    "categories": cats,               #1+ per unit
                     "gebruiksdoel": raw,
                     "area_m2": float(area),
-                    # a multi-function unit splits its floor area evenly
+                    #a multi-function unit splits its floor area evenly
                     "area_per_category_m2": round(float(area) / len(cats), 2),
-                    "bouwjaar": p.get("bouwjaar"),
-                    "pand_id": p.get("pandidentificatie"),
-                    "street": p.get("openbare_ruimte"),
+                    "bouwjaar": pr.get("bouwjaar"),
+                    "pand_id": pr.get("pandidentificatie"),
+                    "street": pr.get("openbare_ruimte"),
                 },
             })
 

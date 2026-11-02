@@ -2,69 +2,33 @@
 """
 score_scenarios.py - the Rhino design options scored on the land-use objective.
 
-Component 4.7, for the scenario comparison (4.9). Owner: Atanas Malinkov.
-Built 2026-10-27.
+Component 4.7, for the comparison (4.9). Owner: Atanas Malinkov. Built 2026-10-27.
 
-The CA (ca_landuse.py) explores land-use PROGRAMMES (baseline, compact, green)
-and the RL agents re-plan the site. Neither is the team's design. This script
-takes the design itself, the Rhino options scenario_a and scenario_b, puts it on
-the same 25 m grid and scores it with the same objective
+The CA explores programmes and the RL agents re-plan the site, neither is our
+design. This puts the design itself on the same 25 m grid and scores it with
+    1.6 mix + 1.0 green share + 0.8 max(0, 1 - d / 400 m)
+    + 1.1 min(1, dwellings / dwellings today)
+d is the mean straight-line distance from a home to the nearest shop or
+amenity. Here the housing term counts dwellings (storeys count), the CA and RL
+count housing cells, so the two are never compared.
 
-    1.6 * land-use mix + 1.0 * green share + 0.8 * max(0, 1 - d / 400 m)
-    + 1.1 * min(1, dwellings / dwellings today)
-
-where d is the mean distance from a home to the nearest shop or amenity. The
-housing term (2026-10-30) counts DWELLINGS here, from road_network.py's
-estimate (BAG today, storeys of the new blocks for the designs), so storeys
-count. The CA and RL count housing cells instead, the only thing a grid model
-knows; the two families are never compared with each other.
-
-USAGE
------
     python analysis/abm_landuse/score_scenarios.py
     python analysis/abm_landuse/score_scenarios.py --scenario final   #only these cases, the rest kept as written
 
-Reads data/processed/design_massing.geojson, design_streets.geojson and
-design_planting.geojson (written by analysis/scenarios/import_rhino.py).
+Start from ca_landuse.rasterise(). Only cells with their centre in
+cleared_area(scenario) change. On a 5 m sub-grid each takes the first that fits
+    water        the pond covers the centre
+    residential  a block covers 25 % (retail for shop blocks)
+    road         new street covers half
+    green        proposed green covers half
+    vacant       the rest, open ground between blocks, labelled as rasterise()
+                 labels it today. open_ground_as_green is the upper bound.
+Scored over the site and over the buurt. Baseline must reproduce the CA's and
+the RL agent's scores, asserted below.
 
-METHOD
-------
-Start from today's grid, built by ca_landuse.rasterise(). Only cells whose
-centre lies in cleared_area(scenario) change (the site minus the block a
-scenario keeps). Each of them is measured on a 5 m sub-grid and takes the first
-class that applies, in the same priority order rasterise() uses for today:
-
-    water        the pond covers the cell centre
-    residential  a new block covers at least 25 % of the cell (all blocks are
-                 residential in the model)
-    road         new street surface covers at least half the cell, the same
-                 threshold rasterise() uses for carriageway
-    green        proposed green surface covers at least half the cell
-    vacant       anything else
-
-"Vacant" here is open ground the model does not programme: courtyards,
-pavements and gardens between the blocks. It is NOT derelict land. It gets the
-same label because rasterise() labels unbuilt, unpaved, unmapped ground in
-today's grid vacant too, so the two are compared like with like. The variant
-`open_ground_as_green` counts that ground as green instead, an upper bound on
-the green share.
-
-Scored over the design site (cell centre in the site, as rl_landuse.py does)
-and over the whole buurt (as ca_landuse.py does). Baseline is today's grid
-unchanged, and is asserted to reproduce the CA's and the RL agent's baseline
-scores exactly.
-
-WHAT IT CANNOT TELL YOU
------------------------
-* Every new block is residential, because the Rhino model says so. Ground-floor
-  shops or services the team may intend are not in the model, so they are not
-  scored.
-* A 25 m cell cannot hold a building. The 25 % rule decides which cells count
-  as built, and a different threshold moves the residential count.
-* Distance is straight-line between cells, as in the CA and RL objective, not
-  along streets. road_network.py measures walking distance on the network.
+Reads design_massing, design_streets and design_planting .geojson from
+import_rhino.py.
 """
-from __future__ import annotations
 
 import json
 import pathlib
@@ -76,11 +40,11 @@ HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent / "scenarios"))
-from common.project import PROCESSED, STUDY_AREA, design_site_polygon, to_rd  # noqa: E402
-from ca_landuse import (AMENITY, GREEN, RESID, RETAIL, ROAD, VACANT, WATER, CLASSES,  # noqa: E402
+from common.project import PROCESSED, STUDY_AREA, design_site_polygon, to_rd  #noqa: E402
+from ca_landuse import (AMENITY, GREEN, RESID, RETAIL, ROAD, VACANT, WATER, CLASSES,  #noqa: E402
                         rasterise, score as ca_score, shares)
-from rl_landuse import objective as site_objective, site_score  # noqa: E402
-from weight_sensitivity import DEFAULT_W, components  # noqa: E402
+from rl_landuse import objective as site_objective, site_score  #noqa: E402
+from weight_sensitivity import DEFAULT_W, components  #noqa: E402
 
 PARAMS = {
     "cell_m": 25.0,  #the CA's cell size
@@ -99,7 +63,7 @@ CASES = [
 SHOP_USES = ("shop", "shopping centre")  #import_rhino.py uses that make a cell retail, not residential
 
 
-# ------------------------------------------------------------------ inputs
+#--- inputs
 def scenario_shapes(scenario):
     #RD shapely geometries of the scenario's blocks, street surfaces, green and water
     from shapely.geometry import shape
@@ -143,7 +107,7 @@ def centre_mask(geom, shape_, transform):
     return rasterize([(geom, 1)], out_shape=shape_, transform=transform, fill=0, dtype="uint8").astype(bool)
 
 
-# ----------------------------------------------------------------- burn-in
+#--- burn-in
 def burn_scenario(grid0, transform, scenario, p, open_as=VACANT):
     #today's grid with the scenario burned into its cleared area
     from scenario_world import cleared_area
@@ -194,7 +158,7 @@ def dwellings(scenario):
     return a["design_site"]["dwellings"], a["study_area"]["dwellings"]
 
 
-# --------------------------------------------------------------------- run
+#--- run
 def run(case, p, grid0, transform, site):
     #one scenario: burn in, score over the site and the buurt, both open-ground rules
     sc = case["scenario"]
@@ -240,7 +204,7 @@ def run(case, p, grid0, transform, site):
     return out
 
 
-def main() -> int:
+def main():
     p = PARAMS
     print(f"Rhino options on the land-use objective: {STUDY_AREA.name}")
     grid0, transform, _, _ = rasterise(p["cell_m"])  #today's grid, exactly as the CA builds it

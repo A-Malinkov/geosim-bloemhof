@@ -1,39 +1,29 @@
 #!/usr/bin/env python3
 """
-import_cyrille.py - bring Cyrille's QGIS flood-vulnerability rasters into the app.
+import_cyrille.py - Cyrille's QGIS flood-vulnerability rasters into the app.
 
-Analysis: Cyrille Kummer (QGIS, Oct 2026, team OneDrive: SHARED AREA / QGIS /
-QGIS Files - UPDATED / BZO_NEW_*.tif). This script does not recompute it: it
-clips, warps and colours it for the web app, and summarises it per buurt.
+The analysis is Cyrille Kummer's (QGIS, Oct 2026, team OneDrive SHARED AREA /
+QGIS / QGIS Files - UPDATED / BZO_NEW_*.tif). We only clip, warp and colour it
+and summarise it per area.
 
-USAGE
------
     python analysis/flood/import_cyrille.py [RASTER_DIR]
 
-RASTER_DIR defaults to cache/flood/raw/ (gitignored). It must hold the
-BZO_NEW_*.tif files listed in LAYERS below: extract them from the shared
-folder's QGIS.zip. They are 76 MB each and are NOT committed.
+RASTER_DIR defaults to cache/flood/raw/ (gitignored) and must hold the
+BZO_NEW_*.tif files in LAYERS, from the shared QGIS.zip, 76 MB each.
 
-WHAT THE LAYERS ARE (checked on every cell, see README)
------------------------
-Each factor is scored 1 (low) .. 4 (high), per "QGIS Layer Coding.pdf":
-  water proximity   0–50 / 50–100 / 100–250 / 250+ m to water      -> 4..1
-  elevation (m NAP) < −0.99 / −0.99..−0.67 / −0.67..1.46 / > 1.46   -> 4..1
-  building density  > 10 / 5–10 / 1–5 / ≤ 1 buildings per cell      -> 4..1
-  hazard            water + elevation, 2–8, banded                   -> 1..4
-  combined score    density + water + elevation, 3–12
-  overall           combined banded: ≤ 5.25 / –7.5 / –9.75 / > 9.75  -> 1..4
+Each factor scores 1 (low) to 4 (high), per "QGIS Layer Coding.pdf"
+  water proximity   0-50 / 50-100 / 100-250 / 250+ m to water      -> 4..1
+  elevation (m NAP) < -0.99 / -0.99..-0.67 / -0.67..1.46 / > 1.46   -> 4..1
+  building density  > 10 / 5-10 / 1-5 / <= 1 buildings per cell    -> 4..1
+  hazard            water + elevation, 2-8, banded                  -> 1..4
+  combined          density + water + elevation, 3-12
+  overall           combined banded <= 5.25 / 7.5 / 9.75 / above    -> 1..4
+Elevation is the AHN DTM, empty under buildings, so hazard, combined and
+overall cover open ground only.
 
-Elevation comes from the AHN DTM, which is empty under buildings, so every
-layer that uses it (hazard, combined, overall) covers open ground only.
-
-OUTPUT
-------
-  data/processed/flood_<id>.png      coloured overlay, warped to EPSG:4326
-  data/processed/flood_summary.json  layers, legends, bounds, shares per area
-  docs/fig_flood_overall.png, docs/fig_flood_factors.png   report figures
+Writes flood_<id>.png and flood_summary.json in data/processed/ and
+docs/fig_flood_overall.png and docs/fig_flood_factors.png.
 """
-from __future__ import annotations
 
 import json
 import pathlib
@@ -43,13 +33,13 @@ import numpy as np
 
 HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
-from common.project import (PROCESSED, ROOT, STUDY_AREA,  # noqa: E402
+from common.project import (PROCESSED, ROOT, STUDY_AREA,  #noqa: E402
                             buurt_polygons, design_site_polygon, write_processed)
 
 RAW = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "cache" / "flood" / "raw"
-MAX_PX = 2000          # long side of the overlay PNG (~1.35 m per pixel)
+MAX_PX = 2000          #long side of the overlay PNG (~1.35 m per pixel)
 
-# Colours are Cyrille's, from the QGIS project (QGIS_Final.Project.Updated.2.qgz).
+#Colours are Cyrille's, from the QGIS project (QGIS_Final.Project.Updated.2.qgz).
 RISK4 = ["#1a9641", "#c4e687", "#fec981", "#d7191c"]
 LAYERS = [
     {"id": "overall", "file": "CityRisk", "label": "Overall flood vulnerability",
@@ -101,9 +91,9 @@ def read(name):
 
 
 def warp(a, transform, crs):
-    """Warp to EPSG:4326 with NEAREST resampling: these are class rasters,
-    and bilinear would invent class 2.5 along every edge. Warping first (not
-    draping the RD box) avoids the ~30 m RD rotation error (CLAUDE.md)."""
+    #Warp to EPSG:4326 with NEAREST resampling: these are class rasters,
+    #and bilinear would invent class 2.5 along every edge. Warping first (not
+    #draping the RD box) avoids the ~30 m RD rotation error (CLAUDE.md).
     from rasterio.warp import calculate_default_transform, reproject, Resampling
     h, w = a.shape
     left, top = transform * (0, 0)
@@ -133,7 +123,7 @@ def colourise(a, L):
         for i, c in enumerate(L["colours"]):
             m = ok & (idx == i)
             rgba[m, :3] = hex_rgb(c); rgba[m, 3] = 255
-    else:  # ramp: linear between Cyrille's stops
+    else:  #ramp: linear between Cyrille's stops
         xs = [s for s, _ in L["stops"]]
         cs = np.array([hex_rgb(c) for _, c in L["stops"]], float)
         for k in range(3):
@@ -143,7 +133,7 @@ def colourise(a, L):
 
 
 def shares(a, L, mask):
-    """Area shares inside one polygon, over cells where the layer has data."""
+    #Area shares inside one polygon, over cells where the layer has data.
     v = a[mask & np.isfinite(a)]
     if v.size == 0:
         return None
@@ -159,7 +149,7 @@ def shares(a, L, mask):
     return out
 
 
-def main() -> int:
+def main():
     import rasterio.features
     from PIL import Image
 
@@ -210,8 +200,8 @@ def main() -> int:
     return 0
 
 
-def figures(areas) -> None:
-    """Report figures: overall map, and the three factors side by side."""
+def figures(areas):
+    #Report figures: overall map, and the three factors side by side.
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -230,7 +220,7 @@ def figures(areas) -> None:
         x1, y0 = tr * (a.shape[1] * step, a.shape[0] * step)
         if L["kind"] == "classes":
             cmap, bounds = ListedColormap(L["colours"]), [v - 0.5 for v in L["values"]] + [L["values"][-1] + 0.5]
-        else:  # bins
+        else:  #bins
             cmap, bounds = ListedColormap(L["colours"]), [-1e9] + L["edges"] + [1e9]
         ax.imshow(np.ma.masked_invalid(a), cmap=cmap, norm=BoundaryNorm(bounds, cmap.N),
                   extent=(x0, x1, y0, y1), interpolation="nearest")

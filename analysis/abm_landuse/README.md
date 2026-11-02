@@ -21,8 +21,8 @@ python analysis/morphology/fetch_landuse.py      # BAG units: needed first
 python analysis/abm_landuse/fetch_landcover.py   # ~30 s
 python analysis/abm_landuse/ca_landuse.py        # ~2 s
 python analysis/abm_landuse/rl_landuse.py   # 400 episodes, the default
-python analysis/abm_landuse/rl_dqn.py --hill-climb 56400   # 400 episodes, ~45 min on CPU, needs PyTorch
-python analysis/abm_landuse/weight_sensitivity.py --step 0.01  # ~2 s, no model re-run; 0.01 is the published lattice
+python analysis/abm_landuse/rl_dqn.py   # 400 episodes and hill climbing, ~45 min on CPU, needs PyTorch
+python analysis/abm_landuse/weight_sensitivity.py  # ~2 s, no model re-run; step 0.01, the published lattice
 python analysis/abm_landuse/score_scenarios.py   # ~5 s, after analysis/scenarios/import_rhino.py
 ```
 

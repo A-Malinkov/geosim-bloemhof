@@ -555,8 +555,7 @@ export async function setup(ctx) {
       ctx.placeholder(shadowBox, {
         what: `Direct-sun analysis not computed for "${sc}" on this day yet.`,
         produces: `data/processed/shadow_summary${runSuffix(sc)}${day}.json`,
-        owner: `analysis/morphology/shadows.py${sc === "baseline" ? "" : ` --scenario ${sc}`}` +
-          (day ? ` --date ${day.slice(1)} --suffix ${day}` : ""),  //a dated run needs both flags
+        owner: `analysis/morphology/shadows.py --scenario ${sc}`,  //runs all three days of that scenario
       });
       return;
     }

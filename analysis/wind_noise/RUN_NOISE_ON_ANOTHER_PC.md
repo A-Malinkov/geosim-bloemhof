@@ -58,7 +58,7 @@ From the project root, in `cmd`:
 ```
 set JAVA_OPTS=-XX:+UseSerialGC -Xmx8g
 set NOISE_THREADS=8
-%USERPROFILE%\.venvs\geosim-rotterdam\Scripts\python analysis\wind_noise\noise.py
+%USERPROFILE%\.venvs\geosim-rotterdam\Scripts\python analysis\wind_noise\noise.py --scenario baseline
 ```
 
 - `-Xmx8g` assumes ≥ 16 GB free RAM; use about half the free RAM.

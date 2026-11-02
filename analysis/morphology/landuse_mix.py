@@ -1,59 +1,26 @@
 #!/usr/bin/env python3
 """
-landuse_mix.py - land-use mix indices for the study area.
+landuse_mix.py - land-use mix indices for Bloemhof.
 
 Owner: Atanas Malinkov
 
-WHAT A MIX INDEX IS
--------------------
-A single number for "how mixed are the uses here". Two are computed, because
-they answer slightly different questions and disagree in useful ways:
+Two indices on a 100 m grid and over the buurt.
+    Shannon entropy   H = -sum(p_i * ln p_i) / ln(N)   0 one use, 1 all equal
+    Simpson           D = 1 - sum(p_i^2)               chance two m2 differ in use
+p_i is the share of BAG floor area, so a studio does not outweigh a supermarket.
+Unit-count versions are written too. N is the full BAG list of 11 uses, fixed,
+so cells can be compared with each other.
 
-    Shannon entropy (normalised)   H = -sum(p_i * ln p_i) / ln(N)
-        0 = one use only, 1 = all N categories in equal shares.
-        The standard in transport and urban-form research (Cervero & Kockelman
-        1997; Frank et al. 2005). Sensitive to rare categories.
+BAG only holds buildings, so this is a mix of built floor space. Parks, water
+and streets are not in it.
 
-    Simpson diversity              D = 1 - sum(p_i^2)
-        The chance that two randomly drawn square metres have different uses.
-        Dominated by the big categories, so it barely moves when a single small
-        office appears. Reported alongside as a robustness check.
-
-WEIGHTED BY FLOOR AREA, NOT UNIT COUNT
---------------------------------------
-p_i is category i's share of usable floor area. Counting units instead would let
-a 40 m2 studio outweigh a 5,000 m2 supermarket. Unit-count versions are reported
-too, so the difference is visible rather than hidden in a methods choice.
-
-THE DENOMINATOR
----------------
-N is the full BAG gebruiksdoel vocabulary (11 categories), fixed a priori, not
-"the categories that happen to occur here". Otherwise a cell containing only
-homes and one shop would score higher than a cell containing only homes purely
-because its category list is shorter, and cells could not be compared with each
-other or with another neighbourhood.
-
-WHAT THIS DOES NOT COVER
-------------------------
-BAG holds addressable units, so parks, water, streets and squares are invisible
-to it. This is a mix of BUILT FLOOR SPACE. For the built/unbuilt split use GSI
-from density_height.py. See fetch_landuse.py for why CBS Bestand Bodemgebruik
-was rejected for this job.
-
-USAGE
------
-    python analysis/morphology/fetch_landuse.py     # first
+    python analysis/morphology/fetch_landuse.py     #first
     python analysis/morphology/landuse_mix.py
 
-OUTPUTS
--------
-    data/processed/landuse_grid.geojson   100 m grid, WGS84, for the app
-    data/processed/landuse_summary.json   indices, composition, per-cell values
-    ... and merges landuse_mix into morphology_indicators.json under "baseline"
+Writes landuse_grid.geojson, landuse_summary.json and landuse_mix in
+morphology_indicators.json, all in data/processed/.
 """
-from __future__ import annotations
 
-import argparse
 import json
 import math
 import pathlib
@@ -63,20 +30,20 @@ from collections import Counter
 import numpy as np
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
-from common.project import (  # noqa: E402
+from common.project import (  #noqa: E402
     PROCESSED, RAW, STUDY_AREA, bbox_rd, buurt_polygons, buurt_properties,
     study_area_polygon, to_wgs,
 )
 
-#: The full BAG vocabulary. N = 11 regardless of what occurs locally.
+#The full BAG vocabulary. N = 11 regardless of what occurs locally.
 ALL_CATEGORIES = ["residential", "retail", "office", "industry", "education",
                   "healthcare", "sport", "accommodation", "assembly",
                   "detention", "other"]
 N_CATEGORIES = len(ALL_CATEGORIES)
 
 
-def shannon(shares: dict[str, float], n: int = N_CATEGORIES) -> float:
-    """Normalised Shannon entropy over a fixed category count."""
+def shannon(shares, n=N_CATEGORIES):
+    #Normalised Shannon entropy over a fixed category count.
     tot = sum(shares.values())
     if tot <= 0 or n < 2:
         return 0.0
@@ -88,8 +55,8 @@ def shannon(shares: dict[str, float], n: int = N_CATEGORIES) -> float:
     return h / math.log(n)
 
 
-def simpson(shares: dict[str, float]) -> float:
-    """1 - sum(p^2). Independent of N, so no denominator choice to defend."""
+def simpson(shares):
+    #1 - sum(p^2). Independent of N, so no denominator choice to defend.
     tot = sum(shares.values())
     if tot <= 0:
         return 0.0
@@ -112,20 +79,20 @@ def load_units():
     return np.array(x), np.array(y), cats, np.array(area, dtype="float64")
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__,
-                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--cell", type=float, default=100.0)
-    ap.add_argument("--min-units", type=int, default=10,
-                    help="cells with fewer units are flagged sparse; entropy on "
-                         "a handful of units is noise")
-    args = ap.parse_args()
+PARAMS = {
+    "cell": 100.0,  #grid cell size, m
+    "min_units": 10,  #cells with fewer units are flagged sparse, entropy on a handful is noise
+}
+
+
+def main():
+    p = PARAMS
 
     print(f"Land-use mix: {STUDY_AREA.name}")
     x, y, cats, area = load_units()
     print(f"  {len(x):,} addressable units, {N_CATEGORIES} categories in the scheme")
 
-    # ------------------------------------------------------------ whole area
+    #--- whole area
     import shapely
     in_area = shapely.contains_xy(study_area_polygon(), x, y)  #the download's box is bigger than the study area
     print(f"  {int(in_area.sum()):,} of them inside the study area")
@@ -149,9 +116,9 @@ def main() -> int:
         "dominant_share": round(area_by.most_common(1)[0][1] / total_area, 4),
     }
 
-    # ------------------------------------------------------------------ grid
+    #--- grid
     xmin, ymin, xmax, ymax = bbox_rd()
-    c = args.cell
+    c = p["cell"]
     nx = int(np.ceil((xmax - xmin) / c))
     ny = int(np.ceil((ymax - ymin) / c))
     col = ((x - xmin) // c).astype(int)
@@ -159,8 +126,8 @@ def main() -> int:
     on_grid = (col >= 0) & (col < nx) & (row >= 0) & (row < ny)  #units past the box are dropped, not clamped into edge cells
     flat = row * nx + col
 
-    per_cell_area: dict[int, Counter] = {}
-    per_cell_count: dict[int, Counter] = {}
+    per_cell_area = {}
+    per_cell_count = {}
     for i, ok, cs, a in zip(flat, on_grid, cats, area):
         if not ok:
             continue  #outside the grid
@@ -188,7 +155,7 @@ def main() -> int:
             "floor_area_m2": round(sum(pa.values()), 1),
             "dominant": dom[0],
             "dominant_share": round(dom[1] / sum(pa.values()), 3),
-            "sparse": bool(n_units < args.min_units),
+            "sparse": bool(n_units < p["min_units"]),
         }
         for cat in ALL_CATEGORIES:
             props[f"share_{cat}"] = round(pa.get(cat, 0.0) / sum(pa.values()), 4)
@@ -210,11 +177,11 @@ def main() -> int:
         "features": cells,
     }) + "\n")
     print(f"  wrote landuse_grid.geojson ({len(cells)} cells, "
-          f"{len(spacem)} with >= {args.min_units} units)")
+          f"{len(spacem)} with >= {p['min_units']} units)")
 
-    # ------------------------------------------- aggregate per buurt and overall
-    # Both buurten are reported separately and together. The bounding box is the
-    # union of their polygons, so every unit in a buurt is inside the data.
+    #--- aggregate per buurt and overall
+    #Both buurten are reported separately and together. The bounding box is the
+    #union of their polygons, so every unit in a buurt is inside the data.
     per_buurt, combined = {}, None
     try:
         import shapely.geometry as sg
@@ -277,7 +244,7 @@ def main() -> int:
         "source": "BAG verblijfsobjecten via PDOK WFS",
         "parameters": {
             "cell_size_m": c,
-            "min_units_per_cell": args.min_units,
+            "min_units_per_cell": p["min_units"],
             "n_categories_in_scheme": N_CATEGORIES,
             "categories": ALL_CATEGORIES,
             "weighting": "usable floor area (oppervlakte); multi-function units "

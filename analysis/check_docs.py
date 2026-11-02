@@ -2,45 +2,27 @@
 """
 check_docs.py - do the numbers in the READMEs still match the outputs?
 
-The READMEs quote results directly: MAE tables, kappa values, GSI/FSI, Shannon
-indices, scenario objectives. Nothing forces them to agree with the JSON in
-data/processed/, so **re-running any analysis silently invalidates them**.
+The READMEs quote results (MAE, kappa, GSI, FSI, objectives) and nothing ties
+them to data/processed/, so every re-run can leave them stale. It happened
+three times here, the KNMI README after a retrain (22 of 27 MAE values), the
+ABM README after a rasteriser fix and the top README with an old forecast.
+Reading caught none of them.
 
-This has already happened three times in this project:
+    python analysis/check_docs.py          #report
+    python analysis/check_docs.py -q       #exit code only
 
-  * the KNMI README was stale in 22 of 27 MAE values after a retrain;
-  * the ABM README was stale throughout after a fix to the road rasteriser;
-  * the top-level README quoted forecast numbers from a superseded run.
+Exit 0 when everything matches, 1 when something is stale.
 
-None was caught by reading. All were caught by a check like this one.
-
-Run it after re-running anything, and before handing the report to anyone.
-
-    python analysis/check_docs.py          # report
-    python analysis/check_docs.py -q       # exit code only, for a pre-commit hook
-
-Exit code 0 = everything matches, 1 = something is stale.
-
-WHAT IT DOES NOT DO
--------------------
-Each check names the LINE that should quote the value, by regex, and requires
-the value to appear there. Checking only that the number occurs somewhere in the
-file is not enough: the first version of this script did that and passed happily
-while a headline figure was wrong, because the same number also appeared in a
-status table further down.
-
-It still cannot tell you the surrounding sentence is true. A retrain can falsify
-"the LSTM never wins" while every digit looks plausible, so the narrative claims
-are asserted separately at the bottom.
-
-If a check reports NO ANCHOR, the document was restructured and the check is
-dead: fix the pattern rather than ignoring it.
+Each check names the line that should quote a value, by regex. Finding the
+number anywhere in the file is not enough, the first version passed while a
+headline was wrong because the number also sat in a table below. Sentences
+like "the LSTM wins only one forecast" are asserted separately at the bottom.
+NO ANCHOR means the document changed and the pattern needs fixing.
 """
-from __future__ import annotations
 
-import argparse
 import json
 import pathlib
+import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 P = ROOT / "data" / "processed"
@@ -57,11 +39,13 @@ def load(name):
     return None if d.get("_status") == "not_computed_yet" else d
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__,
-                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("-q", "--quiet", action="store_true")
-    args = ap.parse_args()
+PARAMS = {
+    "quiet": "-q" in sys.argv or "--quiet" in sys.argv,  #exit code only
+}
+
+
+def main():
+    p = PARAMS
 
     svf, veg = load("svf_summary.json"), load("vegetation_summary.json")
     den, lu = load("density_summary.json"), load("landuse_summary.json")
@@ -77,13 +61,13 @@ def main() -> int:
     KNMI = ROOT / "analysis/knmi/README.md"
     ROADS = ROOT / "analysis/roads/README.md"  #4.8 road network
 
-    # (label, regex identifying the line(s) that quote it, expected value, files)
+    #(label, regex identifying the line(s) that quote it, expected value, files)
     #
-    # The value must appear on EVERY line matching the pattern. An earlier
-    # version only checked the value appeared *somewhere* in the file, which
-    # passed happily when one of two quotations went stale: the number was
-    # still present, just not where it had been changed. Match the context.
-    checks: list[tuple[str, str, str, list[pathlib.Path]]] = []
+    #The value must appear on EVERY line matching the pattern. An earlier
+    #version only checked the value appeared *somewhere* in the file, which
+    #passed happily when one of two quotations went stale: the number was
+    #still present, just not where it had been changed. Match the context.
+    checks = []
 
     if svf:
         g = svf["combined"]["open_ground"]
@@ -144,9 +128,9 @@ def main() -> int:
         b = 100 * ws["win_share"]["green"]
         a = 100 * ws["win_share"]["compact"]
         checks += [
-            # anchored on the two-column weight-space row only: the same row
-            # label also opens the scenario results table, and matching both
-            # would let the value sit on either line and still pass
+            #anchored on the two-column weight-space row only: the same row
+            #label also opens the scenario results table, and matching both
+            #would let the value sit on either line and still pass
             ("weight sweep: green share",
              r"^\| green \*\*★\*\* \| \d+ % \|$", f"{b:.0f} %", [ABM]),
             ("weight sweep: compact share",
@@ -186,7 +170,7 @@ def main() -> int:
              f"{100*t['+6h'][bt]['skill_vs_persistence']:.0f} %", [MAIN]),
             ("wind +6h headline", r"Weather forecast \(wind", f"{w['+6h'][bw]['mae']:.2f}", [MAIN]),
         ]
-        # the per-model MAE tables: one row per horizon, every model on it
+        #the per-model MAE tables: one row per horizon, every model on it
         for hz in ("+1h", "+6h", "+24h"):
             for res, what in ((t, "temperature"), (w, "wind")):
                 for model in ("persistence", "daily_naive", "gradient_boosting", "lstm"):
@@ -369,13 +353,13 @@ def main() -> int:
         for f in files:
             hits = [ln for ln in lines_of[f] if re.search(pattern, ln)]
             if not hits:
-                # the doc was restructured out from under the check
+                #the doc was restructured out from under the check
                 no_anchor.append((label, pattern, f.relative_to(ROOT)))
                 continue
             if not any(value in ln for ln in hits):
                 stale.append((label, value, f.relative_to(ROOT), hits[0].strip()[:78]))
 
-    # --- narrative claims: a retrain can falsify a sentence, not just a digit ---
+    #--- narrative claims: a retrain can falsify a sentence, not just a digit ---
     claims = []
     if fc:
         t = fc["results"]["temperature_C"]["horizons"]
@@ -489,7 +473,7 @@ def main() -> int:
         ]
     broken = [c for c, ok in claims if not ok]
 
-    if not args.quiet:
+    if not p["quiet"]:
         nfiles = len({f for _, _, _, fs in checks for f in fs})
         print(f"checked {len(checks)} published numbers across {nfiles} files\n")
         if stale:

@@ -30,10 +30,10 @@ from common.project import STUDY_AREA, PROCESSED, RAW, bbox_rd, bbox_wgs, write_
 
 ## Noise: what exists (2026-10-14)
 
-`noise.py` runs the road-traffic noise model for one scenario:
+`noise.py` runs the road-traffic noise model for each scenario in its `CASES`:
 
 ```bash
-python analysis/wind_noise/noise.py                 # baseline, ~10 min
+python analysis/wind_noise/noise.py --scenario baseline   # ~10 min per scenario
 python analysis/wind_noise/noise.py --refresh       # re-fetch OSM + 3DBAG first
 ```
 

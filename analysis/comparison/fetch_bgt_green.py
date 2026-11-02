@@ -2,36 +2,20 @@
 """
 fetch_bgt_green.py - today's green on the design site, from the BGT.
 
-Component 4.9. Built 2026-10-28 for the green-area row of the scenario
-comparison (compare_scenarios.py).
+Component 4.9. Built 2026-10-28 for the green row of compare_scenarios.py.
 
-USAGE
------
     python analysis/comparison/fetch_bgt_green.py
 
-WHAT IT FETCHES
----------------
-The BGT (Basisregistratie Grootschalige Topografie) through PDOK's OGC API,
-over the design site's box plus 20 m:
-  begroeidterreindeel    every planted surface: public green, shrubs, grass
-  onbegroeidterreindeel  only class "erf": the private plot round a house, how
-                         the BGT records gardens
-Only current versions are kept: the API also returns retired versions (a
-feature with an eind_registratie), 471 of 782 planted parts on the first page
-on 2026-10-28.
+From PDOK's BGT OGC API over the site's box plus 20 m. begroeidterreindeel is
+every planted surface, onbegroeidterreindeel class "erf" the private plot round
+a house, which is how the BGT records gardens. The API also returns retired
+versions (471 of 782 planted parts on 2026-10-28), only current ones are kept.
 
-OUTPUT
-------
-    data/raw/bgt_green_site.geojson   polygons, EPSG:28992, with class and kind
-                                      ("green" or "garden")
+Writes data/raw/bgt_green_site.geojson, kind "green" or "garden".
 
-WHAT IT CANNOT TELL YOU
------------------------
-* An erf is the whole plot, paving and sheds included, so gardens count in
-  full. The final design's gardens are drawn the same way (a 5 x 18 m plot per
-  house), so the two are counted alike, but both overstate the planted area.
+Limits. An erf is the whole plot, paving included. The final design's gardens
+are drawn the same way, so both are counted alike but overstate planting.
 """
-from __future__ import annotations
 
 import json
 import pathlib
@@ -39,7 +23,7 @@ import sys
 import urllib.request
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
-from common.project import RAW, SERVICES, design_site_polygon, to_wgs  # noqa: E402
+from common.project import RAW, SERVICES, design_site_polygon, to_wgs  #noqa: E402
 
 PARAMS = {
     "pad_m": 20.0,  #box round the site, so a polygon crossing its outline comes whole
@@ -69,7 +53,7 @@ def fetch(c, p):
     return keep
 
 
-def main() -> int:
+def main():
     import geopandas as gpd
     from collections import Counter
     p = PARAMS

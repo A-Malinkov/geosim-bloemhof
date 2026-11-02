@@ -1,25 +1,17 @@
 #!/usr/bin/env python3
 """
-make_figures.py - report figures for the morphology + vegetation work.
+make_figures.py - report figures for morphology and vegetation.
 
 Owner: Atanas Malinkov
 
-Run the three analysis scripts first, then this:
     python analysis/morphology/fetch_ahn.py
     python analysis/morphology/fetch_trees.py
     python analysis/morphology/sky_view_factor.py
     python analysis/morphology/make_figures.py
 
-Writes PNGs into docs/ at 200 dpi, sized for a report page.
-
-Design notes (so the figures stay consistent if you add more):
-  * Sequential magnitude uses ONE hue, light to dark. Not viridis, not a rainbow.
-  * Categorical series use fixed slots in a fixed order; never recoloured by rank.
-  * A single-series chart gets no legend box: the title names it.
-  * Labels are selective. A number on every bar is noise.
-  * Gridlines are solid hairlines, never dashed, and sit behind the marks.
+Writes PNGs into docs/ at 200 dpi. Magnitude in one hue light to dark, fixed
+colours per category, no legend for a single series, solid hairline grids.
 """
-from __future__ import annotations
 
 import json
 import pathlib
@@ -34,20 +26,20 @@ import rasterio
 from matplotlib.colors import LinearSegmentedColormap, to_rgba
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
-from common.project import DOCS, PROCESSED, RAW, STUDY_AREA  # noqa: E402
+from common.project import DOCS, PROCESSED, RAW, STUDY_AREA  #noqa: E402
 
-# ----------------------------------------------------------------- design tokens
+#--- design tokens
 SURFACE    = "#fcfcfb"
 INK        = "#0b0b0b"
 INK_2      = "#52514e"
 MUTED      = "#898781"
 GRID       = "#e1e0d9"
 BASELINE   = "#c3c2b7"
-SERIES_1   = "#2a78d6"   # blue
-SERIES_2   = "#eb6834"   # orange
-NEUTRAL    = "#dedcd4"   # for "not applicable" areas on maps
+SERIES_1   = "#2a78d6"   #blue
+SERIES_2   = "#eb6834"   #orange
+NEUTRAL    = "#dedcd4"   #for "not applicable" areas on maps
 
-# one-hue sequential ramp, light -> dark
+#one-hue sequential ramp, light -> dark
 BLUE_RAMP = ["#cde2fb", "#b7d3f6", "#9ec5f4", "#86b6ef", "#6da7ec", "#5598e7",
              "#3987e5", "#2a78d6", "#256abf", "#1c5cab", "#184f95", "#104281",
              "#0d366b"]
@@ -75,7 +67,7 @@ plt.rcParams.update({
 
 
 def tidy(ax, *, xgrid=False, ygrid=False):
-    """Recessive grid behind the marks; no dashes."""
+    #Recessive grid behind the marks; no dashes.
     ax.set_axisbelow(True)
     if xgrid:
         ax.xaxis.grid(True, color=GRID, linewidth=0.7, linestyle="-")
@@ -86,13 +78,11 @@ def tidy(ax, *, xgrid=False, ygrid=False):
 
 
 def titled(ax, title, subtitle=None, pad=24):
-    """
-    Title above subtitle above the plot, with no overlap.
-
-    matplotlib's title sits right on the axes top, so a subtitle placed at
-    y>1 lands on top of it. Padding the title upwards first leaves a clean
-    band for the subtitle.
-    """
+    #Title above subtitle above the plot, with no overlap.
+    #
+    #matplotlib's title sits right on the axes top, so a subtitle placed at
+    #y>1 lands on top of it. Padding the title upwards first leaves a clean
+    #band for the subtitle.
     ax.set_title(title, loc="left", pad=pad if subtitle else 10)
     if subtitle:
         ax.text(0, 1.015, subtitle, transform=ax.transAxes,
@@ -118,17 +108,17 @@ def load_tif(path):
     return a, t, crs
 
 
-# =============================================================== 1. SVF map
+#=============================================================== 1. SVF map
 def fig_svf_map(svf, open_ground, stats):
     fig, ax = plt.subplots(figsize=(7.2, 7.2))
 
-    # Buildings and water are shown neutral: SVF on a roof is not meaningful,
-    # and leaving them on the ramp would make them read as "very enclosed".
+    #Buildings and water are shown neutral: SVF on a roof is not meaningful,
+    #and leaving them on the ramp would make them read as "very enclosed".
     ax.imshow(np.ones_like(svf), cmap=LinearSegmentedColormap.from_list(
         "n", [NEUTRAL, NEUTRAL]), vmin=0, vmax=1, interpolation="nearest")
     shown = np.where(open_ground, svf, np.nan)
-    # viridis, as the app's SVF overlay (sky_view_factor.py): purple = enclosed,
-    # yellow = open sky, so the report and the map read the same way.
+    #viridis, as the app's SVF overlay (sky_view_factor.py): purple = enclosed,
+    #yellow = open sky, so the report and the map read the same way.
     im = ax.imshow(shown, cmap="viridis", vmin=0.2, vmax=1.0, interpolation="nearest")
 
     ax.set_xticks([]); ax.set_yticks([])
@@ -147,7 +137,7 @@ def fig_svf_map(svf, open_ground, stats):
     cb.outline.set_visible(False)
     cb.ax.tick_params(colors=MUTED, length=0)
 
-    # scale bar: the raster is 0.5 m cells
+    #scale bar: the raster is 0.5 m cells
     px_per_m = 1.0 / stats["parameters"]["cell_size_m"]
     bar_m = 200
     x0, y0 = svf.shape[1] * 0.045, svf.shape[0] * 0.945
@@ -165,7 +155,7 @@ def fig_svf_map(svf, open_ground, stats):
     save(fig, "fig_svf_map.png")
 
 
-# ====================================================== 2. SVF distribution
+#====================================================== 2. SVF distribution
 def fig_svf_distribution(svf, open_ground, stats):
     v = svf[open_ground & np.isfinite(svf)]
     g = stats["open_ground"]
@@ -195,9 +185,9 @@ def fig_svf_distribution(svf, open_ground, stats):
     save(fig, "fig_svf_distribution.png")
 
 
-# ====================================================== 4. tree height classes
+#====================================================== 4. tree height classes
 def in_bloemhof(trees_rd):
-    """The register trees inside the buurt polygon, the same clip as the statistics."""
+    #The register trees inside the buurt polygon, the same clip as the statistics.
     from shapely.geometry import Point
     from common.project import study_area_polygon
     area = study_area_polygon()
@@ -231,7 +221,7 @@ def fig_height_classes(trees_rd):
     save(fig, "fig_tree_heights.png")
 
 
-# ============================================================= 5. tree map
+#============================================================= 5. tree map
 def fig_tree_map(trees_rd, veg):
     from common.project import study_area_polygon
     feats = in_bloemhof(trees_rd)  #Bloemhof only, not the whole download box (2026-11-01)
@@ -263,7 +253,7 @@ def fig_tree_map(trees_rd, veg):
 
     span_y = ys.max() - ys.min()
     x0 = xs.min() + (xs.max() - xs.min()) * 0.02
-    y0 = ys.min() - span_y * 0.035          # below the dots, not on top of them
+    y0 = ys.min() - span_y * 0.035          #below the dots, not on top of them
     ax.plot([x0, x0 + 200], [y0, y0], color=INK, lw=3, solid_capstyle="butt",
             path_effects=[pe.withStroke(linewidth=5.5, foreground=SURFACE)])
     ax.text(x0 + 100, y0 + span_y * 0.008, "200 m", ha="center", va="bottom",
@@ -273,9 +263,9 @@ def fig_tree_map(trees_rd, veg):
     save(fig, "fig_tree_map.png")
 
 
-# ================================================ 6. what the trees do to SVF
+#================================================ 6. what the trees do to SVF
 def fig_canopy_effect(svf, open_ground, transform, trees_rd):
-    """Compare SVF under tree crowns against open ground well away from trees."""
+    #Compare SVF under tree crowns against open ground well away from trees.
     from scipy.ndimage import distance_transform_edt
 
     cell = abs(transform.a)
@@ -291,7 +281,7 @@ def fig_canopy_effect(svf, open_ground, transform, trees_rd):
 
     seeds = np.zeros((h, w), dtype=bool)
     seeds[rows, cols] = True
-    # distance in metres to the nearest tree trunk
+    #distance in metres to the nearest tree trunk
     dist = distance_transform_edt(~seeds) * cell
 
     canopy = np.zeros((h, w), dtype=bool)
@@ -333,14 +323,13 @@ def fig_canopy_effect(svf, open_ground, transform, trees_rd):
             "n_open_cells": int(away.size), "n_canopy_cells": int(under.size)}
 
 
-# ======================================================== 7. density maps
+#======================================================== 7. density maps
 def fig_density_maps(dens, grid_geo):
-    """GSI and FSI per 100 m cell as two plain maps, with the buurt outline.
-
-    The simple student version of density (2026-11-01): how much ground is
-    built on, and how much floor space there is, cell by cell. Replaces the
-    Spacematrix scatter in the report.
-    """
+    #GSI and FSI per 100 m cell as two plain maps, with the buurt outline.
+    #
+    #The simple student version of density (2026-11-01): how much ground is
+    #built on, and how much floor space there is, cell by cell. Replaces the
+    #Spacematrix scatter in the report.
     from common.project import study_area_polygon
     cell = dens["parameters"]["cell_size_m"]
     feats = grid_geo["features"]
@@ -393,7 +382,7 @@ def fig_density_maps(dens, grid_geo):
 
 
 def fig_density_site(site):
-    """GSI and FSI on the design site, today and in each scenario, as two bar charts."""
+    #GSI and FSI on the design site, today and in each scenario, as two bar charts.
     names = [("baseline", "Today"), ("scenario_a", "Scenario A"),
              ("scenario_b", "Scenario B"), ("final", "Final design")]
     names = [(k, label) for k, label in names if k in site]
@@ -418,7 +407,7 @@ def fig_density_site(site):
 
 
 def fig_building_heights(dens):
-    """One plain map: every building in the buurt, coloured by height class."""
+    #One plain map: every building in the buurt, coloured by height class.
     from shapely.geometry import Point
     from common.project import design_site_polygon, study_area_polygon
     p = dens["parameters"]
@@ -466,15 +455,13 @@ def fig_building_heights(dens):
     save(fig, "fig_building_heights.png")
 
 
-# ============================================================ 9. land-use mix
+#============================================================ 9. land-use mix
 def fig_landuse(lu, grid_geo):
-    """
-    Composition of built floor space, and how the mix varies across the area.
-
-    The composition bars are nominal categories, so they get ONE colour: a
-    value ramp there would imply an order the categories do not have. The map
-    encodes a magnitude (entropy), so it gets the sequential ramp.
-    """
+    #Composition of built floor space, and how the mix varies across the area.
+    #
+    #The composition bars are nominal categories, so they get ONE colour: a
+    #value ramp there would imply an order the categories do not have. The map
+    #encodes a magnitude (entropy), so it gets the sequential ramp.
     comp = [c for c in lu["composition"] if c["share"] > 0][:9][::-1]
     names = [c["category"] for c in comp]
     shares = [100 * c["share"] for c in comp]
@@ -527,7 +514,7 @@ def fig_landuse(lu, grid_geo):
     save(fig, "fig_landuse_mix.png")
 
 
-# ========================================================= 10. land-use ABM
+#========================================================= 10. land-use ABM
 LU_LEGEND = ("residential", "retail", "amenity", "green", "industry")
 
 
@@ -539,11 +526,10 @@ def lu_cmap(ca):
 
 
 def outline_site(ax, mask, color=INK, lw=1.2):
-    """Trace the design-site cells, so the outline follows the 25 m grid.
-
-    Padded by one empty cell, so the outline closes where the site runs off
-    the model grid instead of being left open there.
-    """
+    #Trace the design-site cells, so the outline follows the 25 m grid.
+    #
+    #Padded by one empty cell, so the outline closes where the site runs off
+    #the model grid instead of being left open there.
     a = np.pad(np.asarray(mask, dtype=float), 1)
     ny, nx = a.shape
     xlim, ylim = ax.get_xlim(), ax.get_ylim()
@@ -553,7 +539,7 @@ def outline_site(ax, mask, color=INK, lw=1.2):
 
 
 def fig_abm(ca, rl):
-    """The CA land-use programmes over the whole study area, design site outlined."""
+    #The CA land-use programmes over the whole study area, design site outlined.
     import matplotlib.patches as mpatches
 
     classes, cols, cmap = lu_cmap(ca)
@@ -605,12 +591,11 @@ def fig_abm(ca, rl):
 
 
 def fig_rl_comparison(runs):
-    """Linear Q-learning vs the convolutional DQN, against a random policy.
-
-    `runs` maps a scenario label to (linear_json, dqn_json); the random-policy
-    baseline is stored in the DQN output and applies to both agents, since
-    the problem is the same.
-    """
+    #Linear Q-learning vs the convolutional DQN, against a random policy.
+    #
+    #`runs` maps a scenario label to (linear_json, dqn_json); the random-policy
+    #baseline is stored in the DQN output and applies to both agents, since
+    #the problem is the same.
     fig = plt.figure(figsize=(7.4, 5.4))
     gs = fig.add_gridspec(2, len(runs), height_ratios=[1.0, 1.0], hspace=0.55,
                           wspace=0.3, top=0.86, bottom=0.10, left=0.09, right=0.98)
@@ -663,7 +648,7 @@ def fig_rl_comparison(runs):
 
 
 def fig_rl_training(lin, dqn):
-    """Training curves of both agents, against the random policy and hill climbing."""
+    #Training curves of both agents, against the random policy and hill climbing.
     fig, ax = plt.subplots(figsize=(7.4, 3.6))
     fig.subplots_adjust(top=0.80, bottom=0.15, left=0.09, right=0.80)
     tidy(ax, ygrid=True)
@@ -695,7 +680,7 @@ def fig_rl_training(lin, dqn):
 def fig_rl_site(ca, rl, out="fig_landuse_rl_site.png",
                 heading="The RL agent re-plans the design site",
                 plan_label="RL agent's plan"):
-    """The design site today against the RL agent's plan, and how it learned."""
+    #The design site today against the RL agent's plan, and how it learned.
     import matplotlib.patches as mpatches
 
     classes, cols, cmap = lu_cmap(ca)
@@ -704,7 +689,7 @@ def fig_rl_site(ca, rl, out="fig_landuse_rl_site.png",
     plan = np.array(rl["best_grid"], dtype="int16")
 
     rows, cols_ = np.where(site)
-    m = 3                                  # cells of context around the site
+    m = 3                                  #cells of context around the site
     r0, r1 = max(0, rows.min() - m), min(site.shape[0], rows.max() + m + 1)
     c0, c1 = max(0, cols_.min() - m), min(site.shape[1], cols_.max() + m + 1)
     crop = (slice(r0, r1), slice(c0, c1))
@@ -721,7 +706,7 @@ def fig_rl_site(ca, rl, out="fig_landuse_rl_site.png",
         ax = fig.add_subplot(gs[0, i])
         ax.imshow(g[crop], cmap=cmap, vmin=0, vmax=len(classes) - 1,
                   interpolation="nearest")
-        # context outside the site is drawn, but washed out: it is fixed
+        #context outside the site is drawn, but washed out: it is fixed
         veil = np.where(site[crop], 0.0, 0.6)
         ax.imshow(np.dstack([np.full(veil.shape, c) for c in
                              to_rgba(SURFACE)[:3]] + [veil]),
@@ -736,7 +721,7 @@ def fig_rl_site(ca, rl, out="fig_landuse_rl_site.png",
                      f"{'–' if d is None else f'{d:.0f} m'} to amenity",
                      fontsize=8.5, color=INK, pad=4)
 
-    # what the site is made of, today vs plan
+    #what the site is made of, today vs plan
     ax = fig.add_subplot(gs[1, 0])
     tidy(ax, xgrid=True)
     keys = [k for k in LU_LEGEND + ("vacant",)
@@ -759,7 +744,7 @@ def fig_rl_site(ca, rl, out="fig_landuse_rl_site.png",
     ax.set_title("Grey today, coloured the plan", loc="left", fontsize=8.5,
                  fontweight="normal", color=INK_2)
 
-    # learning curve: today's objective is far below, so it is stated, not drawn
+    #learning curve: today's objective is far below, so it is stated, not drawn
     ax2 = fig.add_subplot(gs[1, 1])
     tidy(ax2, ygrid=True)
     c = np.array(rl["learning_curve"])
@@ -795,8 +780,8 @@ def fig_rl_site(ca, rl, out="fig_landuse_rl_site.png",
     save(fig, out)
 
 
-# ==================================================================== main
-def main() -> int:
+#==================================================================== main
+def main():
     need = [PROCESSED / "svf.tif", PROCESSED / "svf_summary.json",
             PROCESSED / "vegetation_summary.json",
             RAW / "rotterdam_trees_rd.geojson", PROCESSED / "trees.geojson",
@@ -816,7 +801,7 @@ def main() -> int:
     trees = json.loads((PROCESSED / "trees.geojson").read_text())
     trees_rd = json.loads((RAW / "rotterdam_trees_rd.geojson").read_text())
 
-    # rebuild the open-ground mask on the cropped SVF grid
+    #rebuild the open-ground mask on the cropped SVF grid
     dsm, _, _ = load_tif(RAW / "ahn_dsm_05m.tif")
     dtm, _, _ = load_tif(RAW / "ahn_dtm_05m.tif")
     pad = (dsm.shape[0] - svf.shape[0]) // 2
@@ -867,7 +852,7 @@ def main() -> int:
     else:
         print("  (skipping ABM figure: run ca_landuse.py first)")
 
-    # the canopy effect is a finding, not just a picture: keep the numbers
+    #the canopy effect is a finding, not just a picture: keep the numbers
     veg["svf_canopy_effect"] = effect
     (PROCESSED / "vegetation_summary.json").write_text(json.dumps(veg, indent=2) + "\n")
     print(f"\n  canopy effect: SVF {effect['svf_open']} open vs "

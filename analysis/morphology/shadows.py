@@ -1,64 +1,28 @@
 #!/usr/bin/env python3
 """
-shadows.py - direct-sun / shadow hours over the study area from AHN.
+shadows.py - direct-sun hours over Bloemhof from AHN, per scenario and day.
 
-Owner: Atanas Malinkov  (morphology, same component as sky_view_factor.py)
+Owner: Atanas Malinkov (morphology, with sky_view_factor.py)
 
-WHAT THIS IS
-------------
-There is no "shadow dataset" to download: a shadow is geometry x sun position x
-time, so it is only valid for one instant. What you CAN import is the surface it
-is cast from, the AHN DSM, which fetch_ahn.py already fetches for the Sky View
-Factor. This script casts the sun across a day over that surface and adds up, for
-every cell, how many hours of DIRECT sun it receives. It is the same horizon-ray
-idea as sky_view_factor.py, run once per sun position instead of over a full
-hemisphere.
+A shadow is geometry, sun position and time, so there is nothing to download.
+We cast the sun across one clear day over the AHN DSM and add up the hours of
+direct sun per cell. Walking towards the sun, a point at distance d blocks it
+when height - d*tan(elevation) rises above the cell. The sun position is the
+NOAA algorithm in plain Python. Statistics are on open ground (nDSM < 2 m), as
+in sky_view_factor.py.
 
-HOW
----
-For a sun at azimuth `a` and elevation `e`, a cell is in shadow if, walking
-towards the sun, any surface point rises above the sun ray leaving that cell:
-a point at horizontal distance d blocks the sun when its height exceeds
-`z0 + d*tan(e)`, i.e. `(height - d*tan(e)) > z0`. Marching outwards and keeping
-the running maximum of `height - d*tan(e)` gives the test for the whole raster at
-once (the same vectorised march sky_view_factor.py uses).
+Limits. Clear sky, so an upper bound and not measured sun. Tree crowns count as
+solid. The search radius caps long winter shadows.
 
-The sun's position comes from the NOAA solar-position algorithm, implemented
-here in plain Python so the script needs no extra dependency.
+    python analysis/morphology/fetch_ahn.py                       #rasters first
+    python analysis/morphology/shadows.py                         #every case, ~30 s each
+    python analysis/morphology/shadows.py --scenario scenario_a   #only these scenarios, all three days
 
-OBSERVER SURFACE
-----------------
-Shadows are evaluated on the AHN DSM (buildings + tree crowns block the sun),
-and the headline statistics are reported on OPEN GROUND only: streets, gardens
-and squares, the nDSM < 2 m mask, because sun hours on a roof are not what a
-resident experiences. This mirrors sky_view_factor.py exactly.
-
-LIMITATIONS (state them, per the course rubric)
------------------------------------------------
-- One clear-sky day. No clouds, no atmosphere: this is geometric direct-sun
-  duration, an upper bound, not measured insolation.
-- The DSM includes tree crowns as solid, so summer foliage over-shades a little.
-- Low winter sun casts very long shadows; --radius caps the search, so a distant
-  high-rise beyond it is ignored. The default is generous but finite.
-
-USAGE
------
-    python analysis/morphology/fetch_ahn.py          # get the rasters first
-    python analysis/morphology/shadows.py            # equinox, 1 m, 30 min steps
-    python analysis/morphology/shadows.py --date 2026-06-21 --step-minutes 15
-    python analysis/morphology/shadows.py --date 2026-12-21 --resolution 0.5
-    python analysis/morphology/shadows.py --scenario scenario_a   # demolition + new blocks burned in
-
-OUTPUTS
--------
-    data/processed/shadow_hours.tif      direct-sun hours raster, EPSG:28992 (gitignored)
-    data/processed/shadow_overlay.png    colour ramp for draping in Cesium
-    data/processed/shadow_summary.json   statistics for the dashboard
-    (a scenario run appends _<scenario> to the names, before any --suffix)
+Writes shadow_hours.tif (gitignored), shadow_overlay.png and
+shadow_summary.json in data/processed/, with _<scenario> and then the day
+suffix appended.
 """
-from __future__ import annotations
 
-import argparse
 import json
 import math
 import pathlib
@@ -68,30 +32,28 @@ from datetime import datetime, timedelta, timezone
 import numpy as np
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
-from common.project import (  # noqa: E402
+from common.project import (  #noqa: E402
     PROCESSED, RAW, STUDY_AREA, bbox_rd, bbox_wgs, buurt_polygons,
     buurt_properties, centre_wgs, design_site_polygon, study_area_polygon,
 )
-# Reuse the raster machinery from the SVF script rather than duplicate it: the
-# loader, the edge-safe shift, the RD->WGS84 warp and the stats helper are all
-# exactly what shadow casting needs. Importing it is side-effect free (its work
-# is under `if __name__ == "__main__"`).
-from sky_view_factor import (  # noqa: E402
+#Reuse the raster machinery from the SVF script rather than duplicate it: the
+#loader, the edge-safe shift, the RD->WGS84 warp and the stats helper are all
+#exactly what shadow casting needs. Importing it is side-effect free (its work
+#is under `if __name__ == "__main__"`).
+from sky_view_factor import (  #noqa: E402
     describe, fill_nan_nearest, load_raster, reproject_to_wgs84, shift, write_tif,
 )
 
 
-# ------------------------------------------------------------ solar position
-def solar_position(dt: datetime, lat_deg: float, lon_deg: float):
-    """
-    Sun elevation and azimuth for a UTC instant, via the NOAA algorithm.
-
-    Returns (elevation_deg, azimuth_deg) with azimuth measured clockwise from
-    north. Elevation is geometric (no atmospheric refraction): for casting
-    shadows we only care whether the sun is above the horizon and from where.
-    lon is east-positive.
-    """
-    # fractional day -> Julian day -> Julian century (NOAA)
+#--- solar position
+def solar_position(dt, lat_deg, lon_deg):
+    #Sun elevation and azimuth for a UTC instant, via the NOAA algorithm.
+    #
+    #Returns (elevation_deg, azimuth_deg) with azimuth measured clockwise from
+    #north. Elevation is geometric (no atmospheric refraction): for casting
+    #shadows we only care whether the sun is above the horizon and from where.
+    #lon is east-positive.
+    #fractional day -> Julian day -> Julian century (NOAA)
     frac = (dt.hour + dt.minute / 60 + dt.second / 3600) / 24
     y, m = dt.year, dt.month
     day = dt.day + frac
@@ -127,7 +89,7 @@ def solar_position(dt: datetime, lat_deg: float, lon_deg: float):
         - 1.25 * ecc * ecc * math.sin(2 * anom_r))
 
     time_min = dt.hour * 60 + dt.minute + dt.second / 60
-    true_solar = (time_min + eq_time + 4 * lon_deg) % 1440   # lon east-positive
+    true_solar = (time_min + eq_time + 4 * lon_deg) % 1440   #lon east-positive
     hour_angle = true_solar / 4 - 180
     if hour_angle < -180:
         hour_angle += 360
@@ -152,37 +114,35 @@ def solar_position(dt: datetime, lat_deg: float, lon_deg: float):
     return elevation, azimuth
 
 
-# ----------------------------------------------------------- shadow casting
-def shadow_mask(surface: np.ndarray, cellsize: float, sun_az_deg: float,
-                sun_elev_deg: float, radius_m: float, n_steps: int) -> np.ndarray:
-    """
-    Boolean shadow mask for one sun position (True = the cell is in shadow).
-
-    Marches towards the sun and keeps the running maximum of `height - d*tan(e)`;
-    a cell is shadowed when that exceeds its own surface height.
-    """
+#--- shadow casting
+def shadow_mask(surface, cellsize, sun_az_deg,
+                sun_elev_deg, radius_m, n_steps):
+    #Boolean shadow mask for one sun position (True = the cell is in shadow).
+    #
+    #Marches towards the sun and keeps the running maximum of `height - d*tan(e)`;
+    #a cell is shadowed when that exceeds its own surface height.
     if sun_elev_deg <= 0:
-        return np.ones(surface.shape, dtype=bool)          # sun below horizon
+        return np.ones(surface.shape, dtype=bool)          #sun below horizon
     tan_e = math.tan(math.radians(sun_elev_deg))
     az = math.radians(sun_az_deg)
     radius_px = max(2, int(round(radius_m / cellsize)))
-    # dense near, sparse far: nearby geometry sets the shadow, distant refines it
+    #dense near, sparse far: nearby geometry sets the shadow, distant refines it
     steps = np.unique(np.round(np.geomspace(1, radius_px, n_steps)).astype(int))
 
     max_block = np.full(surface.shape, -np.inf, dtype="float32")
     for r in steps:
-        drow = int(round(-r * math.cos(az)))               # north is -row
+        drow = int(round(-r * math.cos(az)))               #north is -row
         dcol = int(round(r * math.sin(az)))
         if drow == 0 and dcol == 0:
             continue
         dist = math.hypot(drow, dcol) * cellsize
-        cand = shift(surface, drow, dcol) - dist * tan_e   # NaN off the edge
-        np.fmax(max_block, cand, out=max_block)            # fmax ignores NaN
+        cand = shift(surface, drow, dcol) - dist * tan_e   #NaN off the edge
+        np.fmax(max_block, cand, out=max_block)            #fmax ignores NaN
     return max_block > (surface + 0.05)
 
 
-def day_times(date: datetime, step_minutes: int):
-    """Sampled UTC instants from 02:00 to 21:00: wide enough for NL daylight."""
+def day_times(date, step_minutes):
+    #Sampled UTC instants from 02:00 to 21:00: wide enough for NL daylight.
     t = date.replace(hour=2, minute=0, second=0, microsecond=0)
     end = date.replace(hour=21, minute=0, second=0, microsecond=0)
     out = []
@@ -192,10 +152,10 @@ def day_times(date: datetime, step_minutes: int):
     return out
 
 
-# ------------------------------------------------------------------- outputs
+#--- outputs
 def write_hours_overlay(path, arr, vmax, cmap_name="plasma",
-                        mask=None, max_px: int = 1400):
-    """Colour-ramped, transparent PNG of sun hours, for draping on the globe."""
+                        mask=None, max_px=1400):
+    #Colour-ramped, transparent PNG of sun hours, for draping on the globe.
     import matplotlib
     matplotlib.use("Agg")
     from PIL import Image
@@ -218,66 +178,62 @@ def write_hours_overlay(path, arr, vmax, cmap_name="plasma",
           f"{path.stat().st_size / 1e6:.1f} MB)")
 
 
-# ---------------------------------------------------------------------- main
+#--- main
 COMBINED = "_combined"  #key of the whole-study-area stats while they are collected
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser(
-        description="Direct-sun / shadow hours from AHN",
-        formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--date", default="2026-03-20",
-                    help="day to simulate, YYYY-MM-DD (default: spring equinox)")
-    ap.add_argument("--step-minutes", type=int, default=30,
-                    help="sun sampling interval in minutes")
-    ap.add_argument("--resolution", type=float, default=1.0,
-                    help="working cell size in metres (0.5 = AHN native)")
-    ap.add_argument("--radius", type=float, default=300.0,
-                    help="shadow search radius in metres (caps long low-sun shadows)")
-    ap.add_argument("--steps", type=int, default=80,
-                    help="radial samples per sun position")
-    ap.add_argument("--no-clip-buurt", action="store_true",
-                    help="skip the CBS neighbourhood-boundary statistics")
-    ap.add_argument("--suffix", default="",
-                    help="append to output names (e.g. _2026-12-21) so extra days "
-                         "do not overwrite the app's files")
-    ap.add_argument("--scenario", default="baseline",
-                    choices=["baseline", "scenario_a", "scenario_b", "final"])  #final: the Rhino Final Model, 2026-10-28  #which built environment
-    args = ap.parse_args()
+PARAMS = {
+    "step_minutes": 30,  #sun sampling interval
+    "resolution": 1.0,  #working cell size in m, 0.5 is AHN native
+    "radius": 300.0,  #shadow search radius in m, caps long low-sun shadows
+    "steps": 80,  #radial samples per sun position
+    "no_clip_buurt": False,  #True skips the buurt statistics
+}
+
+DAYS = [
+    {"date": "2026-03-20", "suffix": ""},  #spring equinox keeps the plain names
+    {"date": "2026-06-21", "suffix": "_2026-06-21"},
+    {"date": "2026-12-21", "suffix": "_2026-12-21"},
+]
+CASES = [{"scenario": sc, **d} for sc in ("baseline", "scenario_a", "scenario_b", "final") for d in DAYS]  #final: the Rhino Final Model
+
+
+def run(p):
+    #one case: PARAMS merged with one dict from CASES
 
     dsm_path, dtm_path = RAW / "ahn_dsm_05m.tif", RAW / "ahn_dtm_05m.tif"
-    for p in (dsm_path, dtm_path):
-        if not p.exists():
-            print(f"missing {p}. Run: python analysis/morphology/fetch_ahn.py")
+    for path in (dsm_path, dtm_path):
+        if not path.exists():
+            print(f"missing {path}. Run: python analysis/morphology/fetch_ahn.py")
             return 1
 
     try:
-        date = datetime.strptime(args.date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        date = datetime.strptime(p["date"], "%Y-%m-%d").replace(tzinfo=timezone.utc)
     except ValueError:
-        print(f"bad --date {args.date!r}; expected YYYY-MM-DD")
+        print(f"bad date {p['date']!r}, expected YYYY-MM-DD")  #from CASES
         return 1
 
     lon, lat = centre_wgs()
     print(f"Direct-sun hours: {STUDY_AREA.name}")
-    print(f"  {args.date} | cell {args.resolution} m | radius {args.radius} m | "
-          f"sun every {args.step_minutes} min")
+    print(f"  {p['date']} | cell {p['resolution']} m | radius {p['radius']} m | "
+          f"sun every {p['step_minutes']} min")
 
-    dsm, transform, crs = load_raster(dsm_path, args.resolution)
-    dtm, _, _ = load_raster(dtm_path, args.resolution)
+    dsm, transform, crs = load_raster(dsm_path, p["resolution"])
+    dtm, _, _ = load_raster(dtm_path, p["resolution"])
     #the crop below assumes the AHN rasters span the study area + 150 m; a stale download
     #(e.g. from before the study area changed) would silently analyse the wrong area
     have = (transform.c, transform.f + dsm.shape[0] * transform.e,
             transform.c + dsm.shape[1] * transform.a, transform.f)
     want = bbox_rd(150)
-    if max(abs(a - b) for a, b in zip(have, want)) > 2 * args.resolution + 1:
+    if max(abs(a - b) for a, b in zip(have, want)) > 2 * p["resolution"] + 1:
         print(f"  AHN rasters span {[round(v) for v in have]}, but the study area + 150 m is "
               f"{[round(v) for v in want]}.\n  Re-download: python analysis/morphology/fetch_ahn.py --force")
         return 1
     print(f"  grid {dsm.shape[1]} x {dsm.shape[0]}")
     sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "scenarios"))
     from scenario_world import burn_into_rasters  #demolition + new blocks, no-op for baseline
-    dsm, dtm = burn_into_rasters(dsm, dtm, transform, args.scenario)
-    print(f"  scenario {args.scenario}")
+    dsm, dtm = burn_into_rasters(dsm, dtm, transform, p["scenario"])
+    print(f"  scenario {p['scenario']}")
 
     ndsm = dsm - dtm
     open_ground = np.isfinite(ndsm) & (ndsm < 2.0)
@@ -285,11 +241,11 @@ def main() -> int:
           f"{100 * open_ground.mean():.1f}% of cells")
 
     print("  filling nodata …")
-    surface = fill_nan_nearest(dsm)          # what casts and receives shadow
+    surface = fill_nan_nearest(dsm)          #what casts and receives shadow
 
-    times = day_times(date, args.step_minutes)
+    times = day_times(date, p["step_minutes"])
     shadow_hours = np.zeros(surface.shape, dtype="float32")
-    step_h = args.step_minutes / 60.0
+    step_h = p["step_minutes"] / 60.0
     sun_steps = 0
     print(f"  casting {len(times)} sun positions …")
     for dt in times:
@@ -298,7 +254,7 @@ def main() -> int:
             continue
         sun_steps += 1
         shadow_hours += shadow_mask(
-            surface, args.resolution, az, elev, args.radius, args.steps) * step_h
+            surface, p["resolution"], az, elev, p["radius"], p["steps"]) * step_h
         if sys.stdout.isatty():
             print(f"    {dt:%H:%M} UTC  elev {elev:4.1f}°  az {az:5.1f}°   "
                   f"{sun_steps} up", end="\r")
@@ -306,17 +262,17 @@ def main() -> int:
     sunlit_hours = daylight_h - shadow_hours
     print(f"\n  {sun_steps} sun-up steps, {daylight_h:.2f} h of daylight sampled")
 
-    # crop most of the 150 m context padding, but keep 50 m: the design site's
-    # south edge (Strevelsweg) runs ~31 m past the buurt bounding box. Stats
-    # are clipped to polygons, so the margin only adds overlay, not counts.
-    pad_px = int(round((150 - 50) / args.resolution))
+    #crop most of the 150 m context padding, but keep 50 m: the design site's
+    #south edge (Strevelsweg) runs ~31 m past the buurt bounding box. Stats
+    #are clipped to polygons, so the margin only adds overlay, not counts.
+    pad_px = int(round((150 - 50) / p["resolution"]))
     sl = (slice(pad_px, -pad_px), slice(pad_px, -pad_px))
     sun_c, og_c = sunlit_hours[sl], open_ground[sl]
     transform_c = transform * transform.translation(pad_px, pad_px)
 
-    # ---- statistics per buurt and combined, clipped to real buurt land -----
+    #---- statistics per buurt and combined, clipped to real buurt land -----
     masks, buurt_stats, site_stats = {}, {}, None
-    if not args.no_clip_buurt:
+    if not p["no_clip_buurt"]:
         try:
             from rasterio.features import geometry_mask
             polys, props = buurt_polygons(), buurt_properties()
@@ -337,7 +293,7 @@ def main() -> int:
                     "open_ground_sunlit_hours": describe(
                         np.where(og_c & m, sun_c, np.nan)),
                 }
-            # the design site: a small polygon inside Bloemhof, edge streets included
+            #the design site: a small polygon inside Bloemhof, edge streets included
             m_site = ~geometry_mask([design_site_polygon()], out_shape=sun_c.shape,
                                     transform=transform_c, invert=False)
             site_og = np.where(og_c & m_site, sun_c, np.nan)
@@ -353,26 +309,26 @@ def main() -> int:
 
     stats = {
         "study_area": STUDY_AREA.name,
-        "scenario": args.scenario,  #which built environment this is
+        "scenario": p["scenario"],  #which built environment this is
         "method": "ray-cast direct-sun accumulation from the AHN DSM",
         "solar_position": "NOAA solar-position algorithm (geometric, no refraction)",
-        "date": args.date,
+        "date": p["date"],
         "parameters": {
-            "cell_size_m": args.resolution,
-            "search_radius_m": args.radius,
-            "n_radial_steps": args.steps,
-            "step_minutes": args.step_minutes,
+            "cell_size_m": p["resolution"],
+            "search_radius_m": p["radius"],
+            "n_radial_steps": p["steps"],
+            "step_minutes": p["step_minutes"],
             "latitude": round(lat, 6),
             "longitude": round(lon, 6),
             "surface": "AHN dsm_05m (buildings + tree crowns)"
-                       + ("" if args.scenario == "baseline" else
-                          f", with the {args.scenario} demolition and massing burned in"),  #see scenario_world.py
+                       + ("" if p["scenario"] == "baseline" else
+                          f", with the {p['scenario']} demolition and massing burned in"),  #see scenario_world.py
         },
         "daylight_hours": round(daylight_h, 3),
         "n_sun_steps": sun_steps,
         "bbox_rd": [round(v, 1) for v in bbox_rd()],
-        # The bbox the PNG is actually drawn on, from the warp, NOT the RD
-        # square reprojected corner-to-corner, which is off by up to ~30 m.
+        #The bbox the PNG is actually drawn on, from the warp, NOT the RD
+        #square reprojected corner-to-corner, which is off by up to ~30 m.
         "bbox_wgs84": [round(v, 7) for v in overlay_bbox],
         "bbox_wgs84_rd_corners": [round(v, 7) for v in bbox_wgs()],
         "all_cells_sunlit_hours": describe(sun_c),
@@ -393,7 +349,7 @@ def main() -> int:
     }
 
     print("  writing outputs …")
-    sfx = ("" if args.scenario == "baseline" else f"_{args.scenario}") + args.suffix  #scenario first, then the day
+    sfx = ("" if p['scenario'] == "baseline" else f"_{p['scenario']}") + p['suffix']  #scenario first, then the day
     write_tif(PROCESSED / f"shadow_hours{sfx}.tif", sun_c, transform_c, crs)
     write_hours_overlay(PROCESSED / f"shadow_overlay{sfx}.png", overlay_arr,
                         vmax=max(daylight_h, 1e-6))
@@ -402,7 +358,7 @@ def main() -> int:
 
     og = stats["open_ground_sunlit_hours"]
     print()
-    print(f"  Direct sun on open ground, {args.date} "
+    print(f"  Direct sun on open ground, {p['date']} "
           f"({daylight_h:.1f} h daylight):")
     print(f"     study area : mean {og['mean']:.2f} h  median {og['median']:.2f} h  "
           f"p05 {og['p05']:.2f}  p95 {og['p95']:.2f}  ({og['n_pixels']:,} cells)")
@@ -415,6 +371,14 @@ def main() -> int:
         print(f"     design site : mean {site_stats['mean']:.2f} h  median {site_stats['median']:.2f} h  "
               f"< 2 h {100 * site_stats['share_under_2h']:.0f}%  "
               f"({site_stats['n_pixels']:,} cells)")
+    return 0
+
+
+def main():
+    only = sys.argv[sys.argv.index("--scenario") + 1:] if "--scenario" in sys.argv else None  #run only these cases
+    for c in CASES:
+        if only is None or c["scenario"] in only:
+            run({**PARAMS, **c})
     return 0
 
 

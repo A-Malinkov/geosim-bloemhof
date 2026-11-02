@@ -1,76 +1,30 @@
 #!/usr/bin/env python3
 """
-rl_landuse.py - a reinforcement-learning agent for land-use allocation.
+rl_landuse.py - a reinforcement-learning agent for land use on the design site.
 
 Component 4.7, the RL half. Owner: Atanas Malinkov
 
-WHY BOTH A CA AND AN RL AGENT
------------------------------
-They answer different questions, and running both is the point.
+The CA follows rules we set. This agent only gets the objective and has to find
+where things go, and its weights can be read and set against the CA's rules.
 
-    ca_landuse.py   rules are ASSUMED. Its neighbour rules say shops go on
-                    streets next to homes and parks grow out of parks, because we said so.
-                    It shows what follows FROM those assumptions.
-
-    rl_landuse.py   rules are LEARNED. The agent is told only the objective and
-                    has to discover where to put things. Its learned weights can
-                    be read off and compared with the CA's hand-set rules:
-                    where they agree, the assumption is supported; where they
-                    disagree, one of them is worth arguing about.
-
-THE FORMULATION
----------------
-Episodic MDP over the DESIGN SITE only (DESIGN_SITE in common/project.py).
-Every non-fixed cell inside the site is cleared, and each episode the agent
-re-plans the whole site, one cell at a time. The rest of the study area stays
-as it is: it is context, not something the agent may change or is scored on.
-
+The site is cleared and re-planned one cell at a time each episode. The rest of
+Bloemhof is context and is not scored.
     state   the grid so far
-    action  (cell, class): develop this cell as that use
-    reward  the change in the planning objective caused by that placement
-            (times 100); there is no separate terminal bonus
+    action  a cell and a use
+    reward  100 x the change in the objective
+    objective = 1.6 mix + 1.0 green share + 0.8 walkability (1 - d / 400 m)
+              + 1.1 min(1, housing cells / housing cells today), over the site
+Q is linear in 13 features of a cell (neighbours of each use, access, water).
+Linear on purpose, so the weights can be read. Two features are constant for
+every candidate and act as bias terms. Epsilon-greedy with TD(0) updates.
+rl_dqn.py is the deep version and does not score better.
 
-    objective = 1.6 * land-use mix (Shannon)        over the site's cells
-              + 1.0 * green share                  over the site's cells
-              + 0.8 * walkability (1 - mean home-to-amenity distance / 400 m)
-                      for homes inside the site; amenities outside count too
-              + 1.1 * housing, min(1, housing cells / housing cells today)
-                      on the site: no net loss scores full marks (2026-10-30)
-
-    the same formula the CA is scored on, but over the site, not both buurten,
-    so the two values are NOT directly comparable.
-
-Q(s, a) is linear in features of the candidate cell: how many neighbours of each
-class it has, how reachable it is, whether it is currently vacant, and how close
-it is to water. Linear rather than a deep network on purpose: the whole value
-of the RL run here is that you can READ the learned weights and argue about
-them. A DQN would score similarly and explain nothing. That is a deliberate
-choice, not a limitation to hide. rl_dqn.py is the deep version, on the
-same problem, and it does not score better.
-
-Two of the 13 features are constant for every candidate: candidates are
-always empty site cells, so is_vacant is 1 and is_green is 0. They act as
-extra bias terms.
-
-Trained with epsilon-greedy exploration and TD(0) updates.
-
-USAGE
------
-    python analysis/abm_landuse/ca_landuse.py     # first: builds the raster
+    python analysis/abm_landuse/ca_landuse.py     #first, builds the grid
     python analysis/abm_landuse/rl_landuse.py
-    python analysis/abm_landuse/rl_landuse.py --episodes 400
 
-Until 2026-10-30 the objective had no housing term, so every optimiser traded
-homes for green and shops, and a --keep-housing option forced today's count of
-housing cells as a hard rule. The housing term replaces that rule.
-
-OUTPUT
-------
-    data/processed/landuse_rl.json                learning curve, learned weights, best plan
+Writes data/processed/landuse_rl.json.
 """
-from __future__ import annotations
 
-import argparse
 import json
 import math
 import pathlib
@@ -79,26 +33,25 @@ import sys
 import numpy as np
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
-from common.project import PROCESSED, STUDY_AREA, design_site_polygon  # noqa: E402
+from common.project import PROCESSED, STUDY_AREA, design_site_polygon  #noqa: E402
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from weight_sensitivity import DEFAULT_W, components  # noqa: E402  #the objective, defined once
-from ca_landuse import (  # noqa: E402
+from weight_sensitivity import DEFAULT_W, components  #noqa: E402  #the objective, defined once
+from ca_landuse import (  #noqa: E402
     AMENITY, CLASSES, COLOURS, FIXED, GREEN, RESID, RETAIL, VACANT, WATER,
     accessibility, export_grid_png, rasterise, shannon_mix,
 )
 
-PLACEABLE = [RESID, RETAIL, AMENITY, GREEN]     # what the agent may build
+PLACEABLE = [RESID, RETAIL, AMENITY, GREEN]     #what the agent may build
 #13 numbers per candidate cell: 8 neighbour counts, access, two flags, water distance, constant
 FEATURES = ([f"nb_{c}" for c in CLASSES] +
             ["access", "is_vacant", "is_green", "dist_water", "bias"])
 
 
 def site_terms(grid, cell_m, site):
-    """Mix, green share and mean home-to-amenity distance over the `site` cells.
-
-    Distances are measured over the whole grid, so a shop across the site edge
-    still serves a home inside it. Distance is None when the site has no homes.
-    """
+    #Mix, green share and mean home-to-amenity distance over the `site` cells.
+    #
+    #Distances are measured over the whole grid, so a shop across the site edge
+    #still serves a home inside it. Distance is None when the site has no homes.
     from scipy.ndimage import distance_transform_edt
     cells = grid[site]
     target = np.isin(grid, [AMENITY, RETAIL])  #what a home needs to be near
@@ -139,7 +92,7 @@ def neighbour_counts(grid, radius=4, decay=2.0):
 
 
 def features(grid, acc, dist_water):
-    """Per-cell feature stack, shape (n_features, ny, nx)."""
+    #Per-cell feature stack, shape (n_features, ny, nx).
     nb = neighbour_counts(grid)
     return np.concatenate([
         nb / 8.0,  #neighbour counts, scaled to roughly 0..1
@@ -150,47 +103,48 @@ def features(grid, acc, dist_water):
     ])
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__,
-                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--cell", type=float, default=25.0)
-    ap.add_argument("--episodes", type=int, default=400)  #400 since 2026-10-30: the curve still rose at 120 and levels off after about 250
-    ap.add_argument("--alpha", type=float, default=0.02, help="learning rate")
-    ap.add_argument("--gamma", type=float, default=0.95)
-    ap.add_argument("--eps-start", type=float, default=0.9)
-    ap.add_argument("--eps-end", type=float, default=0.05)
-    ap.add_argument("--candidates", type=int, default=40,
-                    help="cells sampled per decision: the full grid is too many")
-    ap.add_argument("--seed", type=int, default=0)
-    args = ap.parse_args()
+PARAMS = {
+    "cell": 25.0,  #grid cell, m
+    "episodes": 400,  #400 since 2026-10-30, the curve still rose at 120 and levels off after about 250
+    "alpha": 0.02,  #learning rate
+    "gamma": 0.95,
+    "eps_start": 0.9,
+    "eps_end": 0.05,
+    "candidates": 40,  #cells sampled per decision, the full grid is too many
+    "seed": 0,
+}
+
+
+def main():
+    p = PARAMS
     tag = ""  #one run since the housing rule went into the objective
 
     from scipy.ndimage import distance_transform_edt
 
     print(f"RL land-use allocation: {STUDY_AREA.name}")
     from rasterio.features import rasterize as burn
-    grid_now, transform, (nx, ny), road_frac = rasterise(args.cell)
+    grid_now, transform, (nx, ny), road_frac = rasterise(p["cell"])
     site = burn([(design_site_polygon(), 1)], out_shape=grid_now.shape,
                 transform=transform).astype(bool)
-    # the whole site is redeveloped: every cell that is not road or water is
-    # cleared, and the agent decides what each one becomes
+    #the whole site is redeveloped: every cell that is not road or water is
+    #cleared, and the agent decides what each one becomes
     grid0 = grid_now.copy()
     grid0[site & ~np.isin(grid_now, list(FIXED))] = VACANT
     n_new = int((site & (grid0 == VACANT)).sum())  #cells the agent places per episode
     print(f"  grid {nx} x {ny}; design site {int(site.sum())} cells, "
-          f"{n_new} to re-plan ({n_new * args.cell**2 / 10_000:.1f} ha)")
-    print(f"  {args.episodes} episodes, {len(PLACEABLE)} placeable classes, "
-          f"{args.candidates} candidates per decision")
+          f"{n_new} to re-plan ({n_new * p['cell']**2 / 10_000:.1f} ha)")
+    print(f"  {p['episodes']} episodes, {len(PLACEABLE)} placeable classes, "
+          f"{p['candidates']} candidates per decision")
 
     dw = distance_transform_edt(grid0 != WATER).astype("float32")
     dist_water = np.clip(dw / 20.0, 0, 1)  #distance to water in cells, capped at 20 and scaled to 0..1
     homes_today = int((grid_now[site] == RESID).sum())  #housing cells on the site today, the housing term's reference
-    base_obj = objective(grid_now, args.cell, site, homes_today)
-    base_score = site_score(grid_now, args.cell, site)
-    cleared_obj = objective(grid0, args.cell, site, homes_today)
+    base_obj = objective(grid_now, p["cell"], site, homes_today)
+    base_score = site_score(grid_now, p["cell"], site)
+    cleared_obj = objective(grid0, p["cell"], site, homes_today)
     print(f"  objective of the site today: {base_obj:.4f} ({homes_today} housing cells)")
 
-    rng = np.random.default_rng(args.seed)
+    rng = np.random.default_rng(p["seed"])
     W = np.zeros((len(PLACEABLE), len(FEATURES)), dtype="float64")  #the whole model: one weight per use and feature
     curve, best_obj, best_grid = [], -1e9, None
 
@@ -199,7 +153,7 @@ def main() -> int:
         g = grid0.copy()
         acc = accessibility(g, road_frac)  #roads do not change, so access is computed once per episode
         prev_obj = cleared_obj
-        # only the cleared cells inside the design site may be built on
+        #only the cleared cells inside the design site may be built on
         free = site & (g == VACANT)
 
         #one placement per step until the site is full
@@ -207,12 +161,12 @@ def main() -> int:
             idx = np.flatnonzero(free.ravel())
             if idx.size == 0:
                 break
-            cand = rng.choice(idx, size=int(min(args.candidates, idx.size)),
+            cand = rng.choice(idx, size=int(min(p["candidates"], idx.size)),
                               replace=False)
             F = features(g, acc, dist_water)
-            Fc = F.reshape(F.shape[0], -1)[:, cand]              # (f, ncand)
+            Fc = F.reshape(F.shape[0], -1)[:, cand]              #(f, ncand)
             #linear Q for every (use, candidate) pair
-            Q = W @ Fc                                            # (nclass, ncand)
+            Q = W @ Fc                                            #(nclass, ncand)
 
             if rng.random() < eps:
                 ai = int(rng.integers(len(PLACEABLE)))  #explore: a random use on a random candidate
@@ -226,46 +180,46 @@ def main() -> int:
             g[r_, c_] = klass
             free[r_, c_] = False
 
-            new_obj = objective(g, args.cell, site, homes_today)
-            reward = (new_obj - prev_obj) * 100.0     # scale: deltas are tiny
+            new_obj = objective(g, p["cell"], site, homes_today)
+            reward = (new_obj - prev_obj) * 100.0     #scale: deltas are tiny
             prev_obj = new_obj
 
             if not learn:
                 continue  #playing only: no update
-            # TD(0) with the greedy next-state value over a fresh candidate set
+            #TD(0) with the greedy next-state value over a fresh candidate set
             nxt = np.flatnonzero(free.ravel())
             if nxt.size:
-                samp = rng.choice(nxt, size=int(min(args.candidates, nxt.size)),
+                samp = rng.choice(nxt, size=int(min(p["candidates"], nxt.size)),
                                   replace=False)
                 F2 = features(g, acc, dist_water).reshape(F.shape[0], -1)[:, samp]
                 q_next = float((W @ F2).max())
             else:
                 q_next = 0.0
-            target = reward + args.gamma * q_next  #TD(0) target: reward now plus discounted best Q next
-            W[ai] += args.alpha * (target - float(W[ai] @ phi)) * phi  #gradient step on the chosen use's weights only
+            target = reward + p["gamma"] * q_next  #TD(0) target: reward now plus discounted best Q next
+            W[ai] += p["alpha"] * (target - float(W[ai] @ phi)) * phi  #gradient step on the chosen use's weights only
             np.clip(W, -50, 50, out=W)  #keep weights bounded so a bad step cannot run away
 
-        return objective(g, args.cell, site, homes_today), g
+        return objective(g, p["cell"], site, homes_today), g
 
-    for ep in range(args.episodes):
+    for ep in range(p["episodes"]):
         #exploration rate, decaying from eps_start towards eps_end
-        eps = args.eps_end + (args.eps_start - args.eps_end) * \
-            math.exp(-3.0 * ep / max(1, args.episodes))
+        eps = p["eps_end"] + (p["eps_start"] - p["eps_end"]) * \
+            math.exp(-3.0 * ep / max(1, p["episodes"]))
         final, g = run_episode(eps)
         curve.append(round(final, 4))  #objective at the end of each episode = the learning curve
         if final > best_obj:
             best_obj, best_grid = final, g.copy()
-        if ep % max(1, args.episodes // 10) == 0 or ep == args.episodes - 1:
-            print(f"     episode {ep+1:4}/{args.episodes}  eps {eps:.2f}  "
+        if ep % max(1, p["episodes"] // 10) == 0 or ep == p["episodes"] - 1:
+            print(f"     episode {ep+1:4}/{p['episodes']}  eps {eps:.2f}  "
                   f"objective {final:.4f}  best {best_obj:.4f}")
 
     greedy_obj, greedy_grid = run_episode(0.0, learn=False)  #the learned policy itself: no exploration, no update
-    greedy_score = site_score(greedy_grid, args.cell, site)
+    greedy_score = site_score(greedy_grid, p["cell"], site)
     g = best_grid  #report the best episode's plan, which may include lucky exploration
-    score = site_score(g, args.cell, site)
+    score = site_score(g, p["cell"], site)
     d = score["mean_distance_to_amenity_m"]
 
-    # what did it learn? average weight per neighbour class, per placeable class
+    #what did it learn? average weight per neighbour class, per placeable class
     learned = {}
     for ai, k in enumerate(PLACEABLE):
         learned[CLASSES[k]] = {
@@ -278,14 +232,14 @@ def main() -> int:
         "method": "reinforcement_learning",
         "algorithm": "Q-learning, TD(0), linear function approximation, "
                      "epsilon-greedy",
-        "cell_size_m": args.cell,
+        "cell_size_m": p["cell"],
         "classes": CLASSES,
         "placeable_classes": [CLASSES[k] for k in PLACEABLE],
         "features": FEATURES,
-        "parameters": {"episodes": args.episodes, "alpha": args.alpha,
-                       "gamma": args.gamma, "eps_start": args.eps_start,
-                       "eps_end": args.eps_end,
-                       "candidates_per_decision": args.candidates,
+        "parameters": {"episodes": p["episodes"], "alpha": p["alpha"],
+                       "gamma": p["gamma"], "eps_start": p["eps_start"],
+                       "eps_end": p["eps_end"],
+                       "candidates_per_decision": p["candidates"],
                        "programme_cells": n_new},
         "homes_today_cells": homes_today,  #the housing term's reference
         "scope": "design_site",

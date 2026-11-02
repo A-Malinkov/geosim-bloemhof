@@ -163,7 +163,7 @@ export async function setup(ctx) {
     ahn.alpha = 0.7;
     ctx.registerLayer({
       id: "ahn",
-      label: `AHN height (${L.ahnWms.layers})`,
+      label: `AHN height (${L.ahnWms.layers}, baseline)`,  //today's surface, the scenarios are not in it
       group: "Imagery",
       show: false,
       target: ahn,

@@ -91,8 +91,11 @@ python analysis/wind_noise/wind_cfd_import.py scenario_b path/to/scenario_b_resu
 python analysis/wind_noise/wind_cfd_import.py final      path/to/final_results.zip
 ```
 
+Or save the zips as `cache/wind/results/<case>.zip` (`RESULTS` in the script) and run it
+with no arguments: it imports every case that has one.
+
 Each writes `data/processed/wind_<case>.json`: the cells cut by **z = 1.5 m**
-(`--level` to change it), sampled on a 2 m grid over the design site + 50 m and
+(`PARAMS["level"]` to change it), sampled on a 2 m grid over the design site + 50 m and
 warped to EPSG:4326. The value is the **wind-speed ratio**, |U| over the
 undisturbed inflow at the same height: the inlet's log-law profile
 (`ABLConditions`) at each cell's centre height, ~2.6 m on the site. It does not
