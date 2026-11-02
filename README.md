@@ -136,7 +136,7 @@ add layers and dashboard panels without touching any shared file.**
 | `ctx.viewer`, `ctx.Cesium` | the Cesium viewer and namespace |
 | `ctx.config` | everything from `config.js` |
 | `ctx.registerLayer({id, label, group, show, target \| onToggle})` | adds a checkbox to the left panel, returns `{ setVisible(bool) }` |
-| `ctx.registerPanel({id, title, subtitle, order})` | adds a dashboard card, returns an empty `<div>` to fill |
+| `ctx.registerPanel({id, title, subtitle, order})` | adds a dashboard card, returns an empty `<div>` to fill; cards start folded |
 | `ctx.onScenarioChange(fn)` | `fn(scenario)` runs on every scenario switch, and once at startup |
 | `ctx.loadJson(path)` | fetches a file from `data/processed/`, returns `null` if missing or still a stub |
 | `ctx.placeholder(el, {...})` | the standard "not built yet" block |

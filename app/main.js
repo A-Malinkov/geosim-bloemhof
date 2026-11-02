@@ -381,6 +381,23 @@ async function boot_() {
   const layerHead = document.querySelector("#layerPanel .panel__head");
   layerHead.insertBefore(allBtn, layerHead.querySelector(".panel__collapse"));  //sits left of the panel's own collapse button
 
+  //the same for the dashboard's cards: "Fold all" while any card is open, else "Unfold all"
+  const cards = () => [...dashboardBody.querySelectorAll(":scope > .card")];
+  const anyCardOpen = () => cards().some((c) => !c.querySelector(".card__body").hidden);
+  const cardsBtn = document.createElement("button");
+  cardsBtn.className = "lgroup__all";  //the layer panel's button style
+  cardsBtn.title = "Collapse or expand all dashboard cards";
+  cardsBtn.textContent = "Unfold all";  //cards start folded
+  cardsBtn.addEventListener("click", () => {
+    const open = !anyCardOpen();
+    for (const c of cards()) c.__setOpen(open);
+  });
+  function refreshCardsBtn() {
+    cardsBtn.textContent = anyCardOpen() ? "Fold all" : "Unfold all";
+  }
+  const dashHead = document.querySelector("#dashboard .panel__head");
+  dashHead.insertBefore(cardsBtn, dashHead.querySelector(".panel__collapse"));
+
   const ctx = {
     viewer,
     config: CONFIG,
@@ -431,16 +448,17 @@ async function boot_() {
     },
 
     /* Add a panel to the right-hand dashboard. Returns the empty <div> body,
-     * which is yours to fill however you like. */
+     * which is yours to fill however you like. Cards start folded unless the
+     * module passes collapsed: false; click the header to open one. */
     registerPanel({
       id,
       title,
       order = 100,
-      collapsed = false,
+      collapsed = true,
       subtitle = "",
     }) {
       const card = document.createElement("section");
-      card.className = "card";
+      card.className = "card" + (collapsed ? " card--folded" : "");
       card.dataset.order = String(order);
       card.innerHTML =
         `<header class="card__head">` +
@@ -451,17 +469,22 @@ async function boot_() {
         `<div class="card__body" id="panel-${id}"${collapsed ? " hidden" : ""}></div>`;
 
       const body = card.querySelector(".card__body");
-      const btn = card.querySelector(".card__toggle");
-      btn.addEventListener("click", () => {
-        body.hidden = !body.hidden;
-        btn.textContent = body.hidden ? "+" : "–";
-        btn.setAttribute("aria-expanded", String(!body.hidden));
-      });
+      card.__setOpen = (open) => {  //used by the toggle and by the dashboard's Fold all
+        body.hidden = !open;
+        card.classList.toggle("card--folded", !open);
+        const btn = card.querySelector(".card__toggle");
+        btn.textContent = open ? "–" : "+";
+        btn.setAttribute("aria-expanded", String(open));
+        refreshCardsBtn();
+      };
+      //the whole header folds or unfolds the card, as the layer groups do
+      card.querySelector(".card__head").addEventListener("click", () => card.__setOpen(body.hidden));
 
       // keep the dashboard sorted by `order`
       const siblings = [...dashboardBody.children];
       const after = siblings.find((s) => Number(s.dataset.order) > order);
       dashboardBody.insertBefore(card, after || null);
+      refreshCardsBtn();
       return body;
     },
 

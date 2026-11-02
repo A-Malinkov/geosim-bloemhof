@@ -208,7 +208,7 @@ export async function setup(ctx) {
       },
     });
   }
-  let amenOn = true;  //layer checkbox
+  let amenOn = false;  //layer checkbox, off until ticked
   const showAmen = () => {  //the current scenario's amenities only, if ticked; an option's only while its massing shows
     for (const [n, ds] of amenBy) ds.show = amenOn && n === ctx.scenario() && (n === "baseline" || shownMassing.has(n));
     viewer.scene.requestRender();
@@ -218,7 +218,7 @@ export async function setup(ctx) {
       id: "designAmenities",
       label: "Amenities: today's, kept and optimised",
       group: "Design",
-      show: true,
+      show: false,  //off by default; tick it in Design
       onToggle: (v) => { amenOn = v; showAmen(); },
     });
   }

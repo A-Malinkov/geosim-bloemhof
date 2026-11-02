@@ -152,7 +152,10 @@ html, body {
 .card__head {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
   padding: 7px 10px; background: #212936;
+  cursor: pointer; user-select: none;  /*the whole header folds the card (main.js registerPanel)*/
 }
+.card__head:hover h3 { color: #fff; }
+.card--folded .card__sub { padding-bottom: 6px; }  /*no body below it when folded*/
 .card__head h3 { margin: 0; font-size: 12px; font-weight: 600; }
 .card__toggle {
   border: none; background: transparent; color: var(--text-dim);
