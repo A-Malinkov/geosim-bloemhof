@@ -55,6 +55,9 @@
   <!-- Bottom-left status / attribution -->
   <div id="status" class="status"></div>
 
+  <!-- Top-centre toasts: warnings and errors, which expire (main.js note()) -->
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+
   <!-- CesiumJS from CDN, pinned. Must load before main.js. -->
   <script>window.CESIUM_BASE_URL = "https://cdnjs.cloudflare.com/ajax/libs/cesium/1.145.0/";</script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.145.0/Cesium.js"></script>

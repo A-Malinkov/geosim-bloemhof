@@ -140,10 +140,14 @@ add layers and dashboard panels without touching any shared file.**
 | `ctx.onScenarioChange(fn)` | `fn(scenario)` runs on every scenario switch, and once at startup |
 | `ctx.loadJson(path)` | fetches a file from `data/processed/`, returns `null` if missing or still a stub |
 | `ctx.placeholder(el, {...})` | the standard "not built yet" block |
-| `ctx.note(text, "ok"\|"warn"\|"err")` | adds a chip to the status bar |
+| `ctx.note(text, "ok"\|"warn"\|"err")` | `ok`/`info` add a chip to the status bar; `warn`/`err` pop up as a toast that expires |
 
 If your `setup()` throws, main.js catches it, logs it and carries on — one broken
 module will not take the app down.
+
+Clicking an object shows its `name` in a compact box at the bottom centre, which
+expands into its `description` (HTML) and has a × to deselect (`app/selection.js`).
+Give your entities both; Cesium's own info box is switched off.
 
 The left panel groups layers into collapsible sections. Which group a layer
 lands in, the order of the groups and which start open are set in `config.js`

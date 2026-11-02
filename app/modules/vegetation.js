@@ -197,48 +197,40 @@ export async function setup(ctx) {
 
   /* ---- click anything to show what is selected -------------------------- */
   // A single floater, top-centre so it clears the bottom-left status chips.
-  const selChip = document.createElement("div");
-  selChip.hidden = true;
-  selChip.style.cssText =
-    "position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:12;" +
-    "max-width:60%;padding:4px 10px;border-radius:12px;font-size:11px;" +
-    "background:#1b2129ee;border:1px solid #2c3541;color:#e7ecf2;" +
-    "backdrop-filter:blur(8px);pointer-events:none;white-space:nowrap;" +
-    "overflow:hidden;text-overflow:ellipsis";
-  viewer.container.appendChild(selChip);
-
+  /* ---- tree selection ---------------------------------------------------
+   * The trees are batched primitives, not entities, so Cesium's own click
+   * handling selects nothing for them. Select a stand-in entity instead, so a
+   * tree shows in the same selection box (selection.js) as everything else. */
   const C = ctx.Cesium;
-  function describe(picked) {
-    if (!picked) return null;
-    const id = picked.id;
-    if (id && id.proposed)  //planting from the Rhino model: a generic block, no species
-      return `Proposed ${id.kind} (${id.block}) · ${id.height_m} m, crown ${id.crown_m} m · ${id.scenario}`;
-    if (id && (id.kind === "tree" || id.kind === "tree-trunk"))
-      return (
-        `${id.species_nl || id.species} · ${id.height_class || id.height_m + " m"}` +
-        `${id.street ? " · " + id.street : ""}`
-      );
-    if (id && id.__photo) return id.__photo.caption || "Photo";
-    if (id && id.name) return id.name; // named entities (design site, buurten, …)
-    if (C.Cesium3DTileFeature && picked instanceof C.Cesium3DTileFeature) {
-      for (const key of ["name", "identificatie", "gml_id", "fid"]) {
-        const ids = picked.getPropertyIds ? picked.getPropertyIds() : [];
-        if (ids.includes(key)) return `Building ${picked.getProperty(key)}`;
-      }
-      return "Building";
-    }
-    return null;
+  const HIDE = new Set(["kind", "proposed", "lon", "lat", "ground_nap_m"]);  //internal or shown elsewhere
+  const NAMES = { species_nl: "species (NL)", height_m: "height", height_class: "height class", crown_m: "crown",
+                  street: "street", block: "Rhino block", scenario: "scenario" };
+  const unit = (k, v) => (typeof v === "number" && /_m$/.test(k) ? `${v} m` : typeof v === "number" && /_cm$/.test(k) ? `${v} cm` : v);
+  const label = (k) => NAMES[k] ?? k.replace(/_(m|cm)$/, "").replace(/_/g, " ");  //trunk_diameter_cm -> trunk diameter
+  function treeEntity(id, position) {
+    let name;
+    if (id.proposed)  //planting from the Rhino model: a generic block, no species
+      name = `Proposed ${id.kind}${id.scenario ? ` (${id.scenario})` : ""}`;
+    else name = `${id.kind === "shrub" ? "Shrub" : "Tree"}: ${id.species_nl || id.species || "unknown species"}`;
+    const rows = Object.entries(id)
+      .filter(([k, v]) => !HIDE.has(k) && v != null && v !== "" && typeof v !== "object")
+      .map(([k, v]) => `<tr><td>${label(k)}</td><td>${unit(k, v)}</td></tr>`);
+    return new C.Entity({
+      name,
+      position,  //where it was clicked, for the selection marker
+      description: `<table>${rows.join("")}</table>` +
+        (id.proposed ? `<p>From the Rhino model's generic blocks: sizes as drawn, no species.</p>` : ""),
+    });
   }
 
   const handler = new C.ScreenSpaceEventHandler(viewer.scene.canvas);
   handler.setInputAction((click) => {
-    const label = describe(viewer.scene.pick(click.position));
-    if (!label) {
-      selChip.hidden = true;
-      return;
-    }
-    selChip.textContent = `Selected: ${label}`;
-    selChip.hidden = false;
+    //runs after the viewer's own click handler (registered first), so this selection wins
+    const id = viewer.scene.pick(click.position)?.id;
+    if (!id || id instanceof C.Entity) return;  //an entity, building or nothing: the viewer has handled it
+    if (!(id.proposed || id.kind === "tree" || id.kind === "tree-trunk" || id.kind === "shrub")) return;
+    const pos = viewer.scene.pickPosition(click.position);
+    viewer.selectedEntity = treeEntity(id, pos ? new C.ConstantPositionProperty(pos) : undefined);
   }, C.ScreenSpaceEventType.LEFT_CLICK);
 
   ctx.note(`Vegetation: ${geo.features.length} trees`, "ok");

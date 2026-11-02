@@ -70,7 +70,6 @@ export async function setup(ctx) {
 
   /* ---- build one entity collection per scenario -------------------------- */
   const byScenario = new Map();
-  const layerHandles = new Map();  //scenario name -> registerLayer handle, keeps the layer checkbox in step
   for (const f of geo.features) {
     const name = f.properties?.scenario || "scenario_a";
     if (!byScenario.has(name)) byScenario.set(name, []);
@@ -82,7 +81,7 @@ export async function setup(ctx) {
   const demolishes = new Map(Object.entries(geo.demolishes ?? {}).map(([k, ids]) => [k, new Set(ids)]));
   //existing buildings a scenario keeps as part of its design (keep_rd), shown in the scenario's colour
   const keeps = new Map(Object.entries(geo.keeps ?? {}).map(([k, ids]) => [k, new Set(ids)]));
-  const shownMassing = new Set();  //scenarios whose massing is currently visible
+  const shownMassing = new Set();  //scenarios whose massing is currently visible (the dropdown's, at most one)
   function applyDemolition() {
     //the 3DBAG tileset is loaded by layers.js; find it by the name it sets
     const ts = viewer.scene.primitives._primitives.find((p) => p.__name === "bag3d");
@@ -273,21 +272,20 @@ export async function setup(ctx) {
     await viewer.dataSources.add(collection);
     collection.show = false;
     byScenario.set(name, collection);
+  }
 
-    layerHandles.set(name, ctx.registerLayer({  //keep the handle so a scenario switch can tick the checkbox
-      id: `massing-${name}`,
-      label: `Proposed massing — ${name}`,
-      group: "Design",
-      show: false,
-      target: collection,
-      onToggle: (visible) => {  //old buildings go when the new ones show, and come back when they hide
-        if (visible) shownMassing.add(name); else shownMassing.delete(name);
-        applyDemolition();
-        const st = streetsByScenario.get(name);  //this scenario's new streets
-        if (st) st.show = visible;  //streets follow the massing
-        showAmen();  //and so do the placed amenities
-      },
-    }));  //end of registerLayer, handle stored
+  //the scenario dropdown is the only switch: no layer checkbox per massing, so the map
+  //can never show one design's buildings under another design's wind, noise or SVF
+  function showMassing(scenario) {
+    shownMassing.clear();
+    for (const [name, collection] of byScenario) {
+      const on = name === scenario;
+      collection.show = on;
+      if (on) shownMassing.add(name);
+    }
+    for (const [name, st] of streetsByScenario) st.show = name === scenario && byScenario.has(name);  //streets follow the massing
+    applyDemolition();  //old buildings go when the new ones show, and come back when they hide
+    showAmen();  //and so do the placed amenities
   }
 
   /* ---- summary table ---------------------------------------------------- */
@@ -295,9 +293,7 @@ export async function setup(ctx) {
   body.appendChild(summary);
 
   function render(scenario) {
-    queueMicrotask(showAmen);  //after the massing switch below, so the amenities follow the scenario
-    // show only the active scenario's massing
-    for (const [name] of byScenario) layerHandles.get(name)?.setVisible(name === scenario);  //shows the massing and ticks its checkbox
+    showMassing(scenario);  //massing, its streets and amenities, and the demolition, all from the dropdown
 
     const ds = byScenario.get(scenario);
     if (!ds) {

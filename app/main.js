@@ -7,7 +7,7 @@
  *
  * Module contract — each file in ./modules/ exports:
  *     export async function setup(ctx) { ... }
- * A module that throws is reported in the status bar; the rest still load.
+ * A module that throws is reported in an error toast; the rest still load.
  * ========================================================================== */
 
 import { CONFIG } from "./config.js";
@@ -42,6 +42,7 @@ import { setup as setupFlood } from "./modules/flood.js";
 import { setup as setupPerformance } from "./modules/performance.js";
 import { setup as setupCompass } from "./modules/compass.js";
 import { setup as setupComparison } from "./modules/comparison.js";  //4.9 scenario comparison card
+import { setupSelectionBox } from "./selection.js";  //the box for whatever is selected, instead of Cesium's info box
 
 /* Load order only affects panel order when two panels share the same `order`. */
 const MODULES = [
@@ -83,8 +84,19 @@ function fatal(msg, err) {
 }
 
 /* -------------------------------------------------------------- status bar */
+/* "ok" and "info" notes are lasting facts ("Vegetation: 1671 trees") and stay
+ * as chips. "warn" and "err" are events ("Noise map: no run for scenario_a")
+ * and pop up as toasts that expire, so a message a scenario switch raises again
+ * and again cannot pile up. The same text never shows twice: a repeated chip
+ * is ignored, a repeated toast restarts its timer. Every toast is also logged to
+ * the console, so nothing is lost once it has gone. */
 const notes = [];
+const toastEl = document.getElementById("toasts");
+const toasts = new Map();  //text -> { el, timer } of toasts on screen
+const TOAST_MS = { warn: 6000, err: 10000 };  //errors stay a little longer
 function note(text, kind = "info") {
+  if (kind === "warn" || kind === "err") return toast(text, kind);
+  if (notes.some((n) => n.text === text && n.kind === kind)) return;  //already a chip
   notes.push({ text, kind });
   statusEl.innerHTML = notes
     .map(
@@ -92,6 +104,31 @@ function note(text, kind = "info") {
         `<span class="status__item status__item--${n.kind}">${n.text}</span>`,
     )
     .join("");
+}
+function toast(text, kind) {
+  (kind === "err" ? console.error : console.warn)(`[note] ${text}`);
+  let t = toasts.get(text);
+  if (t) clearTimeout(t.timer);  //already showing: keep it up a while longer
+  else {
+    const el = document.createElement("div");
+    el.className = `toast toast--${kind}`;
+    el.setAttribute("role", kind === "err" ? "alert" : "status");
+    el.title = "Click to dismiss";
+    el.innerHTML = text;
+    el.addEventListener("click", () => dismiss(text));
+    toastEl.appendChild(el);
+    t = { el };
+    toasts.set(text, t);
+  }
+  t.timer = setTimeout(() => dismiss(text), TOAST_MS[kind]);
+}
+function dismiss(text) {
+  const t = toasts.get(text);
+  if (!t) return;
+  clearTimeout(t.timer);
+  toasts.delete(text);
+  t.el.classList.add("toast--out");  //fade, then remove
+  setTimeout(() => t.el.remove(), 300);
 }
 
 /* ========================================================================== */
@@ -123,7 +160,7 @@ async function boot_() {
     baseLayerPicker: false,
     geocoder: false,
     homeButton: false,
-    infoBox: true,
+    infoBox: false,  //selection.js shows the selected object instead, in the app's own style
     sceneModePicker: false,
     selectionIndicator: true,
     navigationHelpButton: false,
@@ -131,6 +168,7 @@ async function boot_() {
     animation: false,
     fullscreenButton: true,
   });
+  setupSelectionBox(viewer, Cesium);
 
   viewer.scene.globe.depthTestAgainstTerrain = true;
   viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString("#1b2430");
