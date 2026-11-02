@@ -21,7 +21,7 @@ numerator and denominator always share one boundary.
 | `fetch_landuse.py` | BAG addressable units: function and floor area per unit | `data/raw/bag_verblijfsobjecten.geojson` |
 | `sky_view_factor.py` | SVF by the multi-directional horizon-angle method | `data/processed/svf*.tif`, `svf_overlay.png`, `svf_summary.json` |
 | `density_height.py` | Spacematrix density (GSI, FSI, L) and height variation | `data/processed/density_grid.geojson`, `density_summary.json` |
-| `landuse_mix.py` | Shannon and Simpson land-use mix indices | `data/processed/landuse_grid.geojson`, `landuse_summary.json` |
+| `landuse_mix.py` | Shannon land-use mix index | `data/processed/landuse_grid.geojson`, `landuse_summary.json` |
 | `shadows.py` | direct-sun hours over one clear day, ray-cast from the AHN DSM | `data/processed/shadow_hours.tif` (gitignored), `shadow_overlay.png`, `shadow_summary.json` |
 | `height_width.py` | street-canyon height-to-width ratio from OSM centrelines and 3DBAG footprints | `data/processed/canyon_hw_baseline.json`, `canyon_hw_baseline.geojson`, `docs/fig_canyon_hw_baseline.png` |
 | `make_figures.py` | every report figure | `docs/fig_*.png` |
@@ -58,7 +58,7 @@ python analysis/morphology/height_width.py --scenario scenario_a      # ~15 s
 
 | indicator | Bloemhof |
 |---|---|
-| **Sky View Factor** | **0.696** |
+| **Sky View Factor** | **0.784** |
 | **GSI** ground space index | **0.333** |
 | **FSI** floor space index | **1.003** |
 | **L** storeys | **3.01** |
@@ -72,7 +72,7 @@ python analysis/morphology/height_width.py --scenario scenario_a      # ~15 s
 Bloemhof is dense, low and enclosed, and mono-functional: 86 % of its floor
 space is residential. Against Hillesluis next door, which the study area
 covered until 2026-10-22, it was the denser, more enclosed, less mixed and less
-green of the two (Hillesluis: GSI 0.24, Shannon 0.42, 17.7 trees/ha, SVF 0.75).
+green of the two (Hillesluis: GSI 0.24, Shannon 0.42, 17.7 trees/ha, SVF 0.75 with trees).
 If the design is meant to address a deficit, those are the ones the indicators
 point at.
 
@@ -91,7 +91,7 @@ SVF_geometric = 1 − (1/N) · Σ sin(γᵢ)
 ```
 
 Both are in the literature and **they are not the same number**: here they are
-0.696 and 0.526. The cos² form is cosine-weighted, so sky near the
+0.784 and 0.629. The cos² form is cosine-weighted, so sky near the
 zenith counts for more; that governs radiation exchange and is what urban
 climatology means by SVF. Both go into `svf_summary.json`.
 
@@ -99,24 +99,19 @@ climatology means by SVF. Both go into `svf_summary.json`.
 
 - **Observer at 1.75 m above the DTM**, not on the surface model: what a person
   in the street sees, not what a roof sees.
-- **Obstruction surface is the DSM**, so tree crowns count. Vegetation lowering
-  SVF is a real effect, not noise.
-- **Open-ground mask** (`nDSM < 2 m`): statistics exclude roofs, where SVF is
+- **Buildings only, no trees** (since 2026-11-02). Outside the 3DBAG footprints,
+  widened 0.5 m for eaves, the DSM is set to the ground, so tree crowns, walls
+  and cars do not block the sky. With trees the Bloemhof mean was 0.696.
+- **Open-ground mask** (`nDSM < 2 m` on the tree-free surface, so the ground under
+  a crown counts): statistics exclude roofs, where SVF is
   meaningless.
 - **0.5 m cells, 32 directions, 100 m search radius.** Resolution changes the
-  answer: coarser cells average away tree crowns and report the place as more
-  open than it is. Quote the cell size with the number.
+  answer: coarser cells blur building edges and narrow streets and report the
+  place as more open than it is. Quote the cell size with the number.
 - **150 m of context is downloaded beyond the boundary** and cropped afterwards,
   because a building just outside still blocks sky inside.
 - **AHN gaps are filled** by nearest-neighbour dilation. Left as nodata they act
   as bottomless pits and the horizon search sees straight through them.
-
-### Vegetation effect
-
-0.70 in the open against 0.35 under a tree crown, a drop of
-0.35 (50 %), over Bloemhof's raster (0.79 against 0.46 over the earlier
-two-buurt raster). Street trees are doing measurable work on enclosure,
-which connects the vegetation component directly to the morphology one.
 
 ## Density: Spacematrix
 
@@ -194,7 +189,7 @@ scenario_a adds floor space. The comparison (`analysis/comparison/`) uses height
 
 ## Land-use mix: method
 
-Shannon entropy (normalised) and Simpson diversity over BAG `gebruiksdoel`,
+Shannon entropy (normalised) over BAG `gebruiksdoel`,
 **weighted by usable floor area**.
 
 - Weighting by floor area rather than unit count roughly doubles the measured mix
@@ -242,7 +237,7 @@ got 1.90 / 5.81 / 9.84 h: Bloemhof is the shadier, consistent with its lower
 SVF.) These figures are from the AHN re-download of 2026-10-22, which sits on
 AHN's own 0.5 m grid; the earlier mosaic was offset by about half a cell, and at
 1 m that alone moved the equinox mean from 4.44 h to 4.28 h and the site's
-share under 2 h from 20 % to 22 %. SVF did not move (0.696 both times). In winter most of the site's open ground gets no direct sun at all:
+share under 2 h from 20 % to 22 %. SVF did not move (0.696 both times, with trees then). In winter most of the site's open ground gets no direct sun at all:
 streets ≈ 11 m wide between ~7 m walls are fully shaded by a sun that peaks at
 about 15°. `shadow_figure.py` draws the three days over the site
 (`docs/fig_shadow_site.png`).
@@ -296,8 +291,8 @@ Open ground only for SVF and sun hours, street length for H/W. Generated from
 
 | | baseline | Scenario A | Scenario B | Final design |
 |---|---|---|---|---|
-| SVF, mean | 0.714 | 0.647 | 0.784 | 0.765 |
-| SVF, median | 0.744 | 0.646 | 0.825 | 0.809 |
+| SVF, mean | 0.785 | 0.704 | 0.848 | 0.822 |
+| SVF, median | 0.817 | 0.696 | 0.893 | 0.858 |
 | sun 20 Mar, mean | 4.30 h | 3.78 h | 5.97 h | 5.84 h |
 | sun 21 Jun, mean | 8.61 h | 8.81 h | 10.19 h | 10.29 h |
 | sun 21 Dec, mean | 0.53 h | 0.49 h | 1.32 h | 1.11 h |

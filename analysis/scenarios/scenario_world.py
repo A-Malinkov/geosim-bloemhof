@@ -17,7 +17,7 @@ Ground for old and new buildings is the site ground, DESIGN_SITE["ground_nap_m"]
 since the DTM is empty under buildings.
 
 Limits. Old garden trees on demolished lots stay in the DSM unless a new block
-or street covers them. Demolished footprints are widened by 0.5 m so eaves go
+or street covers them. That matters for sun hours only, the SVF leaves trees out. Demolished footprints are widened by 0.5 m so eaves go
 too.
 """
 

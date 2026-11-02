@@ -4,9 +4,8 @@ landuse_mix.py - land-use mix indices for Bloemhof.
 
 Owner: Atanas Malinkov
 
-Two indices on a 100 m grid and over the buurt.
-    Shannon entropy   H = -sum(p_i * ln p_i) / ln(N)   0 one use, 1 all equal
-    Simpson           D = 1 - sum(p_i^2)               chance two m2 differ in use
+Normalised Shannon entropy on a 100 m grid and over the buurt.
+    H = -sum(p_i * ln p_i) / ln(N)   0 one use, 1 all equal
 p_i is the share of BAG floor area, so a studio does not outweigh a supermarket.
 Unit-count versions are written too. N is the full BAG list of 11 uses, fixed,
 so cells can be compared with each other.
@@ -55,14 +54,6 @@ def shannon(shares, n=N_CATEGORIES):
     return h / math.log(n)
 
 
-def simpson(shares):
-    #1 - sum(p^2). Independent of N, so no denominator choice to defend.
-    tot = sum(shares.values())
-    if tot <= 0:
-        return 0.0
-    return 1.0 - sum((v / tot) ** 2 for v in shares.values())
-
-
 def load_units():
     path = RAW / "bag_verblijfsobjecten.geojson"
     if not path.exists():
@@ -108,8 +99,6 @@ def main():
     overall = {
         "shannon_area": round(shannon(area_by), 4),
         "shannon_count": round(shannon(count_by), 4),
-        "simpson_area": round(simpson(area_by), 4),
-        "simpson_count": round(simpson(count_by), 4),
         "n_categories_in_scheme": N_CATEGORIES,
         "n_categories_present": int(sum(1 for v in area_by.values() if v > 0)),
         "dominant": area_by.most_common(1)[0][0],
@@ -149,7 +138,6 @@ def main():
         props = {
             "row": int(r), "col": int(cc),
             "shannon": round(shannon(pa), 4),
-            "simpson": round(simpson(pa), 4),
             "n_units": int(n_units),
             "n_categories": int(sum(1 for v in pa.values() if v > 0)),
             "floor_area_m2": round(sum(pa.values()), 1),
@@ -211,7 +199,6 @@ def main():
                 "floor_area_m2": round(tot, 1),
                 "shannon_area": round(shannon(ba), 4),
                 "shannon_count": round(shannon(bc), 4),
-                "simpson_area": round(simpson(ba), 4),
                 "dominant": ba.most_common(1)[0][0],
                 "dominant_share": round(ba.most_common(1)[0][1] / tot, 4),
                 "composition": [
@@ -226,20 +213,19 @@ def main():
             if st:
                 per_buurt[name] = st
                 print(f"  {name:12} {st['n_units']:6,} units   "
-                      f"Shannon {st['shannon_area']:.3f}   Simpson {st['simpson_area']:.3f}   "
+                      f"Shannon {st['shannon_area']:.3f}   "
                       f"{100*st['dominant_share']:.0f}% {st['dominant']}")
         combined = stats_for(study_area_polygon(), STUDY_AREA.name)
         if combined:
             print(f"  {'combined':12} {combined['n_units']:6,} units   "
-                  f"Shannon {combined['shannon_area']:.3f}   "
-                  f"Simpson {combined['simpson_area']:.3f}")
+                  f"Shannon {combined['shannon_area']:.3f}")
     except Exception as exc:
         print(f"  ! buurt aggregates skipped ({exc})")
 
     arr = np.array(spacem) if spacem else np.array([0.0])
     summary = {
         "study_area": STUDY_AREA.name,
-        "method": "normalised Shannon entropy and Simpson diversity over BAG "
+        "method": "normalised Shannon entropy over BAG "
                   "gebruiksdoel, weighted by usable floor area",
         "source": "BAG verblijfsobjecten via PDOK WFS",
         "parameters": {
@@ -285,7 +271,7 @@ def main():
     mi.setdefault("baseline", {})
     head = combined or overall
     mi["baseline"]["landuse_mix"] = head.get("shannon_area", overall["shannon_area"])
-    mi["baseline"]["landuse_simpson"] = head.get("simpson_area", overall["simpson_area"])
+    mi["baseline"].pop("landuse_simpson", None)  #Simpson dropped on 2026-11-02, Shannon is the one index
     mi["_landuse_source"] = "analysis/morphology/landuse_mix.py"
     mi_path.write_text(json.dumps(mi, indent=2) + "\n")
     print("  merged landuse_mix into morphology_indicators.json")
@@ -294,7 +280,6 @@ def main():
     o = overall
     print(f"  whole study area: Shannon {o['shannon_area']:.3f} (floor area), "
           f"{o['shannon_count']:.3f} (unit count)")
-    print(f"                    Simpson {o['simpson_area']:.3f}")
     print(f"  dominant use: {o['dominant']} at "
           f"{100 * o['dominant_share']:.1f}% of floor space")
     print(f"  {o['n_categories_present']} of {N_CATEGORIES} categories present")

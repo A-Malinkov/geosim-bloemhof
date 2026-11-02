@@ -263,66 +263,6 @@ def fig_tree_map(trees_rd, veg):
     save(fig, "fig_tree_map.png")
 
 
-#================================================ 6. what the trees do to SVF
-def fig_canopy_effect(svf, open_ground, transform, trees_rd):
-    #Compare SVF under tree crowns against open ground well away from trees.
-    from scipy.ndimage import distance_transform_edt
-
-    cell = abs(transform.a)
-    h, w = svf.shape
-    xs = np.array([f["geometry"]["coordinates"][0] for f in trees_rd["features"]])
-    ys = np.array([f["geometry"]["coordinates"][1] for f in trees_rd["features"]])
-    cr = np.array([f["properties"]["crown_m"] for f in trees_rd["features"]]) / 2.0
-
-    cols = np.floor((xs - transform.c) / transform.a).astype(int)
-    rows = np.floor((ys - transform.f) / transform.e).astype(int)
-    inside = (rows >= 0) & (rows < h) & (cols >= 0) & (cols < w)
-    rows, cols, cr = rows[inside], cols[inside], cr[inside]
-
-    seeds = np.zeros((h, w), dtype=bool)
-    seeds[rows, cols] = True
-    #distance in metres to the nearest tree trunk
-    dist = distance_transform_edt(~seeds) * cell
-
-    canopy = np.zeros((h, w), dtype=bool)
-    for r, c, rad in zip(rows, cols, cr):
-        rr = int(np.ceil(rad / cell))
-        r0, r1 = max(0, r - rr), min(h, r + rr + 1)
-        c0, c1 = max(0, c - rr), min(w, c + rr + 1)
-        yy, xx = np.ogrid[r0:r1, c0:c1]
-        canopy[r0:r1, c0:c1] |= ((yy - r) ** 2 + (xx - c) ** 2) * cell ** 2 <= rad ** 2
-
-    under = svf[open_ground & canopy & np.isfinite(svf)]
-    away = svf[open_ground & (dist > 15) & np.isfinite(svf)]
-
-    fig, ax = plt.subplots(figsize=(7.2, 3.6))
-    tidy(ax, ygrid=True)
-    bins = np.linspace(0, 1, 46)
-    for data, colour, label in ((away, SERIES_1, "more than 15 m from any tree"),
-                                (under, SERIES_2, "under a tree crown")):
-        cnt, edges = np.histogram(data, bins=bins, density=True)
-        centres = (edges[:-1] + edges[1:]) / 2
-        ax.plot(centres, cnt, color=colour, lw=2, label=label)
-        ax.fill_between(centres, cnt, color=to_rgba(colour, 0.13), linewidth=0)
-        ax.axvline(data.mean(), color=colour, lw=1.1)
-
-    ax.set_xlim(0, 1)
-    ax.set_xlabel("Sky View Factor")
-    ax.set_ylabel("density")
-    drop = away.mean() - under.mean()
-    titled(ax, "Street trees are doing real work on enclosure",
-           f"mean SVF {away.mean():.2f} in the open vs {under.mean():.2f} under "
-           f"canopy: a drop of {drop:.2f} ({100 * drop / away.mean():.0f}%)")
-    leg = ax.legend(frameon=False, fontsize=8.5, loc="upper left")
-    for t in leg.get_texts():
-        t.set_color(INK_2)
-    save(fig, "fig_canopy_effect.png")
-    return {"svf_open": round(float(away.mean()), 4),
-            "svf_under_canopy": round(float(under.mean()), 4),
-            "difference": round(float(drop), 4),
-            "n_open_cells": int(away.size), "n_canopy_cells": int(under.size)}
-
-
 #======================================================== 7. density maps
 def fig_density_maps(dens, grid_geo):
     #GSI and FSI per 100 m cell as two plain maps, with the buurt outline.
@@ -801,18 +741,20 @@ def main():
     trees = json.loads((PROCESSED / "trees.geojson").read_text())
     trees_rd = json.loads((RAW / "rotterdam_trees_rd.geojson").read_text())
 
-    #rebuild the open-ground mask on the cropped SVF grid
+    #rebuild the open-ground mask on the cropped SVF grid, the way sky_view_factor.py does
     dsm, _, _ = load_tif(RAW / "ahn_dsm_05m.tif")
     dtm, _, _ = load_tif(RAW / "ahn_dtm_05m.tif")
     pad = (dsm.shape[0] - svf.shape[0]) // 2
     ndsm = (dsm - dtm)[pad:pad + svf.shape[0], pad:pad + svf.shape[1]]
+    if stats["parameters"].get("trees") is False:  #trees left out: outside the footprints the surface is the ground
+        from sky_view_factor import building_mask
+        ndsm = np.where(building_mask(svf.shape, transform), ndsm, ndsm * 0)  #nan stays nan where the DTM has no value
     open_ground = np.isfinite(ndsm) & (ndsm < 2.0)
 
     fig_svf_map(svf, open_ground, stats)
     fig_svf_distribution(svf, open_ground, stats)
     fig_height_classes(trees_rd)
     fig_tree_map(trees_rd, veg)
-    effect = fig_canopy_effect(svf, open_ground, transform, trees_rd)
 
     dens_path = PROCESSED / "density_summary.json"
     grid_path = PROCESSED / "density_grid.geojson"
@@ -852,13 +794,6 @@ def main():
     else:
         print("  (skipping ABM figure: run ca_landuse.py first)")
 
-    #the canopy effect is a finding, not just a picture: keep the numbers
-    veg["svf_canopy_effect"] = effect
-    (PROCESSED / "vegetation_summary.json").write_text(json.dumps(veg, indent=2) + "\n")
-    print(f"\n  canopy effect: SVF {effect['svf_open']} open vs "
-          f"{effect['svf_under_canopy']} under canopy "
-          f"(-{effect['difference']})")
-    print("  added to vegetation_summary.json")
     return 0
 
 

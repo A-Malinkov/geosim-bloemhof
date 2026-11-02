@@ -303,13 +303,15 @@ def collect():
 
 
 #--- rasters
-def site_open_ground(sc, res, keep_pad):
+def site_open_ground(sc, res, keep_pad, trees=True):
     #open ground on the design site, on the grid of the published raster: the scripts' own rule, re-applied
     from rasterio.features import geometry_mask
     from scenario_world import burn_into_rasters
-    from sky_view_factor import load_raster
+    from sky_view_factor import building_mask, load_raster
     dsm, transform, _ = load_raster(RAW / "ahn_dsm_05m.tif", res)
     dtm, _, _ = load_raster(RAW / "ahn_dtm_05m.tif", res)
+    if not trees:  #the SVF leaves trees out: outside the footprints the surface is the ground, as in sky_view_factor.py
+        dsm = np.where(building_mask(dsm.shape, transform), dsm, dtm)
     dsm, dtm = burn_into_rasters(dsm, dtm, transform, sc)  #demolition and new blocks, no-op for baseline
     nd = dsm - dtm
     og = np.isfinite(nd) & (nd < 2.0)  #same open-ground rule as both scripts
@@ -327,7 +329,7 @@ def site_values(c):
     for sc in SCEN:
         with rasterio.open(PROCESSED / c["tif"].format(s=sfx(sc))) as src:
             a = src.read(1)
-        m, tc = site_open_ground(sc, c["res"], c["keep_pad"])
+        m, tc = site_open_ground(sc, c["res"], c["keep_pad"], c.get("trees", lambda sc: True)(sc))
         assert m.shape == a.shape, (c["tif"], sc, m.shape, a.shape)
         v = a[m & np.isfinite(a)]
         pub = c["published"](sc)
@@ -339,6 +341,7 @@ def site_values(c):
 
 RASTERS = {  #raster -> how to read it, and the published mean it must reproduce
     "svf": {"tif": "svf{s}.tif", "res": 0.5, "keep_pad": 0,
+            "trees": lambda sc: J(f"svf_summary{sfx(sc)}.json")["parameters"].get("trees", True),  #False since 2026-11-02
             "published": lambda sc: J(f"svf_summary{sfx(sc)}.json")["design_site"]["open_ground"]["mean"]},
     **{f"sun{dsfx}": {"tif": "shadow_hours{s}" + dsfx + ".tif", "res": 1.0, "keep_pad": 50,
                       "published": (lambda dsfx: lambda sc: J(f"shadow_summary{sfx(sc)}{dsfx}.json")

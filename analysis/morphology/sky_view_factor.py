@@ -12,8 +12,11 @@ in N directions up to the radius and keep the steepest angle gamma. Then
     SVF           = (1/N) * sum(cos^2 gamma)    radiation form, the one we report
     SVF_geometric = 1 - (1/N) * sum(sin gamma)  plain solid angle
 Both are written. The observer stands 1.75 m above the DTM and looks at the
-DSM, buildings and tree crowns included. The DTM is empty under most buildings,
-so ground there is filled from around it. Statistics are on open ground.
+buildings only. Trees are left out (PARAMS["trees"], 2026-11-02): outside the
+3DBAG footprints, widened 0.5 m for eaves, the DSM is set to ground. That also
+drops walls, cars and anything else that is not a building. The DTM is empty
+under most buildings, so ground there is filled from around it. Statistics are
+on open ground, the ground under tree crowns included.
 
     python analysis/morphology/fetch_ahn.py                               #rasters first
     python analysis/morphology/sky_view_factor.py                         #all cases, ~6 min each
@@ -41,6 +44,8 @@ from common.project import (  #noqa: E402
 
 AHN_NODATA = 3.4028234663852886e38
 OBSERVER_HEIGHT_M = 1.75      #eye level of a standing person
+FOOTPRINTS = RAW.parent.parent / "cache" / "morphology" / "footprints_svf.geojson"  #3DBAG LoD0 over the whole raster, gitignored
+EAVES_PAD_M = 0.5  #footprints widened so eaves and the AHN's soft building edges stay, as in scenario_world.py
 
 
 #--- input
@@ -256,7 +261,25 @@ PARAMS = {
     "steps": 48,  #radial samples per direction
     "observer_height": OBSERVER_HEIGHT_M,
     "no_clip_buurt": False,  #True skips the buurt statistics
+    "trees": False,  #False keeps only buildings in the surface, True uses the AHN DSM as it is (crowns block the sky)
 }
+
+
+def building_mask(shape, transform):
+    #cells inside a 3DBAG footprint (widened by EAVES_PAD_M), fetched once over the raster's extent
+    import geopandas as gpd
+    from rasterio.features import rasterize
+    if not FOOTPRINTS.exists():
+        sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "wind_noise"))
+        from noise import fetch_footprints  #same 3DBAG paging and LoD0 decoding as the noise model
+        print("  fetching 3DBAG footprints over the SVF raster (a few minutes)")
+        FOOTPRINTS.parent.mkdir(parents=True, exist_ok=True)
+        fetch_footprints(bbox_rd(150), FOOTPRINTS)  #the raster spans the study area + 150 m
+    b = gpd.read_file(FOOTPRINTS).set_crs("EPSG:28992", allow_override=True)
+    shapes = [(g.buffer(EAVES_PAD_M), 1) for g in b.geometry if g is not None and not g.is_empty]
+    m = rasterize(shapes, out_shape=shape, transform=transform, dtype="uint8").astype(bool)
+    print(f"  {len(shapes):,} 3DBAG footprints, {100 * m.mean():.1f}% of cells")
+    return m
 
 CASES = [
     {"scenario": "baseline"},  #which built environment
@@ -294,7 +317,14 @@ def run(p):
     print(f"  grid {dsm.shape[1]} x {dsm.shape[0]}")
     sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "scenarios"))
     from scenario_world import burn_into_rasters  #demolition + new blocks, no-op for baseline
-    dsm, dtm = burn_into_rasters(dsm, dtm, transform, p["scenario"])
+    if not p["trees"]:
+        #buildings only: outside the footprints the surface is the ground, so trees no longer block the sky
+        ground0 = fill_nan_nearest(dtm)
+        keep = building_mask(dsm.shape, transform)
+        flat = ~keep & np.isfinite(dsm) & (dsm - ground0 > 2.0)  #more than 2 m above ground: trees, mostly
+        dsm = np.where(keep, dsm, ground0)
+        print(f"  trees left out: {100 * flat.mean():.1f}% of cells more than 2 m up lowered to the ground")
+    dsm, dtm = burn_into_rasters(dsm, dtm, transform, p["scenario"])  #after the trees go, so new blocks stay
 
     #open ground = DTM known and the surface is within 2 m of it
     ndsm = dsm - dtm
@@ -371,10 +401,12 @@ def run(p):
             "n_directions": p["directions"],
             "n_radial_steps": p["steps"],
             "observer_height_m": p["observer_height"],
-            "surface": "AHN dsm_05m (buildings + tree crowns)"
+            "surface": ("AHN dsm_05m (buildings + tree crowns)" if p["trees"] else
+                        "AHN dsm_05m inside 3DBAG footprints (+0.5 m), ground elsewhere: buildings only, no trees")
                        + ("" if p["scenario"] == "baseline" else
                           f", with the {p['scenario']} demolition and massing burned in"),  #see scenario_world.py
             "ground": "AHN dtm_05m, gaps filled by nearest-neighbour dilation",
+            "trees": p["trees"],  #False: trees left out of the surface
         },
         "bbox_rd": [round(v, 1) for v in bbox_rd()],
         #The bbox the PNG is actually drawn on, from the warp, NOT the RD

@@ -277,7 +277,7 @@ numbers here still match `data/processed/`.
 |---|---|---|---|
 | 4.1 | 3D city model + proposed massing | existing buildings ✅ · design site chosen ✅ · scenario_a massing ✅ (Rhino OPTION 1) · scenario_b massing ✅ (Rhino OPTION 2) | - |
 | 4.2 | Geospatial data layers | ✅ done | - |
-| 4.3 | Urban morphological indicators | ✅ done: SVF 0.696, GSI 0.333, FSI 1.003, mix 0.267, Bloemhof; plus street H/W and direct-sun hours. SVF, sun hours and H/W also run for both scenarios | Atanas |
+| 4.3 | Urban morphological indicators | ✅ done: SVF 0.784, GSI 0.333, FSI 1.003, mix 0.267, Bloemhof; plus street H/W and direct-sun hours. SVF, sun hours and H/W also run for both scenarios | Atanas |
 | 4.4 | KNMI sensors + AI prediction | ✅ done: live feed, sensors, 5 y history, model comparison | Atanas |
 | 4.5 | Wind + noise simulation | 🟡 noise done (baseline, NoiseModelling 6.0.0) · scenario_a wired, not run · wind not started | - |
 | 4.6 | CBS socio-demographics | ❌ not started | - |
@@ -337,7 +337,7 @@ share one boundary.
 
 | indicator | Bloemhof |
 |---|---|
-| Sky View Factor, pedestrian level | **0.696** |
+| Sky View Factor, pedestrian level | **0.784** |
 | GSI · FSI · storeys | **0.333 · 1.003 · 3.01** |
 | Mean building height | **8.5 m** (σ 2.9) |
 | Land-use mix, Shannon | **0.267** |
@@ -351,7 +351,6 @@ Other results:
 
 | | |
 |---|---|
-| SVF under a tree crown vs 15 m from any tree | **0.35 vs 0.70**: trees remove 50 % of visible sky |
 | Weather forecast (temperature, +6 h) | MAE 1.31 °C, 54 % better than assuming no change |
 | Weather forecast (wind, +6 h) | MAE 1.13 m/s |
 | Land-use model | CA prefers the **green** programme (mix 0.577); RL agent re-planning the design site reaches mix 0.804, but keeps only 76 of its 160 residential cells, even with homes in the objective |
@@ -362,7 +361,6 @@ Other results:
 |---|---|
 | `fig_svf_map.png` | SVF across the study area, buildings and water excluded |
 | `fig_svf_distribution.png` | how enclosed open ground is, with mean and p05 |
-| `fig_canopy_effect.png` | SVF under canopy vs in the open: the vegetation finding |
 | `fig_tree_heights.png` | tree height-class distribution |
 | `fig_tree_map.png` | where the trees are, sized by crown, coloured by height |
 | `fig_density_maps.png` | GSI and FSI per 100 m cell, with the buurt boundary |

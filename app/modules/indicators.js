@@ -224,7 +224,6 @@ async function addLanduseGrid(ctx) {
     e.description =
       `<table>` +
       `<tr><td>Shannon</td><td>${sh.toFixed(3)}</td></tr>` +
-      `<tr><td>Simpson</td><td>${(p?.simpson?.getValue?.() ?? 0).toFixed(3)}</td></tr>` +
       `<tr><td>units</td><td>${p?.n_units?.getValue?.() ?? "-"}</td></tr>` +
       `<tr><td>dominant</td><td>${p?.dominant?.getValue?.() ?? "-"}</td></tr>` +
       `</table><hr><table>` +
@@ -459,7 +458,7 @@ export async function setup(ctx) {
 
   /* ---- Sky View Factor and direct sun, per scenario ---------------------- */
   //map overlays, each following the scenario switch
-  addScenarioOverlay(ctx, { id: "svfOverlay", label: "Sky View Factor (AHN)", base: "svf" });
+  addScenarioOverlay(ctx, { id: "svfOverlay", label: "Sky View Factor (buildings, AHN)", base: "svf" });  //trees left out since 2026-11-02
   const shadowOverlay = addScenarioOverlay(ctx, { id: "shadowOverlay", label: "Direct sun hours (AHN)", base: "shadow" });
 
   //days shadows.py was run for, with the file suffix of each ("" is the equinox default)
@@ -534,7 +533,9 @@ export async function setup(ctx) {
         [["svf", "SVF", 3]],
       ) +
       `<p class="muted">At ${svf.parameters.observer_height_m} m above ground on open ` +
-      `ground only (streets, gardens, squares). ${svf.parameters.n_directions} directions, ` +
+      `ground only (streets, gardens, squares). ` +
+      (svf.parameters.trees === false ? `Buildings only, trees are left out. ` : `Buildings and tree crowns. `) +  //what blocks the sky
+      `${svf.parameters.n_directions} directions, ` +
       `${svf.parameters.search_radius_m} m radius, ${svf.parameters.cell_size_m} m cells. ` +
       `Cosine-weighted; the plain solid-angle value is ` +
       `${
@@ -869,7 +870,6 @@ export async function setup(ctx) {
       `<table class="kv"><tbody>` +
       `<tr><td>Shannon (area)</td><td>${head.toFixed(3)}</td></tr>` +
       `<tr><td>Shannon (units)</td><td>${(b.shannon_count ?? o.shannon_count).toFixed(3)}</td></tr>` +
-      `<tr><td>Simpson</td><td>${(b.simpson_area ?? o.simpson_area).toFixed(3)}</td></tr>` +
       `<tr><td>dominant use</td><td>${o.dominant} (${(o.dominant_share * 100).toFixed(0)} %)</td></tr>` +
       `</tbody></table>` +
       `<table class="kv"><thead><tr><th>use</th><th>floor area</th></tr></thead><tbody>` +
@@ -882,7 +882,6 @@ export async function setup(ctx) {
       `</tbody></table>` +
       perBuurtTable(lu.per_buurt, [
         ["shannon_area", "Shannon", 3],
-        ["simpson_area", "Simpson", 3],
       ]) +
       `<p class="muted">Normalised Shannon entropy over ` +
       `${lu.parameters.n_categories_in_scheme} BAG use classes, weighted by ` +

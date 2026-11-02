@@ -63,7 +63,7 @@ a row that says so. Flood vulnerability is today only.
 | FSI, floor area / site | 0.88 | 1.37 | 0.91 | 0.75 | context |
 | GSI, footprint / site | 0.32 | 0.27 | 0.17 | 0.17 | context |
 | tallest building | 30 m | 40 m | 27 m | 25 m | context |
-| sky view factor, mean | 0.71 | 0.65 | 0.78 | 0.77 | higher |
+| sky view factor, mean | 0.78 | 0.70 | 0.85 | 0.82 | higher |
 | sun at the equinox, mean | 4.3 h | 3.8 h | 6.0 h | 5.8 h | higher |
 | open ground under 2 h sun, equinox | 22 % | 40 % | 13 % | 22 % | lower |
 | open ground under 2 h sun, 21 Dec | 87 % | 87 % | 67 % | 71 % | lower |
@@ -105,7 +105,7 @@ counted vacant as on today's grid), flood from `flood_summary.json`.
 
 **A trades daylight for homes.** It nearly doubles the dwellings (1,027 to an
 estimated 1,920) and its share of open ground with under 2 h of sun at the
-equinox rises from 22 % to 40 %. Mean sky view drops from 0.71 to 0.65.
+equinox rises from 22 % to 40 %. Mean sky view drops from 0.78 to 0.70.
 
 **B is brighter than today but adds few homes.** Open ground under 2 h of sun
 falls to 13 % at the equinox and from 87 % to 67 % on 21 December, and it has
@@ -116,7 +116,7 @@ buildings to gain about 220 dwellings.
 It estimates 777 dwellings, fewer than today's 1,027, on terraced and
 semi-detached houses up to 25 m. Open ground under 2 h of sun at the equinox
 stays at today's 22 % and falls from 87 % to 71 % on 21 December; mean sky view
-rises from 0.71 to 0.77. It is the only design that names its shops: 50 shop
+rises from 0.78 to 0.82. It is the only design that names its shops: 50 shop
 units from the Rhino block names, against today's 20. The model has no health
 practice, so 7 of those units become one, picked by the same optimiser as A and
 B use but only among the model's own shop units: 43 shops, 7 health practices
@@ -177,5 +177,5 @@ because it minimises walking distance and knows nothing of footfall.
 - The difference maps compare cells that are open ground in both runs. Where a
   new block stands, or an old one stood, there is no difference to show.
 - The proposed planting counts what is drawn in the Rhino model. It is not in
-  the SVF or sun runs, which see today's trees only (minus those under new
-  blocks and streets).
+  the sun runs, which see today's trees only (minus those under new blocks and
+  streets). The SVF sees no trees at all, only buildings.

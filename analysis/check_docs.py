@@ -77,14 +77,8 @@ def main():
             ("SVF in the status table", r"\| 4\.3 \|", f"{g['mean']:.3f}", [MAIN]),
         ]
     if veg:
-        e = veg.get("svf_canopy_effect") or {}
         checks += [("trees combined", r"Trees · per hectare", f"{veg['combined']['n_trees']:,}", [MAIN]),
                    ("trees combined", r"\*\*trees\*\* \|", f"{veg['combined']['n_trees']:,}", [MORPH])]
-        if e:
-            checks += [
-                ("canopy open", r"under a tree crown vs", f"{e['svf_open']:.2f}", [MAIN]),
-                ("canopy under", r"under a tree crown vs", f"{e['svf_under_canopy']:.2f}", [MAIN]),
-            ]
     if den:
         b = den["combined"]
         checks += [

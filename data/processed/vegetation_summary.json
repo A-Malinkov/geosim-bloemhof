@@ -44,12 +44,5 @@
     "mean": 6.32,
     "median": 5.0,
     "max": 18.0
-  },
-  "svf_canopy_effect": {
-    "svf_open": 0.7032,
-    "svf_under_canopy": 0.3531,
-    "difference": 0.3502,
-    "n_open_cells": 979919,
-    "n_canopy_cells": 68574
   }
 }
