@@ -290,7 +290,7 @@ numbers here still match `data/processed/`.
 | 4.6 | CBS socio-demographics | ✅ done: Bloemhof against Rotterdam, people, age, households and origin (CBS 2026) and income (2023), in a dashboard card (`analysis/cbs/fetch_cbs.py`, `app/modules/cbs.js`) | Atanas |
 | 4.7 | Agent-based land-use model | ✅ done — CA + RL, prefers the `green` programme; Rhino options scored on the same objective | Atanas |
 | 4.8 | Road network optimization | ✅ done — walk network and walks to everyday destinations for baseline, scenario_a and scenario_b. Site grid 376.2 m today → 370.7 m in scenario_a, 376.7 m in scenario_b, 367.7 m in the final design. Walk and drive distance from each site address to Lange Hilleweg and Strevelsweg: baseline done, scenarios wait for the team's entrances and car access | Atanas |
-| 4.9 | Scenario comparison | ✅ done — indicator by indicator on the design site, no overall score (`analysis/comparison/`, six figures, app card). Wind, scenario noise and CBS shown as not computed | Atanas |
+| 4.9 | Scenario comparison | ✅ done — indicator by indicator on the design site, no overall score (`analysis/comparison/`, six figures, app card). Wind and noise included for every scenario; CBS shown as today only | Atanas |
 
 **6 of 9 complete.** The remaining components carry the heaviest rubric
 weight, and 4.9 depends on all of them writing outputs keyed

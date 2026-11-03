@@ -247,6 +247,20 @@ def flood(sc):
     return {"flood_high": round(sh["3"] + sh["4 high"], 3)}
 
 
+def wind_noise(sc):
+    #pedestrian wind (OpenFOAM, design site open ground) and road noise (NoiseModelling, site + 200 m)
+    out = {}
+    w = J(f"wind_{sc}.json")
+    if w:
+        s = w["summary"]
+        out.update({"wind_mean_ratio": s["mean"], "wind_over11": s["exceedance_frac"], "wind_sheltered": s["sheltered_frac"]})
+    n = J(f"noise_{sc}.json")
+    if n:
+        s = n["summary"]
+        out.update({"noise_mean_db": s["mean"], "noise_over53": s["exceedance_frac"], "noise_over70": s["limit_frac"]})
+    return out
+
+
 #indicator metadata: key, theme, label, unit, better direction ("higher" / "lower" / None = context), digits, source
 INDICATORS = [
     ("dwellings", "Programme", "Dwellings on the site", "", "higher", 0, "road_metrics.json"),
@@ -280,14 +294,19 @@ INDICATORS = [
     ("lu_green_share", "Land use", "Green share of cells", "%", "higher", 0, "landuse_scenarios.json"),
     ("lu_objective_amen", "Land use", "Objective J, with placed amenities", "", "higher", 3, "landuse_scenarios.json"),
     ("lu_mix_amen", "Land use", "Mix, with placed amenities", "", "higher", 3, "landuse_scenarios.json"),
+    ("wind_mean_ratio", "Wind and noise", "Wind-speed ratio at 1.5 m, mean", "", None, 2, "wind_*.json"),  #|U| / open-country inflow
+    ("wind_over11", "Wind and noise", "Windier than open country (ratio > 1.1)", "%", "lower", 0, "wind_*.json"),
+    ("wind_sheltered", "Wind and noise", "Sheltered (ratio < 0.5)", "%", None, 0, "wind_*.json"),  #calm, but also stagnant
+    ("noise_mean_db", "Wind and noise", "Road noise Lden, mean, site + 200 m", " dB", "lower", 1, "noise_*.json"),
+    ("noise_over53", "Wind and noise", "Above 53 dB Lden, site + 200 m", "%", "lower", 0, "noise_*.json"),  #Bkl standard value
+    ("noise_over70", "Wind and noise", "Above 70 dB Lden, site + 200 m", "%", "lower", 0, "noise_*.json"),  #Bkl limit, municipal roads
     ("flood_high", "Today only", "Flood vulnerability high or very high", "%", "lower", 0, "flood_summary.json"),
 ]
-NOT_RUN = [("Wind", "pedestrian wind comfort", "OpenFOAM cases set up, not run"),
-           ("Noise", "road-traffic noise, Lden", "baseline only, scenarios not run"),
-           ("CBS", "socio-demographics", "today's residents only, the designs have none yet")]  #the app has a CBS card since 2026-11-03
+NOT_RUN = [("CBS", "socio-demographics", "today's residents only, the designs have none yet")]  #the app has a CBS card since 2026-11-03
 NOT_TODAY = {"green_area_m2", "water_area_m2",  #no today value: proposed planting
              "lu_objective_amen", "lu_mix_amen"}  #and the land use with placed amenities
-PERCENT = {"sun_under2h_0320", "sun_under2h_1221", "lu_green_share", "flood_high"}
+PERCENT = {"sun_under2h_0320", "sun_under2h_1221", "lu_green_share", "flood_high",
+           "wind_over11", "wind_sheltered", "noise_over53", "noise_over70"}  #shares, shown as %
 
 
 def collect():
@@ -295,7 +314,7 @@ def collect():
     out = {}
     for sc in SCEN:
         v = {}
-        for f in (programme, daylight, green, mobility, amenities, landuse, flood):
+        for f in (programme, daylight, green, mobility, amenities, landuse, wind_noise, flood):
             v.update(f(sc))
         out[sc] = v
         print(f"  {sc}: {len(v)} values")
@@ -430,7 +449,7 @@ def fig_scorecard(c, data):
     ax.text(0, len(lines) + 0.2, "Shading against today: blue better, red worse, darker = bigger change "
             f"(full at ±{100 * c['full_at']:.0f} %). Grey = today, a change under {100 * c['min_change']:.0f} %, "
             "or an indicator with no better direction. "
-            "All values over the 13.24 ha design site.", fontsize=9, color=INK2, va="top", wrap=True)
+            "All values over the 13.24 ha design site, noise over the site + 200 m.", fontsize=9, color=INK2, va="top", wrap=True)
     ax.set_title("Today against the Rhino options and the final design, indicator by indicator", loc="left", pad=4)
     save(fig, c["out"])
     plt.close(fig)

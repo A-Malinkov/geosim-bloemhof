@@ -33,6 +33,9 @@ const ROWS = [  //key, label, digits, as a percentage
   ["intersections_km2", "Intersections /km²", 0, false],
   ["lu_objective", "Land-use objective", 3, false],
   ["lu_objective_amen", "… with placed amenities", 3, false],  //the same objective with the amenities in their cells
+  ["wind_over11", "Windier than open country (> 1.1)", 0, true],  //OpenFOAM, open ground at 1.5 m
+  ["noise_mean_db", "Road noise Lden, site + 200 m (dB)", 1, false],  //NoiseModelling
+  ["noise_over53", "Above 53 dB Lden, site + 200 m", 0, true],
 ];
 
 export async function setup(ctx) {

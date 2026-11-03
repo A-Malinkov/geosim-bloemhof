@@ -50,9 +50,10 @@ measure, *network only*, leaves the site's own amenities out of every scenario,
 today included, so only the street network differs: that is what
 `analysis/roads/` reports.
 
-**Not computed is shown, not dropped.** Wind (OpenFOAM cases set up, not run),
-noise for the scenarios (baseline only) and CBS demographics (not started) have
-a row that says so. Flood vulnerability is today only.
+**Not computed is shown, not dropped.** CBS demographics describe today's
+residents only and have a row that says so. Flood vulnerability is today only.
+Wind (OpenFOAM, the design site's open ground at 1.5 m) and road noise
+(NoiseModelling, the site plus 200 m) run for every scenario since 2026-11-03.
 
 ## Results
 
@@ -89,6 +90,12 @@ a row that says so. Flood vulnerability is today only.
 | green share of 25 m cells | 3 % | 6 % | 33 % | 30 % | higher |
 | land-use objective J, with the placed amenities | n/a | 2.865 | 3.357 | 3.041 | higher |
 | land-use mix, with the placed amenities | n/a | 0.623 | 0.755 | 0.779 | higher |
+| wind-speed ratio at 1.5 m, mean | 0.52 | 0.55 | 0.79 | 0.68 | context |
+| open ground windier than open country (ratio > 1.1) | 3 % | 4 % | 10 % | 6 % | lower |
+| open ground sheltered (ratio < 0.5) | 53 % | 48 % | 17 % | 27 % | context |
+| road noise Lden, mean, site + 200 m | 56.0 dB | 56.6 dB | 57.0 dB | 56.8 dB | lower |
+| above 53 dB Lden, site + 200 m | 68 % | 69 % | 72 % | 70 % | lower |
+| above 70 dB Lden, site + 200 m | 11 % | 11 % | 12 % | 11 % | lower |
 | flood vulnerability high or very high | 61 % | not run | not run | not run | lower |
 
 Sources: dwellings from `road_metrics.json` (BAG today, the road network's
@@ -172,8 +179,10 @@ because it minimises walking distance and knows nothing of footfall.
 - The scenario dwellings are an estimate (`analysis/roads/README.md`), and floor
   area uses one storey rule for every building, today's included.
 - Means over open ground cover different ground in each scenario (above).
-- No wind, noise or social indicator for the scenarios yet. Those are the first
-  a jury asks about for 30–40 m towers and blocks fronting main roads.
+- No social indicator for the scenarios: CBS describes today's residents.
+- Noise covers the site plus 200 m, so its shares are not over the same area as
+  the other rows. Its traffic still runs on the OSM network, old interior streets
+  included (`analysis/wind_noise/README.md`).
 - The difference maps compare cells that are open ground in both runs. Where a
   new block stands, or an old one stood, there is no difference to show.
 - The proposed planting counts what is drawn in the Rhino model. It is not in
