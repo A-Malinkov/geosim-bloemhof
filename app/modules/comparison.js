@@ -5,8 +5,8 @@
  * Today against the two Rhino options on the design site, one row per
  * indicator, written by analysis/comparison/compare_scenarios.py into
  *   data/processed/scenario_comparison.json
- * Each scenario cell shows the value and its change against today, marked
- * better or worse by the indicator's own direction. There is no overall score
+ * Each scenario cell shows the value and its change against today, green when
+ * it goes up and red when it goes down (since 2026-11-03). There is no overall score
  * on purpose: adding the indicators up needs weights, and the weights would
  * pick the winner. The column of the scenario the app is on is highlighted.
  * ========================================================================== */
@@ -51,21 +51,17 @@ export async function setup(ctx) {
     });
     return;
   }
-  const better = Object.fromEntries((data.indicators || []).map((i) => [i.key, i.better]));  //"higher" / "lower" / null
-
   const fmt = (v, d, pct) => v == null ? "-"
     : (pct ? 100 * v : v).toLocaleString("en-GB", { minimumFractionDigits: d, maximumFractionDigits: d }) + (pct ? " %" : "");
 
-  //change against today; .delta.down is the "good" colour and .delta.up the "bad" one in style.css
+  //change against today, coloured by its sign: green up, red down (Atanas, 2026-11-03)
   function delta(key, v, b, d, pct) {
     if (v == null || b == null) return "";
     const x = (pct ? 100 : 1) * (v - b);
     if (Math.abs(x) < 0.5 * 10 ** -d) return "";
-    const dir = better[key];
-    const good = dir === "higher" ? x > 0 : dir === "lower" ? x < 0 : null;
-    const cls = good == null ? "" : good ? "down" : "up";  //no direction: shown, not coloured
+    const colour = x > 0 ? "var(--ok)" : "var(--err)";  //every row, whatever its better direction
     const txt = x.toLocaleString("en-GB", { minimumFractionDigits: d, maximumFractionDigits: d });  //thousands separator
-    return ` <span class="delta ${cls}">${x > 0 ? "+" : ""}${txt}</span>`;
+    return ` <span class="delta" style="color:${colour}">${x > 0 ? "+" : ""}${txt}</span>`;
   }
 
   function render(current) {
@@ -80,8 +76,8 @@ export async function setup(ctx) {
           `<td${hl(s)}>${fmt(data[s]?.[k], d, pct)}${s === "baseline" ? "" : delta(k, data[s]?.[k], b, d, pct)}</td>`).join("") + `</tr>`;  //a scenario missing from an older file shows a dash
       }).join("") +
       `</tbody></table>` +
-      `<p class="muted">Over the 13.24 ha design site. Change against today, green where it is better by the ` +
-      `indicator's own direction, red where worse, plain where there is no better direction (FSI, H/W). ` +
+      `<p class="muted">Over the 13.24 ha design site. Change against today, green where the value goes up, ` +
+      `red where it goes down. A rise is not always better: more shade or longer walks show green too. ` +  //sign, not judgement
       `No overall score: adding these up needs weights, and the weights would pick the winner. ` +
       `Not computed: ${(data.not_computed || []).map((n) => `${n.name} (${n.state})`).join(", ")}. ` +
       `Figures in <code>docs/fig_compare_*.png</code>.</p>`;
