@@ -10,9 +10,8 @@ Component 4.7 · Owner: **Atanas Malinkov** · study area: Bloemhof · feeds `ap
 | Script | What it does | Writes |
 |---|---|---|
 | `fetch_landcover.py` | OSM green, water and roads: the surface BAG cannot see | `data/raw/osm_landcover.geojson`, `osm_roads.geojson` |
-| `ca_landuse.py` | neighbour-rule cellular automaton, land-use programmes, validation | `data/processed/landuse_abm.json` + frame PNGs |
-| `rl_landuse.py` | linear Q-learning agent that re-plans the design site, scored on the same formula | `data/processed/landuse_rl.json` |
-| `rl_dqn.py` | deep Q-network on the same problem, plus random-policy and hill-climbing baselines | `data/processed/landuse_rl_dqn.json` |
+| `ca_landuse.py` | neighbour-rule cellular automaton, land-use programmes | `data/processed/landuse_abm.json` + frame PNGs |
+| `rl_landuse.py` | linear Q-learning agent that re-plans the design site, scored on the same formula, with random-policy and hill-climbing baselines | `data/processed/landuse_rl.json` |
 | `weight_sensitivity.py` | re-scores the stored replicates across the weight simplex | `data/processed/landuse_weight_sensitivity.json` |
 | `score_scenarios.py` | scores the Rhino design options on the same objective | `data/processed/landuse_scenarios.json` |
 
@@ -21,7 +20,6 @@ python analysis/morphology/fetch_landuse.py      # BAG units: needed first
 python analysis/abm_landuse/fetch_landcover.py   # ~30 s
 python analysis/abm_landuse/ca_landuse.py        # ~2 s
 python analysis/abm_landuse/rl_landuse.py   # 400 episodes, the default
-python analysis/abm_landuse/rl_dqn.py   # 400 episodes and hill climbing, ~45 min on CPU, needs PyTorch
 python analysis/abm_landuse/weight_sensitivity.py  # ~2 s, no model re-run; step 0.01, the published lattice
 python analysis/abm_landuse/score_scenarios.py   # ~5 s, after analysis/scenarios/import_rhino.py
 ```
@@ -92,27 +90,6 @@ And "on a street" is read from that continuous road **surface**, not from
 cells whose final state is ROAD. At 25 m most street cells also contain a
 building and are labelled residential, so the discrete state would leave most
 streets out.
-
-## Validation: erase and regrow
-
-A CA run with demand equal to current counts converts nothing, so "the baseline
-did not change" validates **nothing**. The real test: erase a random share of
-developed cells, restore the original demand, see how much of the real map comes
-back.
-
-| erased | agreement | Cohen's κ |
-|---|---|---|
-| 10 % | 90.8 % | **0.698** |
-| 25 % | 84.3 % | 0.532 |
-| 50 % | 77.1 % | 0.365 |
-
-κ discounts the agreement you would get by guessing the commonest class. The
-curve degrades as a neighbourhood-driven model should: with context intact it
-reconstructs well; strip half the city and it cannot know where things were.
-κ ≈ 0.70 at 10 % is in the range land-use CA papers report.
-
-The neighbour-rule CA reconstructs slightly better than the influence-matrix
-CA it replaced (κ 0.668, 0.481 and 0.295 over Bloemhof).
 
 ## Programme results
 
@@ -230,8 +207,7 @@ placement, times 100. The weights follow the TD(0) update with learning rate
 0.02 and discount 0.95, clipped to ±50.
 
 Linear rather than deep **on purpose**: the value here is that the weights can
-be read and argued with. The deep version is `rl_dqn.py`, below, and it does
-not score better.
+be read and argued with.
 
 Its housing term counts the site's housing cells against today's 160.
 
@@ -254,7 +230,7 @@ edge, so the site now covers 189 cells instead of 195. Same site, different
 the housing term nothing in the objective valued homes, and the agent kept 30.
 With the term each lost housing cell costs 1.1 / 160 = 0.007, but turning the
 first cells into shops, amenities and park still gains more on mix and green
-than that. The DQN's best plan keeps 82 and hill climbing 82, about half. A
+than that. Hill climbing keeps 82, about half. A
 higher housing weight would keep more. At
 1.1 this is the trade the objective asks for.
 
@@ -279,23 +255,12 @@ by spreading shops out. Real retail clusters for agglomeration economies, which
 this objective does not represent at all. **The model is right about the
 objective, and the objective is incomplete.**
 
-### A deep Q-network on the same problem
+### Against two baselines
 
-`rl_dqn.py` swaps the agent and keeps everything else: grid, site, objective,
-reward and discount. The network is a fully convolutional CNN over a crop of the
-grid around the site (one-hot land use, site and empty-cell masks, access,
-distance to water, plus broadcast site-wide shares and progress), four 3x3
-convolutions (two dilated) and a 1x1 head giving a Q-value for every cell x use,
-69,940 weights. It picks from all empty cells, not 40 sampled ones. DQN with
-replay, a target network, Double DQN targets, Huber loss and Adam; one update
-every 4 steps; 400 episodes, about 45 min on CPU. Needs PyTorch (CPU), which is
-optional (see `requirements.txt`).
-
-It also reports what the linear script does not: a **random policy** on the same
-problem (30 episodes), the baseline any agent has to beat; one run of the
-**learned policy** with no exploration; and **hill climbing** on the objective
-itself (change one cell's use, keep the change if the objective does not fall),
-the direct optimiser any learner should beat.
+`rl_landuse.py` also runs two baselines on the same problem. A **random policy**
+(30 episodes) is the baseline any agent has to beat. **Hill climbing** on the
+objective itself (change one cell's use, keep the change if the objective does
+not fall) is the direct optimiser any learner should beat.
 
 | site re-plan | objective | housing cells |
 |---|---|---|
@@ -303,30 +268,16 @@ the direct optimiser any learner should beat.
 | random policy, mean | 2.684 | |
 | linear agent, best episode | 2.848 | 76 |
 | linear agent, learned policy | 2.814 | 108 |
-| DQN, best episode | 2.850 | 82 |
-| DQN, learned policy | 2.264 | 22 |
 | hill climbing, 56,400 evaluations, about 8 s | **2.865** | 82 |
 
-**The DQN does not do better.** Its best episode matches the linear agent's
-(2.850 against 2.848), but that is luck while exploring: its learned policy
-scores 2.264, far below a random policy (2.684), and keeps only 22 housing
-cells. Its training curve climbs for about 150 episodes and then breaks down;
-its last 10 % of episodes average 2.432 (`fig_landuse_rl_training.png`). The
-linear agent's 13 weights per use converge on the same experience where the
-CNN's 70,000 do not. We first trained it for 60 episodes (learned policy 2.687,
-level with random) and 120 (2.242); longer training only made it worse. The
-random baseline also puts the linear agent in proportion: on a cleared site a
-random mix of four uses already scores 2.68, so the linear agent's learned
-policy gains 0.13 over it (`fig_landuse_rl_comparison.png`).
+The random baseline puts the agent in proportion: on a cleared site a random mix
+of four uses already scores 2.68, so the agent's learned policy gains 0.13 over
+it (`fig_landuse_rl_training.png`).
 
-Before the housing term we tried the standard fixes on the DQN (choose only the
-use of each cell in turn, no discounting, 5-step returns, 300 episodes). None
-learned a policy better than random. Those runs were dropped with the old
-objective, and so was `--keep-housing`, a hard rule that forced today's 160
-housing cells and under which neither agent learned. The housing term replaces
-that rule.
+A convolutional deep Q-network was tried on the same problem until 2026-11-03.
+Its learned policy scored below the random policy, and it was dropped.
 
-**Hill climbing beats both agents in about 8 seconds.** It reaches 2.865 and keeps
+**Hill climbing beats the agent in about 8 seconds.** It reaches 2.865 and keeps
 2,445 of its 56,400 moves. One evaluation of the objective takes about 0.15 ms,
 so optimising it directly is the right tool here; reinforcement learning would
 only earn its place by learning something that carries over, a policy for

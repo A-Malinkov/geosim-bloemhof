@@ -308,51 +308,6 @@ def export_grid_png(grid, transform, crs, path):
     return [round(west, 7), round(south, 7), round(east, 7), round(north, 7)]
 
 
-#--- validation
-def validate_regrow(grid0, street, cell_m, steps, frac, seed, rng_reps=5):
-    #Can the CA put back what we take away?
-    #
-    #A CA run with demand equal to the current counts converts nothing: there is
-    #no deficit, so "the baseline does not change" validates nothing. The real
-    #test: erase a random `frac` of the developed cells, set demand back to the
-    #original counts, and see how much of the original map the model reproduces.
-    #
-    #Reported as overall agreement and as Cohen's kappa, which discounts the
-    #agreement you would get by chance from guessing the commonest class. Kappa
-    #is the standard measure for this in the CA land-use literature.
-    agrees, kappas = [], []
-    for rep in range(rng_reps):
-        rng = np.random.default_rng(seed + 1000 + rep)
-        g = grid0.copy()
-        dev = np.isin(g, ACTIVE)
-        idx = np.flatnonzero(dev.ravel())
-        erase = rng.choice(idx, size=int(len(idx) * frac), replace=False)
-        g.ravel()[erase] = VACANT  #wipe a random share of the developed cells
-
-        demand = {k: int((grid0 == k).sum()) for k in ACTIVE}  #ask for exactly what was there before
-        rate = growth_rates(g, demand, steps)  #the erased cells come back over the run
-        for _ in range(steps):
-            g = step(g, demand, rng, street, rate)  #the same rules as the programme runs
-
-        cmp_mask = np.isin(grid0, ACTIVE) | np.isin(g, ACTIVE)  #compare only cells developed before or after
-        a, b = grid0[cmp_mask], g[cmp_mask]
-        agree = float((a == b).mean())
-
-        #Cohen's kappa
-        labels = sorted(set(a.tolist()) | set(b.tolist()))
-        n = len(a)
-        pe = sum(((a == l).sum() / n) * ((b == l).sum() / n) for l in labels)  #agreement expected by chance
-        kappa = (agree - pe) / (1 - pe) if pe < 1 else 0.0
-        agrees.append(agree)
-        kappas.append(kappa)
-    return {"erased_fraction": frac,
-            "agreement_mean": round(float(np.mean(agrees)), 4),
-            "agreement_sd": round(float(np.std(agrees)), 4),
-            "kappa_mean": round(float(np.mean(kappas)), 4),
-            "kappa_sd": round(float(np.std(kappas)), 4),
-            "n_runs": rng_reps}
-
-
 #--- main
 PARAMS = {
     "cell": 25.0,  #grid cell, m
@@ -507,20 +462,6 @@ def main():
             "trajectory": traj,
             "steps": [{"t": int(i), "grid": keep_grids[i].tolist()} for i in idx],
         }
-
-    print("\n  === validation: erase and regrow ===")
-    out["validation"] = {}
-    for frac in (0.1, 0.25, 0.5):
-        v = validate_regrow(grid0, street, p["cell"], p["steps"],
-                            frac, p["seed"])
-        out["validation"][f"erase_{int(frac*100)}pct"] = v
-        print(f"     erased {int(frac*100):2d}% of developed cells -> "
-              f"agreement {100*v['agreement_mean']:.1f}%  "
-              f"kappa {v['kappa_mean']:.3f} +/- {v['kappa_sd']:.3f}")
-    out["validation"]["_note"] = (
-        "Erase a random share of developed cells, restore the original demand, "
-        "and measure how much of the original map the CA reproduces. Kappa "
-        "discounts chance agreement from guessing the commonest class.")
 
     ranking = sorted(out["scenarios"].items(),
                      key=lambda kv: -kv[1]["objective_best"])
