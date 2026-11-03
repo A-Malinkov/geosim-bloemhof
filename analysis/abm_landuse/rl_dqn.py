@@ -1,74 +1,32 @@
 #!/usr/bin/env python3
 """
-rl_dqn.py — a convolutional deep Q-network for the same land-use problem.
+rl_dqn.py - a convolutional deep Q-network for the same land-use problem.
 
 Component 4.7, a second RL version. Owner: Atanas Malinkov
 
-rl_landuse.py stays as it is; this is the comparison. Everything that defines
-the PROBLEM is shared with it — grid, design site, objective (with its housing
-term since 2026-10-30), reward, discount and the output schema — so the two runs
-differ only in the agent:
+Grid, site, objective, reward and output are shared with rl_landuse.py, only
+the agent differs. There a linear Q reads 13 features of 40 sampled cells, here
+a CNN reads the grid and gives Q for every cell and use in one pass.
 
-    rl_landuse.py   linear Q-learning on 13 hand-made features of a cell
-                    (neighbour counts, access, ...); 40 sampled cells per step.
-    rl_dqn.py       a CNN reads the grid itself and outputs Q for EVERY cell x
-                    use in one pass; the agent picks from all empty cells.
+The network is fully convolutional over the site plus 6 cells. Channels are
+one-hot land use, site and empty masks, road access, distance to water and the
+site-wide share of each use, since the objective is a site-wide sum. Four 3x3
+convolutions (two dilated, 2 and 4) see about 15 cells, a 1x1 gives Q per use.
+Trained with replay, a target network every 500 steps, Double DQN, Huber loss
+and Adam. Epsilon falls from 1 to 0.05 over the first 70 % of episodes.
 
-THE NETWORK
------------
-Fully convolutional over a crop of the grid around the site (the site plus 6
-cells). Input channels: one-hot land use (8), site mask, empty-cell mask,
-road accessibility, distance to water, and broadcast "global" channels — the
-current share of each placeable use on the site and the fraction of the site
-placed — because the objective is a site-wide sum, not a local one. Four 3x3 convolutions, two of them dilated
-(2 and 4), give each cell a view about 15 cells across; a 1x1 convolution
-outputs one Q-value per placeable use.
+Two results. best_objective is the best training episode, luck included.
+greedy_objective is one run of the learned policy, what it actually learned.
+hill_climb is the baseline, single-cell changes on the objective itself.
 
-TRAINING
---------
-DQN with experience replay, a target network synced every 500 steps, Double
-DQN targets, Huber loss and Adam. Epsilon falls linearly from 1.0 to 0.05 over
-the first 70 % of episodes. Until 2026-10-30 a --keep-housing rule masked
-actions that broke a fixed count of housing cells; the objective's housing term
-replaced it, so every use is allowed at every step.
+    python analysis/abm_landuse/rl_dqn.py   #the published run, 400 episodes, ~45 min
 
-Two numbers come out, and they are different things:
-    best_objective     the best episode seen during training (what
-                       rl_landuse.py reports — it can include lucky
-                       exploration)
-    greedy_objective   one run of the learned policy with no exploration at
-                       the end — what the network actually learned
-
-USAGE
------
-    python analysis/abm_landuse/rl_dqn.py --hill-climb 56400   # the published run, 400 episodes, ~45 min
-
-EXPLORING (2026-10-23; tried, did not help, results no longer published)
----------
-    --action use      fill the site's cells one after another and choose only
-                      the USE of the current cell: 4 actions instead of
-                      ~750 (cell x use); the network gets a current-cell channel
-    --order shuffle   with --action use: a fresh random cell order per episode
-                      (scan = row by row)
-    --gamma 1.0       the reward is the change in the objective, so an
-                      episode's rewards sum to final minus start: no reason
-                      to discount within one fixed-length episode
-    --n-step 5        n-step returns: the reward reaches back 5 placements
-    --hill-climb N    baseline: hill climbing on the objective itself with N
-                      evaluations (single-cell changes), accepting equal moves
-    --out-dir DIR --tag NAME   write somewhere other than data/processed
-
-Needs PyTorch (CPU is enough; not in requirements.txt, see the note there):
+Needs PyTorch, CPU is enough, not in requirements.txt
     pip install --index-url https://download.pytorch.org/whl/cpu torch
 
-OUTPUT
-------
-    data/processed/landuse_rl_dqn.json
-    data/processed/landuse_rl_dqn_best.png
+Writes landuse_rl_dqn.json and landuse_rl_dqn_best.png in data/processed/.
 """
-from __future__ import annotations
 
-import argparse
 import json
 import math
 import pathlib
@@ -79,46 +37,46 @@ from collections import deque
 import numpy as np
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
-from common.project import PROCESSED, STUDY_AREA, design_site_polygon  # noqa: E402
+from common.project import PROCESSED, STUDY_AREA, design_site_polygon  #noqa: E402
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from ca_landuse import (  # noqa: E402
+from ca_landuse import (  #noqa: E402
     CLASSES, COLOURS, FIXED, RESID, VACANT, WATER,
     accessibility, export_grid_png, rasterise,
 )
-from rl_landuse import PLACEABLE, objective, site_score  # noqa: E402
+from rl_landuse import PLACEABLE, objective, site_score  #noqa: E402
 
-MARGIN = 6                      # cells of context around the site in the crop
-N_GLOBAL = len(PLACEABLE) + 1   # site shares, progress
+MARGIN = 6                      #cells of context around the site in the crop
+N_GLOBAL = len(PLACEABLE) + 1   #site shares, progress
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__,
-                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--cell", type=float, default=25.0)
-    ap.add_argument("--episodes", type=int, default=400)  #400 since 2026-10-30, as the linear agent; ~45 min on a CPU
-    ap.add_argument("--gamma", type=float, default=0.95)
-    ap.add_argument("--lr", type=float, default=5e-4)
-    ap.add_argument("--batch", type=int, default=64)
-    ap.add_argument("--buffer", type=int, default=20_000)
-    ap.add_argument("--warmup", type=int, default=500, help="transitions before learning")
-    ap.add_argument("--target-sync", type=int, default=500, help="steps between target syncs")
-    ap.add_argument("--width", type=int, default=48, help="conv channels")
-    ap.add_argument("--train-every", type=int, default=4, help="env steps per gradient step")
-    ap.add_argument("--random-episodes", type=int, default=30,
-                    help="episodes of a purely random policy, as the baseline to beat")
-    ap.add_argument("--threads", type=int, default=0, help="torch threads (0 = default)")
-    ap.add_argument("--seed", type=int, default=0)
-    #exploration options; the defaults reproduce the published runs
-    ap.add_argument("--action", choices=["cell", "use"], default="cell",
-                    help="cell: choose cell x use (published); use: cells in turn, choose the use")
-    ap.add_argument("--order", choices=["scan", "shuffle"], default="shuffle", help="cell order for --action use")
-    ap.add_argument("--n-step", type=int, default=1, help="n-step returns (1 = one-step, published)")
-    ap.add_argument("--eps-decay", type=float, default=0.7, help="share of episodes over which epsilon falls")
-    ap.add_argument("--hill-climb", type=int, default=0, help="evaluations for a hill-climbing baseline (0 = off)")
-    ap.add_argument("--out-dir", default=str(PROCESSED), help="where the JSON and PNG go")
-    ap.add_argument("--tag", default="", help="extra suffix for the output names")
-    args = ap.parse_args()
-    use_mode = args.action == "use"  #4 actions per step instead of every empty cell x use
+PARAMS = {
+    "cell": 25.0,  #grid cell, m
+    "episodes": 400,  #400 since 2026-10-30, as the linear agent, ~45 min on a CPU
+    "gamma": 0.95,
+    "lr": 5e-4,
+    "batch": 64,
+    "buffer": 20_000,
+    "warmup": 500,  #transitions before learning
+    "target_sync": 500,  #steps between target syncs
+    "width": 48,  #conv channels
+    "train_every": 4,  #env steps per gradient step
+    "random_episodes": 30,  #episodes of a purely random policy, the baseline to beat
+    "threads": 0,  #torch threads, 0 is the default
+    "seed": 0,
+    #tried on 2026-10-23, did not help, the defaults are the published run
+    "action": "cell",  #"cell" picks cell and use, "use" fills cells in turn and picks only the use
+    "order": "shuffle",  #cell order for action "use", "scan" is row by row
+    "n_step": 1,  #n-step returns, 1 is one-step
+    "eps_decay": 0.7,  #share of episodes over which epsilon falls
+    "hill_climb": 56400,  #evaluations for the hill-climbing baseline, 0 is off
+    "out_dir": str(PROCESSED),  #where the JSON and PNG go
+    "tag": "",  #extra suffix for the output names
+}
+
+
+def main():
+    p = PARAMS
+    use_mode = p["action"] == "use"  #4 actions per step instead of every empty cell x use
 
     try:
         import torch
@@ -130,17 +88,17 @@ def main() -> int:
     from rasterio.features import rasterize as burn
     from scipy.ndimage import distance_transform_edt
 
-    tag = args.tag  #one run since the housing rule went into the objective
-    out_dir = pathlib.Path(args.out_dir)
+    tag = p["tag"]  #one run since the housing rule went into the objective
+    out_dir = pathlib.Path(p["out_dir"])
     out_dir.mkdir(parents=True, exist_ok=True)
-    torch.manual_seed(args.seed)
-    if args.threads:
-        torch.set_num_threads(args.threads)
-    rng = np.random.default_rng(args.seed)
+    torch.manual_seed(p["seed"])
+    if p["threads"]:
+        torch.set_num_threads(p["threads"])
+    rng = np.random.default_rng(p["seed"])
     t0 = time.time()
 
-    print(f"Deep Q-network land-use allocation — {STUDY_AREA.name}")
-    grid_now, transform, (nx, ny), road_frac = rasterise(args.cell)
+    print(f"Deep Q-network land-use allocation: {STUDY_AREA.name}")
+    grid_now, transform, (nx, ny), road_frac = rasterise(p["cell"])
     site = burn([(design_site_polygon(), 1)], out_shape=grid_now.shape,
                 transform=transform).astype(bool)
     grid0 = grid_now.copy()
@@ -159,9 +117,9 @@ def main() -> int:
     dw = distance_transform_edt(grid0 != WATER).astype("float32")
     dist_water = np.clip(dw / 20.0, 0, 1)
     homes_today = int((grid_now[site] == RESID).sum())  #housing cells on the site today, the housing term's reference
-    base_obj = objective(grid_now, args.cell, site, homes_today)
-    base_score = site_score(grid_now, args.cell, site)
-    cleared_obj = objective(grid0, args.cell, site, homes_today)
+    base_obj = objective(grid_now, p["cell"], site, homes_today)
+    base_score = site_score(grid_now, p["cell"], site)
+    cleared_obj = objective(grid0, p["cell"], site, homes_today)
     print(f"  objective of the site today: {base_obj:.4f} ({homes_today} housing cells)")
 
     RES_I = PLACEABLE.index(RESID)
@@ -169,20 +127,20 @@ def main() -> int:
     static = torch.stack([site_c, torch.tensor(acc[crop]), torch.tensor(dist_water[crop])])  #inputs that never change during an episode
     placeable_t = torch.tensor(PLACEABLE)
 
-    def allowed(n_resid: int, n_free: int) -> np.ndarray:
+    def allowed(n_resid, n_free):
         #every use is allowed at every step; the mask stays because the replay format carries it
         return np.ones(len(PLACEABLE), dtype=bool)
 
-    def glob(counts: np.ndarray, n_free: int, n_resid: int) -> np.ndarray:
-        """Site-wide context: shares of each placeable use, progress."""
+    def glob(counts, n_free, n_resid):
+        #Site-wide context: shares of each placeable use, progress.
         placed = n_new - n_free
         shares = counts / max(1, n_new)
         return np.concatenate([shares, [placed / n_new]]).astype("float32")
 
     #stack every input channel: one-hot land use, empty mask, static layers, site-wide numbers
-    def inputs(gc: torch.Tensor, fc: torch.Tensor, gl: torch.Tensor, cur=None) -> torch.Tensor:
-        """Batch of network inputs from cropped grids (B,H,W), free masks, globals;
-        with --action use also the current cell (B,) as a flat crop index, -1 for none."""
+    def inputs(gc, fc, gl, cur=None):
+        #Batch of network inputs from cropped grids (B,H,W), free masks, globals;
+        #with --action use also the current cell (B,) as a flat crop index, -1 for none.
         B = gc.shape[0]
         onehot = torch.nn.functional.one_hot(gc.long(), len(CLASSES)).permute(0, 3, 1, 2).float()
         parts = [onehot, fc[:, None].float(), static[None].expand(B, -1, -1, -1),
@@ -195,7 +153,7 @@ def main() -> int:
         return torch.cat(parts, dim=1)
 
     c_in = len(CLASSES) + 1 + 3 + N_GLOBAL + int(use_mode)  #8 one-hot + empty + 3 static + 6 site-wide (+ current cell)
-    w = args.width
+    w = p["width"]
 
     #fully convolutional: the same small network looks at every cell, dilations widen its view
     def make_net():
@@ -208,16 +166,16 @@ def main() -> int:
 
     net, tgt = make_net(), make_net()
     tgt.load_state_dict(net.state_dict())
-    opt = torch.optim.Adam(net.parameters(), lr=args.lr)
-    n_params = sum(p.numel() for p in net.parameters())
+    opt = torch.optim.Adam(net.parameters(), lr=p["lr"])
+    n_params = sum(t.numel() for t in net.parameters())
     print(f"  CNN: {n_params:,} parameters, {c_in} input channels; "
-          f"{args.episodes} episodes, replay {args.buffer}, batch {args.batch}")
+          f"{p['episodes']} episodes, replay {p['buffer']}, batch {p['batch']}")
 
-    # replay: compact states (cropped grid + free mask + globals), rebuilt on sampling
-    buf = deque(maxlen=args.buffer)  #replay memory, oldest transitions fall out first
+    #replay: compact states (cropped grid + free mask + globals), rebuilt on sampling
+    buf = deque(maxlen=p["buffer"])  #replay memory, oldest transitions fall out first
 
-    def masked_q(q: torch.Tensor, free: torch.Tensor, ok: torch.Tensor) -> torch.Tensor:
-        """q (B,4,H,W) -> flat (B, 4*H*W) with invalid actions at -inf."""
+    def masked_q(q, free, ok):
+        #q (B,4,H,W) -> flat (B, 4*H*W) with invalid actions at -inf.
         valid = free[:, None] & ok[:, :, None, None]
         return q.masked_fill(~valid, float("-inf")).flatten(1)
 
@@ -263,7 +221,7 @@ def main() -> int:
         counts = np.zeros(len(PLACEABLE))
         n_resid = 0
         prev = cleared_obj
-        order = (cells0[rng.permutation(len(cells0))] if args.order == "shuffle" else cells0) if use_mode else None
+        order = (cells0[rng.permutation(len(cells0))] if p["order"] == "shuffle" else cells0) if use_mode else None
         pending = deque()  #n-step window: transitions waiting for their later rewards
         for t in range(n_new):
             n_free = int(free.sum())
@@ -279,24 +237,24 @@ def main() -> int:
             free[r_, c_] = False
             counts[ai] += 1
             n_resid += PLACEABLE[ai] == RESID
-            new = objective(g, args.cell, site, homes_today)
+            new = objective(g, p["cell"], site, homes_today)
             reward = (new - prev) * 100.0  #same reward as rl_landuse.py: change in the objective, times 100
             prev = new
             if not learn:
                 continue
             done = not free.any()  #last placement of the episode: no bootstrap after it
-            if use_mode or args.n_step > 1:
+            if use_mode or p["n_step"] > 1:
                 nxt_cur = to_crop(order[t + 1]) if use_mode and not done else -1  #the cell decided next
                 pending.append([s_grid, s_free, s_glob, ai, (r_ - r0) * W + (c_ - c0), reward,
                                 g[crop].copy(), free[crop].copy(), glob(counts, n_free - 1, n_resid),
                                 allowed(n_resid, n_free - 1), done, 1.0, nxt_cur])
                 #once n rewards are in, or the episode ends, the oldest pending transition is complete
-                while pending and (len(pending) >= args.n_step or done):
+                while pending and (len(pending) >= p["n_step"] or done):
                     first = pending[0]
                     R, gp = 0.0, 1.0
                     for tr in pending:  #discounted sum of the next n rewards
                         R += gp * tr[5]
-                        gp *= args.gamma
+                        gp *= p["gamma"]
                     last = pending[-1]
                     buf.append((first[0], first[1], first[2], first[3], first[4], R,
                                 last[6], last[7], last[8], last[9], last[10], gp, last[12]))
@@ -309,16 +267,16 @@ def main() -> int:
                             glob(counts, n_free - 1, n_resid),
                             allowed(n_resid, n_free - 1), done))
             steps += 1
-            if len(buf) >= args.warmup and steps % args.train_every == 0:  #learn every few steps once the buffer has enough
+            if len(buf) >= p["warmup"] and steps % p["train_every"] == 0:  #learn every few steps once the buffer has enough
                 train_step()
-            if steps % args.target_sync == 0:  #refresh the target network
+            if steps % p["target_sync"] == 0:  #refresh the target network
                 tgt.load_state_dict(net.state_dict())
-        return objective(g, args.cell, site, homes_today), g
+        return objective(g, p["cell"], site, homes_today), g
 
     #one gradient step on a random minibatch from the replay memory
     def train_step():
-        batch = [buf[i] for i in rng.integers(len(buf), size=args.batch)]
-        if use_mode or args.n_step > 1:
+        batch = [buf[i] for i in rng.integers(len(buf), size=p["batch"])]
+        if use_mode or p["n_step"] > 1:
             return train_step_n(batch)
         sg, sf, sgl, a, cell, r, ng, nf, ngl, nok, d = zip(*batch)
         sg = torch.tensor(np.stack(sg)); sf = torch.tensor(np.stack(sf))
@@ -332,10 +290,10 @@ def main() -> int:
         q_sa = q.gather(1, (a * H * W + cell)[:, None]).squeeze(1)  #Q of the action actually taken
         with torch.no_grad():
             xn = inputs(ng, nf, ngl)
-            best = masked_q(net(xn), nf, nok).argmax(1, keepdim=True)     # Double DQN
+            best = masked_q(net(xn), nf, nok).argmax(1, keepdim=True)     #Double DQN
             q_next = tgt(xn).flatten(1).gather(1, best).squeeze(1)  #...valued by the target network (Double DQN)
             q_next = torch.where(torch.isfinite(q_next), q_next, torch.zeros_like(q_next))  #no valid next action -> 0
-            target = r + args.gamma * (1 - d) * q_next  #TD target, cut at the end of the episode
+            target = r + p["gamma"] * (1 - d) * q_next  #TD target, cut at the end of the episode
         loss = nn.functional.smooth_l1_loss(q_sa, target)  #Huber loss
         opt.zero_grad()
         loss.backward()
@@ -373,20 +331,20 @@ def main() -> int:
 
     #baseline: hill climbing on the objective itself, its own random generator
     def hill_climb(budget):
-        hr = np.random.default_rng(args.seed + 1)
+        hr = np.random.default_rng(p["seed"] + 1)
         cells = [tuple(c) for c in cells0]
         g = grid0.copy()
         uses = hr.choice(len(PLACEABLE), size=len(cells))  #a random start
         for (r_, c_), u in zip(cells, uses):
             g[r_, c_] = PLACEABLE[u]
-        cur = objective(g, args.cell, site, homes_today)
+        cur = objective(g, p["cell"], site, homes_today)
         best, best_g, evals, accepted = cur, g.copy(), 1, 0
         while evals < budget:
             i = int(hr.integers(len(cells)))
             r_, c_ = cells[i]
             old = g[r_, c_]
             g[r_, c_] = hr.choice([u for u in PLACEABLE if u != old])  #one cell to another use
-            new = objective(g, args.cell, site, homes_today); evals += 1
+            new = objective(g, p["cell"], site, homes_today); evals += 1
             if new >= cur:  #accept equal moves too, so it can walk along plateaus
                 cur, accepted = new, accepted + 1
             else:
@@ -396,32 +354,32 @@ def main() -> int:
         return best, best_g, evals, accepted
 
     steps = 0
-    # the baseline to beat: the same problem with every action random
-    rand = [run_episode(1.0, learn=False)[0] for _ in range(args.random_episodes)]  #random policy: eps 1, no learning
+    #the baseline to beat: the same problem with every action random
+    rand = [run_episode(1.0, learn=False)[0] for _ in range(p["random_episodes"])]  #random policy: eps 1, no learning
     print(f"  random policy over {len(rand)} episodes: mean {np.mean(rand):.4f}, "
           f"best {np.max(rand):.4f}")
     curve, best_obj, best_grid = [], -1e9, None
     hc = None
-    if args.hill_climb:
+    if p["hill_climb"]:
         th = time.time()
-        hb, hg, he, ha = hill_climb(args.hill_climb)
+        hb, hg, he, ha = hill_climb(p["hill_climb"])
         hc = {"evaluations": he, "accepted_moves": ha, "best_objective": round(hb, 4),
-              "score": site_score(hg, args.cell, site), "seconds": round(time.time() - th, 1)}
+              "score": site_score(hg, p["cell"], site), "seconds": round(time.time() - th, 1)}
         print(f"  hill climbing, {he} evaluations: best {hb:.4f} ({time.time() - th:.0f} s)")
-    decay = max(1, int(args.eps_decay * args.episodes))
-    for ep in range(args.episodes):
+    decay = max(1, int(p["eps_decay"] * p["episodes"]))
+    for ep in range(p["episodes"]):
         eps = max(0.05, 1.0 - 0.95 * ep / decay)  #linear from 1.0 to 0.05 over the first eps_decay share of episodes
         final, g = run_episode(eps)
         curve.append(round(final, 4))
         if final > best_obj:
             best_obj, best_grid = final, g.copy()
-        if ep % max(1, args.episodes // 10) == 0 or ep == args.episodes - 1:
-            print(f"     episode {ep+1:4}/{args.episodes}  eps {eps:.2f}  "
+        if ep % max(1, p["episodes"] // 10) == 0 or ep == p["episodes"] - 1:
+            print(f"     episode {ep+1:4}/{p['episodes']}  eps {eps:.2f}  "
                   f"objective {final:.4f}  best {best_obj:.4f}  ({time.time()-t0:.0f} s)")
 
     greedy_obj, greedy_grid = run_episode(0.0, learn=False)  #what the network learned: no exploration
-    score = site_score(best_grid, args.cell, site)
-    greedy_score = site_score(greedy_grid, args.cell, site)
+    score = site_score(best_grid, p["cell"], site)
+    greedy_score = site_score(greedy_grid, p["cell"], site)
     first = float(np.mean(curve[:max(1, len(curve) // 10)]))
     last = float(np.mean(curve[-max(1, len(curve) // 10):]))
     secs = time.time() - t0
@@ -433,16 +391,16 @@ def main() -> int:
         "network": {"layers": "conv3x3, conv3x3 d2, conv3x3 d4, conv3x3 (ReLU), conv1x1",
                     "width": w, "input_channels": c_in, "parameters": n_params,
                     "crop_cells": [int(H), int(W)]},
-        "cell_size_m": args.cell,
+        "cell_size_m": p["cell"],
         "classes": CLASSES,
         "placeable_classes": [CLASSES[k] for k in PLACEABLE],
-        "parameters": {"episodes": args.episodes, "gamma": args.gamma, "lr": args.lr,
-                       "batch": args.batch, "buffer": args.buffer, "warmup": args.warmup,
-                       "target_sync": args.target_sync, "train_every": args.train_every,
+        "parameters": {"episodes": p["episodes"], "gamma": p["gamma"], "lr": p["lr"],
+                       "batch": p["batch"], "buffer": p["buffer"], "warmup": p["warmup"],
+                       "target_sync": p["target_sync"], "train_every": p["train_every"],
                        "eps_start": 1.0, "eps_end": 0.05,
-                       "action": args.action, "order": args.order if use_mode else None,
-                       "n_step": args.n_step, "eps_decay": args.eps_decay,
-                       "seed": args.seed, "programme_cells": n_new},
+                       "action": p["action"], "order": p["order"] if use_mode else None,
+                       "n_step": p["n_step"], "eps_decay": p["eps_decay"],
+                       "seed": p["seed"], "programme_cells": n_new},
         "homes_today_cells": homes_today,  #the housing term's reference
         "scope": "design_site",
         "scope_note": "Same problem as landuse_rl.json (site, objective, reward); "

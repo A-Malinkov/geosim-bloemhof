@@ -1,52 +1,27 @@
 #!/usr/bin/env python3
 """
-compare_scenarios.py — baseline, scenario A and scenario B side by side, on the
+compare_scenarios.py - today, A, B and the final design side by side on the
 design site (component 4.9).
 
-Built 2026-10-27. Reads what the other components already wrote to
-data/processed/ and the SVF and sun-hours rasters, so run those first.
+Built 2026-10-27. Reads what the other components wrote to data/processed/ and
+the SVF and sun-hours rasters, so run those first. The rasters are gitignored,
+sky_view_factor.py and shadows.py rebuild them.
 
-USAGE
------
     python analysis/comparison/compare_scenarios.py
 
-The rasters (svf*.tif, shadow_hours*.tif) are gitignored. Rebuild them with
-sky_view_factor.py and shadows.py, per scenario and day (see their docstrings).
+One value per scenario and indicator, over the design site (13.24 ha) unless
+the label says otherwise, with its source file and which way is better. Some
+have no better way (density, height, summer sun) and are shown uncoloured.
+There is no overall score on purpose, the weights would pick the winner. Wind,
+noise and demographics are listed as not computed.
 
-WHAT IT DOES
-------------
-  indicators  one value per scenario for each indicator, every one over the
-              design site (13.24 ha) unless the label says otherwise, each with
-              its source file and the direction that counts as better. Some
-              have no better direction (density, height, summer sun): they are
-              context, shown but not coloured.
-  no ranking  there is deliberately no overall score. Adding the indicators up
-              needs weights, and the weights would decide the winner (the
-              land-use sweep in analysis/abm_landuse/ showed how much). The
-              figures show each indicator and the trade-offs instead.
-  not run     wind and noise for the scenarios, and CBS demographics, have no
-              results. They are listed as not computed, not left out.
+Writes data/processed/scenario_comparison.json and six docs/fig_compare_*.png
+(scorecard, tradeoff, distributions, difference_maps, walking, canyon).
 
-OUTPUTS
--------
-  data/processed/scenario_comparison.json   indicator values keyed baseline / scenario_a / scenario_b
-  docs/fig_compare_scorecard.png            every indicator, coloured better / worse than today
-  docs/fig_compare_tradeoff.png             homes against shade and against walking distance
-  docs/fig_compare_distributions.png        sun hours (3 days) and SVF on the site's open ground
-  docs/fig_compare_difference_maps.png      scenario minus today, sun hours and SVF, maps
-  docs/fig_compare_walking.png              walk to each destination type
-  docs/fig_compare_canyon.png               street H/W classes by street length
-
-WHAT IT CANNOT TELL YOU
------------------------
-* Means over open ground cover different ground in each scenario, because
-  demolition opens up land and new blocks cover it. Shares are given beside them.
-* Dwellings in the scenarios are an estimate (road_network.py), and floor area
-  uses one storey rule for every building (height / 3 m, rounded).
-* No wind, noise or social indicator yet, which are the ones a jury asks about
-  first for towers and main-road frontages.
+Limits. Means over open ground cover different ground per scenario, so shares
+go beside them. Scenario dwellings are an estimate and floor area uses one
+storey rule (height / 3 m). No wind, noise or social indicator yet.
 """
-from __future__ import annotations
 
 import json
 import pathlib
@@ -58,7 +33,7 @@ HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 sys.path.insert(0, str(HERE.parent / "scenarios"))
 sys.path.insert(0, str(HERE.parent / "morphology"))
-from common.project import PROCESSED, RAW, ROOT, design_site_polygon, to_rd  # noqa: E402
+from common.project import PROCESSED, RAW, ROOT, design_site_polygon, to_rd  #noqa: E402
 
 DOCS = ROOT / "docs"
 SCEN = ["baseline", "scenario_a", "scenario_b", "final"]  #final: the Rhino Final Model, 2026-10-28
@@ -90,7 +65,7 @@ def sfx(sc):
     return "" if sc == "baseline" else f"_{sc}"
 
 
-# ------------------------------------------------------------------ indicators
+#--- indicators
 def programme(sc):
     #what stands on the site: buildings, floor area, dwellings
     import geopandas as gpd
@@ -202,7 +177,7 @@ def green_total(sc):
 
 
 def mobility(sc):
-    #walking to everyday destinations, from road_network.py and optimise_links.py
+    #walking to everyday destinations, from road_network.py and place_amenities.py
     rm = J("road_metrics.json")[sc]
     a, g = rm["areas"]["design_site"], rm["site_grid"]
     out = {"walk_dwellings_m": a["mean_of_types_m"], "walk_grid_m": g["mean_of_types_m"],
@@ -211,11 +186,6 @@ def mobility(sc):
         out[f"walk_{t}_m"] = a[t]["mean_m"]
         out[f"walk_grid_{t}_m"] = g[t]["mean_m"]
         out[f"near5_{t}"] = a[t]["within_5min_frac"]
-    links = (J("road_links.json") or {}).get(sc) or {}
-    if links.get("steps"):
-        out["links_n"] = len(links["steps"])
-        out["links_m"] = round(sum(s["length_m"] for s in links["steps"]))
-        out["walk_grid_after_links_m"] = links["steps"][-1]["site_grid_m"]
     out["walk_grid_network_m"] = g["mean_of_types_m"]  #network only: the site's own amenities left out in every scenario
     ap = J("amenity_placement.json") or {}
     am = ap.get(sc) or {}
@@ -304,7 +274,6 @@ INDICATORS = [
     ("walk_dwellings_amen_m", "Walking", "Residents, with placed amenities", " m", "lower", 0, "amenity_placement.json"),
     ("walk_grid_amen_m", "Walking", "Site grid, with placed amenities", " m", "lower", 0, "amenity_placement.json"),
     ("walk_grid_network_m", "Walking", "Site grid, network only", " m", "lower", 0, "road_metrics.json"),
-    ("walk_grid_after_links_m", "Walking", "Site grid, amenities + optimiser footpaths", " m", "lower", 0, "road_links.json"),  #the optimiser walks to the placed amenities since 2026-10-27
     ("intersections_km2", "Walking", "Intersection density", " /km²", "higher", 0, "road_metrics.json"),
     ("lu_objective", "Land use", "Land-use objective J", "", "higher", 3, "landuse_scenarios.json"),
     ("lu_mix", "Land use", "Land-use mix", "", "higher", 3, "landuse_scenarios.json"),
@@ -316,7 +285,7 @@ INDICATORS = [
 NOT_RUN = [("Wind", "pedestrian wind comfort", "OpenFOAM cases set up, not run"),
            ("Noise", "road-traffic noise, Lden", "baseline only, scenarios not run"),
            ("CBS", "socio-demographics", "not started")]
-NOT_TODAY = {"green_area_m2", "water_area_m2", "walk_grid_after_links_m",  #no today value: proposed planting, optimiser
+NOT_TODAY = {"green_area_m2", "water_area_m2",  #no today value: proposed planting
              "lu_objective_amen", "lu_mix_amen"}  #and the land use with placed amenities
 PERCENT = {"sun_under2h_0320", "sun_under2h_1221", "lu_green_share", "flood_high"}
 
@@ -333,14 +302,16 @@ def collect():
     return out
 
 
-# --------------------------------------------------------------------- rasters
-def site_open_ground(sc, res, keep_pad):
+#--- rasters
+def site_open_ground(sc, res, keep_pad, trees=True):
     #open ground on the design site, on the grid of the published raster: the scripts' own rule, re-applied
     from rasterio.features import geometry_mask
     from scenario_world import burn_into_rasters
-    from sky_view_factor import load_raster
+    from sky_view_factor import building_mask, load_raster
     dsm, transform, _ = load_raster(RAW / "ahn_dsm_05m.tif", res)
     dtm, _, _ = load_raster(RAW / "ahn_dtm_05m.tif", res)
+    if not trees:  #the SVF leaves trees out: outside the footprints the surface is the ground, as in sky_view_factor.py
+        dsm = np.where(building_mask(dsm.shape, transform), dsm, dtm)
     dsm, dtm = burn_into_rasters(dsm, dtm, transform, sc)  #demolition and new blocks, no-op for baseline
     nd = dsm - dtm
     og = np.isfinite(nd) & (nd < 2.0)  #same open-ground rule as both scripts
@@ -358,7 +329,7 @@ def site_values(c):
     for sc in SCEN:
         with rasterio.open(PROCESSED / c["tif"].format(s=sfx(sc))) as src:
             a = src.read(1)
-        m, tc = site_open_ground(sc, c["res"], c["keep_pad"])
+        m, tc = site_open_ground(sc, c["res"], c["keep_pad"], c.get("trees", lambda sc: True)(sc))
         assert m.shape == a.shape, (c["tif"], sc, m.shape, a.shape)
         v = a[m & np.isfinite(a)]
         pub = c["published"](sc)
@@ -370,6 +341,7 @@ def site_values(c):
 
 RASTERS = {  #raster -> how to read it, and the published mean it must reproduce
     "svf": {"tif": "svf{s}.tif", "res": 0.5, "keep_pad": 0,
+            "trees": lambda sc: J(f"svf_summary{sfx(sc)}.json")["parameters"].get("trees", True),  #False since 2026-11-02
             "published": lambda sc: J(f"svf_summary{sfx(sc)}.json")["design_site"]["open_ground"]["mean"]},
     **{f"sun{dsfx}": {"tif": "shadow_hours{s}" + dsfx + ".tif", "res": 1.0, "keep_pad": 50,
                       "published": (lambda dsfx: lambda sc: J(f"shadow_summary{sfx(sc)}{dsfx}.json")
@@ -378,7 +350,7 @@ RASTERS = {  #raster -> how to read it, and the published mean it must reproduce
 }
 
 
-# ---------------------------------------------------------------------- figures
+#--- figures
 def style():
     #one light style for every figure, sized to read on a slide
     import matplotlib as mpl
@@ -400,7 +372,7 @@ def save(fig, name):
 def fmt(v, key, unit, d):
     #a value as the scorecard prints it
     if v is None:
-        return "—"
+        return "-"
     if key in PERCENT:
         return f"{100 * v:.0f} %"
     return f"{v:,.{d}f}{unit}"
@@ -629,8 +601,8 @@ FIGURES = [  #one dict per figure: the function and its control parameters
 ]
 
 
-# ------------------------------------------------------------------------- run
-def main() -> int:
+#--- run
+def main():
     print("Scenario comparison, design site")
     data = collect()
     out = {

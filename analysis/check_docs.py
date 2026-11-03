@@ -1,46 +1,28 @@
 #!/usr/bin/env python3
 """
-check_docs.py — do the numbers in the READMEs still match the outputs?
+check_docs.py - do the numbers in the READMEs still match the outputs?
 
-The READMEs quote results directly: MAE tables, kappa values, GSI/FSI, Shannon
-indices, scenario objectives. Nothing forces them to agree with the JSON in
-data/processed/, so **re-running any analysis silently invalidates them**.
+The READMEs quote results (MAE, kappa, GSI, FSI, objectives) and nothing ties
+them to data/processed/, so every re-run can leave them stale. It happened
+three times here, the KNMI README after a retrain (22 of 27 MAE values), the
+ABM README after a rasteriser fix and the top README with an old forecast.
+Reading caught none of them.
 
-This has already happened three times in this project:
+    python analysis/check_docs.py          #report
+    python analysis/check_docs.py -q       #exit code only
 
-  * the KNMI README was stale in 22 of 27 MAE values after a retrain;
-  * the ABM README was stale throughout after a fix to the road rasteriser;
-  * the top-level README quoted forecast numbers from a superseded run.
+Exit 0 when everything matches, 1 when something is stale.
 
-None was caught by reading. All were caught by a check like this one.
-
-Run it after re-running anything, and before handing the report to anyone.
-
-    python analysis/check_docs.py          # report
-    python analysis/check_docs.py -q       # exit code only, for a pre-commit hook
-
-Exit code 0 = everything matches, 1 = something is stale.
-
-WHAT IT DOES NOT DO
--------------------
-Each check names the LINE that should quote the value, by regex, and requires
-the value to appear there. Checking only that the number occurs somewhere in the
-file is not enough: the first version of this script did that and passed happily
-while a headline figure was wrong, because the same number also appeared in a
-status table further down.
-
-It still cannot tell you the surrounding sentence is true. A retrain can falsify
-"the LSTM never wins" while every digit looks plausible, so the narrative claims
-are asserted separately at the bottom.
-
-If a check reports NO ANCHOR, the document was restructured and the check is
-dead — fix the pattern rather than ignoring it.
+Each check names the line that should quote a value, by regex. Finding the
+number anywhere in the file is not enough, the first version passed while a
+headline was wrong because the number also sat in a table below. Sentences
+like "the LSTM wins only one forecast" are asserted separately at the bottom.
+NO ANCHOR means the document changed and the pattern needs fixing.
 """
-from __future__ import annotations
 
-import argparse
 import json
 import pathlib
+import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 P = ROOT / "data" / "processed"
@@ -57,18 +39,20 @@ def load(name):
     return None if d.get("_status") == "not_computed_yet" else d
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__,
-                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("-q", "--quiet", action="store_true")
-    args = ap.parse_args()
+PARAMS = {
+    "quiet": "-q" in sys.argv or "--quiet" in sys.argv,  #exit code only
+}
+
+
+def main():
+    p = PARAMS
 
     svf, veg = load("svf_summary.json"), load("vegetation_summary.json")
     den, lu = load("density_summary.json"), load("landuse_summary.json")
     ca, rl, fc = load("landuse_abm.json"), load("landuse_rl.json"), load("knmi_forecast.json")
     ws = load("landuse_weight_sensitivity.json")
     dqn = load("landuse_rl_dqn.json")
-    rm, rlinks = load("road_metrics.json"), load("road_links.json")  #4.8 road network
+    rm = load("road_metrics.json")  #4.8 road network
     edge = load("edge_access.json")  #4.8 distance to the edge streets
 
     MAIN = ROOT / "README.md"
@@ -77,13 +61,13 @@ def main() -> int:
     KNMI = ROOT / "analysis/knmi/README.md"
     ROADS = ROOT / "analysis/roads/README.md"  #4.8 road network
 
-    # (label, regex identifying the line(s) that quote it, expected value, files)
+    #(label, regex identifying the line(s) that quote it, expected value, files)
     #
-    # The value must appear on EVERY line matching the pattern. An earlier
-    # version only checked the value appeared *somewhere* in the file, which
-    # passed happily when one of two quotations went stale — the number was
-    # still present, just not where it had been changed. Match the context.
-    checks: list[tuple[str, str, str, list[pathlib.Path]]] = []
+    #The value must appear on EVERY line matching the pattern. An earlier
+    #version only checked the value appeared *somewhere* in the file, which
+    #passed happily when one of two quotations went stale: the number was
+    #still present, just not where it had been changed. Match the context.
+    checks = []
 
     if svf:
         g = svf["combined"]["open_ground"]
@@ -93,14 +77,8 @@ def main() -> int:
             ("SVF in the status table", r"\| 4\.3 \|", f"{g['mean']:.3f}", [MAIN]),
         ]
     if veg:
-        e = veg.get("svf_canopy_effect") or {}
         checks += [("trees combined", r"Trees · per hectare", f"{veg['combined']['n_trees']:,}", [MAIN]),
                    ("trees combined", r"\*\*trees\*\* \|", f"{veg['combined']['n_trees']:,}", [MORPH])]
-        if e:
-            checks += [
-                ("canopy open", r"under a tree crown vs", f"{e['svf_open']:.2f}", [MAIN]),
-                ("canopy under", r"under a tree crown vs", f"{e['svf_under_canopy']:.2f}", [MAIN]),
-            ]
     if den:
         b = den["combined"]
         checks += [
@@ -166,9 +144,9 @@ def main() -> int:
         b = 100 * ws["win_share"]["green"]
         a = 100 * ws["win_share"]["compact"]
         checks += [
-            # anchored on the two-column weight-space row only: the same row
-            # label also opens the scenario results table, and matching both
-            # would let the value sit on either line and still pass
+            #anchored on the two-column weight-space row only: the same row
+            #label also opens the scenario results table, and matching both
+            #would let the value sit on either line and still pass
             ("weight sweep: green share",
              r"^\| green \*\*★\*\* \| \d+ % \|$", f"{b:.0f} %", [ABM]),
             ("weight sweep: compact share",
@@ -190,26 +168,35 @@ def main() -> int:
                 ("spacematrix point count", r"per-cell points in", f"{len(sm)}", [MORPH]),
                 ("grid FSI Bloemhof", r"^\| Bloemhof \|", f"{gm['Bloemhof']:.2f}", [MORPH]),
             ]
+    dsite = load("density_site.json")  #density on the design site per scenario, density_site.py
+    if dsite:
+        for sc, label in (("baseline", "today"), ("scenario_a", "scenario_a"),
+                          ("scenario_b", "scenario_b"), ("final", "final")):
+            if sc in dsite:
+                d = dsite[sc]
+                checks.append((f"site density {sc}", rf"^\| {label} \| ",
+                               f"| {d['gsi']:.2f} | {d['fsi']:.2f} | {d['layers']:.1f} |", [MORPH]))
     if fc:
         t = fc["results"]["temperature_C"]["horizons"]
         w = fc["results"]["wind_speed_ms"]["horizons"]
-        cw = fc["results"]["wind_speed_ms"]["conditions"]["by_wind_regime"]
         bt, bw = t["+6h"]["_best"], w["+6h"]["_best"]
         checks += [
             ("temp +6h headline", r"Weather forecast \(temperature", f"{t['+6h'][bt]['mae']:.2f}", [MAIN]),
             ("temp +6h skill", r"Weather forecast \(temperature",
              f"{100*t['+6h'][bt]['skill_vs_persistence']:.0f} %", [MAIN]),
             ("wind +6h headline", r"Weather forecast \(wind", f"{w['+6h'][bw]['mae']:.2f}", [MAIN]),
-            ("strong-wind bias", r"Weather forecast \(wind",
-             f"{abs(cw['strong (>=8 m/s)']['bias']):.1f}", [MAIN]),
         ]
-        # the per-model MAE tables: one row per horizon, every model on it
+        #the per-model MAE tables: one row per horizon, every model on it
         for hz in ("+1h", "+6h", "+24h"):
             for res, what in ((t, "temperature"), (w, "wind")):
-                for model in ("persistence", "ridge", "gradient_boosting", "lstm"):
+                for model in ("persistence", "daily_naive", "gradient_boosting", "lstm"):
                     if model in res[hz]:
                         checks.append((f"{what} {hz} {model}", rf"^\| \{hz} \|",
                                        f"{res[hz][model]['mae']:.3f}", [KNMI]))
+                #the settings the validation year chose, one row per forecast
+                if "settings" in res[hz].get("lstm", {}):
+                    checks.append((f"{what} {hz} LSTM epochs kept", rf"^\| {what} \{hz} \|",
+                                   f"| {res[hz]['lstm']['settings']['epochs']} |", [KNMI]))
 
     if rm and rm.get("scenario_a", {}).get("areas"):
         #road network: the site comparison and the network table, both scenarios
@@ -243,26 +230,6 @@ def main() -> int:
         if rm["scenario_a"].get("network"):
             checks.append(("roads: connectors scenario_a", r"^street end gets both\. In all, \d+ connector",
                            f"{rm['scenario_a']['network']['connectors']} connector pieces", [ROADS]))
-    for sc in ("scenario_a", "scenario_b"):
-        if not (rlinks and rlinks.get(sc, {}).get("steps")):
-            continue
-        L = rlinks[sc]
-        head = r"^\d+ candidates\. J starts"
-        checks += [
-            (f"roads: {sc} candidates", head, f"{L['n_candidates']} candidates", [ROADS]),
-            (f"roads: {sc} J before", head, f"{L['J_before_m']:.2f} m", [ROADS]),
-            (f"roads: {sc} J ceiling", head, f"{L['J_ceiling_m']:.2f} m", [ROADS]),
-        ]
-        for x in L["steps"]:  #one row per link; the two tables share row anchors, so the value must be in one of them
-            checks.append((f"roads: {sc} link {x['rank']} J", rf"^\| {x['rank']} \| \d+ m \|", f"{x['J_m']:.2f} m", [ROADS]))
-    if rlinks and rlinks.get("scenario_a", {}).get("steps"):
-        st = rlinks["scenario_a"]["steps"]
-        checks += [
-            ("roads: A two links length", r"^\*\*Two links, \d+ m", f"{sum(x['length_m'] for x in st[:2]):.0f} m", [ROADS]),
-            ("roads: A two links share", r"^\*\*Two links, \d+ m", f"{100 * st[1]['share_of_ceiling']:.0f} %", [ROADS]),
-            ("roads: A all candidates", r"^give\.\*\*|^\*\*Two links, \d+ m", f"all {rlinks['scenario_a']['n_candidates']} candidates", [ROADS]),
-        ]
-
     if edge and edge.get("baseline", {}).get("dwellings"):
         #distance to the edge streets: the baseline table and the sentences quoting it
         E = edge["baseline"]
@@ -402,30 +369,31 @@ def main() -> int:
         for f in files:
             hits = [ln for ln in lines_of[f] if re.search(pattern, ln)]
             if not hits:
-                # the doc was restructured out from under the check
+                #the doc was restructured out from under the check
                 no_anchor.append((label, pattern, f.relative_to(ROOT)))
                 continue
             if not any(value in ln for ln in hits):
                 stale.append((label, value, f.relative_to(ROOT), hits[0].strip()[:78]))
 
-    # --- narrative claims: a retrain can falsify a sentence, not just a digit ---
+    #--- narrative claims: a retrain can falsify a sentence, not just a digit ---
     claims = []
     if fc:
         t = fc["results"]["temperature_C"]["horizons"]
         w = fc["results"]["wind_speed_ms"]["horizons"]
-        cw = fc["results"]["wind_speed_ms"]["conditions"]["by_wind_regime"]
-        ct = fc["results"]["temperature_C"]["conditions"]["by_wind_regime"]
         claims += [
-            ("KNMI README: 'the LSTM never wins'",
-             all(r[h]["_best"] != "lstm" for r in (t, w) for h in r)),
+            ("KNMI README: 'the LSTM wins once' (wind +24 h, on the validation and the test year)",
+             [(v, h) for v, r in (("temp", t), ("wind", w)) for h in r if r[h]["_best"] == "lstm"] == [("wind", "+24h")]
+             and w["+24h"]["lstm"]["mae"] < w["+24h"]["gradient_boosting"]["mae"]),
+            ("KNMI README: 'the validation year picked the test-year winner every time'",
+             all(r[h]["_best"] == min((m for m in r[h] if m != "_best"), key=lambda m: r[h][m]["mae"])
+                 for r in (t, w) for h in r)),
+            ("KNMI README: 'both trained models beat both baselines at +6 h and +24 h'",
+             all(r[h][m]["mae"] < min(r[h]["persistence"]["mae"], r[h]["daily_naive"]["mae"])
+                 for r in (t, w) for h in ("+6h", "+24h") for m in ("gradient_boosting", "lstm"))),
+            ("KNMI README: 'the LSTM is at its best after 1-4 epochs in five of the six forecasts'",
+             sum(1 <= r[h]["lstm"]["settings"]["epochs"] <= 4 for r in (t, w) for h in r) == 5),
             ("KNMI README: 'persistence unbeaten for wind at +1 h'",
              w["+1h"]["_best"] == "persistence"),
-            ("KNMI README: 'under-predicts strong winds'",
-             cw["strong (>=8 m/s)"]["bias"] < 0),
-            ("KNMI README: 'error grows with wind strength'",
-             cw["calm (<3 m/s)"]["mae"] < cw["strong (>=8 m/s)"]["mae"]),
-            ("KNMI README: 'temperature hardest in calm conditions'",
-             ct["calm (<3 m/s)"]["mae"] > ct["strong (>=8 m/s)"]["mae"]),
         ]
     if ws:
         claims += [
@@ -462,6 +430,14 @@ def main() -> int:
         if dqn.get("hill_climb"):
             claims.append(("ABM README: 'hill climbing beats both agents'",
                            dqn["hill_climb"]["best_objective"] > max(rl["best_objective"], dqn["best_objective"])))
+    if dsite and all(k in dsite for k in ("baseline", "scenario_a", "scenario_b", "final")):
+        designs = ("scenario_a", "scenario_b", "final")
+        claims += [
+            ("morphology README: 'every design covers less of the site than today'",
+             all(dsite[k]["gsi"] < dsite["baseline"]["gsi"] for k in designs)),
+            ("morphology README: 'only scenario_a adds floor space'",
+             [k for k in designs if dsite[k]["fsi"] > dsite["baseline"]["fsi"]] == ["scenario_a"]),
+        ]
     if rm and rm.get("scenario_b", {}).get("areas"):
         b, a, bb = rm["baseline"], rm["scenario_a"], rm["scenario_b"]
         g = lambda x: x["site_grid"]["mean_of_types_m"]
@@ -480,15 +456,6 @@ def main() -> int:
             ("roads README: 'no site dwelling has a rail stop within 5 min in either scenario'",
              all(rm[s]["areas"]["design_site"]["rail_stop"]["within_5min_frac"] == 0 for s in ("scenario_a", "scenario_b"))),
         ]
-    if rlinks and rlinks.get("scenario_a", {}).get("steps"):
-        st = rlinks["scenario_a"]["steps"]
-        claims += [
-            ("roads README: 'after link 2 each link saves under 0.03 m of J'", all(x["gain_m"] < 0.03 for x in st[2:])),
-            ("roads README: 'A stops after three links'", len(st) == 3),  #four before the dead-end fixes of 2026-10-28
-        ]
-    if rlinks and rlinks.get("scenario_b", {}).get("steps"):
-        stb = rlinks["scenario_b"]["steps"]
-        claims.append(("roads README: 'B: two links reach the ceiling'", len(stb) == 2 and stb[-1]["share_of_ceiling"] == 1.0))
     #morphology scenario table, the sentences under it
     g = lambda s, d="": (load(f"shadow_summary{s}{d}.json") or {}).get("design_site", {}).get("open_ground_sunlit_hours")
     v = lambda s: (load(f"svf_summary{s}.json") or {}).get("design_site", {}).get("open_ground")
@@ -522,11 +489,11 @@ def main() -> int:
         ]
     broken = [c for c, ok in claims if not ok]
 
-    if not args.quiet:
+    if not p["quiet"]:
         nfiles = len({f for _, _, _, fs in checks for f in fs})
         print(f"checked {len(checks)} published numbers across {nfiles} files\n")
         if stale:
-            print(f"STALE — {len(stale)} number(s) no longer match the outputs:")
+            print(f"STALE: {len(stale)} number(s) no longer match the outputs:")
             for label, value, f, line in stale:
                 print(f"   {f}  expects {value}  ({label})")
                 print(f"      line reads: {line}")
@@ -534,7 +501,7 @@ def main() -> int:
         else:
             print("all published numbers match data/processed/")
         if no_anchor:
-            print(f"\nNO ANCHOR — {len(no_anchor)} check(s) could not find the line "
+            print(f"\nNO ANCHOR: {len(no_anchor)} check(s) could not find the line "
                   f"they were written against.\n  The doc was restructured; "
                   f"update the pattern in this script or the check is silently dead:")
             for label, pattern, f in no_anchor:
@@ -542,7 +509,7 @@ def main() -> int:
         if claims:
             print()
             if broken:
-                print(f"BROKEN CLAIMS — {len(broken)} sentence(s) are no longer true:")
+                print(f"BROKEN CLAIMS: {len(broken)} sentence(s) are no longer true:")
                 for c in broken:
                     print(f"   {c}")
             else:

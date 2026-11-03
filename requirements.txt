@@ -44,7 +44,7 @@ jupyterlab~=4.4
 ipykernel~=6.30
 
 # ---------------------------------------------------------------------------
-# OPTIONAL — only for the LSTM in analysis/knmi/train_forecast.py and the
+# OPTIONAL, only for the LSTM in analysis/knmi/train_forecast.py and the
 # deep Q-network in analysis/abm_landuse/rl_dqn.py.
 # PyTorch is ~780 MB, so it is deliberately NOT a core requirement: five of us
 # never touch the AI component and should not pay for it. The script runs all
@@ -52,5 +52,5 @@ ipykernel~=6.30
 #
 #   pip install --index-url https://download.pytorch.org/whl/cpu torch
 #
-# (the CPU index matters — the default wheel pulls in CUDA and is several GB)
+# (the CPU index matters: the default wheel pulls in CUDA and is several GB)
 # ---------------------------------------------------------------------------

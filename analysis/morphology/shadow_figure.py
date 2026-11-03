@@ -1,20 +1,16 @@
 #!/usr/bin/env python3
 """
-shadow_figure.py — report figure for shadows.py: direct-sun hours on the design
-site on three days (winter solstice, equinox, summer solstice).
+shadow_figure.py - direct-sun hours on the design site on three days.
 
-Run shadows.py first, once per day:
+Owner: Atanas Malinkov
 
-    python analysis/morphology/shadows.py                                     # 2026-03-20, the app's file
-    python analysis/morphology/shadows.py --date 2026-12-21 --suffix _2026-12-21
-    python analysis/morphology/shadows.py --date 2026-06-21 --suffix _2026-06-21
+    python analysis/morphology/shadows.py --scenario baseline    #equinox, 21 Jun, 21 Dec
     python analysis/morphology/shadow_figure.py
 
-Writes docs/fig_shadow_site.png. Only open ground (nDSM < 2 m) is coloured: the hours
-that matter are on streets, gardens and courtyards. Grey = no AHN ground value
-(buildings, built-over back gardens, water); green = objects >= 2 m, mostly trees.
+Writes docs/fig_shadow_site.png. Only open ground (nDSM < 2 m) is coloured.
+Grey has no AHN ground (buildings, built-over gardens, water), green is objects
+of 2 m or more, mostly trees.
 """
-from __future__ import annotations
 
 import json
 import pathlib
@@ -23,14 +19,14 @@ import sys
 import numpy as np
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
-from common.project import PROCESSED, RAW, design_site_polygon  # noqa: E402
+from common.project import PROCESSED, RAW, design_site_polygon  #noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 DAYS = [("_2026-12-21", "21 December"), ("", "20 March (equinox)"), ("_2026-06-21", "21 June")]
-PAD_M = 120          # context around the site
+PAD_M = 120          #context around the site
 
 
-def main() -> int:
+def main():
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -54,13 +50,13 @@ def main() -> int:
             ndsm = src.read(1, window=from_bounds(x0, y0, x1, y1, src.transform),
                             out_shape=hours.shape, resampling=Resampling.nearest,
                             masked=True).filled(np.nan)
-        # Same mask as shadows.py's statistics. The AHN DTM is empty under
-        # buildings, so roofs are NaN here, NOT >= 2 m: grey them as such.
+        #Same mask as shadows.py's statistics. The AHN DTM is empty under
+        #buildings, so roofs are NaN here, NOT >= 2 m: grey them as such.
         open_ground = np.isfinite(ndsm) & (ndsm < 2.0)
-        tall = np.isfinite(ndsm) & (ndsm >= 2.0)          # tree crowns mostly
+        tall = np.isfinite(ndsm) & (ndsm >= 2.0)          #tree crowns mostly
         extent = (wt.c, wt.c + wt.a * hours.shape[1], wt.f + wt.e * hours.shape[0], wt.f)
         day_h = summ["daylight_hours"]
-        ax.set_facecolor("#9a9a9a")      # no AHN ground: buildings, built-over gardens, water
+        ax.set_facecolor("#9a9a9a")      #no AHN ground: buildings, built-over gardens, water
         im = ax.imshow(np.where(open_ground, hours, np.nan), extent=extent, cmap="plasma",
                        vmin=0, vmax=day_h, interpolation="nearest")
         ax.imshow(np.where(tall, 1.0, np.nan), extent=extent, cmap="Greens",

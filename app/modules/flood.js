@@ -1,5 +1,5 @@
 /* =============================================================================
- * modules/flood.js  —  flood / water vulnerability (Cyrille's QGIS analysis)
+ * modules/flood.js - flood / water vulnerability (Cyrille's QGIS analysis)
  * OWNER: Cyrille Kummer (analysis) · imported by analysis/flood/import_cyrille.py
  *
  * Seven 0.5 m rasters from the team's QGIS project, warped to EPSG:4326 and

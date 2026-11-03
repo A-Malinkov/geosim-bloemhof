@@ -1,32 +1,18 @@
 #!/usr/bin/env python3
 """
-fetch_landcover.py — land cover that BAG cannot see, for the land-use ABM.
+fetch_landcover.py - OSM green, water and roads for the land-use models.
 
 Owner: Atanas Malinkov
 
-WHY THIS EXISTS
----------------
-The land-use mix work (analysis/morphology/landuse_mix.py) is built on BAG
-addressable units, which is right for a mix index but covers only BUILT FLOOR
-SPACE. A cellular automaton needs the whole surface: it has to know which cells
-are water (never developable), which are road (fixed), and which are green
-(convertible, but losing them has a cost).
+BAG only covers built floor space. The CA needs the whole surface, which cells
+are water (never built), road (fixed) and green. OSM has all three and is
+current, CBS Bestand Bodemgebruik is from 2017 and too coarse.
 
-OSM supplies exactly those three. It is not authoritative the way BAG is, but
-for "is this cell a park, a canal or a street" it is current, complete enough in
-Rotterdam, and far better than CBS Bestand Bodemgebruik, whose newest edition is
-2017 and resolves the whole study square into 10 polygons.
-
-USAGE
------
     python analysis/abm_landuse/fetch_landcover.py
 
-OUTPUTS
--------
-    data/raw/osm_landcover.geojson   green and water polygons, EPSG:28992
-    data/raw/osm_roads.geojson       road centrelines, EPSG:28992
+Writes data/raw/osm_landcover.geojson (green and water) and
+data/raw/osm_roads.geojson (centrelines), both RD New.
 """
-from __future__ import annotations
 
 import pathlib
 import sys
@@ -35,7 +21,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
-from common.project import RAW, STUDY_AREA, bbox_wgs  # noqa: E402
+from common.project import RAW, STUDY_AREA, bbox_wgs  #noqa: E402
 
 GREEN_TAGS = {
     "leisure": ["park", "garden", "pitch", "playground", "recreation_ground"],
@@ -48,12 +34,12 @@ WATER_TAGS = {"natural": ["water"], "waterway": ["riverbank", "dock", "canal",
               "landuse": ["basin", "reservoir"]}
 
 
-def main() -> int:
+def main():
     import geopandas as gpd
     import osmnx as ox
 
     w, s, e, n = bbox_wgs()
-    print(f"OSM land cover — {STUDY_AREA.name}")
+    print(f"OSM land cover: {STUDY_AREA.name}")
     print(f"  bbox {w:.5f},{s:.5f},{e:.5f},{n:.5f}")
 
     frames = []
@@ -80,7 +66,7 @@ def main() -> int:
         out = gpd.GeoDataFrame(
             __import__("pandas").concat(frames, ignore_index=True),
             crs="EPSG:28992")
-        # OSM columns can hold lists; GeoJSON cannot
+        #OSM columns can hold lists; GeoJSON cannot
         for c in out.columns:
             if c != "geometry":
                 out[c] = out[c].astype(str)
@@ -88,7 +74,7 @@ def main() -> int:
         out.to_file(path, driver="GeoJSON")
         print(f"  wrote data/raw/{path.name}")
 
-    # roads: centrelines, buffered into cells later
+    #roads: centrelines, buffered into cells later
     try:
         G = ox.graph_from_bbox((w, s, e, n), network_type="drive",
                                simplify=True, truncate_by_edge=True)

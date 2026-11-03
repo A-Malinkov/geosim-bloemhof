@@ -17,58 +17,50 @@
     ]
   },
   "baseline": {
-    "svf_mean": 0.6961,
-    "svf_median": 0.7296,
+    "svf_mean": 0.7845,
+    "svf_median": 0.8153,
     "fsi": 1.003,
     "gsi": 0.3334,
     "layers": 3.01,
-    "osr": 0.665,
     "height_mean_m": 8.455,
     "height_std_m": 2.901,
     "landuse_mix": 0.2674,
-    "landuse_simpson": 0.2514,
-    "svf_site_mean": 0.7143
+    "svf_site_mean": 0.7848
   },
   "_svf_source": "analysis/morphology/sky_view_factor.py",
   "_density_source": "analysis/morphology/density_height.py",
   "_landuse_source": "analysis/morphology/landuse_mix.py",
   "scenario_a": {
-    "svf_mean": 0.6834,
-    "svf_median": 0.7093,
-    "svf_site_mean": 0.6469,
+    "svf_mean": 0.7692,
+    "svf_median": 0.8004,
+    "svf_site_mean": 0.7038,
     "fsi": 1.0778,
     "gsi": 0.3248,
     "layers": 3.32,
-    "osr": 0.626,
     "height_mean_m": 8.634,
     "height_std_m": 3.159,
-    "landuse_mix": 0.2352,
-    "landuse_simpson": 0.2191
+    "landuse_mix": 0.2352
   },
   "scenario_b": {
-    "svf_mean": 0.7101,
-    "svf_median": 0.7439,
-    "svf_site_mean": 0.7837,
+    "svf_mean": 0.7952,
+    "svf_median": 0.828,
+    "svf_site_mean": 0.8482,
     "fsi": 0.9928,
     "gsi": 0.3082,
     "layers": 3.22,
-    "osr": 0.697,
     "height_mean_m": 8.587,
     "height_std_m": 3.057,
-    "landuse_mix": 0.2516,
-    "landuse_simpson": 0.2373
+    "landuse_mix": 0.2516
   },
   "final": {
-    "svf_mean": 0.7066,
-    "svf_median": 0.7406,
-    "svf_site_mean": 0.765,
+    "svf_mean": 0.7899,
+    "svf_median": 0.8222,
+    "svf_site_mean": 0.8218,
     "fsi": 0.9743,
     "gsi": 0.3074,
     "layers": 3.17,
-    "osr": 0.711,
     "height_mean_m": 8.926,
     "height_std_m": 3.131,
-    "landuse_mix": 0.2824,
-    "landuse_simpson": 0.2808
+    "landuse_mix": 0.2824
   }
 }

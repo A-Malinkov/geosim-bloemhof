@@ -1,5 +1,5 @@
 /* =============================================================================
- * modules/photos.js  —  geotagged site photos on the map
+ * modules/photos.js - geotagged site photos on the map
  * OWNER: (site photos)
  *
  * Shows photographs taken around the study area as "landmark" pins at the
@@ -12,7 +12,7 @@
  *   2. The user adds it from the panel. EXIF is read in the browser, the pin
  *      appears immediately, and "Save to repo folder" writes the image plus an
  *      updated photos.json into app/assets/photos/ via the File System Access
- *      API — so a commit is all that is needed to make it permanent.
+ *      API, so a commit is all that is needed to make it permanent.
  *
  * No backend: the dev server only serves files. Writing into the repo therefore
  * goes through showDirectoryPicker() (Chromium, over http://localhost which is a
@@ -20,7 +20,7 @@
  * a prompt to copy the images in by hand.
  *
  * HEIGHTS: pins are CLAMP_TO_GROUND, so the NAP/ellipsoid offset does not apply
- * here — GPS altitude is unreliable indoors/among buildings anyway and is only
+ * here: GPS altitude is unreliable indoors/among buildings anyway and is only
  * recorded in the manifest, never used to position a pin.
  * ========================================================================== */
 
@@ -203,7 +203,7 @@ function readExifGps(buffer) {
       offset += 2 + size;
     }
   } catch {
-    /* malformed EXIF — treat as "no location" */
+    /* malformed EXIF: treat as "no location" */
   }
   return null;
 }
@@ -250,7 +250,7 @@ function fileKind(file) {
   return "other";
 }
 
-// EXIF via exifr — used for PNG/HEIC and as a fallback for JPEG.
+// EXIF via exifr: used for PNG/HEIC and as a fallback for JPEG.
 async function exifrGps(file) {
   let d;
   try {
@@ -403,8 +403,8 @@ export async function setup(ctx) {
 
   /* Photos taken at the same spot share one GPS point, so they collapse into a
    * cluster no amount of zoom can split. Fan any such group into a straight,
-   * evenly spaced east–west row centred on the real location — same latitude,
-   * same increment between each — so it reads as "all taken here". The pins move
+   * evenly spaced east–west row centred on the real location: same latitude,
+   * same increment between each, so it reads as "all taken here". The pins move
    * a few metres; the stored lat/lon do not. */
   function respread() {
     const STEP_M = 2; // tight lateral gap so a same-spot group reads as one place
@@ -481,7 +481,7 @@ export async function setup(ctx) {
       return;
     }
     // Suppress the empty info box Cesium opens for picks that carry nothing to
-    // show — e.g. the batched tree/green primitives, whose id is a bare object.
+    // show, e.g. the batched tree/green primitives, whose id is a bare object.
     const props = ent.properties?.propertyNames;
     if (!ent.description && !(props && props.length))
       viewer.selectedEntity = undefined;
@@ -680,7 +680,7 @@ export async function setup(ctx) {
       const parsed = JSON.parse(await f.text());
       if (parsed && Array.isArray(parsed.photos)) manifest = parsed;
     } catch {
-      /* no manifest yet — keep the one above */
+      /* no manifest yet: keep the one above */
     }
     const known = new Set(manifest.photos.map((p) => p.file));
 
@@ -765,10 +765,10 @@ export async function setup(ctx) {
       photoLayer.setVisible(true);  //show what was just added, even with the layer off
       viewer.flyTo(ds).catch(() => {});
     }
-    if (noGps) ctx.note(`Photos: ${noGps} had no GPS tag — skipped`, "warn");
+    if (noGps) ctx.note(`Photos: ${noGps} had no GPS tag, skipped`, "warn");
     if (skipped)
       ctx.note(
-        `Photos: ${skipped} unsupported file${skipped === 1 ? "" : "s"} — skipped`,
+        `Photos: ${skipped} unsupported file${skipped === 1 ? "" : "s"}, skipped`,
         "warn",
       );
     return fresh;
@@ -792,8 +792,8 @@ export async function setup(ctx) {
     if (fresh.length) {
       ctx.note(
         canWrite
-          ? `Photos: ${fresh.length} cached — click Save to write them to app/assets/photos`
-          : `Photos: ${fresh.length} cached — this browser cannot write to the repo`,
+          ? `Photos: ${fresh.length} cached. Click Save to write them to app/assets/photos`
+          : `Photos: ${fresh.length} cached, but this browser cannot write to the repo`,
         canWrite ? "info" : "warn",
       );
     }
@@ -819,7 +819,7 @@ export async function setup(ctx) {
       if (toWrite.length) await writeToRepo(dir, toWrite);
       ctx.note(
         toWrite.length
-          ? `Photos: saved ${toWrite.length} to '${dir.name}' — commit to keep`
+          ? `Photos: saved ${toWrite.length} to '${dir.name}'. Commit to keep them`
           : `Photos: save folder set to '${dir.name}'`,
         "ok",
       );
@@ -862,10 +862,10 @@ export async function setup(ctx) {
         try {
           await dir.removeEntry(r.file);
         } catch {
-          /* already gone on disk — still rewrite the manifest */
+          /* already gone on disk: still rewrite the manifest */
         }
         await writeManifest(dir);
-        ctx.note(`Photos: deleted ${r.file} — commit to keep`, "ok");
+        ctx.note(`Photos: deleted ${r.file}. Commit to keep the change`, "ok");
       } catch (err) {
         if (err?.name !== "AbortError") {
           console.error("[photos] delete failed:", err);

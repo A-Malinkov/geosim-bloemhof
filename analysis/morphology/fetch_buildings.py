@@ -1,50 +1,24 @@
 #!/usr/bin/env python3
 """
-fetch_buildings.py — 3DBAG building attributes for the study area.
+fetch_buildings.py - 3DBAG building attributes for Bloemhof.
 
 Owner: Atanas Malinkov
 
-SOURCE
-------
-3DBAG OGC API Features, https://api.3dbag.nl/collections/pand/items
-Serves CityJSONFeature (not GeoJSON), in EPSG:7415 = RD New + NAP height.
+From the 3DBAG OGC API (api.3dbag.nl/collections/pand/items), which serves
+CityJSON in EPSG:7415. We keep one point per building with
+    b3_opp_grond    ground-floor area, for GSI
+    b3_bouwlagen    storeys, for FSI (null above 5 floors)
+    b3_h_dak_50p    median roof, m NAP
+    b3_h_maaiveld   ground at the building, m NAP
+    b3_dak_type     flat or slanted
+Height is roof minus the building's own ground, since ground runs from about
+-2 to +8 m NAP here.
 
-WHAT WE TAKE, AND WHY
----------------------
-  b3_opp_grond    ground-floor area, m2   -> the footprint term in GSI
-  b3_bouwlagen    estimated storey count  -> the floors term in FSI
-  b3_h_dak_50p    median roof elevation, m NAP
-  b3_h_maaiveld   ground elevation at the building, m NAP
-  b3_dak_type     flat / slanted
-
-Building height is `b3_h_dak_50p - b3_h_maaiveld`, i.e. roof above its OWN
-ground, not above NAP zero. Subtracting maaiveld matters: ground level across
-the study area runs from about -2 to +8 m NAP, so using the raw roof elevation
-would make buildings on higher ground look taller than they are.
-
-We keep a representative POINT per building rather than the footprint polygon.
-Footprint *area* comes from b3_opp_grond, which is exact, so the polygon would
-only be needed to split a building across two grid cells — a small effect at
-100 m cells that is not worth the extra machinery. See density_height.py.
-
-CAVEAT ON b3_bouwlagen
-----------------------
-3DBAG only estimates storeys for buildings up to 5 floors; taller ones come
-back null. density_height.py falls back to height / 3.0 m and reports how often
-it had to.
-
-USAGE
------
     python analysis/morphology/fetch_buildings.py
-    python analysis/morphology/fetch_buildings.py --pad 300
 
-OUTPUT
-------
-    data/raw/buildings_3dbag.geojson   points in EPSG:28992, one per Pand
+Writes data/raw/buildings_3dbag.geojson, points in RD New.
 """
-from __future__ import annotations
 
-import argparse
 import json
 import pathlib
 import sys
@@ -53,17 +27,17 @@ import urllib.parse
 import urllib.request
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
-from common.project import RAW, STUDY_AREA, bbox_rd  # noqa: E402
+from common.project import RAW, STUDY_AREA, bbox_rd  #noqa: E402
 
 API = "https://api.3dbag.nl/collections/pand/items"
-PAGE = 100          # the server caps a page at 100 CityObjects regardless
+PAGE = 100          #the server caps a page at 100 CityObjects regardless
 
 WANTED = ("b3_opp_grond", "b3_bouwlagen", "b3_h_dak_50p", "b3_h_dak_70p",
           "b3_h_maaiveld", "b3_dak_type", "b3_kwaliteitsindicator",
           "b3_volume_lod12", "b3_volume_lod22")
 
 
-def get(url: str, tries: int = 4) -> dict:
+def get(url, tries=4):
     for attempt in range(tries):
         try:
             req = urllib.request.Request(url, headers={"Accept": "application/json"})
@@ -78,7 +52,7 @@ def get(url: str, tries: int = 4) -> dict:
 
 
 def centroid(vertices, transform):
-    """Mean of a feature's vertices, decoded through the CityJSON transform."""
+    #Mean of a feature's vertices, decoded through the CityJSON transform.
     if not vertices:
         return None
     sc, tl = transform["scale"], transform["translate"]
@@ -88,15 +62,16 @@ def centroid(vertices, transform):
     return (sx * sc[0] + tl[0], sy * sc[1] + tl[1])
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__,
-                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--pad", type=int, default=0,
-                    help="extra context beyond the study-area edge, in metres")
-    args = ap.parse_args()
+PARAMS = {
+    "pad": 0,  #extra context beyond the study-area edge, m
+}
 
-    xmin, ymin, xmax, ymax = bbox_rd(args.pad)
-    print(f"3DBAG buildings — {STUDY_AREA.name}")
+
+def main():
+    p = PARAMS
+
+    xmin, ymin, xmax, ymax = bbox_rd(p["pad"])
+    print(f"3DBAG buildings: {STUDY_AREA.name}")
     print(f"  bbox RD {xmin:.0f},{ymin:.0f},{xmax:.0f},{ymax:.0f}")
 
     q = urllib.parse.urlencode(
@@ -126,8 +101,8 @@ def main() -> int:
             c = centroid(f.get("vertices"), transform)
             if c is None:
                 continue
-            # the API pages by CityObject, so a bbox page can spill slightly
-            # outside the requested box; keep the study area clean
+            #the API pages by CityObject, so a bbox page can spill slightly
+            #outside the requested box; keep the study area clean
             if not (xmin <= c[0] <= xmax and ymin <= c[1] <= ymax):
                 continue
             seen.add(pand_id)
@@ -171,7 +146,7 @@ def main() -> int:
         print(f"  height: median {hs_sorted[len(hs)//2]:.1f} m, "
               f"max {max(hs):.1f} m, {len(hs):,} with a height")
     print(f"  storey count missing for {no_floors:,} "
-          f"({100 * no_floors / max(1, len(feats)):.0f}%) — those fall back to height/3 m")
+          f"({100 * no_floors / max(1, len(feats)):.0f}%): those fall back to height/3 m")
     return 0
 
 

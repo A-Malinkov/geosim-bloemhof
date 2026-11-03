@@ -1,5 +1,5 @@
 /* =============================================================================
- * modules/indicators.js  —  component 3: urban morphology indicators
+ * modules/indicators.js - component 3: urban morphology indicators
  * OWNER: Atanas Malinkov
  *
  * Sky View Factor, built density (FSI/GSI), height variation, land-use mix,
@@ -40,12 +40,6 @@ const INDICATORS = [
     label: "Storeys (L = FSI/GSI)",
     unit: "",
     hint: "mean number of floors",
-  },
-  {
-    key: "osr",
-    label: "OSR (open space ratio)",
-    unit: "",
-    hint: "open space per m² of floor space",
   },
   {
     key: "height_mean_m",
@@ -220,11 +214,10 @@ function styleDensity(ds, geo) {
       `<table>` +
       `<tr><td>FSI</td><td>${fsi.toFixed(2)}</td></tr>` +
       `<tr><td>GSI</td><td>${(p?.gsi?.getValue?.() ?? 0).toFixed(2)}</td></tr>` +
-      `<tr><td>storeys</td><td>${p?.layers?.getValue?.() ?? "—"}</td></tr>` +
-      `<tr><td>OSR</td><td>${p?.osr?.getValue?.() ?? "—"}</td></tr>` +
-      `<tr><td>mean height</td><td>${p?.height_mean_m?.getValue?.() ?? "—"} m</td></tr>` +
-      `<tr><td>height σ</td><td>${p?.height_std_m?.getValue?.() ?? "—"} m</td></tr>` +
-      `<tr><td>buildings</td><td>${p?.n_buildings?.getValue?.() ?? "—"}</td></tr>` +
+      `<tr><td>storeys</td><td>${p?.layers?.getValue?.() ?? "-"}</td></tr>` +
+      `<tr><td>mean height</td><td>${p?.height_mean_m?.getValue?.() ?? "-"} m</td></tr>` +
+      `<tr><td>height σ</td><td>${p?.height_std_m?.getValue?.() ?? "-"} m</td></tr>` +
+      `<tr><td>buildings</td><td>${p?.n_buildings?.getValue?.() ?? "-"}</td></tr>` +
       `</table>`;
   }
 }
@@ -268,9 +261,8 @@ function styleLanduse(ds, geo) {
     e.description =
       `<table>` +
       `<tr><td>Shannon</td><td>${sh.toFixed(3)}</td></tr>` +
-      `<tr><td>Simpson</td><td>${(p?.simpson?.getValue?.() ?? 0).toFixed(3)}</td></tr>` +
-      `<tr><td>units</td><td>${p?.n_units?.getValue?.() ?? "—"}</td></tr>` +
-      `<tr><td>dominant</td><td>${p?.dominant?.getValue?.() ?? "—"}</td></tr>` +
+      `<tr><td>units</td><td>${p?.n_units?.getValue?.() ?? "-"}</td></tr>` +
+      `<tr><td>dominant</td><td>${p?.dominant?.getValue?.() ?? "-"}</td></tr>` +
       `</table><hr><table>` +
       [
         "residential",
@@ -322,7 +314,7 @@ function perBuurtTable(perBuurt, cols) {
           cols
             .map(
               ([k, , dp]) =>
-                `<td>${b[k] == null ? "—" : Number(b[k]).toFixed(dp)}</td>`,
+                `<td>${b[k] == null ? "-" : Number(b[k]).toFixed(dp)}</td>`,
             )
             .join("") +
           `</tr>`
@@ -449,150 +441,6 @@ function histogramSvg(hist, mean) {
 }
 
 /**
- * The Spacematrix diagram (Berghauser Pont & Haupt 2010), drawn from the
- * per-cell points in density_summary.json.
- *
- * GSI on x, FSI on y. Those two fix the other two indicators, so the diagram
- * carries all four: L = FSI/GSI is a straight line through the origin, and
- * OSR = (1-GSI)/FSI is a curve. Plotting it is the whole point of computing
- * Spacematrix rather than a bare density figure — fabric types separate by
- * WHERE they sit, not by any single number, and two cells with the same FSI
- * can be a low sprawl or a tall point block depending on GSI.
- *
- * Points are coloured by buurt because that is the finding: a combined cloud
- * hides that the two neighbourhoods occupy different regions.
- *
- * There is a static matplotlib version in docs/fig_spacematrix.png. This one is
- * in the dashboard, and when the proposed massing exists it can be overplotted
- * to show the new fabric moving relative to the existing two.
- */
-function spacematrixSvg(points, perBuurt) {
-  if (!points?.length) return "";
-
-  const W = 268,
-    H = 200,
-    PL = 30,
-    PB = 22,
-    PT = 6,
-    PR = 6;
-  const iw = W - PL - PR,
-    ih = H - PT - PB;
-
-  // Fixed axis maxima rather than data-driven ones: the scales must not move
-  // when a scenario is added, or the "fabric moved" comparison is meaningless.
-  const GMAX = 0.9,
-    FMAX = 4.0;
-  const px = (g) => PL + Math.min(g / GMAX, 1) * iw;
-  const py = (f) => PT + ih - Math.min(f / FMAX, 1) * ih;
-
-  const parts = [];
-
-  // --- OSR isolines (curves): FSI = (1 - GSI) / OSR ------------------------
-  for (const osr of [0.2, 0.5, 1.0, 2.0]) {
-    const pts = [];
-    for (let i = 0; i <= 40; i++) {
-      const g = (i / 40) * GMAX;
-      const f = (1 - g) / osr;
-      if (f > FMAX || f < 0) continue;
-      pts.push(`${px(g).toFixed(1)},${py(f).toFixed(1)}`);
-    }
-    if (pts.length < 2) continue;
-    parts.push(
-      `<polyline points="${pts.join(" ")}" fill="none" stroke="#3a4655" ` +
-        `stroke-width="0.7" stroke-dasharray="1 2"/>`,
-    );
-    const [lx, ly] = pts[0].split(",");
-    parts.push(
-      `<text x="${(+lx + 2).toFixed(1)}" y="${(+ly - 2).toFixed(1)}" ` +
-        `fill="#5d6b7d" font-size="7">OSR ${osr}</text>`,
-    );
-  }
-
-  // --- L isolines (straight): FSI = L * GSI --------------------------------
-  for (const L of [1, 2, 3, 4, 6]) {
-    const gEnd = Math.min(GMAX, FMAX / L);
-    parts.push(
-      `<line x1="${px(0)}" y1="${py(0)}" x2="${px(gEnd).toFixed(1)}" ` +
-        `y2="${py(L * gEnd).toFixed(1)}" stroke="#2f3a47" stroke-width="0.7"/>`,
-    );
-    parts.push(
-      `<text x="${(px(gEnd) - 1).toFixed(1)}" y="${(py(L * gEnd) + (L >= 4 ? 8 : -2)).toFixed(1)}" ` +
-        `fill="#5d6b7d" font-size="7" text-anchor="end">L ${L}</text>`,
-    );
-  }
-
-  // --- the cells ----------------------------------------------------------
-  const COL = { Bloemhof: "#4dd0e1", Hillesluis: "#ff8a3d" };
-  for (const pt of points) {
-    if (pt.gsi == null || pt.fsi == null) continue;
-    const c = COL[pt.buurt] || "#5b6675";
-    // Cells outside the study area are context, not findings: drawn smaller and
-    // dimmer so they cannot be mistaken for part of the neighbourhood.
-    const r = pt.buurt ? 2.4 : 1.6;
-    parts.push(
-      `<circle cx="${px(pt.gsi).toFixed(1)}" cy="${py(pt.fsi).toFixed(1)}" ` +
-        `r="${r}" fill="${c}" opacity="${pt.buurt ? 0.6 : 0.3}"/>`,
-    );
-  }
-
-  // --- the buurt aggregates, as crosses -----------------------------------
-  for (const [name, b] of Object.entries(perBuurt || {})) {
-    if (b?.gsi == null || b?.fsi == null) continue;
-    const c = COL[name] || "#e7ecf2";
-    const X = px(b.gsi),
-      Y = py(b.fsi);
-    parts.push(
-      `<line x1="${(X - 5).toFixed(1)}" y1="${Y.toFixed(1)}" x2="${(X + 5).toFixed(1)}" ` +
-        `y2="${Y.toFixed(1)}" stroke="${c}" stroke-width="1.6"/>` +
-        `<line x1="${X.toFixed(1)}" y1="${(Y - 5).toFixed(1)}" x2="${X.toFixed(1)}" ` +
-        `y2="${(Y + 5).toFixed(1)}" stroke="${c}" stroke-width="1.6"/>`,
-    );
-  }
-
-  // --- axes ---------------------------------------------------------------
-  parts.push(
-    `<line x1="${PL}" y1="${PT + ih}" x2="${PL + iw}" y2="${PT + ih}" ` +
-      `stroke="#46525f" stroke-width="1"/>`,
-  );
-  parts.push(
-    `<line x1="${PL}" y1="${PT}" x2="${PL}" y2="${PT + ih}" ` +
-      `stroke="#46525f" stroke-width="1"/>`,
-  );
-  for (const g of [0, 0.3, 0.6, 0.9]) {
-    parts.push(
-      `<text x="${px(g).toFixed(1)}" y="${H - PB + 10}" fill="#97a3b2" ` +
-        `font-size="8" text-anchor="middle">${g}</text>`,
-    );
-  }
-  for (const f of [0, 1, 2, 3, 4]) {
-    parts.push(
-      `<text x="${PL - 4}" y="${(py(f) + 3).toFixed(1)}" fill="#97a3b2" ` +
-        `font-size="8" text-anchor="end">${f}</text>`,
-    );
-  }
-  parts.push(
-    `<text x="${(PL + iw / 2).toFixed(0)}" y="${H - 1}" fill="#97a3b2" ` +
-      `font-size="8" text-anchor="middle">GSI (coverage)</text>`,
-  );
-  parts.push(
-    `<text x="9" y="${(PT + ih / 2).toFixed(0)}" fill="#97a3b2" font-size="8" ` +
-      `text-anchor="middle" transform="rotate(-90 9 ${(PT + ih / 2).toFixed(0)})">FSI</text>`,
-  );
-
-  return (
-    `<svg viewBox="0 0 ${W} ${H}" width="100%" height="190" role="img" ` +
-    `aria-label="Spacematrix: GSI against FSI, one point per 100 m grid cell">` +
-    parts.join("") +
-    `</svg>` +
-    `<p class="muted" style="margin:2px 0 0">` +
-    Object.keys(perBuurt || {})  //one swatch per study-area buurt present in the data
-      .map((n) => `<span style="color:${COL[n] || "#e7ecf2"}">●</span> ${n} `).join("") +
-    `<span style="color:#5b6675">●</span> outside the study area · crosses are the buurt ` +
-    `aggregates. Thin lines are storeys (L), dashed are open space ratio (OSR).</p>`
-  );
-}
-
-/**
  * Spacematrix is scale-sensitive by construction, and here the two aggregation
  * units disagree about which buurt is denser. That is worth saying out loud
  * rather than leaving a reader to trip over it.
@@ -648,7 +496,7 @@ export async function setup(ctx) {
 
   /* ---- Sky View Factor and direct sun, per scenario ---------------------- */
   //map overlays, each following the scenario switch
-  addScenarioOverlay(ctx, { id: "svfOverlay", label: "Sky View Factor (AHN)", base: "svf" });
+  addScenarioOverlay(ctx, { id: "svfOverlay", label: "Sky View Factor (buildings, AHN)", base: "svf" });  //trees left out since 2026-11-02
   const shadowOverlay = addScenarioOverlay(ctx, { id: "shadowOverlay", label: "Direct sun hours (AHN)", base: "shadow" });
 
   //days shadows.py was run for, with the file suffix of each ("" is the equinox default)
@@ -723,14 +571,16 @@ export async function setup(ctx) {
         [["svf", "SVF", 3]],
       ) +
       `<p class="muted">At ${svf.parameters.observer_height_m} m above ground on open ` +
-      `ground only (streets, gardens, squares). ${svf.parameters.n_directions} directions, ` +
+      `ground only (streets, gardens, squares). ` +
+      (svf.parameters.trees === false ? `Buildings only, trees are left out. ` : `Buildings and tree crowns. `) +  //what blocks the sky
+      `${svf.parameters.n_directions} directions, ` +
       `${svf.parameters.search_radius_m} m radius, ${svf.parameters.cell_size_m} m cells. ` +
       `Cosine-weighted; the plain solid-angle value is ` +
       `${
         (
           svf.combined?.open_ground_geometric?.mean ??
           svf.open_ground_geometric?.mean
-        )?.toFixed(3) ?? "—"
+        )?.toFixed(3) ?? "-"
       }. ` +
       (sc === "baseline" ? "" : `Scenario run: demolition and new blocks burned into the AHN surface. `) +  //say what changed
       `Toggle the map overlay under <em>Analysis</em>.</p>`;
@@ -744,8 +594,7 @@ export async function setup(ctx) {
       ctx.placeholder(shadowBox, {
         what: `Direct-sun analysis not computed for "${sc}" on this day yet.`,
         produces: `data/processed/shadow_summary${runSuffix(sc)}${day}.json`,
-        owner: `analysis/morphology/shadows.py${sc === "baseline" ? "" : ` --scenario ${sc}`}` +
-          (day ? ` --date ${day.slice(1)} --suffix ${day}` : ""),  //a dated run needs both flags
+        owner: `analysis/morphology/shadows.py --scenario ${sc}`,  //runs all three days of that scenario
       });
       return;
     }
@@ -792,7 +641,7 @@ export async function setup(ctx) {
    * which is the whole-day total.
    *
    * It opens on LIVE: the sun as it stands right now in Rotterdam, clear-sky.
-   * That is for orientation only — the analysis day is the equinox, which is
+   * That is for orientation only: the analysis day is the equinox, which is
    * what shadows.py computes, and the reference days are one click away. */
   {
     const { Cesium, viewer, config } = ctx;
@@ -868,7 +717,7 @@ export async function setup(ctx) {
     const PERF = ` Shadows can be switched off under <em>Performance</em>.`;
     const NOTE_LIVE =
       `Live: this moment in Rotterdam, clear-sky. The analysis uses the ` +
-      `equinox — the whole-day direct-sun total is under <em>Urban ` +
+      `equinox: the whole-day direct-sun total is under <em>Urban ` +
       `morphology</em>, the map overlay under <em>Analysis</em>.` + PERF;
     const NOTE_FIXED =
       `One instant on the chosen day. The whole-day direct-sun total is under ` +
@@ -928,7 +777,7 @@ export async function setup(ctx) {
         const rise = nextSunrise(now);
         const r = rise && nlParts(rise);
         nightEl.textContent = r
-          ? `Sun is down — rises at ${r.hour}:${r.minute}.`
+          ? `Sun is down: rises at ${r.hour}:${r.minute}.`
           : "Sun is down.";
       }
     };
@@ -1008,7 +857,6 @@ export async function setup(ctx) {
       `<tr><td>GSI</td><td>${b.gsi.toFixed(3)}${vsBase(b.gsi, t.gsi, 3, sc)}</td></tr>` +
       `<tr><td>FSI</td><td>${b.fsi.toFixed(3)}${vsBase(b.fsi, t.fsi, 3, sc)}</td></tr>` +
       `<tr><td>storeys (L)</td><td>${b.layers.toFixed(2)}${vsBase(b.layers, t.layers, 2, sc)}</td></tr>` +
-      `<tr><td>OSR</td><td>${b.osr.toFixed(2)}${vsBase(b.osr, t.osr, 2, sc)}</td></tr>` +
       `<tr><td>height</td><td>${b.height_m.mean.toFixed(1)} m ± ${b.height_m.std.toFixed(1)}</td></tr>` +
       `<tr><td>tallest</td><td>${b.height_m.max.toFixed(1)} m</td></tr>` +
       `</tbody></table>` +
@@ -1017,8 +865,7 @@ export async function setup(ctx) {
         ["fsi", "FSI", 3],
         ["layers", "storeys", 2],
       ]) +
-      spacematrixSvg(d.spacematrix, d.per_buurt) +
-      `<p class="muted">Spacematrix over ${b.land_area_ha} ha, ` +
+      `<p class="muted">Over ${b.land_area_ha} ha, ` +  //the Spacematrix diagram was removed on 2026-11-01
       `${b.n_buildings.toLocaleString("en-GB")} buildings. Grid mean FSI ` +
       `${g.fsi.mean.toFixed(2)} across ${g.n_cells_used} cells of ` +
       `${d.parameters.cell_size_m} m. Toggle the grid under <em>Morphology</em>.` +
@@ -1039,6 +886,32 @@ export async function setup(ctx) {
     });
   }
 
+  // density on the design site, today next to the chosen scenario (density_site.py)
+  const site = await ctx.loadJson("../data/processed/density_site.json", { quiet: true });
+  if (site?.baseline) {
+    const siteBox = document.createElement("div");
+    body.appendChild(siteBox);
+    const renderSite = (sc) => {
+      const now = site[sc] ? sc : "baseline";  //a scenario without massing shows today only
+      const t = site.baseline, s = site[now];
+      const row = (label, k, d) =>
+        `<tr><td>${label}</td><td>${t[k].toFixed(d)}</td>` +
+        (now === "baseline" ? "" : `<td>${s[k].toFixed(d)}</td>`) + `</tr>`;
+      siteBox.innerHTML =
+        `<h4>Density on the design site</h4>` +
+        `<table class="kv"><thead><tr><th></th><th>today</th>` +
+        (now === "baseline" ? "" :
+          `<th>${(ctx.config.scenarios || []).find((x) => x.id === now)?.label ?? now}</th>`) +  //label from config.js
+        `</tr></thead><tbody>` +
+        row("GSI", "gsi", 2) + row("FSI", "fsi", 2) + row("storeys (L)", "layers", 1) +
+        `</tbody></table>` +
+        `<p class="muted">Over the ${site.site_area_ha} ha design site, same storey rule as above. ` +
+        `Follows the scenario switch.</p>`;
+    };
+    ctx.onScenarioChange(renderSite);  //also runs once at startup
+  }
+
+  /* ---- land-use mix ------------------------------------------------------ */
   const lu = await summaryFile("landuse_summary", "baseline");
   const luBox = document.createElement("div");
   body.appendChild(luBox);
@@ -1055,7 +928,6 @@ export async function setup(ctx) {
       `<table class="kv"><tbody>` +
       `<tr><td>Shannon (area)</td><td>${head.toFixed(3)}${vsBase(head, t.shannon_area, 3, sc)}</td></tr>` +
       `<tr><td>Shannon (units)</td><td>${(b.shannon_count ?? o.shannon_count).toFixed(3)}${vsBase(b.shannon_count ?? o.shannon_count, t.shannon_count, 3, sc)}</td></tr>` +
-      `<tr><td>Simpson</td><td>${(b.simpson_area ?? o.simpson_area).toFixed(3)}${vsBase(b.simpson_area ?? o.simpson_area, t.simpson_area, 3, sc)}</td></tr>` +
       `<tr><td>dominant use</td><td>${o.dominant} (${(o.dominant_share * 100).toFixed(0)} %)</td></tr>` +
       `</tbody></table>` +
       `<table class="kv"><thead><tr><th>use</th><th>floor area</th></tr></thead><tbody>` +
@@ -1068,12 +940,11 @@ export async function setup(ctx) {
       `</tbody></table>` +
       perBuurtTable(l.per_buurt, [
         ["shannon_area", "Shannon", 3],
-        ["simpson_area", "Simpson", 3],
       ]) +
       `<p class="muted">Normalised Shannon entropy over ` +
       `${l.parameters.n_categories_in_scheme} BAG use classes, weighted by ` +
       `usable floor area. 0 = one use only, 1 = an even mix. ` +
-      `Built floor space only — parks, water and streets are not in BAG; ` +
+      `Built floor space only: parks, water and streets are not in BAG; ` +
       `use GSI above for the built/unbuilt split. ` +
       `Toggle the grid under <em>Land use</em>.` +
       (si ? ` ${sc}: the units in demolished buildings out, ${si.new_units_est.toLocaleString("en-GB")} ` +
@@ -1178,7 +1049,7 @@ export async function setup(ctx) {
       INDICATORS.map(({ key, label, unit, hint }) => {
         const v = s[key];
         const b = base[key];
-        const shown = v == null ? "—" : `${Number(v).toFixed(2)}${unit}`;
+        const shown = v == null ? "-" : `${Number(v).toFixed(2)}${unit}`;
         let delta = "";
         if (v != null && b != null && scenario !== "baseline") {
           const d = v - b;

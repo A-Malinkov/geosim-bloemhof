@@ -19,7 +19,7 @@ compute job, not a development task.
 
 The run uses a dense receiver grid (triangles ≤ 100 m², 2 m output grid).
 On the original laptop (16 GB RAM, ~4 GB free) the NoiseModelling JVM
-segfaulted twice, 12–18 s into propagation — `SIGSEGV`, `SEGV_ACCERR`, at an
+segfaulted twice, 12–18 s into propagation: `SIGSEGV`, `SEGV_ACCERR`, at an
 address inside the Java heap, in a different JIT-compiled method each time.
 A third attempt with `JAVA_OPTS=-XX:+UseSerialGC -Xmx4g` got past that point
 and was still running after 4 minutes when it was stopped, so the serial
@@ -30,15 +30,15 @@ garbage collector is the setting to use.
 Check each of these. If one is missing, **tell the user and ask before
 installing or downloading anything**.
 
-1. **Git is up to date** — `git pull`. `git log --oneline -1` must show a
+1. **Git is up to date**: `git pull`. `git log --oneline -1` must show a
    commit that contains this file. Commit or stash local work first.
-2. **Python environment** — CLAUDE.md: it lives outside the repo, at
+2. **Python environment** (see CLAUDE.md): it lives outside the repo, at
    `%USERPROFILE%\.venvs\geosim-rotterdam`. If missing:
    ```
    py -m venv %USERPROFILE%\.venvs\geosim-rotterdam
    %USERPROFILE%\.venvs\geosim-rotterdam\Scripts\pip install -r requirements.txt
    ```
-3. **Java ≥ 11** — `java -version`. If missing, the user installs a JDK/JRE
+3. **Java ≥ 11**: `java -version`. If missing, the user installs a JDK/JRE
    17 or newer (e.g. Eclipse Temurin from adoptium.net).
 4. **NoiseModelling 6.0.0**, unpacked so that this file exists:
    `%USERPROFILE%\tools\NoiseModelling_6.0.0\bin\ScriptRunner.bat`
@@ -46,7 +46,7 @@ installing or downloading anything**.
    <https://github.com/Universite-Gustave-Eiffel/NoiseModelling/releases/tag/v6.0.0>.
    Use the **zip**, not the `.exe` installer. Elsewhere is fine if you set
    `NOISEMODELLING_HOME` to the unpacked folder.
-5. **Not inside a OneDrive-synced folder** — a sync client rewriting files
+5. **Not inside a OneDrive-synced folder**: a sync client rewriting files
    under `.git` while git runs causes "incorrect old value provided" errors,
    and H2 database files being synced mid-run is worse. If the clone is under
    a synced Desktop/Documents, tell the user.
@@ -58,7 +58,7 @@ From the project root, in `cmd`:
 ```
 set JAVA_OPTS=-XX:+UseSerialGC -Xmx8g
 set NOISE_THREADS=8
-%USERPROFILE%\.venvs\geosim-rotterdam\Scripts\python analysis\wind_noise\noise.py
+%USERPROFILE%\.venvs\geosim-rotterdam\Scripts\python analysis\wind_noise\noise.py --scenario baseline
 ```
 
 - `-Xmx8g` assumes ≥ 16 GB free RAM; use about half the free RAM.
@@ -66,7 +66,7 @@ set NOISE_THREADS=8
   each holds its own propagation buffers; raise it only if RAM allows.
 - Expect a few minutes of fetching (Overpass, 3DBAG) on the first run, then
   NoiseModelling. The previous, 4× sparser run took ~9 min on 16 threads;
-  this one will take longer — tens of minutes is normal. Run it in the
+  this one will take longer: tens of minutes is normal. Run it in the
   background and check the log rather than waiting on a foreground timeout.
 - The full NoiseModelling log goes to `cache\noise\baseline\noisemodelling.log`
   (`cache/` is gitignored). Progress lines look like
@@ -85,7 +85,7 @@ user, then try in this order, one change at a time:
 2. A different Java build/version, if the user agrees to install one.
 
 Do **not** lower the resolution parameters (`MAX_TRIANGLE_M2`, `GRID_M` in
-`noise.py`) without asking — getting that resolution is the point of the run.
+`noise.py`) without asking: getting that resolution is the point of the run.
 
 ## Verify before committing
 
@@ -100,13 +100,13 @@ The script prints a summary. Check it against the previous, coarser run
 | ≥ 53 dB | 63 % |
 | ≥ 70 dB | 11 % |
 
-The new run should be close — within ~2 dB on mean and p95, a few points on
+The new run should be close: within ~2 dB on mean and p95, a few points on
 the shares. Finer sampling of quiet squares may pull the mean down slightly.
 Red flags that mean **do not commit**:
 
-- a minimum around **−92 dB**, or many receivers far below 30 dB — that is
+- a minimum around **−92 dB**, or many receivers far below 30 dB: that is
   the "no sound path" floor; it means over-roof diffraction was lost;
-- a maximum above ~90 dB — speeds were not capped at the OSM `maxspeed`;
+- a maximum above ~90 dB: speeds were not capped at the OSM `maxspeed`;
 - `noise_baseline.json` not rewritten (check its timestamp), or its
   `method.grid_m` is not `2.0`.
 

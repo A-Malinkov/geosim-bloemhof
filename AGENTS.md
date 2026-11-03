@@ -1,7 +1,7 @@
 # Agent instructions
 
 **The full brief is in [CLAUDE.md](CLAUDE.md). Read it before changing
-anything** — it is the same file regardless of which assistant you are, and it
+anything**: it is the same file regardless of which assistant you are, and it
 carries context that is not obvious from the code.
 
 If your tool will only read this one file, these are the things most likely to
@@ -9,8 +9,8 @@ cost you time:
 
 1. **One file per component.** `app/main.js`, `app/index.html`, `app/style.css`,
    `app/config.js` and `analysis/common/project.py` are shared and go through one
-   person. Modules add layers and dashboard panels through the `ctx` API instead
-   — see the module contract in CLAUDE.md.
+   person. Modules add layers and dashboard panels through the `ctx` API instead;
+   see the module contract in CLAUDE.md.
 
 2. **Heights.** Cesium works against the WGS84 ellipsoid; Dutch data is in NAP.
    The difference here is **+43.62 m**. 3DBAG needs no offset; Rotterdam 3D and
@@ -29,7 +29,7 @@ cost you time:
 6. **Key scenario outputs** `baseline` / `scenario_a` / `scenario_b`, or
    component 4.9 cannot use them.
 
-7. **The browser cannot call the KNMI API** — a CORS preflight it does not
+7. **The browser cannot call the KNMI API**: a CORS preflight it does not
    answer. Fetch KNMI in Python. Open-Meteo is the browser-callable alternative.
 
 8. **Verify, don't recall.** Probe endpoints and check current docs before
@@ -50,6 +50,6 @@ cost you time:
     buildings, surface model and streets. Scenario outputs carry a
     `_<scenario>` suffix and every missing one has a stub.
 
-12. **Know the AI results before writing about them.** The LSTM never wins; the
+12. **Know the AI results before writing about them.** The weather LSTM beats gradient boosting in only one of six forecasts; the
     land-use DQN scores below a random policy; the RL agent demolishes housing
     unless told not to. CLAUDE.md has the summary, the READMEs the detail.

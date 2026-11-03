@@ -1,4 +1,4 @@
-# analysis/scenarios — Design scenarios + proposed massing
+# analysis/scenarios - Design scenarios + proposed massing
 
 Component 1 + 9 · owner: _<name>_ · feeds `app/modules/scenarios.js`
 
@@ -6,7 +6,7 @@ Component 1 + 9 · owner: _<name>_ · feeds `app/modules/scenarios.js`
 
 Write `design_massing.geojson` into `data/processed/`.
 Each of those files already exists as a stub containing a `_schema` block that
-describes the exact shape `scenarios.js` expects — **read it before writing the real file**.
+describes the exact shape `scenarios.js` expects: **read it before writing the real file**.
 The app treats a stub as "no data" and shows a placeholder until you overwrite it.
 
 ## Notes
@@ -95,7 +95,7 @@ neither option. The same pond is scenario_b's: it lies wholly in OPTION 2's gree
 holds 99 trees, 86 shrubs (85 of them drawn as 4 m solids rather than blocks,
 imported as points like the rest) and 9 green patches, 4.15 ha, after the pond
 and 1,693 m² of green drawn under its new streets are cut away. The
-blocks are generic shapes with no species, some bushes are scaled to 7.3 m and
+blocks are generic shapes, some bushes are scaled to 7.3 m and
 one scenario_b tree to 50 m with a 38 m crown, so the sizes are what was drawn,
 not a planting plan. The app shows them under
 Vegetation (`app/modules/vegetation.js`) on their own scenario only. No analysis

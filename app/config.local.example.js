@@ -1,5 +1,5 @@
 /* =============================================================================
- * config.local.example.js — template. Committed to git.
+ * config.local.example.js - template. Committed to git.
  *
  * FIRST THING TO DO AFTER CLONING:
  *     cp app/config.local.example.js app/config.local.js

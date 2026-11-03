@@ -1,12 +1,11 @@
 /* =============================================================================
- * modules/roads.js  —  component 8: road network
+ * modules/roads.js - component 8: road network
  * OWNER: Atanas Malinkov
  *
  * The walking network per scenario, how far homes are from everyday
- * destinations, and the footpath links an optimiser would add.
+ * destinations.
  * Computed in  analysis/roads/  ->
  *   road_network.py   -> data/processed/road_metrics.json, roads_<scenario>.geojson
- *   optimise_links.py -> data/processed/road_links.json, road_links_<scenario>.geojson
  *   edge_access.py    -> data/processed/edge_access.json, edge_access_<scenario>.geojson
  *                        (walk and drive distance from each site address to Lange Hilleweg and Strevelsweg)
  *
@@ -61,20 +60,19 @@ export async function setup(ctx) {
   const body = ctx.registerPanel({
     id: "roads",
     title: "Road network",
-    subtitle: "walking network · everyday destinations · footpath links",
+    subtitle: "walking network · everyday destinations",
     order: 60,
   });
 
-  const [data, links, edge] = await Promise.all([
+  const [data, edge] = await Promise.all([
     ctx.loadJson(ctx.config.dataSources.processed.roads),
-    ctx.loadJson(ctx.config.dataSources.processed.roadLinks),
     ctx.loadJson(EDGE, { quiet: true }),
   ]);
   const out = document.createElement("div");
   body.appendChild(out);
 
   const fmt = (v, d = 0, unit = "") =>
-    v == null ? "—" : Number(v).toLocaleString("en-GB", { minimumFractionDigits: d, maximumFractionDigits: d }) + unit;
+    v == null ? "-" : Number(v).toLocaleString("en-GB", { minimumFractionDigits: d, maximumFractionDigits: d }) + unit;
   //change against baseline; for distances and betweenness, up is worse
   const delta = (v, bv, d) => {
     if (v == null || bv == null) return "";
@@ -142,31 +140,6 @@ export async function setup(ctx) {
     return addHidden(ds);
   }
 
-  async function loadLinks(scenario) {
-    //the optimiser's footpath links with their rank
-    const path = links?.[scenario]?.geojson;
-    if (!path) return null;
-    const ds = await Cesium.GeoJsonDataSource.load(path, { clampToGround: true });
-    const green = Cesium.Color.fromCssColorString("#1a9850");
-    for (const e of ds.entities.values) {
-      e.polyline.material = new Cesium.PolylineDashMaterialProperty({ color: green, dashLength: 12 });
-      e.polyline.width = 5;
-      const pos = e.polyline.positions.getValue(Cesium.JulianDate.now());
-      e.position = Cesium.Cartesian3.midpoint(pos[0], pos[pos.length - 1], new Cesium.Cartesian3());  //label at the middle
-      e.label = new Cesium.LabelGraphics({
-        text: String(e.properties.rank.getValue()),
-        font: "bold 15px sans-serif",
-        fillColor: Cesium.Color.WHITE,
-        outlineColor: green,
-        outlineWidth: 4,
-        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-        heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-        disableDepthTestDistance: Number.POSITIVE_INFINITY,
-      });
-    }
-    return addHidden(ds);
-  }
-
   const edgeColour = (m) => Cesium.Color.fromCssColorString(
     m == null ? EDGE_NONE : EDGE_RAMP[EDGE_BREAKS.filter((t) => m > t).length]);
 
@@ -212,16 +185,12 @@ export async function setup(ctx) {
     id: "roadsNetwork", label: "Walk network, betweenness", show: true, load: loadNetwork,
     none: (sc) => `Walk network: no run for ${sc}`,
   });
-  const linkLayer = scenarioLayer({
-    id: "roadsLinks", label: "Optimiser footpath links", show: true, load: loadLinks,
-    none: (sc) => (sc === "baseline" ? null : `Footpath links: no run for ${sc}`),  //the optimiser only runs on the designs
-  });
   const edgeLayer = scenarioLayer({
     id: "roadsEdge", label: "Distance to edge streets", show: false, load: loadEdge,
     none: (sc) => `Distance to edge streets: no run for ${sc}`,
   });
   function showLayers() {
-    for (const l of [netLayer, linkLayer, edgeLayer]) l.refresh();
+    for (const l of [netLayer, edgeLayer]) l.refresh();
   }
 
   /* ------------------------------------------------------------- the card */
@@ -271,29 +240,6 @@ export async function setup(ctx) {
       `in every scenario, so it moves with the network alone. ≤ 5 min is 400 m. ` +
       `Every home in the study area reaches all four within 15 min in every scenario ` +
       `(${fmt(100 * data[sc].metrics.walk_15min_reach_frac, 0, " %")}).</p>`;
-  }
-
-  function linksBlock(sc) {
-    const L = links?.[sc];
-    if (!L?.steps) return "";
-    const total = L.steps.reduce((s, x) => s + x.length_m, 0);
-    return `<h4>Footpath links the optimiser adds</h4>` +
-      `<table class="kv"><thead><tr><th>#</th><th>length</th><th>J saved</th><th>site dwellings</th><th>of ceiling</th></tr></thead><tbody>` +
-      L.steps.map((x) =>
-        `<tr><td>${x.rank}</td><td>${fmt(x.length_m, 0, " m")}</td><td>${fmt(x.gain_m, 2, " m")}</td>` +
-        `<td>${fmt(x.site_dwellings_m, 0, " m")}</td><td>${fmt(100 * x.share_of_ceiling, 0, " %")}</td></tr>`).join("") +
-      `</tbody></table>` +
-      `<p class="muted">Objective J: mean walk from a dwelling to the nearest shop, education, health care and ` +
-      `rail stop, ${L.destinations === "with the placed amenities" ? "the placed ones included, "
-        : L.destinations === "with the shops the Rhino model labels" ? "the labelled shops included, " : ""}` +  //the option as proposed
-      `over all ${fmt(data[sc].areas.study_area.dwellings)} dwellings, now ${fmt(L.J_before_m, 2, " m")}. ` +
-      `Greedy, one straight footpath at a time, from ${L.n_candidates} candidates that cross no block or water, ` +
-      `start or end on the design's own streets and save a detour of at least ${L.candidate_rule.detour_min}×; ` +
-      `it stops when no link saves 1 mm any more. All candidates together would reach ` +  //rules since 2026-10-23
-      `${fmt(L.J_ceiling_m, 2, " m")} (the ceiling). Site dwellings start at ${fmt(L.site_dwellings_before_m, 0, " m")}, ` +
-      `today gives ${fmt((data.baseline.with_amenities ?? data.baseline).areas.design_site.mean_of_types_m, 0, " m")}. ` +  //today with its own amenities
-      `${L.steps.length} links, ${fmt(total, 0, " m")} in all. ` +
-      `Assumes the ground between blocks is public. Dashed green on the map, numbered by rank.</p>`;
   }
 
   function edgeBlock(sc) {
@@ -372,7 +318,7 @@ export async function setup(ctx) {
       showLayers();
       return;
     }
-    out.innerHTML = networkTable(sc) + accessTable(sc) + edgeBlock(sc) + linksBlock(sc) +
+    out.innerHTML = networkTable(sc) + accessTable(sc) + edgeBlock(sc) +
       `<p class="muted">OSM walk network, 500 m beyond the buurten. Betweenness: share of shortest walks ` +
       `between all node pairs that use an edge. The map colours edges by it, light to dark. ` +
       `Destinations on the design site are left out in every scenario, so the comparison is the network ` +

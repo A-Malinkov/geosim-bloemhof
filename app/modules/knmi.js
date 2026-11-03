@@ -1,5 +1,5 @@
 /* =============================================================================
- * modules/knmi.js  —  component 4: KNMI weather dashboard + AI prediction
+ * modules/knmi.js - component 4: KNMI weather dashboard + AI prediction
  * OWNER: Atanas Malinkov
  *
  * TWO DATA PATHS, AND YOU NEED BOTH
@@ -42,7 +42,7 @@ const WMO = {
   95: "Thunderstorm", 96: "Thunderstorm with hail", 99: "Severe thunderstorm",
 };
 
-/* Charts the user can switch between — this is the "user controls the
+/* Charts the user can switch between: this is the "user controls the
  * displayed content" part, not decoration. */
 const SERIES = [
   { key: "temperature_2m",      label: "temp",   unit: "°C",  colour: "#eb6834" },
@@ -188,7 +188,7 @@ export async function setup(ctx) {
   const body = ctx.registerPanel({
     id: "knmi",
     title: "KNMI weather",
-    subtitle: `${sa.name}, Rotterdam — live`,
+    subtitle: `${sa.name}, Rotterdam: live`,
     order: 10,
   });
 
@@ -245,20 +245,20 @@ export async function setup(ctx) {
     const dir = c.wind_direction_10m;
     nowEl.innerHTML = `
       <div class="wxnow">
-        <div class="wxnow__temp">${c.temperature_2m?.toFixed(1) ?? "—"}<span>${u.temperature_2m || "°C"}</span></div>
+        <div class="wxnow__temp">${c.temperature_2m?.toFixed(1) ?? "-"}<span>${u.temperature_2m || "°C"}</span></div>
         <div class="wxnow__desc">
-          <strong>${WMO[c.weather_code] ?? "—"}</strong><br>
-          feels like ${c.apparent_temperature?.toFixed(1) ?? "—"} °C
+          <strong>${WMO[c.weather_code] ?? "-"}</strong><br>
+          feels like ${c.apparent_temperature?.toFixed(1) ?? "-"} °C
         </div>
         <div class="wxnow__wind">${dir != null ? windArrow(dir) : ""}</div>
       </div>
       <table class="kv"><tbody>
-        <tr><td>wind</td><td>${c.wind_speed_10m?.toFixed(1) ?? "—"} m/s from
-            ${dir != null ? `${compass(dir)} (${dir}°)` : "—"}</td></tr>
-        <tr><td>gusts</td><td>${c.wind_gusts_10m?.toFixed(1) ?? "—"} m/s</td></tr>
-        <tr><td>humidity</td><td>${c.relative_humidity_2m ?? "—"} %</td></tr>
-        <tr><td>cloud</td><td>${c.cloud_cover ?? "—"} %</td></tr>
-        <tr><td>precipitation</td><td>${c.precipitation ?? "—"} mm</td></tr>
+        <tr><td>wind</td><td>${c.wind_speed_10m?.toFixed(1) ?? "-"} m/s from
+            ${dir != null ? `${compass(dir)} (${dir}°)` : "-"}</td></tr>
+        <tr><td>gusts</td><td>${c.wind_gusts_10m?.toFixed(1) ?? "-"} m/s</td></tr>
+        <tr><td>humidity</td><td>${c.relative_humidity_2m ?? "-"} %</td></tr>
+        <tr><td>cloud</td><td>${c.cloud_cover ?? "-"} %</td></tr>
+        <tr><td>precipitation</td><td>${c.precipitation ?? "-"} mm</td></tr>
       </tbody></table>`;
   }
 
@@ -273,8 +273,8 @@ export async function setup(ctx) {
     statusEl.className = `feed feed--${stale ? "warn" : "ok"}`;
     statusEl.innerHTML =
       `<span class="live${stale ? " live--stale" : ""}"></span>` +
-      `<strong>Live</strong> — KNMI HARMONIE-AROME 2 km, updated ${ago}.` +
-      `<br><code>model time ${latest?.current?.time ?? "—"} · ` +
+      `<strong>Live</strong>: KNMI HARMONIE-AROME 2 km, updated ${ago}.` +
+      `<br><code>model time ${latest?.current?.time ?? "-"} · ` +
       `refreshes every ${Math.round((om.refreshSeconds ?? 300) / 60)} min</code>`;
   }
 
@@ -332,7 +332,7 @@ export async function setup(ctx) {
       `(${obs.station}), ${obs.distance_km} km away · ` +
       `observation ${String(obs.observation_time).slice(0, 16).replace("T", " ")}` +
       `<br>These are instrument readings. The live panel above is KNMI's ` +
-      `forecast model — the two will not match exactly.</p>`;
+      `forecast model: the two will not match exactly.</p>`;
   } else {
     ctx.placeholder(obsEl, {
       what: "KNMI station observations not fetched yet. These are the actual "
@@ -389,20 +389,20 @@ export async function setup(ctx) {
       const best = models._best;
       const b = models[best] || {};
       const skill = b.skill_vs_persistence;
-      return `<tr><td>${hz}</td><td>${best}</td><td>${b.mae?.toFixed(2) ?? "—"}</td>` +
+      return `<tr><td>${hz}</td><td>${best}</td><td>${b.mae?.toFixed(2) ?? "-"}</td>` +
              `<td><span class="delta ${skill > 0 ? "down" : "up"}">` +
-             `${skill == null ? "—" : (skill > 0 ? "+" : "") + (skill * 100).toFixed(0) + "%"}` +
+             `${skill == null ? "-" : (skill > 0 ? "+" : "") + (skill * 100).toFixed(0) + "%"}` +
              `</span></td></tr>`;
     }).join("");
 
     predEl.innerHTML =
       `<h4>AI prediction</h4>` +
       `<table class="kv"><tbody>` +
-      `<tr><td>best model</td><td>${m.model ?? "—"}</td></tr>` +
-      `<tr><td>predicting</td><td>${m.variable ?? "—"} at ${m.horizon ?? "—"}</td></tr>` +
-      `<tr><td>MAE</td><td>${m.mae ?? "—"} °C</td></tr>` +
-      `<tr><td>RMSE</td><td>${m.rmse ?? "—"} °C</td></tr>` +
-      `<tr><td>R²</td><td>${m.r2 ?? "—"}</td></tr>` +
+      `<tr><td>best model</td><td>${m.model ?? "-"}</td></tr>` +
+      `<tr><td>predicting</td><td>${m.variable ?? "-"} at ${m.horizon ?? "-"}</td></tr>` +
+      `<tr><td>MAE</td><td>${m.mae ?? "-"} °C</td></tr>` +
+      `<tr><td>RMSE</td><td>${m.rmse ?? "-"} °C</td></tr>` +
+      `<tr><td>R²</td><td>${m.r2 ?? "-"}</td></tr>` +
       `</tbody></table>` +
       `<table class="kv"><thead><tr><th>horizon</th><th>model</th>` +
       `<th>MAE</th><th>vs persistence</th></tr></thead><tbody>${hRows}</tbody></table>` +  //persistence, not the same-hour-yesterday baseline
@@ -411,15 +411,16 @@ export async function setup(ctx) {
                      `°C · ${demo.model} ${demo.horizon}`) : "") +
       `<p class="muted">Temperature, ${forecast.method?.test_hours?.toLocaleString("en-GB")} ` +
       `held-out hours. "vs persistence" is the improvement over assuming nothing ` +
-      `changes. Chronological split — never random, or neighbouring hours leak ` +
+      `changes. Chronological split: never random, or neighbouring hours leak ` +
       `across it.</p>` +
-      `<p class="muted">Models compared: ridge regression, gradient boosting and an ` +  //what was trained, in one line
+      `<p class="muted">Models compared: gradient boosting and an ` +  //what was trained, in one line
       `LSTM, against persistence and same-hour-yesterday. Inputs: ` +
-      `${forecast.method?.train_hours?.toLocaleString("en-GB") ?? "—"} hours of ` +
-      `KNMI station ${forecast.station ?? "—"} (Rotterdam Airport), ` +
-      `${(forecast.method?.features ?? "").split(" ")[0] || "—"} features per hour: ` +  //count from the training run
+      `${forecast.method?.train_hours?.toLocaleString("en-GB") ?? "-"} hours of ` +
+      `KNMI station ${forecast.station ?? "-"} (Rotterdam Airport), ` +
+      `${(forecast.method?.features ?? "").split(" ")[0] || "-"} features per hour: ` +  //count from the training run
       `recent temperature, wind, humidity, pressure and dew point, plus time of day, ` +
-      `season, wind direction and cloud. Settings were not tuned.</p>`;
+      `season, wind direction and cloud. Trained on 2021–2023; settings, early ` +  //the validation year picks settings and the best model
+      `stopping and the best model chosen on 2024; scored on 2025.</p>`;
   } else {
     ctx.placeholder(predEl, {
       what: "Predictive model not trained yet. Report MAE/RMSE against a "

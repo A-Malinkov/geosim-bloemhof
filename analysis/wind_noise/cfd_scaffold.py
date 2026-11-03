@@ -1,32 +1,21 @@
 #!/usr/bin/env python3
 """
-cfd_scaffold.py — build the OpenFOAM wind cases from the assignment template.
+cfd_scaffold.py - the OpenFOAM wind cases, built from the assignment template.
 
-Writes four ready-to-run simpleFoam cases under analysis/wind_noise/cfd/:
+Writes four simpleFoam cases under analysis/wind_noise/cfd/, baseline,
+scenario_a, scenario_b and final. They share system/, constant/ and 0.orig/
+and differ only in resources/geometry/buildings.stl, so only the design changes
+the result. The template's TODO blocks are filled with a one-line reason each,
+its QUESTION comments are kept for the report.
 
-    cfd/baseline/      the current buildings on the design site
-    cfd/scenario_a/    the proposed massing + the kept circled block
-    cfd/scenario_b/    OPTION 2's massing + the same kept block
-    cfd/final/         the Final Model's massing + the same kept block
+The domain follows Blocken (2015) and COST 732 for a block of height H, 5H
+upwind, 15H downwind, 5H to the sides, at least 5H on top, blockage under 3 %.
+H is the tallest building over all cases (40 m, the scenario_a tower), so every
+case has the same box. The sizes come from cache/wind/geometry/b_*.meta.json.
 
-All cases share identical system/, constant/ and 0.orig/ — only the building
-STL differs (each case's resources/geometry/buildings.stl) — so the comparison
-is fair and the only thing that changes the result is the design.
-
-The TODO blocks from the assignment template are FILLED here, with the chosen
-values and a one-line reason, but the template's QUESTION comments are kept so
-you still know what to discuss in the report.
-
-Domain follows Blocken (2015) / COST 732 for an urban block of height H:
-    5H upwind, 15H downwind, 5H lateral, >=5H top, blockage ratio < 3 %.
-H is taken as the tallest building over ALL cases (40 m, the scenario_a tower),
-so every case sits in the identical box. The numbers are computed from the STL
-extents in cache/wind/geometry/b_*.meta.json, not hard-coded.
-
-Run (after wind_cfd_export.py):
+    python analysis/wind_noise/wind_cfd_export.py   #first
     python analysis/wind_noise/cfd_scaffold.py
 """
-from __future__ import annotations
 
 import json
 import math
@@ -37,7 +26,7 @@ import zipfile
 
 HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
-from common.project import ROOT  # noqa: E402
+from common.project import ROOT  #noqa: E402
 
 GEO = ROOT / "cache" / "wind" / "geometry"
 CFD = HERE / "cfd"
@@ -64,7 +53,7 @@ FOAMFILE = HEADER + """FoamFile
 FOOT = "\n\n// ************************************************************************* //\n"
 
 
-def domain_from_meta() -> dict:
+def domain_from_meta():
     #union of every case's building extents -> a Blocken domain, cells, refinement box, seed point
     xs0, ys0, xs1, ys1, z1 = [], [], [], [], []
     for c in CASES:
@@ -101,7 +90,7 @@ def domain_from_meta() -> dict:
     return d
 
 
-def frontal_area() -> float:
+def frontal_area():
     #projected area of the densest case (baseline) onto the y-z plane, i.e. the
     #shadow the buildings cast on the inlet; the real frontal area for blockage
     import trimesh
@@ -110,7 +99,7 @@ def frontal_area() -> float:
     return float(abs(shadow.area))
 
 
-def block_mesh(d) -> str:
+def block_mesh(d):
     return FOAMFILE.format(cls="dictionary", obj="blockMeshDict") + f"""
 
 // Domain after Blocken (2015), Section 5.1 (DOI 10.1016/j.buildenv.2015.02.015).
@@ -212,7 +201,7 @@ mergePatchPairs
 """ + FOOT
 
 
-def snappy(d) -> str:
+def snappy(d):
     sx, sy, sz = d["seed"]
     return FOAMFILE.format(cls="dictionary", obj="snappyHexMeshDict") + f"""
 
@@ -316,7 +305,7 @@ b_orig.stl
 """ + FOOT
 
 
-def control_dict() -> str:
+def control_dict():
     return FOAMFILE.format(cls="dictionary", obj="controlDict") + """
 
 application     simpleFoam;
@@ -360,7 +349,7 @@ functions
 """ + FOOT
 
 
-def fv_schemes() -> str:
+def fv_schemes():
     return FOAMFILE.format(cls="dictionary", obj="fvSchemes") + """
 
 ddtSchemes
@@ -417,7 +406,7 @@ wallDist
 """ + FOOT
 
 
-def fv_solution() -> str:
+def fv_solution():
     return FOAMFILE.format(cls="dictionary", obj="fvSolution") + """
 
 // Q1 p uses GAMG (geometric-algebraic multigrid): for the elliptic pressure
@@ -498,7 +487,7 @@ profiling
 """ + FOOT
 
 
-def transport_properties() -> str:
+def transport_properties():
     return FOAMFILE.format(cls="dictionary", obj="transportProperties") + """
 
 transportModel  Newtonian;
@@ -544,7 +533,7 @@ d                    uniform 0.0;
 """ + FOOT
 
 
-def field_U() -> str:
+def field_U():
     return FOAMFILE.format(cls="volVectorField", obj="U") + """
 
 dimensions      [0 1 -1 0 0 0 0];
@@ -584,7 +573,7 @@ boundaryField
 """ + FOOT
 
 
-def field_nut() -> str:
+def field_nut():
     return FOAMFILE.format(cls="volScalarField", obj="nut") + """
 
 dimensions      [0 2 -1 0 0 0 0];
@@ -798,7 +787,7 @@ rm -rf constant/triSurface
 """
 
 
-def write_case(case: str, d: dict) -> None:
+def write_case(case, d):
     root = CFD / case
     files = {
         "system/blockMeshDict": block_mesh(d),
@@ -834,8 +823,8 @@ def write_case(case: str, d: dict) -> None:
           f"(STL {(GEO / f'b_{case}.stl').stat().st_size // 1024} kB)")
 
 
-def pack_ronna(case: str) -> pathlib.Path:
-    #zip just the inputs ronna wants: 0.orig, system, constant, resources — NO
+def pack_ronna(case):
+    #zip just the inputs ronna wants: 0.orig, system, constant, resources; NO
     #Allrun* / polyMesh / triSurface / time dirs (the server makes those itself)
     root = CFD / case
     out = ROOT / "cache" / "wind" / f"{case}_ronna.zip"
@@ -850,10 +839,10 @@ def pack_ronna(case: str) -> pathlib.Path:
     return out
 
 
-def main() -> int:
+def main():
     for c in CASES:
         if not (GEO / f"b_{c}.stl").exists():
-            sys.exit(f"missing {GEO / f'b_{c}.stl'} — run wind_cfd_export.py first")
+            sys.exit(f"missing {GEO / f'b_{c}.stl'}: run wind_cfd_export.py first")
     d = domain_from_meta()
     print(f"domain (H={d['H']:.0f} m): "
           f"x [{d['xmin']}, {d['xmax']}], y [{d['ymin']}, {d['ymax']}], z [0, {d['zmax']}]  "

@@ -1,6 +1,6 @@
 {
   "study_area": "Bloemhof",
-  "method": "normalised Shannon entropy and Simpson diversity over BAG gebruiksdoel, weighted by usable floor area",
+  "method": "normalised Shannon entropy over BAG gebruiksdoel, weighted by usable floor area",
   "source": "BAG verblijfsobjecten via PDOK WFS",
   "parameters": {
     "cell_size_m": 100.0,
@@ -25,8 +25,6 @@
   "overall": {
     "shannon_area": 0.2674,
     "shannon_count": 0.1437,
-    "simpson_area": 0.2514,
-    "simpson_count": 0.1217,
     "n_categories_in_scheme": 11,
     "n_categories_present": 10,
     "dominant": "residential",
@@ -115,7 +113,6 @@
       "floor_area_m2": 586710.0,
       "shannon_area": 0.2674,
       "shannon_count": 0.1437,
-      "simpson_area": 0.2514,
       "dominant": "residential",
       "dominant_share": 0.8629,
       "composition": [
@@ -191,7 +188,6 @@
     "floor_area_m2": 586710.0,
     "shannon_area": 0.2674,
     "shannon_count": 0.1437,
-    "simpson_area": 0.2514,
     "dominant": "residential",
     "dominant_share": 0.8629,
     "composition": [

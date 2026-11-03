@@ -1,40 +1,25 @@
 #!/usr/bin/env python3
 """
-scenario_world.py — the built environment of one scenario, for the analyses.
+scenario_world.py - what stands where in one scenario, for every analysis.
 
-Every analysis that depends on buildings (sky view factor, sun hours, street
-H/W, noise) needs the same answer to "what stands where in scenario X". This
-module gives it, from the two files import_rhino.py writes:
-
-    data/processed/design_massing.geojson   new blocks + per-scenario demolition list
-    data/processed/design_streets.geojson   new street surfaces
-
-Three entry points, all a no-op for "baseline":
-
-    buildings_for_scenario(b, scenario)       GeoDataFrame of footprints (RD) with
-                                              height_m above ground: drops the
-                                              demolished ids, appends the new blocks
+Reads design_massing.geojson and design_streets.geojson from import_rhino.py.
+All four are no-ops for "baseline".
+    buildings_for_scenario(b, scenario)   footprints minus the demolished ids,
+                                          plus the new blocks
     burn_into_rasters(dsm, dtm, transform, scenario)
-                                              AHN DSM/DTM arrays with the demolished
-                                              buildings flattened to ground and the
-                                              new blocks raised to their roofs
-    streets_for_scenario(roads, scenario)     street centrelines (RD): OSM streets in
-                                              the site interior swapped for centrelines
-                                              traced from the new street surfaces
-    cleared_area(scenario)                    the part of the site the scenario rebuilds
+                                          demolished buildings flattened to
+                                          ground, new blocks raised to their roofs
+    streets_for_scenario(roads, scenario) OSM streets in the cleared site swapped
+                                          for centrelines of the new streets
+    cleared_area(scenario)                the part of the site the scenario rebuilds
 
-Ground for demolished and new buildings is the site ground level,
-DESIGN_SITE["ground_nap_m"] (AHN DTM median over the site). The DTM is empty
-under buildings, so there is no better local value to use.
+Ground for old and new buildings is the site ground, DESIGN_SITE["ground_nap_m"],
+since the DTM is empty under buildings.
 
-WHAT IT CANNOT TELL YOU
------------------------
-* Old back-garden trees on demolished lots stay in the DSM, except where a new
-  block or street now is; the new design's planting is not added.
-* Demolished footprints are widened by 0.5 m before flattening, so eaves and
-  the AHN's soft building edges go with them.
+Limits. Old garden trees on demolished lots stay in the DSM unless a new block
+or street covers them. That matters for sun hours only, the SVF leaves trees out. Demolished footprints are widened by 0.5 m so eaves go
+too.
 """
-from __future__ import annotations
 
 import json
 import pathlib
@@ -44,7 +29,7 @@ import numpy as np
 
 HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
-from common.project import DESIGN_SITE, PROCESSED, ROOT, design_site_polygon, to_rd  # noqa: E402
+from common.project import DESIGN_SITE, PROCESSED, ROOT, design_site_polygon, to_rd  #noqa: E402
 
 FOOTPRINTS = ROOT / "cache" / "scenarios" / "footprints_site.geojson"  #3DBAG LoD0 over the site, gitignored
 DEMOLISH_PAD_M = 0.5  #widen demolished footprints so eaves and soft AHN edges go too
@@ -53,7 +38,7 @@ EDGE_STREETS = ("Lange Hilleweg", "Sandelingstraat", "Dortsmondstraat", "Dubbels
                 "Strevelsweg")  #the site's edge streets, kept whole: Strevelsweg runs up to 20 m inside the outline
 
 
-# ------------------------------------------------------------------- inputs
+#--- inputs
 def site_footprints():
     #3DBAG footprints around the design site as (id, shapely geometry in RD), fetched once and cached
     from shapely.geometry import shape
@@ -68,7 +53,7 @@ def site_footprints():
             for f in json.loads(FOOTPRINTS.read_text())["features"]]
 
 
-def load_scenario(scenario: str):
+def load_scenario(scenario):
     #-> (new blocks as GeoDataFrame in RD with height_m above ground, set of demolished ids); exits if missing
     import geopandas as gpd
     path = PROCESSED / "design_massing.geojson"
@@ -85,7 +70,7 @@ def load_scenario(scenario: str):
     return new[["name", "height_m", "own_height_m", "use", "geometry"]], set(d.get("demolishes", {}).get(scenario, []))
 
 
-def cleared_area(scenario: str):
+def cleared_area(scenario):
     #the part of the design site the scenario rebuilds (RD): the site minus what import_rhino.py says it keeps
     from shapely.geometry import Polygon
     site = design_site_polygon()
@@ -93,8 +78,8 @@ def cleared_area(scenario: str):
     return site.difference(Polygon(keep)) if keep else site
 
 
-# ---------------------------------------------------------------- buildings
-def buildings_for_scenario(b, scenario: str, id_col: str = "identificatie"):
+#--- buildings
+def buildings_for_scenario(b, scenario, id_col="identificatie"):
     #3DBAG footprints (RD, height_m above ground) -> the same table for the scenario
     import geopandas as gpd
     import pandas as pd
@@ -108,8 +93,8 @@ def buildings_for_scenario(b, scenario: str, id_col: str = "identificatie"):
                             crs=b.crs)
 
 
-# ------------------------------------------------------------------ rasters
-def burn_into_rasters(dsm, dtm, transform, scenario: str):
+#--- rasters
+def burn_into_rasters(dsm, dtm, transform, scenario):
     #AHN DSM and DTM (NAP, same grid) -> copies with the scenario's demolition and new blocks burned in
     if scenario == "baseline":
         return dsm, dtm
@@ -145,8 +130,8 @@ def burn_into_rasters(dsm, dtm, transform, scenario: str):
     return dsm, dtm
 
 
-# ------------------------------------------------------------------ streets
-def centrelines(poly, step: float = 1.0, prune_m: float = 6.0):
+#--- streets
+def centrelines(poly, step=1.0, prune_m=6.0):
     #approximate medial axis of a street polygon: Voronoi edges of its densified outline that lie inside it
     import shapely
     from shapely.ops import linemerge
@@ -166,7 +151,7 @@ def centrelines(poly, step: float = 1.0, prune_m: float = 6.0):
     return [g for g in merged if g.length >= prune_m or not spur(g)]  #drop short dead ends only, keep short links at junctions
 
 
-def water_for(scenario: str):
+def water_for(scenario):
     #the scenario's open water (RD polygons) from import_rhino.py's planting file; [] if it has none
     from shapely.geometry import shape
     from shapely.ops import transform
@@ -178,7 +163,7 @@ def water_for(scenario: str):
             if f["properties"].get("scenario") == scenario and f["properties"].get("kind") == "water"]
 
 
-def streets_for_scenario(roads, scenario: str, paths: bool = False):
+def streets_for_scenario(roads, scenario, paths=False):
     #OSM street centrelines (GeoDataFrame, RD) -> centrelines for the scenario
     #paths=True also adds the footpaths the team drew by hand (walking network yes, street canyons no)
     import geopandas as gpd

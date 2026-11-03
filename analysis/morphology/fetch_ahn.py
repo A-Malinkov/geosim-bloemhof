@@ -1,27 +1,17 @@
 #!/usr/bin/env python3
 """
-fetch_ahn.py — download AHN elevation rasters for the study area.
+fetch_ahn.py - AHN elevation rasters for Bloemhof from the PDOK WCS, 0.5 m.
 
-AHN (Actueel Hoogtebestand Nederland) via the PDOK WCS, 0.5 m:
-    dsm_05m   digital SURFACE model  — includes buildings and tree crowns
-    dtm_05m   digital TERRAIN model  — bare ground
+dsm_05m is the surface with buildings and tree crowns, dtm_05m bare ground, both
+RD New in m NAP. nDSM = DSM - DTM is height above ground, what SVF and the
+height indicators use. The WCS caps a request at 4000 px, so the box is fetched
+in tiles and mosaicked.
 
-Both are in EPSG:28992 (RD New) with heights in metres above NAP.
-The difference (nDSM = DSM - DTM) is object height above ground, which is what
-the Sky View Factor and the height-variation indicators actually need.
+    python analysis/morphology/fetch_ahn.py
 
-Usage
------
-    python analysis/morphology/fetch_ahn.py               # DSM + DTM over the study area, 150 m padding
-    python analysis/morphology/fetch_ahn.py --pad 300     # more context beyond the buurt edges
-    python analysis/morphology/fetch_ahn.py --which dsm
-
-Writes into data/raw/:
-    ahn_dsm_05m.tif, ahn_dtm_05m.tif, ahn_ndsm_05m.tif
+Writes ahn_dsm_05m.tif, ahn_dtm_05m.tif and ahn_ndsm_05m.tif in data/raw/.
 """
-from __future__ import annotations
 
-import argparse
 import pathlib
 import sys
 
@@ -30,32 +20,32 @@ import rasterio
 import requests
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
-from common.project import RAW, SERVICES, STUDY_AREA, bbox_rd  # noqa: E402
+from common.project import RAW, SERVICES, STUDY_AREA, bbox_rd  #noqa: E402
 
-# AHN's own nodata is the float32 maximum, which numpy will happily average
-# into your results if you forget about it.
+#AHN's own nodata is the float32 maximum, which numpy will happily average
+#into your results if you forget about it.
 AHN_NODATA = 3.4028234663852886e38
 
 
-#: The WCS refuses any request whose output exceeds 4000 px on a side
-#: ("Raster size out of range ... MAXSIZE=4000"). At 0.5 m that is 2000 m, and
-#: the study area is wider than that, so downloads are tiled and mosaicked.
-#: 1800 m leaves margin for rounding.
+#The WCS refuses any request whose output exceeds 4000 px on a side
+#("Raster size out of range ... MAXSIZE=4000"). At 0.5 m that is 2000 m, and
+#the study area is wider than that, so downloads are tiled and mosaicked.
+#1800 m leaves margin for rounding.
 MAX_TILE_M = 1800.0
 
 
-def _download_one(coverage: str, bbox, out: pathlib.Path, timeout: int = 600):
+def _download_one(coverage, bbox, out, timeout=600):
     xmin, ymin, xmax, ymax = bbox
     params = {
         "service": "WCS", "version": "2.0.1", "request": "GetCoverage",
         "coverageId": coverage,
-        # WCS 2.0.1 wants one subset per axis; requests encodes these fine.
+        #WCS 2.0.1 wants one subset per axis; requests encodes these fine.
         "subset": [f"x({xmin:.0f},{xmax:.0f})", f"y({ymin:.0f},{ymax:.0f})"],
         "format": "image/tiff",
     }
     r = requests.get(SERVICES["ahn_wcs"], params=params, timeout=timeout)
     if r.status_code != 200:
-        # the service explains itself in an OWS ExceptionReport; surface it
+        #the service explains itself in an OWS ExceptionReport; surface it
         msg = r.text[:400].replace("\n", " ")
         raise RuntimeError(f"AHN WCS HTTP {r.status_code}: {msg}")
     if "tiff" not in r.headers.get("content-type", ""):
@@ -65,14 +55,12 @@ def _download_one(coverage: str, bbox, out: pathlib.Path, timeout: int = 600):
     return out
 
 
-def download_coverage(coverage: str, bbox: tuple[float, float, float, float],
-                      out: pathlib.Path, timeout: int = 600) -> pathlib.Path:
-    """
-    GetCoverage a WCS coverage over `bbox` (RD New) to a GeoTIFF.
-
-    Tiles the request when the box is larger than the service will return in one
-    go, and mosaics the pieces. The limit is a hard MAXSIZE=4000 px per side.
-    """
+def download_coverage(coverage, bbox,
+                      out, timeout=600):
+    #GetCoverage a WCS coverage over `bbox` (RD New) to a GeoTIFF.
+    #
+    #Tiles the request when the box is larger than the service will return in one
+    #go, and mosaics the pieces. The limit is a hard MAXSIZE=4000 px per side.
     import math
 
     xmin, ymin, xmax, ymax = bbox
@@ -102,11 +90,11 @@ def download_coverage(coverage: str, bbox: tuple[float, float, float, float],
                 print(f"     tile {len(parts)}/{nx*ny}  "
                       f"{tile.stat().st_size/1e6:.1f} MB")
 
-        # Mosaic by hand rather than with rasterio.merge. AHN's nodata is the
-        # float32 maximum (3.4e38), which merge refuses to carry ("cannot safely
-        # be represented"), and it then fills the whole output with it — a 0.2 MB
-        # constant raster that looks like a successful download. Pasting each
-        # tile at its own offset sidesteps that entirely.
+        #Mosaic by hand rather than with rasterio.merge. AHN's nodata is the
+        #float32 maximum (3.4e38), which merge refuses to carry ("cannot safely
+        #be represented"), and it then fills the whole output with it: a 0.2 MB
+        #constant raster that looks like a successful download. Pasting each
+        #tile at its own offset sidesteps that entirely.
         res = None
         for path in parts:
             with rasterio.open(path) as src:
@@ -128,7 +116,7 @@ def download_coverage(coverage: str, bbox: tuple[float, float, float, float],
             if r1 <= r0 or c1 <= c0:
                 continue
             sub = a[r0 - row:r1 - row, c0 - col:c1 - col]
-            keep = sub < AHN_NODATA * 0.5          # do not paste nodata over data
+            keep = sub < AHN_NODATA * 0.5          #do not paste nodata over data
             target = mosaic[r0:r1, c0:c1]
             target[keep] = sub[keep]
             mosaic[r0:r1, c0:c1] = target
@@ -151,8 +139,8 @@ def download_coverage(coverage: str, bbox: tuple[float, float, float, float],
     return out
 
 
-def read_masked(path: pathlib.Path) -> tuple[np.ndarray, dict]:
-    """Read band 1 as float32 with AHN's nodata turned into NaN."""
+def read_masked(path):
+    #Read band 1 as float32 with AHN's nodata turned into NaN.
     with rasterio.open(path) as src:
         a = src.read(1).astype("float32")
         profile = src.profile
@@ -161,31 +149,31 @@ def read_masked(path: pathlib.Path) -> tuple[np.ndarray, dict]:
     return a, profile
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__,
-                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--pad", type=int, default=150,
-                    help="context to fetch beyond the study-area edge, in metres. "
-                         "SVF needs it: a building just outside still blocks sky inside.")
-    ap.add_argument("--which", choices=("dsm", "dtm", "both"), default="both")
-    ap.add_argument("--force", action="store_true", help="re-download even if present")
-    args = ap.parse_args()
+PARAMS = {
+    "pad": 150,  #context beyond the study-area edge in m, a building just outside still blocks sky inside
+    "which": "both",  #"dsm", "dtm" or "both"
+    "force": "--force" in sys.argv,  #re-download even if present
+}
 
-    bbox = bbox_rd(args.pad)
-    print(f"AHN download — {STUDY_AREA.name} (+{args.pad} m context)")
+
+def main():
+    p = PARAMS
+
+    bbox = bbox_rd(p["pad"])
+    print(f"AHN download: {STUDY_AREA.name} (+{p['pad']} m context)")
     print(f"  box {bbox[2]-bbox[0]:.0f} x {bbox[3]-bbox[1]:.0f} m")
 
-    want = ("dsm", "dtm") if args.which == "both" else (args.which,)
+    want = ("dsm", "dtm") if p["which"] == "both" else (p["which"],)
     paths = {}
     for kind in want:
         out = RAW / f"ahn_{kind}_05m.tif"
-        if out.exists() and not args.force:
+        if out.exists() and not p["force"]:
             print(f"  {out.name} already there (use --force to refresh)")
         else:
             download_coverage(f"{kind}_05m", bbox, out)
         paths[kind] = out
 
-    # nDSM = height of everything above bare ground
+    #nDSM = height of everything above bare ground
     if set(paths) == {"dsm", "dtm"}:
         dsm, profile = read_masked(paths["dsm"])
         dtm, _ = read_masked(paths["dtm"])

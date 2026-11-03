@@ -1,11 +1,11 @@
 /* =============================================================================
- * main.js — SHARED FILE. Coordinator-owned.
+ * main.js - SHARED FILE. Coordinator-owned.
  *
  * Builds the viewer, then hands every module the same `ctx` object and lets the
  * module register its own layers, dashboard panels and scenario reactions.
  * A teammate adding a layer or a chart should NOT need to touch this file.
  *
- * Module contract — each file in ./modules/ exports:
+ * Module contract: each file in ./modules/ exports:
  *     export async function setup(ctx) { ... }
  * A module that throws is reported in an error toast; the rest still load.
  * ========================================================================== */
@@ -14,7 +14,7 @@ import { CONFIG } from "./config.js";
 
 /* Secrets are not in config.js. app/config.local.js is gitignored and holds the
  * Cesium ion token; anything it sets overrides config.js. A missing file is not
- * an error — the app just runs without a token — but it does log one 404, which
+ * an error, the app just runs without a token, but it does log one 404, which
  * is your cue to run:  cp app/config.local.example.js app/config.local.js
  * and paste your token into the copy. */
 async function mergeLocalConfig() {
@@ -145,7 +145,7 @@ async function boot_() {
   if (token) {
     Cesium.Ion.defaultAccessToken = token;
   } else {
-    note("No ion token — see app/config.local.example.js", "warn");
+    note("No ion token: see app/config.local.example.js", "warn");
     console.warn(
       "[config] No Cesium ion token. Copy app/config.local.example.js to " +
         "app/config.local.js and paste your token from https://ion.cesium.com/tokens. " +
@@ -178,7 +178,7 @@ async function boot_() {
 
   /* ---- terrain ---------------------------------------------------------- */
   /* Cesium World Terrain is referenced to the WGS84 ellipsoid, so NAP-based
-   * tilesets need CONFIG.napToEllipsoidM added — see config.js. */
+   * tilesets need CONFIG.napToEllipsoidM added: see config.js. */
   if (token) {
     try {
       viewer.terrainProvider = await Cesium.createWorldTerrainAsync({
@@ -253,7 +253,7 @@ async function boot_() {
   }
 
   /* ======================================================================
-   * ctx — the only API modules should rely on.
+   * ctx: the only API modules should rely on.
    * ==================================================================== */
   const layerPanelBody = document.getElementById("layerPanelBody");
   const dashboardBody = document.getElementById("dashboardBody");
@@ -609,7 +609,7 @@ async function boot_() {
 
   window.__geosim = { viewer, ctx, CONFIG }; // handy in the browser console
   console.log(
-    `%cGeosimulation — ${sa.name} (${sa.wijk}), ${sa.municipality}`,
+    `%cGeosimulation: ${sa.name} (${sa.wijk}), ${sa.municipality}`,
     "font-weight:bold",
     `\nCesiumJS ${Cesium.VERSION}\nCtrl+click the map to probe heights.`,
   );

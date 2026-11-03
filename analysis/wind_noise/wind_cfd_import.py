@@ -1,51 +1,29 @@
 #!/usr/bin/env python3
 """
-wind_cfd_import.py — a finished OpenFOAM wind run as a pedestrian-level map for the app.
+wind_cfd_import.py - a finished OpenFOAM wind run as a pedestrian-level map.
 
-Reads one ronna job (the results zip you download from
-https://ronna.tudelft.nl/openfoam/, or that zip unpacked), slices the last time
-step at z = 1.5 m and writes data/processed/wind_<case>.json: a grid of
-wind-speed ratios warped to EPSG:4326 for draping, plus a summary. The app's
-"Pedestrian wind" layer and the Wind & noise card read it and follow the
-scenario switch.
+Reads a ronna job (the results zip from https://ronna.tudelft.nl/openfoam/, or
+it unpacked), slices the last time step at 1.5 m and writes
+data/processed/wind_<case>.json, wind-speed ratios warped to EPSG:4326 plus a
+summary, for the app's Pedestrian wind layer and the Wind & noise card.
 
-Run, once per case:
-    python analysis/wind_noise/wind_cfd_import.py baseline   ~/Downloads/baseline_results.zip
-    python analysis/wind_noise/wind_cfd_import.py scenario_b path/to/unzipped_case
-    python analysis/wind_noise/wind_cfd_import.py final      final.zip --level 1.5
+    python analysis/wind_noise/wind_cfd_import.py                                    #every case in RESULTS with a download
+    python analysis/wind_noise/wind_cfd_import.py baseline ~/Downloads/baseline.zip  #one case from anywhere
+    python analysis/wind_noise/wind_cfd_import.py --force                            #skip the STL check
 
-Checked before anything is written:
-  * the mesh has a `buildings` patch. A job whose STL was not found still
-    "succeeds": snappyHexMesh returns the empty background box and simpleFoam
-    solves it. ronna's first baseline run was one.
-  * the STL inside the result is the one wind_cfd_export.py wrote for this case
-    (cache/wind/geometry/b_<case>.stl), so a baseline result cannot be filed as
-    scenario_b. --force skips this.
+Checks first. The mesh must have a buildings patch, since a job whose STL was
+missing still "succeeds" on the empty box (ronna's first baseline did). The STL
+in the result must be the one wind_cfd_export.py wrote for this case.
 
-What the numbers are:
-  * the value at 1.5 m is the value of the mesh cell that the plane z = 1.5 m
-    cuts, i.e. what a ParaView Slice shows as cell data. Near the ground the
-    cells are ~5 m (snappyHexMesh level 2 on a 20 m base), so the slice reads
-    the first cell layer, 0-5 m: any height below 5 m gives the same map.
-  * the ratio is |U| over the undisturbed inflow at the same height: the inlet
-    profile from the run's ABLConditions (log law, Uref at Zref, roughness z0)
-    evaluated at each cut cell's own centre height (~2.5 m for the 5 m ground
-    cells). Not measured upwind: the refinement box stops 30 m before the
-    buildings, so upwind of it the slice cuts 20 m cells centred at 10 m, where
-    the wind is ~70 % faster than at 2.5 m. Those upwind cells serve as a check
-    instead: their measured speed against the profile at their height shows the
-    profile survives the empty fetch (written as profile_check). A ratio above 1
-    means the wind is faster there than in open country at that height; the
-    summary counts open ground above 1.1 and below 0.5.
-  * the map covers the design site + MAP_BUFFER_M; the summary covers the open
-    ground of the design site only, like the other scenario indicators.
-
-The polyMesh and the U field are read straight from OpenFOAM's own files
-(binary or ascii, optionally .gz), with numpy: no ParaView or VTK needed.
+The value at 1.5 m is the mesh cell the plane cuts, as a ParaView slice shows.
+Ground cells are ~5 m, so any height under 5 m gives the same map. The ratio is
+|U| over the inflow profile (log law from the run's ABLConditions) at each cell
+centre. Upwind cells are 20 m and centred at 10 m, so they check the profile
+(profile_check) instead. The summary covers the site's open ground and counts
+cells above 1.1 and below 0.5. Mesh and U are read from OpenFOAM's own files
+with numpy, no ParaView needed.
 """
-from __future__ import annotations
 
-import argparse
 import gzip
 import hashlib
 import json
@@ -60,7 +38,7 @@ import numpy as np
 HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 sys.path.insert(0, str(HERE.parent / "morphology"))
-from common.project import ROOT, design_site_polygon, write_processed  # noqa: E402
+from common.project import ROOT, design_site_polygon, write_processed  #noqa: E402
 
 GEO = ROOT / "cache" / "wind" / "geometry"
 CASES = ("baseline", "scenario_a", "scenario_b", "final")
@@ -75,10 +53,10 @@ STEADY_MAX_MS = 0.1     #a non-converged run counts as steady if no cell changed
 DEFAULT_WIND_FROM = 225.0  #wind_cfd_export.py's default, used if its meta file is missing
 
 
-# ------------------------------------------------------------------ reading a case
+#--- reading a case
 class CaseFiles:
     #a ronna result as a zip or a folder; paths are relative to the case root
-    def __init__(self, path: pathlib.Path):
+    def __init__(self, path):
         self.path = path
         if path.is_dir():
             self.names = [p.relative_to(path).as_posix() for p in path.rglob("*") if p.is_file()]
@@ -90,24 +68,24 @@ class CaseFiles:
         #the zip may wrap everything in one top folder: find the case root by its mesh
         owner = [n for n in self.names if re.search(r"(^|/)constant/polyMesh/owner(\.gz)?$", n)]
         if not owner:
-            sys.exit(f"{path}: no constant/polyMesh/owner — not a reconstructed OpenFOAM case")
+            sys.exit(f"{path}: no constant/polyMesh/owner, not a reconstructed OpenFOAM case")
         self.prefix = owner[0][: owner[0].index("constant/polyMesh/owner")]
 
-    def has(self, rel: str) -> bool:
+    def has(self, rel):
         return any(self.prefix + rel + s in self.names for s in ("", ".gz"))
 
-    def read(self, rel: str) -> bytes:
+    def read(self, rel):
         for s in ("", ".gz"):
             if self.prefix + rel + s in self.names:
                 raw = self._read(self.prefix + rel + s)
                 return gzip.decompress(raw) if s else raw
         raise FileNotFoundError(rel)
 
-    def latest_time(self) -> str:
+    def latest_time(self):
         #the highest time directory holding a U field, the converged (or last) iteration
         return self.times()[-1]
 
-    def times(self) -> list:
+    def times(self):
         #every time directory holding a U field, in order, without 0 (the initial conditions)
         times = {}
         for n in self.names:
@@ -119,11 +97,11 @@ class CaseFiles:
                     pass
         times.pop(0.0, None)  #0 holds the initial conditions, not a result
         if not times:
-            sys.exit(f"{self.path}: no time directory with a U field — did the solver run?")
+            sys.exit(f"{self.path}: no time directory with a U field. Did the solver run?")
         return [times[k] for k in sorted(times)]
 
 
-def split_header(raw: bytes):
+def split_header(raw):
     #FoamFile header text and the bytes after it
     i = raw.index(b"FoamFile")
     j = raw.index(b"}", i)
@@ -131,7 +109,7 @@ def split_header(raw: bytes):
     return head, raw[j + 1:], "binary" in re.search(r"format\s+(\w+)", head).group(1)
 
 
-def read_list(body: bytes, start: int, kind: str, binary: bool):
+def read_list(body, start, kind, binary):
     #one OpenFOAM list "N ( ... )" at or after start -> (array, end offset); kind: label | scalar | vector
     m = re.compile(rb"(\d+)\s*\(").search(body, start)
     n, pos = int(m.group(1)), m.end()
@@ -149,7 +127,7 @@ def read_list(body: bytes, start: int, kind: str, binary: bool):
     return (arr.reshape(-1, 3) if kind == "vector" else arr), end + 1
 
 
-def _vector_end(body: bytes, pos: int, n: int) -> int:
+def _vector_end(body, pos, n):
     #ascii vector lists close with ")" after n "(x y z)" lines; find the closing one
     i = pos
     for _ in range(n):
@@ -157,7 +135,7 @@ def _vector_end(body: bytes, pos: int, n: int) -> int:
     return body.index(b")", i)
 
 
-def read_faces(raw: bytes):
+def read_faces(raw):
     #faces -> (offsets, point indices); faceCompactList (always for binary) or an ascii faceList
     head, body, binary = split_header(raw)
     if "faceCompactList" in head:
@@ -172,7 +150,7 @@ def read_faces(raw: bytes):
     return np.concatenate([[0], np.cumsum(sizes)]).astype(np.int64), np.array(idx, dtype=np.int64)
 
 
-def read_internal_vector(raw: bytes) -> np.ndarray:
+def read_internal_vector(raw):
     #a volVectorField's internalField as (nCells, 3)
     _, body, binary = split_header(raw)
     i = body.index(b"internalField")
@@ -182,7 +160,7 @@ def read_internal_vector(raw: bytes) -> np.ndarray:
     return arr
 
 
-def read_boundary(raw: bytes) -> dict:
+def read_boundary(raw):
     #patch name -> {type, nFaces, startFace}
     text = raw.decode("ascii", "replace")
     out = {}
@@ -192,8 +170,8 @@ def read_boundary(raw: bytes) -> dict:
     return out
 
 
-# ------------------------------------------------------------------ the slice
-def cut_cells(case: CaseFiles, level: float):
+#--- the slice
+def cut_cells(case, level):
     #cells the plane z = level cuts -> centres (local x, y), |U|, layer bottom/top, mesh facts
     _, b, binary = split_header(case.read("constant/polyMesh/points"))
     pts, _ = read_list(b, 0, "vector", binary)
@@ -240,7 +218,7 @@ def cut_cells(case: CaseFiles, level: float):
     }
 
 
-def stl_roofs(raw: bytes) -> np.ndarray:
+def stl_roofs(raw):
     #upward-facing triangles of a binary or ascii STL, (n, 3, 2) in the local frame: the building footprints
     if raw[:5] == b"solid" and b"facet" in raw[:400]:
         v = np.array(re.findall(rb"vertex\s+(\S+)\s+(\S+)\s+(\S+)", raw), dtype=float).reshape(-1, 3, 3)
@@ -253,7 +231,7 @@ def stl_roofs(raw: bytes) -> np.ndarray:
     return v[nz > 1e-9][:, :, :2]
 
 
-def frame(case_name: str):
+def frame(case_name):
     #site centre (RD) and the ccw rotation wind_cfd_export.py applied, from its meta file
     meta = GEO / f"b_{case_name}.meta.json"
     if meta.exists():
@@ -277,7 +255,7 @@ def to_rd(x, y, centre, alpha_deg):
     return math.cos(a) * x - math.sin(a) * y + centre[0], math.sin(a) * x + math.cos(a) * y + centre[1]
 
 
-def solver_log(case: CaseFiles) -> dict:
+def solver_log(case):
     #did simpleFoam converge, after how many iterations, and with which final residuals
     if not case.has("log.simpleFoam"):
         return {"log": "missing"}
@@ -293,7 +271,7 @@ def solver_log(case: CaseFiles) -> dict:
     }
 
 
-def abl(case: CaseFiles, case_name: str) -> dict:
+def abl(case, case_name):
     #the inlet profile the run used, from its 0.orig/include/ABLConditions (else the repo's copy of the case)
     rel = "0.orig/include/ABLConditions"
     if case.has(rel):
@@ -309,20 +287,28 @@ def abl(case: CaseFiles, case_name: str) -> dict:
             "d_m": get("d", 0.0), "kappa": get("kappa", 0.41)}
 
 
-def inflow_speed(z, p: dict):
+def inflow_speed(z, p):
     #OpenFOAM's atmBoundaryLayer inlet: U(z) = u*/kappa ln((z - d + z0)/z0), u* = kappa Uref / ln((Zref + z0)/z0)
     ustar = p["kappa"] * p["uref_ms"] / np.log((p["zref_m"] + p["z0_m"]) / p["z0_m"])
     return ustar / p["kappa"] * np.log((np.maximum(np.asarray(z) - p["d_m"], 0) + p["z0_m"]) / p["z0_m"])
 
 
-# ------------------------------------------------------------------ main
-def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("case", choices=CASES, help="which design case the result belongs to")
-    ap.add_argument("result", type=pathlib.Path, help="ronna results zip, or the unzipped case folder")
-    ap.add_argument("--level", type=float, default=LEVEL_M, help=f"slice height in m above ground (default {LEVEL_M})")
-    ap.add_argument("--force", action="store_true", help="skip the check that the result's STL is this case's")
-    args = ap.parse_args()
+#--- main
+PARAMS = {
+    "level": LEVEL_M,  #slice height in m above ground
+    "force": "--force" in sys.argv,  #skip the check that the result's STL is this case's
+}
+
+RESULTS = [  #one ronna result per case, saved where you put the download
+    {"case": "baseline", "result": "cache/wind/results/baseline.zip"},
+    {"case": "scenario_a", "result": "cache/wind/results/scenario_a.zip"},
+    {"case": "scenario_b", "result": "cache/wind/results/scenario_b.zip"},
+    {"case": "final", "result": "cache/wind/results/final.zip"},
+]
+
+
+def run(p):
+    #one case: PARAMS merged with one dict from CASES
 
     from rasterio.crs import CRS
     from rasterio.features import geometry_mask
@@ -331,8 +317,8 @@ def main() -> int:
     from shapely.geometry import Polygon
     from sky_view_factor import reproject_to_wgs84
 
-    case = CaseFiles(args.result.expanduser())
-    print(f"Wind {args.case}: {args.result.name}")
+    case = CaseFiles(p["result"].expanduser())
+    print(f"Wind {p['case']}: {p['result'].name}")
 
     #1. the run must have meshed buildings
     bnd = read_boundary(case.read("constant/polyMesh/boundary"))
@@ -345,24 +331,24 @@ def main() -> int:
     if not case.has("constant/triSurface/b_orig.stl"):
         sys.exit("No constant/triSurface/b_orig.stl in the result; cannot tell which case it is.")
     stl = case.read("constant/triSurface/b_orig.stl")  #ronna copies the uploaded STL here
-    mine = GEO / f"b_{args.case}.stl"
+    mine = GEO / f"b_{p['case']}.stl"
     if mine.exists() and hashlib.sha1(stl).digest() != hashlib.sha1(mine.read_bytes()).digest():
         msg = (f"The STL in this result is not {mine.relative_to(ROOT)}: wrong case, or the geometry "
                f"was re-exported since the upload.")
-        if not args.force:
+        if not p["force"]:
             sys.exit(msg + " Use --force if you are sure.")
         print("  WARNING: " + msg)
     elif not mine.exists():
-        print(f"  {mine.relative_to(ROOT)} not found: cannot check the result is {args.case} (run wind_cfd_export.py)")
+        print(f"  {mine.relative_to(ROOT)} not found: cannot check the result is {p['case']} (run wind_cfd_export.py)")
 
     #3. slice
-    c = cut_cells(case, args.level)
-    print(f"  mesh {c['n_cells']:,} cells, time {c['time']}; z = {args.level} m cuts {c['n_cut']:,} cells")
+    c = cut_cells(case, p["level"])
+    print(f"  mesh {c['n_cells']:,} cells, time {c['time']}; z = {p['level']} m cuts {c['n_cut']:,} cells")
     if c["n_cut"] == 0:
-        sys.exit(f"z = {args.level} m cuts no cell")
+        sys.exit(f"z = {p['level']} m cuts no cell")
 
     #4. reference: the inlet profile at each cell's height; checked against the clear upwind cells
-    inflow = abl(case, args.case)
+    inflow = abl(case, p["case"])
     x_end = c["bld_x0"] - UPWIND_CLEAR_M
     up = (c["xy"][:, 0] < x_end) & (c["xy"][:, 0] > c["domain_x0"] + 20)
     check = None
@@ -378,7 +364,7 @@ def main() -> int:
             print("  WARNING: the upwind flow is more than 5 % off the inlet profile; the ratios inherit that")
 
     #5. sample on an RD grid around the site: the value of the nearest cut cell
-    centre, alpha, wind_from = frame(args.case)
+    centre, alpha, wind_from = frame(p["case"])
     site = design_site_polygon()
     area = site.buffer(MAP_BUFFER_M)
     xmin, ymin, xmax, ymax = area.bounds
@@ -447,12 +433,12 @@ def main() -> int:
         how = (f"but the field is steady: at most {solver['change_max_ms']} m/s change since iteration "
                f"{solver['change_since']}" if solver.get("steady") else "and the field is still changing")
         print(f"  NOTE: simpleFoam stopped at {solver.get('iterations')} without reaching its residual target, {how}")
-    write_processed(f"wind_{args.case}.json", indent=None, payload={
+    write_processed(f"wind_{p['case']}.json", indent=None, payload={
         "quantity": "wind_speed_ratio",
-        "label": f"Wind-speed ratio at {args.level:g} m (OpenFOAM, wind from {wind_from:.0f} deg)",
+        "label": f"Wind-speed ratio at {p['level']:g} m (OpenFOAM, wind from {wind_from:.0f} deg)",
         "unit": "ratio to the undisturbed inflow at the same height",
-        "scenario": args.case,
-        "level_m": args.level,
+        "scenario": p["case"],
+        "level_m": p["level"],
         "wind_from_deg": wind_from,
         "bbox_rd": [xmin, ymin, xmax, ymax],
         "bbox_wgs84": [round(v, 7) for v in bbox_wgs],
@@ -463,12 +449,12 @@ def main() -> int:
         "solver": {**solver, "time": c["time"], "cells": c["n_cells"]},
         "method": {
             "model": "OpenFOAM v2412 simpleFoam, k-epsilon, ABL inlet (analysis/wind_noise/cfd/)",
-            "slice": f"cells cut by z = {args.level:g} m; on the design site {layer[0]:.1f}-{layer[1]:.1f} m",
+            "slice": f"cells cut by z = {p['level']:g} m; on the design site {layer[0]:.1f}-{layer[1]:.1f} m",
             "reference": "the inlet log-law profile (ABLConditions) at each cut cell's centre height; "
                          "checked against the measured upwind flow (inflow.profile_check)",
             "grid_m": GRID_M,
             "map": f"design site + {MAP_BUFFER_M} m; buildings from the case's STL",
-            "source": args.result.name,
+            "source": p["result"].name,
         },
         "limitations": [
             "One wind direction and speed; comfort classes (NEN 8100) need the KNMI wind rose.",
@@ -477,6 +463,20 @@ def main() -> int:
             "Only the design site's buildings are modelled; shelter from the wider neighbourhood is not.",
         ],
     })
+    return 0
+
+
+def main():
+    pos = [a for a in sys.argv[1:] if not a.startswith("--")]
+    runs = [{"case": pos[0], "result": pos[1]}] if len(pos) == 2 else RESULTS  #a case and a result on the command line run just that one
+    for c in runs:
+        assert c["case"] in CASES, c["case"]
+        path = pathlib.Path(c["result"]).expanduser()
+        path = path if path.is_absolute() else ROOT / path  #RESULTS paths are from the project root
+        if not path.exists():
+            print(f"{c['case']}: no result at {path}, skipped")
+            continue
+        run({**PARAMS, **c, "result": path})
     return 0
 
 

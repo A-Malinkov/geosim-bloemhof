@@ -1,5 +1,5 @@
 /* =============================================================================
- * config.js — SHARED FILE. Coordinator-owned.
+ * config.js - SHARED FILE. Coordinator-owned.
  * Do not edit if you are working on a single module; ask the coordinator.
  *
  * Every URL in this file was verified reachable on 2026-09-21.
@@ -68,16 +68,16 @@ export const CONFIG = {
    * Lange Hilleweg, Sandelingstraat, Dortsmondstraat/Dubbelstraat and
    * Strevelsweg, including those streets; chosen 2026-09-30. The polygon lives
    * in DESIGN_SITE in analysis/common/project.py and is exported to the GeoJSON
-   * below by `python analysis/common/project.py` — do not hand-edit coordinates
+   * below by `python analysis/common/project.py`: do not hand-edit coordinates
    * here.
    */
   designSite: {
-    name: "Design site — south-west Bloemhof",
+    name: "Design site: south-west Bloemhof",
     boundary: "../data/processed/design_site.geojson",
   },
 
   /* ==========================================================================
-   * HEIGHT DATUM — read this before touching any 3D layer.
+   * HEIGHT DATUM: read this before touching any 3D layer.
    *
    * Cesium places everything relative to the WGS84 ELLIPSOID.
    * Dutch data is almost always in NAP (Normaal Amsterdams Peil).
@@ -86,7 +86,7 @@ export const CONFIG = {
    * (EPSG:7415 RD+NAP -> EPSG:4979 WGS84 3D).
    *
    * A NAP-referenced tileset dropped into Cesium unchanged therefore sits
-   * ~43.6 m TOO LOW — the classic "buildings sunk into the ground" bug.
+   * ~43.6 m TOO LOW: the classic "buildings sunk into the ground" bug.
    * Per-tileset corrections live in `layers` below.
    * ====================================================================== */
   napToEllipsoidM: 43.62,
@@ -126,13 +126,6 @@ export const CONFIG = {
       credit: "Rotterdam 3D / gemeente Rotterdam",
     },
 
-    // ---- Rotterdam 3D trees, textured variant (heavier; off by default).
-    rotterdamTreesTextured: {
-      url: "https://www.3drotterdam.nl/bomen/datasource-data/8c6167e5-e84b-4b57-9c03-b8b7bcc3a2b7/tileset.json",
-      heightOffsetM: 43.62,
-      credit: "Rotterdam 3D / gemeente Rotterdam",
-    },
-
     // ---- Rotterdam 3D green surfaces (same NAP caveat).
     rotterdamGreen: {
       url: "https://www.3drotterdam.nl/bomen/datasource-data/5a93f1a4-7151-4fa8-b7de-56ba50417be2/tileset.json",
@@ -151,7 +144,7 @@ export const CONFIG = {
 
   /* ------------------------------------------- APIs used by the dashboards */
   dataSources: {
-    /* KNMI Data Platform — Open Data API.
+    /* KNMI Data Platform: Open Data API.
      * The anonymous key below is published by KNMI for public use and is valid
      * until 2026-08-01 per developer.dataplatform.knmi.nl/open-data-api.
      * Register your own key at developer.dataplatform.knmi.nl for the EDR API,
@@ -173,14 +166,14 @@ export const CONFIG = {
       dataset: "10-minute-in-situ-meteorological-observations",
       datasetVersion: "1.0",
     },
-    /* LIVE FEED — the one source the browser can actually poll.
+    /* LIVE FEED: the one source the browser can actually poll.
      *
      * Open-Meteo serves KNMI's own numerical weather models and, unlike KNMI's
      * API, it needs no key and sends CORS headers, so the page can fetch it
      * directly and refresh itself. That is what makes the dashboard live
      * rather than a file someone regenerates by hand.
      *
-     * Model: knmi_harmonie_arome_netherlands — KNMI HARMONIE-AROME, 2 km grid
+     * Model: knmi_harmonie_arome_netherlands: KNMI HARMONIE-AROME, 2 km grid
      * over the Netherlands and Belgium, updated hourly, out to ~2.5 days.
      * It returns null for pressure; knmi_seamless has pressure but is a
      * coarser KNMI/ECMWF blend. Pressure is not used in this project, so we
@@ -188,7 +181,7 @@ export const CONFIG = {
      *
      * Free tier: 10,000 calls/day, 5,000/hour, 600/minute, non-commercial use.
      * Polling every 5 minutes from one browser is ~288 calls/day.
-     * Data is CC BY 4.0 and MUST be credited — see `attribution` below.
+     * Data is CC BY 4.0 and MUST be credited: see `attribution` below.
      * Verified 2026-09-23. */
     openMeteo: {
       forecast: "https://api.open-meteo.com/v1/forecast",
@@ -233,7 +226,6 @@ export const CONFIG = {
       noiseBaseline:   "../data/processed/noise_baseline.json",
       landuse:         "../data/processed/landuse_abm.json",
       roads:           "../data/processed/road_metrics.json",
-      roadLinks:       "../data/processed/road_links.json",  //footpath links the optimiser picks, analysis/roads/optimise_links.py
       designMassing:   "../data/processed/design_massing.geojson",
       designStreets:   "../data/processed/design_streets.geojson",  //new street surfaces per scenario, import_rhino.py
     },
@@ -256,6 +248,7 @@ export const CONFIG = {
     //switching on any layer of the key group switches off the listed groups, restored when its last layer goes off
     hides: { Morphology: ["Vegetation"] },
     regroup: {
+      ahn:            "Morphology",  //AHN surface heights, baseline
       svfOverlay:     "Morphology",
       shadowOverlay:  "Morphology",
       densityGrid:    "Morphology",

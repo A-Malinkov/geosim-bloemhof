@@ -1,5 +1,5 @@
 /* =============================================================================
- * modules/performance.js  —  switches for the expensive rendering features
+ * modules/performance.js - switches for the expensive rendering features
  * OWNER: Atanas Malinkov
  *
  * The app renders a lot for a laptop GPU: a soft 2048 px shadow map (the whole
@@ -12,7 +12,7 @@
  * unavailable the defaults below apply.
  *
  * Loaded LAST (see main.js) so the saved choices override the defaults other
- * modules set during their own setup — indicators.js turns shadows and globe
+ * modules set during their own setup: indicators.js turns shadows and globe
  * lighting on for the Sun & shadows card.
  * ========================================================================== */
 

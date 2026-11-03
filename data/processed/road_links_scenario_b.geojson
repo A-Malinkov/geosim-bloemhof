@@ -1,1 +1,0 @@
-{"type":"FeatureCollection","features":[{"type":"Feature","properties":{"rank":1,"length_m":16.6,"gain_m":0.057},"geometry":{"type":"LineString","coordinates":[[4.500227,51.889519],[4.500022,51.889599]]}},{"type":"Feature","properties":{"rank":2,"length_m":47.5,"gain_m":0.049},"geometry":{"type":"LineString","coordinates":[[4.504034,51.890939],[4.504353,51.891318]]}}]}

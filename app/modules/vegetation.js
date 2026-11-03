@@ -1,5 +1,5 @@
 /* =============================================================================
- * modules/vegetation.js  —  3D vegetation models
+ * modules/vegetation.js - 3D vegetation models
  * OWNER: Atanas Malinkov
  *
  * Builds our OWN 3D trees from the Rotterdam tree register, rather than only
@@ -8,8 +8,8 @@
  * Why bother, when layers.js already loads Rotterdam's 3D tree tileset?
  * Because that tileset is a sealed mesh. You cannot count it, query it, or take
  * a tree out of it for a design scenario. These trees come from the register
- * (2,172 of them in the study area, 206 species), so we can add, remove and
- * re-measure them — which is what components 5 (wind) and 9 (scenarios) need.
+ * (1,204 of them in Bloemhof), so we can add, remove and
+ * re-measure them, which is what components 5 (wind) and 9 (scenarios) need.
  *
  * Geometry: a cylinder trunk and an ellipsoid crown per tree, batched into two
  * Cesium Primitives. One draw call each, so a couple of thousand trees costs
@@ -108,7 +108,7 @@ export async function setup(ctx) {
   const body = ctx.registerPanel({
     id: "vegetation",
     title: "Vegetation",
-    subtitle: "Rotterdam tree register — 3D models",
+    subtitle: "Rotterdam tree register: 3D models",
     order: 25,
   });
 
@@ -178,32 +178,22 @@ export async function setup(ctx) {
   body.innerHTML =
     `<table class="kv"><tbody>` +
     `<tr><td>trees</td><td>${(s.n_trees ?? geo.features.length).toLocaleString("en-GB")}</td></tr>` +
-    `<tr><td>density</td><td>${s.trees_per_hectare ?? "—"} / ha</td></tr>` +
-    `<tr><td>species</td><td>${s.n_species ?? "—"}</td></tr>` +
-    `<tr><td>mean height</td><td>${h.mean ?? "—"} m</td></tr>` +
-    `<tr><td>mean crown</td><td>${cr.mean ?? "—"} m</td></tr>` +
+    `<tr><td>density</td><td>${s.trees_per_hectare ?? "-"} / ha</td></tr>` +
+    `<tr><td>mean height</td><td>${h.mean ?? "-"} m</td></tr>` +
+    `<tr><td>mean crown</td><td>${cr.mean ?? "-"} m</td></tr>` +
     `<tr><td>canopy cover</td><td>${
-      c.cover_fraction == null ? "—" : (c.cover_fraction * 100).toFixed(1) + " %"
+      c.cover_fraction == null ? "-" : (c.cover_fraction * 100).toFixed(1) + " %"
     }</td></tr>` +
     `</tbody></table>` +
-    (s.top_species?.length
-      ? `<h4>Most common species</h4>` +
-        `<table class="kv"><tbody>` +
-        s.top_species.slice(0, 6).map((x) =>
-          `<tr><td>${x.species}</td><td>${x.n}</td></tr>`).join("") +
-        `</tbody></table>`
-      : "") +
     `<p class="muted">Crown area is an upper bound: overlapping crowns count twice.</p>`;
 
-  /* ---- click anything to show what is selected -------------------------- */
-  // A single floater, top-centre so it clears the bottom-left status chips.
   /* ---- tree selection ---------------------------------------------------
    * The trees are batched primitives, not entities, so Cesium's own click
    * handling selects nothing for them. Select a stand-in entity instead, so a
    * tree shows in the same selection box (selection.js) as everything else. */
   const C = ctx.Cesium;
-  const HIDE = new Set(["kind", "proposed", "lon", "lat", "ground_nap_m"]);  //internal or shown elsewhere
-  const NAMES = { species_nl: "species (NL)", height_m: "height", height_class: "height class", crown_m: "crown",
+  const HIDE = new Set(["kind", "proposed", "lon", "lat", "ground_nap_m", "species", "species_nl"]);  //internal or shown elsewhere
+  const NAMES = { height_m: "height", height_class: "height class", crown_m: "crown",
                   street: "street", block: "Rhino block", scenario: "scenario" };
   const unit = (k, v) => (typeof v === "number" && /_m$/.test(k) ? `${v} m` : typeof v === "number" && /_cm$/.test(k) ? `${v} cm` : v);
   const label = (k) => NAMES[k] ?? k.replace(/_(m|cm)$/, "").replace(/_/g, " ");  //trunk_diameter_cm -> trunk diameter
@@ -211,7 +201,7 @@ export async function setup(ctx) {
     let name;
     if (id.proposed)  //planting from the Rhino model: a generic block, no species
       name = `Proposed ${id.kind}${id.scenario ? ` (${id.scenario})` : ""}`;
-    else name = `${id.kind === "shrub" ? "Shrub" : "Tree"}: ${id.species_nl || id.species || "unknown species"}`;
+    else name = [id.kind === "shrub" ? "Shrub" : "Tree", id.height_class || id.height_m + " m"].join(" ? ");
     const rows = Object.entries(id)
       .filter(([k, v]) => !HIDE.has(k) && v != null && v !== "" && typeof v !== "object")
       .map(([k, v]) => `<tr><td>${label(k)}</td><td>${unit(k, v)}</td></tr>`);
@@ -330,14 +320,14 @@ export async function setup(ctx) {
   function renderPlanting() {
     const set = planting.get(current);
     plantBox.innerHTML = !set ? "" :
-      `<h4>Proposed planting — ${current}</h4>` +
+      `<h4>Proposed planting: ${current}</h4>` +
       `<table class="kv"><tbody>` +
       `<tr><td>new trees</td><td>${set.feats.tree.length}</td></tr>` +
       `<tr><td>new shrubs</td><td>${set.feats.shrub.length}</td></tr>` +
       `<tr><td>green areas</td><td>${set.feats.green.length} · ${(set.area / 1e4).toFixed(2)} ha</td></tr>` +
       (set.waterArea ? `<tr><td>water</td><td>${set.waterArea.toLocaleString("en-GB")} m²</td></tr>` : "") +  //"Water feature?" layer
       `</tbody></table>` +
-      `<p class="muted">From the Rhino model's generic blocks: sizes as drawn, no species.</p>`;
+      `<p class="muted">From the Rhino model's generic blocks: sizes as drawn.</p>`;
   }
 
   ctx.onScenarioChange((scenario) => { current = scenario; applyPlanting(); });  //not relying on handler order

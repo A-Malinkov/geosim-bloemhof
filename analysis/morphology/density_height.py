@@ -1,46 +1,13 @@
 #!/usr/bin/env python3
 """
-density_height.py — building density and height variation for the study area.
+density_height.py - building density and height variation.
 
 Owner: Atanas Malinkov
 
-METHOD: SPACEMATRIX
--------------------
-Density is not one number. A dense low-rise terrace and a tower in a park can
-share a floor-space index and be nothing alike. Spacematrix (Berghauser Pont &
-Haupt, TU Delft, 2010) separates them with four quantities computed over a
-defined aggregation unit:
-
-    GSI = built footprint / land area          coverage      0-1
-    FSI = gross floor area / land area         intensity
-    L   = FSI / GSI                            mean storeys
-    OSR = (1 - GSI) / FSI                      open space per m2 of floor space
-
-GSI and FSI together fix the other two, so a GSI-FSI scatter with L and OSR
-isolines characterises the urban fabric. That plot is produced by
-make_figures.py as fig_spacematrix.png.
-
-AGGREGATION UNIT
-----------------
-A 100 m grid, plus one aggregate over the CBS Bloemhof polygon. The grid gives
-a map; the buurt figure gives a number to quote. Spacematrix is scale-sensitive
-by construction, so the cell size is reported with every result and you should
-never compare an FSI at one cell size against another.
-
-FLOORS
-------
-b3_bouwlagen where 3DBAG provides it. It is missing for about 44% of records --
-overwhelmingly small structures, not tall ones -- so the rest fall back to
-height / storey height, where storey height is MEASURED from the buildings that
-have both (median ~3.08 m here) rather than assumed.
-
-SHEDS
------
-A third of BAG "Pand" records in this area are under 15 m2: garden sheds,
-garages, bergingen. They genuinely cover ground, so they count towards GSI and
-FSI. They are NOT buildings in the sense that "mean building height" means, so
-height statistics are computed over principal buildings only -- footprint
->= 40 m2 and height >= 4 m by default. Both filters are reported.
+Spacematrix (Berghauser Pont & Haupt 2010) on a 100 m grid and over the whole
+buurt. GSI = footprint / land, FSI = floor area / land, L = FSI / GSI storeys.
+Floors come from b3_bouwlagen, otherwise height / measured storey height.
+Sheds count for density; height statistics use buildings >= 40 m2 and >= 4 m.
 
 SCENARIOS
 ---------
@@ -54,22 +21,9 @@ compare_scenarios.py; the podium leaves the height statistics, the flats' roof
 stands for the pair. Outputs carry a _<scenario> suffix; the baseline keeps the
 plain names.
 
-USAGE
------
-    python analysis/morphology/fetch_buildings.py      # first
-    python analysis/morphology/density_height.py
-    python analysis/morphology/density_height.py --scenario scenario_a
-
-OUTPUTS
--------
-    data/processed/density_grid[_<scenario>].geojson   100 m grid, WGS84, for the app
-    data/processed/density_summary[_<scenario>].json   headline figures + Spacematrix points
-    ... and merges fsi / gsi / height_mean_m / height_std_m into
-        morphology_indicators.json under the scenario's key
+Runs every case in CASES; --scenario followed by case names selects a subset.
 """
-from __future__ import annotations
 
-import argparse
 import json
 import pathlib
 import sys
@@ -77,13 +31,13 @@ import sys
 import numpy as np
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
-from common.project import (  # noqa: E402
+from common.project import (  #noqa: E402
     PROCESSED, RAW, STUDY_AREA, bbox_rd, buurt_polygons, buurt_properties,
     study_area_polygon, to_wgs,
 )
 
-MIN_FOOTPRINT_M2 = 40.0     # below this it is an outbuilding, not a building
-MIN_HEIGHT_M = 4.0          # single-storey garages are not "building height"
+MIN_FOOTPRINT_M2 = 40.0     #below this it is an outbuilding, not a building
+MIN_HEIGHT_M = 4.0          #single-storey garages are not "building height"
 
 
 def load_buildings():
@@ -136,7 +90,7 @@ def scenario_blocks(scenario: str, storey_m: float):
 
 
 def measured_storey_height(floors, height):
-    """Median metres per storey, from buildings where 3DBAG gives both."""
+    #Median metres per storey, from buildings where 3DBAG gives both.
     ok = np.isfinite(floors) & np.isfinite(height) & (floors >= 2)
     if ok.sum() < 30:
         return 3.0, 0
@@ -156,20 +110,21 @@ def describe(v):
             "max": round(float(v.max()), 3)}
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__,
-                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--cell", type=float, default=100.0, help="grid cell size, m")
-    ap.add_argument("--min-footprint", type=float, default=MIN_FOOTPRINT_M2)
-    ap.add_argument("--min-height", type=float, default=MIN_HEIGHT_M)
-    ap.add_argument("--min-buildings", type=int, default=3,
-                    help="cells with fewer buildings are reported but flagged sparse")
-    ap.add_argument("--scenario", default="baseline", choices=["baseline", "scenario_a", "scenario_b", "final"],
-                    help="design scenario: its demolition out, its new blocks in (default: today)")
-    args = ap.parse_args()
-    sfx = "" if args.scenario == "baseline" else f"_{args.scenario}"  #output file suffix
+PARAMS = {
+    "cell": 100.0,  #grid cell size, m
+    "min_footprint": MIN_FOOTPRINT_M2,
+    "min_height": MIN_HEIGHT_M,
+    "min_buildings": 3,  #cells with fewer buildings are flagged sparse
+}
 
-    print(f"Building density and height variation — {STUDY_AREA.name}, {args.scenario}")
+CASES = [{"scenario": sc} for sc in ("baseline", "scenario_a", "scenario_b", "final")]
+
+
+def run(p):
+    #one case: PARAMS merged with the scenario from CASES
+    sfx = "" if p['scenario'] == "baseline" else f"_{p['scenario']}"  #output file suffix
+
+    print(f"Building density and height variation — {STUDY_AREA.name}, {p['scenario']}")
     x, y, area, floors_raw, height, ids = load_buildings()
     print(f"  {len(x):,} buildings with a footprint area")
 
@@ -187,10 +142,10 @@ def main() -> int:
     cover = area.copy()  #ground cover, for GSI; equal to the footprint for every 3DBAG building
     bcount = np.ones(len(x), dtype=int)  #buildings each record counts as
     hstat = np.ones(len(x), dtype=bool)  #records that enter the height statistics
-    if args.scenario != "baseline":
-        rec, gone, n_raised = scenario_blocks(args.scenario, sh)
+    if p['scenario'] != "baseline":
+        rec, gone, n_raised = scenario_blocks(p['scenario'], sh)
         keep = ~np.isin(ids, list(gone))  #demolished buildings out
-        print(f"  {args.scenario}: {int((~keep).sum()):,} buildings demolished, "
+        print(f"  {p['scenario']}: {int((~keep).sum()):,} buildings demolished, "
               f"{len(rec['x'])} new volumes ({n_raised} flats on a shop podium)")
         x, y, area, floors, height = (np.concatenate([v[keep], rec[k]]) for v, k in
                                       [(x, "x"), (y, "y"), (area, "area"), (floors, "floors"), (height, "height")])
@@ -201,15 +156,15 @@ def main() -> int:
 
     gfa = area * floors
 
-    principal = (area >= args.min_footprint) & (height >= args.min_height) & hstat
-    print(f"  principal buildings (>= {args.min_footprint:.0f} m2 and "
-          f">= {args.min_height:.0f} m): {int(principal.sum()):,} "
+    principal = (area >= p['min_footprint']) & (height >= p['min_height']) & hstat
+    print(f"  principal buildings (>= {p['min_footprint']:.0f} m2 and "
+          f">= {p['min_height']:.0f} m): {int(principal.sum()):,} "
           f"({100 * principal.mean():.0f}%), holding "
           f"{100 * area[principal].sum() / area.sum():.0f}% of the built area")
 
-    # ---------------------------------------------------------------- grid
+    #--- grid
     xmin, ymin, xmax, ymax = bbox_rd()
-    c = args.cell
+    c = p["cell"]
     nx = int(np.ceil((xmax - xmin) / c))
     ny = int(np.ceil((ymax - ymin) / c))
     col = ((x - xmin) // c).astype(int)
@@ -235,12 +190,11 @@ def main() -> int:
         gsi = sum_area / cell_area
         fsi = sum_gfa / cell_area
         L = np.where(gsi > 0, fsi / np.maximum(gsi, 1e-9), np.nan)
-        osr = np.where(fsi > 0, (1 - gsi) / np.maximum(fsi, 1e-9), np.nan)
 
     print(f"  grid {nx} x {ny} cells of {c:.0f} m; "
           f"{int((count > 0).sum())} contain buildings")
 
-    # ------------------------------------------------- grid -> GeoJSON (WGS84)
+    #--- grid -> GeoJSON (WGS84)
     cells = []
     for i in range(ncell):
         if count[i] == 0:
@@ -254,37 +208,36 @@ def main() -> int:
             "geometry": {"type": "Polygon",
                          "coordinates": [[[round(a, 7), round(b, 7)] for a, b in ring]]},
             "properties": {
-                # grid indices travel with the cell: the RD->WGS84 transform is
-                # not axis-aligned, so the row/col cannot be recovered from the
-                # lon/lat afterwards without them
+                #grid indices travel with the cell: the RD->WGS84 transform is
+                #not axis-aligned, so the row/col cannot be recovered from the
+                #lon/lat afterwards without them
                 "row": int(r),
                 "col": int(cc),
                 "gsi": round(float(gsi[i]), 4),
                 "fsi": round(float(fsi[i]), 4),
                 "layers": None if not np.isfinite(L[i]) else round(float(L[i]), 2),
-                "osr": None if not np.isfinite(osr[i]) else round(float(osr[i]), 3),
                 "height_mean_m": None if not np.isfinite(h_mean[i]) else round(float(h_mean[i]), 2),
                 "height_std_m": None if not np.isfinite(h_std[i]) else round(float(h_std[i]), 2),
                 "n_buildings": int(count[i]),
                 "n_principal": int(p_cnt[i]),
-                "sparse": bool(count[i] < args.min_buildings),
+                "sparse": bool(count[i] < p["min_buildings"]),
             },
         })
     (PROCESSED / f"density_grid{sfx}.geojson").write_text(json.dumps({
         "type": "FeatureCollection",
         "_source": "3DBAG v20250903, aggregated by analysis/morphology/density_height.py"
-                   + ("" if not sfx else f"; {args.scenario}: design_massing.geojson's demolition and new blocks"),
+                   + ("" if not sfx else f"; {p['scenario']}: design_massing.geojson's demolition and new blocks"),
         "_cell_size_m": c,
         "_grid": {"nx": nx, "ny": ny, "origin_rd": [xmin, ymin]},
         "features": cells,
     }) + "\n")
     print(f"  wrote density_grid{sfx}.geojson ({len(cells)} cells)")
 
-    # ------------------------------------------- aggregate per buurt and overall
-    # The study area is two whole buurten, so each is reported separately and
-    # together. The bounding box is derived from their union, so unlike the old
-    # 600 m square there is no partial-coverage correction to make: every
-    # building in a buurt is inside the data we fetched.
+    #--- aggregate per buurt and overall
+    #The study area is two whole buurten, so each is reported separately and
+    #together. The bounding box is derived from their union, so unlike the old
+    #600 m square there is no partial-coverage correction to make: every
+    #building in a buurt is inside the data we fetched.
     per_buurt, combined = {}, None
     try:
         import shapely.geometry as sg
@@ -311,7 +264,6 @@ def main() -> int:
                 "gsi": round(g_, 4),
                 "fsi": round(f_, 4),
                 "layers": round(f_ / g_, 2) if g_ else None,
-                "osr": round((1 - g_) / f_, 3) if f_ else None,
                 "height_m": describe(height[bp]),
             }
             return out
@@ -332,11 +284,11 @@ def main() -> int:
     except Exception as exc:
         print(f"  ! buurt aggregates skipped ({exc})")
 
-    # --------------------------------------------- label each cell by buurt
-    # The Spacematrix scatter is only worth drawing if the two buurten can be
-    # told apart on it: they occupy visibly different parts of the diagram, and
-    # a single undifferentiated cloud hides exactly the finding.
-    cell_buurt: dict[int, str] = {}
+    #--- label each cell by buurt
+    #The Spacematrix scatter is only worth drawing if the two buurten can be
+    #told apart on it: they occupy visibly different parts of the diagram, and
+    #a single undifferentiated cloud hides exactly the finding.
+    cell_buurt = {}
     try:
 
         polys = buurt_polygons()
@@ -353,15 +305,15 @@ def main() -> int:
     except Exception as exc:
         print(f"  ! per-cell buurt labels skipped ({exc})")
 
-    # ------------------------------------------------------------- summary
-    valid = count >= args.min_buildings
+    #--- summary
+    valid = count >= p["min_buildings"]
     summary = {
         "study_area": STUDY_AREA.name,
-        **({} if not sfx else {"scenario": args.scenario,
+        **({} if not sfx else {"scenario": p['scenario'],
             "scenario_rule": "3DBAG minus the buildings design_massing.geojson demolishes, plus its new "
                              "blocks: storeys = own height / measured storey height; flats on a shop podium "
                              "add floors, not ground cover, and count as one building with the podium"}),
-        "method": "Spacematrix (Berghauser Pont & Haupt 2010): GSI, FSI, L, OSR",
+        "method": "Spacematrix (Berghauser Pont & Haupt 2010): GSI, FSI, L",
         "source": "3DBAG v20250903 (TU Delft), attributes b3_opp_grond / "
                   "b3_bouwlagen / b3_h_dak_50p / b3_h_maaiveld",
         "parameters": {
@@ -369,9 +321,9 @@ def main() -> int:
             "storey_height_m": round(sh, 3),
             "storey_height_source": f"median of {n_sh} buildings with both "
                                     f"b3_bouwlagen and a height",
-            "principal_min_footprint_m2": args.min_footprint,
-            "principal_min_height_m": args.min_height,
-            "min_buildings_per_cell": args.min_buildings,
+            "principal_min_footprint_m2": p["min_footprint"],
+            "principal_min_height_m": p["min_height"],
+            "min_buildings_per_cell": p["min_buildings"],
         },
         "counts": {
             "buildings_total": int(bcount.sum()),
@@ -388,21 +340,19 @@ def main() -> int:
             "gsi": describe(gsi[valid]),
             "fsi": describe(fsi[valid]),
             "layers": describe(L[valid]),
-            "osr": describe(osr[valid]),
             "height_mean_m": describe(h_mean[valid]),
             "height_std_m": describe(h_std[valid]),
         },
         "per_buurt": per_buurt,
         "combined": combined,
-        # One point per grid cell for the Spacematrix scatter in the app. The
-        # buurt label comes from whichever polygon contains the cell CENTRE, so
-        # a cell straddling the boundary is attributed to one side rather than
-        # counted twice; cells whose centre falls outside both (the bounding box
-        # is larger than the buurten) are labelled null and drawn in grey.
+        #One point per grid cell for the Spacematrix scatter in the app. The
+        #buurt label comes from whichever polygon contains the cell CENTRE, so
+        #a cell straddling the boundary is attributed to one side rather than
+        #counted twice; cells whose centre falls outside both (the bounding box
+        #is larger than the buurten) are labelled null and drawn in grey.
         "spacematrix": [
             {"gsi": round(float(gsi[i]), 4), "fsi": round(float(fsi[i]), 4),
              "layers": None if not np.isfinite(L[i]) else round(float(L[i]), 2),
-             "osr": None if not np.isfinite(osr[i]) else round(float(osr[i]), 3),
              "height_mean_m": None if not np.isfinite(h_mean[i]) else round(float(h_mean[i]), 2),
              "height_std_m": None if not np.isfinite(h_std[i]) else round(float(h_std[i]), 2),
              "buurt": cell_buurt.get(i)}
@@ -412,22 +362,22 @@ def main() -> int:
     (PROCESSED / f"density_summary{sfx}.json").write_text(json.dumps(summary, indent=2) + "\n")
     print(f"  wrote density_summary{sfx}.json")
 
-    # merge the headline numbers into the shared indicators file
+    #merge the headline numbers into the shared indicators file
     mi_path = PROCESSED / "morphology_indicators.json"
     try:
         mi = json.loads(mi_path.read_text())
     except Exception:
         mi = {}
     mi.pop("_status", None)
-    mi.setdefault(args.scenario, {})
+    mi.setdefault(p['scenario'], {})
     head = combined or {}
-    mi[args.scenario]["fsi"] = head.get("fsi", summary["grid"]["fsi"].get("mean"))
-    mi[args.scenario]["gsi"] = head.get("gsi", summary["grid"]["gsi"].get("mean"))
-    mi[args.scenario]["layers"] = head.get("layers")
-    mi[args.scenario]["osr"] = head.get("osr")
+    mi[p['scenario']]["fsi"] = head.get("fsi", summary["grid"]["fsi"].get("mean"))
+    mi[p['scenario']]["gsi"] = head.get("gsi", summary["grid"]["gsi"].get("mean"))
+    mi[p['scenario']]["layers"] = head.get("layers")
+    mi[p['scenario']].pop("osr", None)  #clear the removed indicator from older outputs
     hs = head.get("height_m") or summary["grid"]["height_mean_m"]
-    mi[args.scenario]["height_mean_m"] = hs.get("mean")
-    mi[args.scenario]["height_std_m"] = hs.get("std")
+    mi[p['scenario']]["height_mean_m"] = hs.get("mean")
+    mi[p['scenario']]["height_std_m"] = hs.get("std")
     mi["_density_source"] = "analysis/morphology/density_height.py"
     mi_path.write_text(json.dumps(mi, indent=2) + "\n")
     print("  merged fsi / gsi / height into morphology_indicators.json")
@@ -437,7 +387,7 @@ def main() -> int:
         b = combined
         print(f"  {b['name']} over {b['land_area_ha']} ha:")
         print(f"     GSI {b['gsi']:.3f}   FSI {b['fsi']:.3f}   "
-              f"L {b['layers']:.2f} storeys   OSR {b['osr']:.2f}")
+              f"L {b['layers']:.2f} storeys")
         h = b["height_m"]
         print(f"     building height {h['mean']:.1f} m mean, "
               f"sigma {h['std']:.1f} m, max {h['max']:.1f} m "
@@ -449,6 +399,15 @@ def main() -> int:
     print(f"     height variation within a cell: sigma "
           f"{g['height_std_m']['mean']:.2f} m on average, "
           f"up to {g['height_std_m']['max']:.2f} m")
+    return 0
+
+
+def main():
+    #run every case by default, or only the names after --scenario
+    only = sys.argv[sys.argv.index("--scenario") + 1:] if "--scenario" in sys.argv else None
+    for case in CASES:
+        if only is None or case["scenario"] in only:
+            run({**PARAMS, **case})
     return 0
 
 

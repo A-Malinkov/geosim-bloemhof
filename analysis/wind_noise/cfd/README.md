@@ -1,4 +1,4 @@
-# CFD wind simulation — design site
+# CFD wind simulation: design site
 
 An OpenFOAM v2412 steady-RANS (`simpleFoam`, k-ε, atmospheric-boundary-layer
 inlet) wind study of the design site, built from the assignment template and
@@ -8,7 +8,7 @@ only thing that changes the result is the design:
 | case | geometry |
 |---|---|
 | `baseline` | the 1,156 3DBAG buildings now standing on the site |
-| `scenario_a` | those demolished, the 22 new massing blocks, **plus the kept block** (school/halls/workshops, circled on the BAG — 6 BAG records, `keep_rd`) welded in as a solid obstacle |
+| `scenario_a` | those demolished, the 22 new massing blocks, **plus the kept block** (school/halls/workshops, circled on the BAG: 6 BAG records, `keep_rd`) welded in as a solid obstacle |
 | `scenario_b` | the same, with OPTION 2's 10 blocks (tallest 27.2 m) |
 | `final` | the same, with the Final Model's 301 volumes (tallest 25 m). Flats on a shop podium share its footprint: the 49 podiums lie wholly under their flats, so the flats' prism (ground to roof) stands for both and no solid sits inside another |
 
@@ -18,7 +18,7 @@ domain nor the baseline and scenario_a cases: their uploads stay valid.
 
 ## How the geometry is made
 
-The STL the solver meshes is NOT edited by hand — it is generated:
+The STL the solver meshes is NOT edited by hand: it is generated:
 
 ```bash
 python analysis/wind_noise/wind_cfd_export.py     # writes cache/wind/geometry/b_*.stl
@@ -28,7 +28,7 @@ python analysis/wind_noise/cfd_scaffold.py        # writes cfd/<case>/ and copie
 `wind_cfd_export.py` reuses `analysis/scenarios/scenario_world.buildings_for_scenario()`
 (the same demolish/keep/add logic the noise and SVF runs use), extrudes each
 footprint from **z=0 to its height above ground**, and rotates everything so the
-**prevailing SW wind (from 225°) blows along +x** — the inlet direction the ABL
+**prevailing SW wind (from 225°) blows along +x**: the inlet direction the ABL
 case expects. There is **no +43.62 m NAP offset here**: OpenFOAM's ground is a
 flat wall at z=0, unlike the Cesium app.
 
@@ -38,16 +38,16 @@ With the tallest building H = 40 m (the scenario_a tower): 5H upwind, 15H
 downwind, 5H lateral, ≥5H top, snapped to a 10 m grid → x [−500, 830],
 y [−410, 340], z [0, 240] m, base cell 20 m (66×38×12). Measured frontal-area
 blockage **2.82 %** (< 3 % target). snappyHexMesh refines the facades and a
-ground box to ~5 m — modest, to fit the TU Delft server. `addLayers` is off.
+ground box to ~5 m: modest, to fit the TU Delft server. `addLayers` is off.
 
 ## Running (TU Delft server, https://ronna.tudelft.nl/openfoam/)
 
-ronna is **not a terminal** — you upload a zip of case inputs, the server meshes
+ronna is **not a terminal**: you upload a zip of case inputs, the server meshes
 (`surfaceFeatureExtract` → `blockMesh` → `snappyHexMesh`) and solves
 (`simpleFoam`) on its own, and you download the result zip. There is no
 `./Allrun` to run and no `checkMesh` to type; the logs are on the job page.
 
-Upload only these four folders — **no `Allrun*`, no `constant/polyMesh` or
+Upload only these four folders: **no `Allrun*`, no `constant/polyMesh` or
 `constant/triSurface`, no time directories.** The zips are prebuilt by:
 
 ```bash
@@ -62,7 +62,7 @@ uploaded `.stl` to `constant/triSurface/b_orig.stl` regardless of its name, so
 `b_orig.eMesh` (the *patch* is still named `buildings`, which the boundary
 conditions use). Referencing any other name makes snappy silently find no
 geometry and return the empty background box (30,096 cells, no `buildings`
-patch) — the one failure we hit first.
+patch): the one failure we hit first.
 
 After the job succeeds, download it and read the logs on the job page for
 converging residuals (stops at 1e-4 via `residualControl`, else the 2000-iter
@@ -91,8 +91,11 @@ python analysis/wind_noise/wind_cfd_import.py scenario_b path/to/scenario_b_resu
 python analysis/wind_noise/wind_cfd_import.py final      path/to/final_results.zip
 ```
 
+Or save the zips as `cache/wind/results/<case>.zip` (`RESULTS` in the script) and run it
+with no arguments: it imports every case that has one.
+
 Each writes `data/processed/wind_<case>.json`: the cells cut by **z = 1.5 m**
-(`--level` to change it), sampled on a 2 m grid over the design site + 50 m and
+(`PARAMS["level"]` to change it), sampled on a 2 m grid over the design site + 50 m and
 warped to EPSG:4326. The value is the **wind-speed ratio**, |U| over the
 undisturbed inflow at the same height: the inlet's log-law profile
 (`ABLConditions`) at each cell's centre height, ~2.6 m on the site. It does not
@@ -127,7 +130,7 @@ Each filled TODO carries a `// Q…` comment with the choice and reason:
 `0.orig/include/ABLConditions` (z0, Uref, Zref).
 
 **Things to state as limitations:** the mesh is coarse for a pedestrian-comfort
-study (server budget); a single wind direction/speed (SW, 5 m/s) — results scale
+study (server budget); a single wind direction/speed (SW, 5 m/s): results scale
 linearly with inlet speed but a full comfort assessment needs the KNMI wind rose;
 no surrounding context beyond the site, so inflow shelter from the wider
 neighbourhood is not represented.

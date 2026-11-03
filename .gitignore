@@ -8,8 +8,8 @@ app/config.local.js
 # is rebuilt in about two minutes by:
 #   python analysis/morphology/fetch_ahn.py
 #   python analysis/morphology/sky_view_factor.py
-# git handles large binaries badly — each re-run would add another full copy
-# to history — so they stay out. The small JSON results and the figures in
+# git handles large binaries badly: each re-run would add another full copy
+# to history, so they stay out. The small JSON results and the figures in
 # docs/ ARE committed, because those are the actual findings.
 data/raw/*.tif
 data/processed/*.tif
@@ -27,7 +27,7 @@ cache/
 #   python analysis/wind_noise/wind_cfd_export.py
 #   python analysis/wind_noise/cfd_scaffold.py
 # and the solver's own output is large and machine-specific. The case configs
-# (0.orig, constant, system) ARE committed — those are the deliverable.
+# (0.orig, constant, system) ARE committed: those are the deliverable.
 analysis/wind_noise/cfd/**/resources/geometry/*.stl
 analysis/wind_noise/cfd/**/constant/triSurface/
 analysis/wind_noise/cfd/**/constant/extendedFeatureEdgeMesh/

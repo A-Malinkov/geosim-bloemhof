@@ -1,5 +1,5 @@
 /*
- * noise_pipeline.groovy — the NoiseModelling 6 chain behind noise.py.
+ * noise_pipeline.groovy - the NoiseModelling 6 chain behind noise.py.
  *
  * Do not run this by hand; noise.py prepares the inputs and calls
  *   ~/tools/NoiseModelling_6.0.0/bin/ScriptRunner -w <workdir> -s noise_pipeline.groovy --osmPath ...
@@ -17,7 +17,7 @@
  *
  * OSM buildings are NOT imported: around here most have no height tag, so
  * NoiseModelling would guess. 3DBAG has measured heights and is what the rest
- * of the project uses — and swapping that one table is how scenarios plug in.
+ * of the project uses, and swapping that one table is how scenarios plug in.
  */
 
 import org.h2gis.api.ProgressVisitor
@@ -34,7 +34,7 @@ import groovy.sql.Sql
 
 import java.sql.Connection
 
-title = 'Geosim Bloemhof — road traffic noise'
+title = 'Geosim Bloemhof: road traffic noise'
 description = 'OSM roads + 3DBAG buildings -> Lden at pedestrian height'
 
 inputs = [
@@ -114,7 +114,7 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
             confMaxSrcDist      : input.maxSrcDist,
             confThreadNumber    : input.threads,
             // Over-the-roof diffraction. Off by default, and then a courtyard
-            // closed on all sides — most of Bloemhof — has no sound path at all
+            // closed on all sides, most of Bloemhof, has no sound path at all
             // and comes out at the -92 dB "nothing received" floor.
             confDiffHorizontal  : true,
     ])
