@@ -246,7 +246,7 @@ export const CONFIG = {
     ],
     open: ["Reference", "Design", "Imagery", "3D city model"],
     //switching on any layer of the key group switches off the listed groups, restored when its last layer goes off
-    hides: { Morphology: ["Vegetation"] },
+    hides: { Morphology: ["Vegetation"], "Wind & noise": ["Vegetation"] },  //no tree stands on an overlay
     regroup: {
       ahn:            "Morphology",  //AHN surface heights, baseline
       svfOverlay:     "Morphology",

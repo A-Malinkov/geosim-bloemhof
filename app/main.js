@@ -347,24 +347,34 @@ async function boot_() {
   }
 
   /* A group in config.layerPanel.hides switches other groups off while any of
-   * its layers is on (Morphology hides Vegetation, so trees stand on no overlay).
-   * Layers it hid come back once the group's last layer is off. */
+   * its layers is on (Morphology and Wind & noise hide Vegetation, so trees stand
+   * on no overlay). Layers it hid come back once the group's last layer is off,
+   * unless another group that hides them is still on. */
   const layerToggles = new Map();  //group name -> list of {box, setVisible}
-  const hiddenBy = new Map();  //hiding group -> set of setVisible functions it switched off
+  const hiddenBy = new Map();  //hiding group -> Map(setVisible -> its group) of layers it switched off
+  const groupOn = (g) => (layerToggles.get(g) ?? []).some((l) => l.box.checked);
   function applyHides(gName, visible) {
     const targets = LP.hides?.[gName];
     if (!targets) return;  //this group hides nothing
     if (visible) {
-      const hid = hiddenBy.get(gName) ?? new Set();
+      const hid = hiddenBy.get(gName) ?? new Map();
       for (const t of targets) {
         for (const l of layerToggles.get(t) ?? []) {
-          if (l.box.checked) { l.setVisible(false); hid.add(l.setVisible); }  //switch off and remember
+          if (l.box.checked) { l.setVisible(false); hid.set(l.setVisible, t); }  //switch off and remember
         }
       }
       hiddenBy.set(gName, hid);
-    } else if (!(layerToggles.get(gName) ?? []).some((l) => l.box.checked)) {
-      for (const setVisible of hiddenBy.get(gName) ?? []) setVisible(true);  //last one off, restore
+    } else if (!groupOn(gName)) {
+      const hid = hiddenBy.get(gName) ?? new Map();
       hiddenBy.delete(gName);
+      for (const [setVisible, t] of hid) {
+        //another group that hides the same layer is still on: it takes over, so the layer stays off
+        const other = Object.keys(LP.hides).find((g) => g !== gName && LP.hides[g].includes(t) && groupOn(g));
+        if (other) {
+          if (!hiddenBy.has(other)) hiddenBy.set(other, new Map());
+          hiddenBy.get(other).set(setVisible, t);
+        } else setVisible(true);  //last one off, restore
+      }
     }
   }
 
