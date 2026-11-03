@@ -42,6 +42,7 @@ import { setup as setupFlood } from "./modules/flood.js";
 import { setup as setupPerformance } from "./modules/performance.js";
 import { setup as setupCompass } from "./modules/compass.js";
 import { setup as setupComparison } from "./modules/comparison.js";  //4.9 scenario comparison card
+import { setup as setupClimate } from "./modules/climate.js";  //KNMI'23 2050 scenarios against the designs
 import { setupSelectionBox } from "./selection.js";  //the box for whatever is selected, instead of Cesium's info box
 
 /* Load order only affects panel order when two panels share the same `order`. */
@@ -59,6 +60,7 @@ const MODULES = [
   ["roads", setupRoads],
   ["transit", setupTransit],
   ["comparison", setupComparison],  //reads the other components' outputs, so after them
+  ["climate", setupClimate],  //static files only; its map buttons tick other modules' layers when clicked
   ["photos", setupPhotos],
   ["flood", setupFlood],
   // Last, so saved performance choices override defaults set by the others.

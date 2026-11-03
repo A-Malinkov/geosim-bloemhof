@@ -100,6 +100,7 @@ Check its root is the project folder; if the data files 404, use `http.server`.
 | 2b| **3D vegetation**: *Atanas Malinkov* | `app/modules/vegetation.js` | `analysis/morphology/` |
 | 3 | **Morphology indicators (SVF, density, height, land-use mix)**: *Atanas Malinkov* | `app/modules/indicators.js` | `analysis/morphology/` |
 | 4 | KNMI weather + AI prediction | `app/modules/knmi.js` | `analysis/knmi/` |
+| 4c| Climate 2050: KNMI'23 scenarios against the designs | `app/modules/climate.js` | `analysis/climate/` |
 | 5 | Wind + noise simulation | `app/modules/wind_noise.js` | `analysis/wind_noise/` |
 | 6 | CBS socio-demographics | `app/modules/cbs.js` | `analysis/cbs/` |
 | 7 | **Agent-based land-use model**: *Atanas Malinkov* | `app/modules/landuse.js` | `analysis/abm_landuse/` |
@@ -255,12 +256,13 @@ app/
   assets/
 analysis/
   common/project.py                             ← shared: study area, CRS, paths
-  morphology/  knmi/  wind_noise/  cbs/
+  morphology/  knmi/  climate/  wind_noise/  cbs/
   abm_landuse/  roads/  scenarios/  transit/
 data/
   raw/                                          ← downloads, as delivered
   processed/                                    ← JSON the app reads
 docs/                                           ← figures for the report
+tests/                                          ← unittest + node --test, no extra dependency
 ```
 
 Rasters are the bulk of the project: ~50 MB in `data/raw/` (AHN) and ~38 MB of
@@ -283,6 +285,7 @@ numbers here still match `data/processed/`.
 | 4.2 | Geospatial data layers | ✅ done | — |
 | 4.3 | Urban morphological indicators | ✅ done — SVF 0.784, GSI 0.333, FSI 1.003, mix 0.267, Bloemhof; plus street H/W and direct-sun hours. SVF, sun hours, H/W, density and land-use mix also run for scenario_a, scenario_b and the final design | Atanas |
 | 4.4 | KNMI sensors + AI prediction | ✅ done — live feed, sensors, 5 y history, model comparison | Atanas |
+| 4.4c | Climate 2050: design resilience | ✅ done — official KNMI'23 scenarios for 2050 (all six, national average, De Bilt, Vlissingen) against today, A, B and the final design: sealed-surface runoff, crown cover, summer shade, home-days above 30 °C (`analysis/climate/`, app card). Not our AI and not a forecast | — |
 | 4.5 | Wind + noise simulation | 🟡 wind done for baseline, A, B and the final design (OpenFOAM on the TU Delft server) · noise done for the baseline (NoiseModelling 6.0.0), A, B and the final design wired, not run | — |
 | 4.6 | CBS socio-demographics | ✅ done: Bloemhof against Rotterdam, people, age, households and origin (CBS 2026) and income (2023), in a dashboard card (`analysis/cbs/fetch_cbs.py`, `app/modules/cbs.js`) | Atanas |
 | 4.7 | Agent-based land-use model | ✅ done — CA + RL, prefers the `green` programme; Rhino options scored on the same objective | Atanas |
@@ -315,6 +318,9 @@ python analysis/morphology/make_figures.py       # report figures into docs/ (~4
 
 python analysis/knmi/fetch_knmi.py               # sensors + 5 y history     (~2 min)
 python analysis/knmi/train_forecast.py           # train + score the models  (~5 min)
+
+python analysis/climate/fetch_knmi23.py          # KNMI'23 2050 key figures  (~10 s; --from-cache offline)
+python analysis/climate/design_resilience.py     # 2050 hazards x designs, after compare_scenarios.py
 
 python analysis/abm_landuse/fetch_landcover.py   # OSM green/water/roads     (~30 s)
 python analysis/abm_landuse/ca_landuse.py        # cellular automaton        (~5 s)

@@ -351,6 +351,48 @@ def main():
                    ("amenities: A placed", r"^With the placed shops and health practices", f"{ap['scenario_a']['mean_of_four']['site_dwellings_after_m']:.1f} m", [ROADS]),
                    ("amenities: B placed", r"^With the placed shops and health practices", f"{ap['scenario_b']['mean_of_four']['site_dwellings_after_m']:.1f} m", [ROADS])]
 
+    #Climate 2050: KNMI'23 hazards and the design-resilience table (analysis/climate/README.md)
+    import re  #main() imports it again below; this block needs it first
+    k23, cres = load("climate_knmi23.json"), load("climate_resilience.json")
+    CLIM = ROOT / "analysis/climate/README.md"
+    days = lambda v: f"{v:.1f}" if v < 10 or v != round(v) else f"{v:.0f}"  #the README's day format
+    if k23:
+        for st in ("De Bilt", "Vlissingen"):
+            for iid, lab in (("summer_days", "summer days, max ≥ 25 °C"), ("tropical_days", "tropical days, max ≥ 30 °C")):
+                I = k23["locations"][st]["indicators"][iid]
+                pat = rf"^\| {re.escape(lab)} \| {st} \|"
+                checks.append((f"climate: {iid} {st} 1991-2020", pat, f"| {days(I['reference'])} |", [CLIM]))
+                for s, v in I["scenarios"].items():
+                    checks.append((f"climate: {iid} {st} {s}", pat, f"| {days(I['reference'] + v['change'])} |", [CLIM]))
+        for iid, pat in (("p_hour_1y_summer", r"^\| hourly rain exceeded once a year, summer \| NL \|"),
+                         ("p_day_10y_summer", r"^\| daily rain exceeded once in 10 years, summer \| NL \|")):
+            I = k23["locations"]["NLavg"]["indicators"][iid]
+            checks.append((f"climate: {iid} reference", pat, f"| {I['reference']:.0f} mm |", [CLIM]))
+            for s, v in I["scenarios"].items():
+                lo, hi = v["change_range"]
+                checks.append((f"climate: {iid} {s}", pat, f"| {v['change']:+.0f} % ({lo:.0f}–{hi:.0f}) |", [CLIM]))
+        ic = k23["italic_check"]
+        checks.append(("climate: italic rule", r'^that band" in', f"in {ic['agree']} of {ic['cells']} cells", [CLIM]))
+    if cres:
+        for sc, D in cres["designs"].items():
+            s, r = D["static"], D["rain"]["p_hour_1y_summer"]
+            h = D["heat_home_days"]["tropical_days"]
+            pat = rf"^\| {re.escape(D['label'])} \| "
+            for label, txt in (("sealed", f"{100 * s['sealed_share']:.0f} %"), ("crown", f"{100 * s['canopy_share']:.1f} %"),
+                               ("shade", f"{100 * s['summer_shade_share']:.1f} %"), ("green/home", f"{s['green_per_home_m2']:.0f} m²"),
+                               ("homes", f"{s['dwellings']:,}"), ("runoff now", f"{r['reference']['runoff_m3']:,} m³"),
+                               ("runoff Hn", f"{r['scenarios']['Hn']['runoff_m3']:,} m³"),
+                               ("on green Hn", f"{r['scenarios']['Hn']['depth_on_green_mm']} mm"),
+                               ("home-days now", f"{h['reference'][0]:,}–{h['reference'][1]:,}"),
+                               ("home-days Hd", f"{h['scenarios']['Hd'][0]:,}–{h['scenarios']['Hd'][1]:,}")):
+                checks.append((f"climate: {sc} {label}", pat, f"| {txt} |", [CLIM]))
+        ob = cres["observed"]["mean"]
+        checks.append(("climate: observed 344", r"^and inland De Bilt", f"({ob['summer_days']:.1f}", [CLIM]))
+        A, F = cres["designs"]["scenario_a"], cres["designs"]["final"]
+        ex = lambda D: D["rain"]["p_hour_1y_summer"]["scenarios"]["Hn"]["extra_runoff_m3"]
+        checks.append(("climate: A extra runoff", r"It changes the size of the problem", f"A gains {ex(A)} m³", [CLIM]))
+        checks.append(("climate: final extra runoff", r"^  design \d+ m³\.$", f"design {ex(F)} m³", [CLIM]))
+
     import re
 
     lines_of = {}
@@ -475,6 +517,28 @@ def main():
             ("roads README: 'housing only, site walks are longer than today'",
              all(ap[s]["mean_of_four"]["site_dwellings_before_m"] > ap["baseline"]["today_with_own_amenities"]["mean_of_four"]["site_dwellings_m"]
                  for s in ("scenario_a", "scenario_b"))),
+        ]
+    if cres and all(k in cres["designs"] for k in ("baseline", "scenario_a", "scenario_b", "final")):
+        Dz = cres["designs"]
+        plans = ("scenario_a", "scenario_b", "final")
+        st = lambda k: {s: Dz[s]["static"][k] for s in plans}
+        top = lambda k, f=max: f(st(k), key=st(k).get)
+        hn = {s: Dz[s]["rain"]["p_hour_1y_summer"]["scenarios"] for s in Dz}
+        order = lambda sc: sorted(Dz, key=lambda s: hn[s][sc]["runoff_m3"])
+        claims += [
+            ("climate README: 'the final design has the least sealed ground'", top("sealed_share", min) == "final"),
+            ("climate README: 'the final design has the most green per home'", top("green_per_home_m2") == "final"),
+            ("climate README: 'Scenario B the most crown cover'", top("canopy_share") == "scenario_b"),
+            ("climate README: 'Scenario B the most winter daylight'", top("winter_dark_share", min) == "scenario_b"),
+            ("climate README: 'Scenario A the most summer shade'", top("summer_shade_share") == "scenario_a"),
+            ("climate README: 'the climate cannot reorder the designs'",
+             all(order(sc) == order("Hn") for sc in hn["baseline"])),
+            ("climate README: 'the pond would rise 2.2-2.8 m under Hn'",
+             [round(f(hn[s]["Hn"]["pond_rise_m"] for s in plans), 1) for f in (min, max)] == [2.2, 2.8]),
+            ("climate README: 'A has the most home-days, the final design the fewest'",
+             top("dwellings") == "scenario_a" and top("dwellings", min) == "final"),
+            ("climate README: 'the final design builds fewer homes than today'",
+             Dz["final"]["static"]["dwellings"] < Dz["baseline"]["static"]["dwellings"]),
         ]
     broken = [c for c, ok in claims if not ok]
 

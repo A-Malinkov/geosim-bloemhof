@@ -1,0 +1,2479 @@
+{
+ "_written_by": "analysis/climate/fetch_knmi23.py",
+ "_note": "Official KNMI'23 climate scenarios: 30-year means for 2036-2065 against 1991-2020. Projections under six storylines, not forecasts of any particular year or day, and not produced by this project's models.",
+ "source": {
+  "publisher": "KNMI (Royal Netherlands Meteorological Institute)",
+  "dataset": "KNMI'23 climate scenarios, key figures (kerncijfers)",
+  "portal": "https://klimaatscenarios-data.knmi.nl/kerncijfers",
+  "api": "https://klimaatscenarios-data.knmi.nl/api/v1/climate-table-data",
+  "report": "https://cdn.knmi.nl/system/data_center_publications/files/000/071/901/original/KNMI23_klimaatscenarios_gebruikersrapport_23-03.pdf",
+  "report_title": "KNMI'23 klimaatscenario's voor Nederland, gebruikersrapport (KNMI, March 2023)",
+  "retrieved": "2026-11-03T14:25:38+00:00"
+ },
+ "reference_period": "1991-2020",
+ "horizon": {
+  "label": "2050",
+  "period": "2036-2065"
+ },
+ "geographic_coverage": "Netherlands average (temperature: De Bilt, De Kooy, Eelde, Vlissingen, Maastricht; rainfall: 13 P13 stations) and two single stations. Rotterdam is not a KNMI'23 location; De Bilt (inland) and Vlissingen (coast) are the nearest published stations.",
+ "scenarios": {
+  "Ld": {
+   "emissions": "low",
+   "variant": "dry",
+   "label": "Low emissions, dry",
+   "pathway": "SSP1-2.6",
+   "core": true
+  },
+  "Ln": {
+   "emissions": "low",
+   "variant": "wet",
+   "label": "Low emissions, wet",
+   "pathway": "SSP1-2.6",
+   "core": true
+  },
+  "Md": {
+   "emissions": "moderate",
+   "variant": "dry",
+   "label": "Moderate emissions, dry",
+   "pathway": null,
+   "core": false
+  },
+  "Mn": {
+   "emissions": "moderate",
+   "variant": "wet",
+   "label": "Moderate emissions, wet",
+   "pathway": null,
+   "core": false
+  },
+  "Hd": {
+   "emissions": "high",
+   "variant": "dry",
+   "label": "High emissions, dry",
+   "pathway": "SSP5-8.5",
+   "core": true
+  },
+  "Hn": {
+   "emissions": "high",
+   "variant": "wet",
+   "label": "High emissions, wet",
+   "pathway": "SSP5-8.5",
+   "core": true
+  }
+ },
+ "global_warming_C": {
+  "1991-2020": {
+   "Ld": 0.8,
+   "Ln": 0.8,
+   "Md": 1.1,
+   "Mn": 1.1,
+   "Hd": 1.5,
+   "Hn": 1.5
+  },
+  "1850-1900": {
+   "Ld": 1.7,
+   "Ln": 1.7,
+   "Md": 2.0,
+   "Mn": 2.0,
+   "Hd": 2.4,
+   "Hn": 2.4
+  }
+ },
+ "locations": {
+  "NLavg": {
+   "label": "Netherlands average",
+   "indicators": {
+    "t_mean_year": {
+     "theme": "temperature",
+     "label": "Mean temperature, year",
+     "knmi": {
+      "season": "Jaar",
+      "variable": "Temperatuur",
+      "indicator": "gemiddelde"
+     },
+     "unit": "°C",
+     "reference": 10.5,
+     "scenarios": {
+      "Ld": {
+       "change": 0.9,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 11.4,
+       "natural_variability_30y": [
+        11.1,
+        11.7
+       ],
+       "within_natural_variability": false
+      },
+      "Ln": {
+       "change": 0.9,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 11.3,
+       "natural_variability_30y": [
+        11.0,
+        11.7
+       ],
+       "within_natural_variability": false
+      },
+      "Md": {
+       "change": 1.2,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 11.6,
+       "natural_variability_30y": [
+        11.3,
+        11.9
+       ],
+       "within_natural_variability": false
+      },
+      "Mn": {
+       "change": 1.1,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 11.6,
+       "natural_variability_30y": [
+        11.2,
+        11.9
+       ],
+       "within_natural_variability": false
+      },
+      "Hd": {
+       "change": 1.6,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 12.0,
+       "natural_variability_30y": [
+        11.8,
+        12.4
+       ],
+       "within_natural_variability": false
+      },
+      "Hn": {
+       "change": 1.5,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 11.9,
+       "natural_variability_30y": [
+        11.7,
+        12.2
+       ],
+       "within_natural_variability": false
+      }
+     }
+    },
+    "tmax_mean_summer": {
+     "theme": "temperature",
+     "label": "Mean daily maximum, summer",
+     "knmi": {
+      "season": "Zomer",
+      "variable": "Temperatuur",
+      "indicator": "gemiddeld dagmaximum"
+     },
+     "unit": "°C",
+     "reference": 21.7,
+     "scenarios": {
+      "Ld": {
+       "change": 1.4,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 23.0,
+       "natural_variability_30y": [
+        22.4,
+        23.6
+       ],
+       "within_natural_variability": false
+      },
+      "Ln": {
+       "change": 1.2,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 22.8,
+       "natural_variability_30y": [
+        22.3,
+        23.4
+       ],
+       "within_natural_variability": false
+      },
+      "Md": {
+       "change": 1.6,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 23.2,
+       "natural_variability_30y": [
+        22.7,
+        23.8
+       ],
+       "within_natural_variability": false
+      },
+      "Mn": {
+       "change": 1.3,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 23.0,
+       "natural_variability_30y": [
+        22.4,
+        23.5
+       ],
+       "within_natural_variability": false
+      },
+      "Hd": {
+       "change": 2.2,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 23.7,
+       "natural_variability_30y": [
+        23.2,
+        24.4
+       ],
+       "within_natural_variability": false
+      },
+      "Hn": {
+       "change": 1.7,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 23.4,
+       "natural_variability_30y": [
+        22.8,
+        23.9
+       ],
+       "within_natural_variability": false
+      }
+     }
+    },
+    "p_hour_1y_summer": {
+     "theme": "precipitation",
+     "label": "Hourly rainfall exceeded once a year, summer",
+     "knmi": {
+      "season": "Zomer",
+      "variable": "Neerslag",
+      "indicator": "uurlijkse neerslag die eens per jaar wordt overschreden"
+     },
+     "unit": "mm",
+     "reference": 16.0,
+     "scenarios": {
+      "Ld": {
+       "change": 4.0,
+       "change_unit": "%",
+       "change_range": [
+        2.0,
+        6.0
+       ],
+       "future": 17.0,
+       "natural_variability_30y": null,
+       "within_natural_variability": false
+      },
+      "Ln": {
+       "change": 6.0,
+       "change_unit": "%",
+       "change_range": [
+        3.0,
+        8.0
+       ],
+       "future": 17.0,
+       "natural_variability_30y": null,
+       "within_natural_variability": false
+      },
+      "Md": {
+       "change": 5.0,
+       "change_unit": "%",
+       "change_range": [
+        2.0,
+        7.0
+       ],
+       "future": 17.0,
+       "natural_variability_30y": null,
+       "within_natural_variability": false
+      },
+      "Mn": {
+       "change": 7.0,
+       "change_unit": "%",
+       "change_range": [
+        4.0,
+        10.0
+       ],
+       "future": 17.0,
+       "natural_variability_30y": null,
+       "within_natural_variability": false
+      },
+      "Hd": {
+       "change": 6.0,
+       "change_unit": "%",
+       "change_range": [
+        2.0,
+        9.0
+       ],
+       "future": 17.0,
+       "natural_variability_30y": null,
+       "within_natural_variability": false
+      },
+      "Hn": {
+       "change": 11.0,
+       "change_unit": "%",
+       "change_range": [
+        6.0,
+        16.0
+       ],
+       "future": 18.0,
+       "natural_variability_30y": null,
+       "within_natural_variability": false
+      }
+     }
+    },
+    "p_day_10y_summer": {
+     "theme": "precipitation",
+     "label": "Daily rainfall exceeded once in 10 years, summer",
+     "knmi": {
+      "season": "Zomer",
+      "variable": "Neerslag",
+      "indicator": "1-daagse neerslagsom die eens in de 10 jaar wordt overschreden"
+     },
+     "unit": "mm",
+     "reference": 48.0,
+     "scenarios": {
+      "Ld": {
+       "change": 4.0,
+       "change_unit": "%",
+       "change_range": [
+        1.0,
+        6.0
+       ],
+       "future": 50.0,
+       "natural_variability_30y": null,
+       "within_natural_variability": false
+      },
+      "Ln": {
+       "change": 5.0,
+       "change_unit": "%",
+       "change_range": [
+        2.0,
+        7.0
+       ],
+       "future": 50.0,
+       "natural_variability_30y": null,
+       "within_natural_variability": false
+      },
+      "Md": {
+       "change": 5.0,
+       "change_unit": "%",
+       "change_range": [
+        2.0,
+        7.0
+       ],
+       "future": 50.0,
+       "natural_variability_30y": null,
+       "within_natural_variability": false
+      },
+      "Mn": {
+       "change": 6.0,
+       "change_unit": "%",
+       "change_range": [
+        3.0,
+        10.0
+       ],
+       "future": 51.0,
+       "natural_variability_30y": null,
+       "within_natural_variability": false
+      },
+      "Hd": {
+       "change": 6.0,
+       "change_unit": "%",
+       "change_range": [
+        2.0,
+        9.0
+       ],
+       "future": 51.0,
+       "natural_variability_30y": null,
+       "within_natural_variability": false
+      },
+      "Hn": {
+       "change": 9.0,
+       "change_unit": "%",
+       "change_range": [
+        5.0,
+        14.0
+       ],
+       "future": 52.0,
+       "natural_variability_30y": null,
+       "within_natural_variability": false
+      }
+     }
+    },
+    "p_mean_summer": {
+     "theme": "precipitation",
+     "label": "Rainfall, summer total",
+     "knmi": {
+      "season": "Zomer",
+      "variable": "Neerslag",
+      "indicator": "gemiddelde hoeveelheid"
+     },
+     "unit": "mm",
+     "reference": 235.0,
+     "scenarios": {
+      "Ld": {
+       "change": -8.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 216.0,
+       "natural_variability_30y": [
+        190.0,
+        242.0
+       ],
+       "within_natural_variability": true
+      },
+      "Ln": {
+       "change": -2.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 228.0,
+       "natural_variability_30y": [
+        202.0,
+        256.0
+       ],
+       "within_natural_variability": true
+      },
+      "Md": {
+       "change": -9.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 214.0,
+       "natural_variability_30y": [
+        190.0,
+        240.0
+       ],
+       "within_natural_variability": true
+      },
+      "Mn": {
+       "change": -2.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 228.0,
+       "natural_variability_30y": [
+        204.0,
+        258.0
+       ],
+       "within_natural_variability": true
+      },
+      "Hd": {
+       "change": -13.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 204.0,
+       "natural_variability_30y": [
+        179.0,
+        230.0
+       ],
+       "within_natural_variability": false
+      },
+      "Hn": {
+       "change": -5.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 223.0,
+       "natural_variability_30y": [
+        200.0,
+        249.0
+       ],
+       "within_natural_variability": true
+      }
+     }
+    },
+    "p_mean_winter": {
+     "theme": "precipitation",
+     "label": "Rainfall, winter total",
+     "knmi": {
+      "season": "Winter",
+      "variable": "Neerslag",
+      "indicator": "gemiddelde hoeveelheid"
+     },
+     "unit": "mm",
+     "reference": 218.0,
+     "scenarios": {
+      "Ld": {
+       "change": 4.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 225.0,
+       "natural_variability_30y": [
+        203.0,
+        249.0
+       ],
+       "within_natural_variability": true
+      },
+      "Ln": {
+       "change": 5.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 227.0,
+       "natural_variability_30y": [
+        205.0,
+        253.0
+       ],
+       "within_natural_variability": true
+      },
+      "Md": {
+       "change": 4.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 229.0,
+       "natural_variability_30y": [
+        205.0,
+        253.0
+       ],
+       "within_natural_variability": true
+      },
+      "Mn": {
+       "change": 5.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 231.0,
+       "natural_variability_30y": [
+        207.0,
+        257.0
+       ],
+       "within_natural_variability": true
+      },
+      "Hd": {
+       "change": 4.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 225.0,
+       "natural_variability_30y": [
+        203.0,
+        249.0
+       ],
+       "within_natural_variability": true
+      },
+      "Hn": {
+       "change": 7.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 233.0,
+       "natural_variability_30y": [
+        211.0,
+        262.0
+       ],
+       "within_natural_variability": true
+      }
+     }
+    },
+    "p_days10_winter": {
+     "theme": "precipitation",
+     "label": "Winter days with ≥ 10 mm rain",
+     "knmi": {
+      "season": "Winter",
+      "variable": "Neerslag",
+      "indicator": "aantal dagen ≥ 10 mm"
+     },
+     "unit": "days",
+     "reference": 5.4,
+     "scenarios": {
+      "Ld": {
+       "change": 0.4,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 5.8,
+       "natural_variability_30y": [
+        4.9,
+        6.8
+       ],
+       "within_natural_variability": true
+      },
+      "Ln": {
+       "change": 0.4,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 5.8,
+       "natural_variability_30y": [
+        5.0,
+        6.9
+       ],
+       "within_natural_variability": true
+      },
+      "Md": {
+       "change": 0.5,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 5.9,
+       "natural_variability_30y": [
+        5.0,
+        6.9
+       ],
+       "within_natural_variability": true
+      },
+      "Mn": {
+       "change": 0.6,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 6.0,
+       "natural_variability_30y": [
+        5.1,
+        7.2
+       ],
+       "within_natural_variability": true
+      },
+      "Hd": {
+       "change": 0.4,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 5.8,
+       "natural_variability_30y": [
+        5.0,
+        6.9
+       ],
+       "within_natural_variability": true
+      },
+      "Hn": {
+       "change": 0.8,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 6.2,
+       "natural_variability_30y": [
+        5.2,
+        7.3
+       ],
+       "within_natural_variability": true
+      }
+     }
+    },
+    "deficit_summer": {
+     "theme": "precipitation",
+     "label": "Largest rainfall deficit, Apr-Sep (drought)",
+     "knmi": {
+      "season": "Zomer",
+      "variable": "Droogte",
+      "indicator": "maximaal neerslagtekort april t/m september"
+     },
+     "unit": "mm",
+     "reference": 160.0,
+     "scenarios": {
+      "Ld": {
+       "change": 22.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 194.0,
+       "natural_variability_30y": [
+        168.0,
+        222.0
+       ],
+       "within_natural_variability": false
+      },
+      "Ln": {
+       "change": 13.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 181.0,
+       "natural_variability_30y": [
+        155.0,
+        211.0
+       ],
+       "within_natural_variability": true
+      },
+      "Md": {
+       "change": 25.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 200.0,
+       "natural_variability_30y": [
+        171.0,
+        227.0
+       ],
+       "within_natural_variability": false
+      },
+      "Mn": {
+       "change": 14.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 182.0,
+       "natural_variability_30y": [
+        157.0,
+        213.0
+       ],
+       "within_natural_variability": true
+      },
+      "Hd": {
+       "change": 35.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 214.0,
+       "natural_variability_30y": [
+        184.0,
+        248.0
+       ],
+       "within_natural_variability": false
+      },
+      "Hn": {
+       "change": 15.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 184.0,
+       "natural_variability_30y": [
+        158.0,
+        213.0
+       ],
+       "within_natural_variability": true
+      }
+     }
+    }
+   }
+  },
+  "De Bilt": {
+   "label": "De Bilt",
+   "indicators": {
+    "t_mean_year": {
+     "theme": "temperature",
+     "label": "Mean temperature, year",
+     "knmi": {
+      "season": "Jaar",
+      "variable": "Temperatuur",
+      "indicator": "gemiddelde"
+     },
+     "unit": "°C",
+     "reference": 10.5,
+     "scenarios": {
+      "Ld": {
+       "change": 0.9,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 11.4,
+       "natural_variability_30y": [
+        11.1,
+        11.7
+       ],
+       "within_natural_variability": false
+      },
+      "Ln": {
+       "change": 0.8,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 11.3,
+       "natural_variability_30y": [
+        11.0,
+        11.7
+       ],
+       "within_natural_variability": false
+      },
+      "Md": {
+       "change": 1.1,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 11.6,
+       "natural_variability_30y": [
+        11.4,
+        11.9
+       ],
+       "within_natural_variability": false
+      },
+      "Mn": {
+       "change": 1.1,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 11.6,
+       "natural_variability_30y": [
+        11.3,
+        11.9
+       ],
+       "within_natural_variability": false
+      },
+      "Hd": {
+       "change": 1.6,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 12.1,
+       "natural_variability_30y": [
+        11.8,
+        12.4
+       ],
+       "within_natural_variability": false
+      },
+      "Hn": {
+       "change": 1.5,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 12.0,
+       "natural_variability_30y": [
+        11.7,
+        12.3
+       ],
+       "within_natural_variability": false
+      }
+     }
+    },
+    "tmax_mean_summer": {
+     "theme": "temperature",
+     "label": "Mean daily maximum, summer",
+     "knmi": {
+      "season": "Zomer",
+      "variable": "Temperatuur",
+      "indicator": "gemiddeld dagmaximum"
+     },
+     "unit": "°C",
+     "reference": 22.3,
+     "scenarios": {
+      "Ld": {
+       "change": 1.3,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 23.6,
+       "natural_variability_30y": [
+        23.0,
+        24.2
+       ],
+       "within_natural_variability": false
+      },
+      "Ln": {
+       "change": 1.1,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 23.4,
+       "natural_variability_30y": [
+        22.8,
+        24.0
+       ],
+       "within_natural_variability": false
+      },
+      "Md": {
+       "change": 1.6,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 23.9,
+       "natural_variability_30y": [
+        23.3,
+        24.5
+       ],
+       "within_natural_variability": false
+      },
+      "Mn": {
+       "change": 1.3,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 23.6,
+       "natural_variability_30y": [
+        23.1,
+        24.1
+       ],
+       "within_natural_variability": false
+      },
+      "Hd": {
+       "change": 2.2,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 24.5,
+       "natural_variability_30y": [
+        24.0,
+        25.1
+       ],
+       "within_natural_variability": false
+      },
+      "Hn": {
+       "change": 1.7,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 24.0,
+       "natural_variability_30y": [
+        23.5,
+        24.5
+       ],
+       "within_natural_variability": false
+      }
+     }
+    },
+    "warmest_day": {
+     "theme": "temperature",
+     "label": "Warmest day of the year",
+     "knmi": {
+      "season": "Jaar",
+      "variable": "Temperatuur",
+      "indicator": "warmste dag per jaar"
+     },
+     "unit": "°C",
+     "reference": 25.5,
+     "scenarios": {
+      "Ld": {
+       "change": 1.7,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 27.2,
+       "natural_variability_30y": [
+        26.3,
+        28.0
+       ],
+       "within_natural_variability": false
+      },
+      "Ln": {
+       "change": 1.5,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 27.0,
+       "natural_variability_30y": [
+        26.2,
+        27.8
+       ],
+       "within_natural_variability": false
+      },
+      "Md": {
+       "change": 2.0,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 27.5,
+       "natural_variability_30y": [
+        26.7,
+        28.3
+       ],
+       "within_natural_variability": false
+      },
+      "Mn": {
+       "change": 1.6,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 27.1,
+       "natural_variability_30y": [
+        26.3,
+        27.8
+       ],
+       "within_natural_variability": false
+      },
+      "Hd": {
+       "change": 3.0,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 28.5,
+       "natural_variability_30y": [
+        27.7,
+        29.4
+       ],
+       "within_natural_variability": false
+      },
+      "Hn": {
+       "change": 2.3,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 27.8,
+       "natural_variability_30y": [
+        26.9,
+        28.6
+       ],
+       "within_natural_variability": false
+      }
+     }
+    },
+    "summer_days": {
+     "theme": "temperature",
+     "label": "Summer days, max ≥ 25 °C",
+     "knmi": {
+      "season": "Jaar",
+      "variable": "Temperatuur",
+      "indicator": "aantal zomerse dagen (max temp ≥ 25 °C)"
+     },
+     "unit": "days",
+     "reference": 28.0,
+     "scenarios": {
+      "Ld": {
+       "change": 13.0,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 41.0,
+       "natural_variability_30y": [
+        36.0,
+        49.0
+       ],
+       "within_natural_variability": false
+      },
+      "Ln": {
+       "change": 11.0,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 39.0,
+       "natural_variability_30y": [
+        33.0,
+        46.0
+       ],
+       "within_natural_variability": false
+      },
+      "Md": {
+       "change": 17.0,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 45.0,
+       "natural_variability_30y": [
+        39.0,
+        52.0
+       ],
+       "within_natural_variability": false
+      },
+      "Mn": {
+       "change": 14.0,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 42.0,
+       "natural_variability_30y": [
+        36.0,
+        50.0
+       ],
+       "within_natural_variability": false
+      },
+      "Hd": {
+       "change": 26.0,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 54.0,
+       "natural_variability_30y": [
+        46.0,
+        63.0
+       ],
+       "within_natural_variability": false
+      },
+      "Hn": {
+       "change": 18.0,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 46.0,
+       "natural_variability_30y": [
+        39.0,
+        54.0
+       ],
+       "within_natural_variability": false
+      }
+     }
+    },
+    "tropical_days": {
+     "theme": "temperature",
+     "label": "Tropical days, max ≥ 30 °C",
+     "knmi": {
+      "season": "Jaar",
+      "variable": "Temperatuur",
+      "indicator": "aantal tropische dagen (max temp ≥ 30 °C)"
+     },
+     "unit": "days",
+     "reference": 5.0,
+     "scenarios": {
+      "Ld": {
+       "change": 4.9,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 9.9,
+       "natural_variability_30y": [
+        7.1,
+        14.0
+       ],
+       "within_natural_variability": false
+      },
+      "Ln": {
+       "change": 3.9,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 8.8,
+       "natural_variability_30y": [
+        6.3,
+        13.0
+       ],
+       "within_natural_variability": false
+      },
+      "Md": {
+       "change": 5.5,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 10.0,
+       "natural_variability_30y": [
+        7.5,
+        15.0
+       ],
+       "within_natural_variability": false
+      },
+      "Mn": {
+       "change": 3.9,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 8.9,
+       "natural_variability_30y": [
+        6.3,
+        13.0
+       ],
+       "within_natural_variability": false
+      },
+      "Hd": {
+       "change": 8.7,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 14.0,
+       "natural_variability_30y": [
+        10.0,
+        19.0
+       ],
+       "within_natural_variability": false
+      },
+      "Hn": {
+       "change": 5.4,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 10.0,
+       "natural_variability_30y": [
+        7.5,
+        15.0
+       ],
+       "within_natural_variability": false
+      }
+     }
+    },
+    "days_35": {
+     "theme": "temperature",
+     "label": "Days with max ≥ 35 °C",
+     "knmi": {
+      "season": "Jaar",
+      "variable": "Temperatuur",
+      "indicator": "aantal dagen met max. temp. ≥ 35 °C"
+     },
+     "unit": "days",
+     "reference": 0.2,
+     "scenarios": {
+      "Ld": {
+       "change": 0.5,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 0.7,
+       "natural_variability_30y": [
+        0.2,
+        1.2
+       ],
+       "within_natural_variability": true
+      },
+      "Ln": {
+       "change": 0.3,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 0.5,
+       "natural_variability_30y": [
+        0.2,
+        1.0
+       ],
+       "within_natural_variability": true
+      },
+      "Md": {
+       "change": 0.6,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 0.8,
+       "natural_variability_30y": [
+        0.4,
+        1.3
+       ],
+       "within_natural_variability": false
+      },
+      "Mn": {
+       "change": 0.4,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 0.6,
+       "natural_variability_30y": [
+        0.2,
+        0.9
+       ],
+       "within_natural_variability": false
+      },
+      "Hd": {
+       "change": 1.4,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 1.6,
+       "natural_variability_30y": [
+        1.0,
+        2.4
+       ],
+       "within_natural_variability": false
+      },
+      "Hn": {
+       "change": 0.8,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 1.0,
+       "natural_variability_30y": [
+        0.5,
+        1.6
+       ],
+       "within_natural_variability": false
+      }
+     }
+    },
+    "tropical_nights": {
+     "theme": "temperature",
+     "label": "Tropical nights, min ≥ 20 °C",
+     "knmi": {
+      "season": "Jaar",
+      "variable": "Temperatuur",
+      "indicator": "aantal tropische nachten (min temp ≥ 20 °C)"
+     },
+     "unit": "days",
+     "reference": 0.3,
+     "scenarios": {
+      "Ld": {
+       "change": 0.9,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 1.2,
+       "natural_variability_30y": [
+        0.5,
+        2.0
+       ],
+       "within_natural_variability": false
+      },
+      "Ln": {
+       "change": 0.9,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 1.2,
+       "natural_variability_30y": [
+        0.5,
+        2.1
+       ],
+       "within_natural_variability": false
+      },
+      "Md": {
+       "change": 1.1,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 1.4,
+       "natural_variability_30y": [
+        0.7,
+        2.1
+       ],
+       "within_natural_variability": false
+      },
+      "Mn": {
+       "change": 0.9,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 1.2,
+       "natural_variability_30y": [
+        0.6,
+        1.9
+       ],
+       "within_natural_variability": false
+      },
+      "Hd": {
+       "change": 3.1,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 3.4,
+       "natural_variability_30y": [
+        2.2,
+        4.7
+       ],
+       "within_natural_variability": false
+      },
+      "Hn": {
+       "change": 2.1,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 2.4,
+       "natural_variability_30y": [
+        1.4,
+        3.5
+       ],
+       "within_natural_variability": false
+      }
+     }
+    },
+    "p_mean_summer": {
+     "theme": "precipitation",
+     "label": "Rainfall, summer total",
+     "knmi": {
+      "season": "Zomer",
+      "variable": "Neerslag",
+      "indicator": "gemiddelde hoeveelheid"
+     },
+     "unit": "mm",
+     "reference": 251.0,
+     "scenarios": {
+      "Ld": {
+       "change": -10.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 226.0,
+       "natural_variability_30y": [
+        196.0,
+        259.0
+       ],
+       "within_natural_variability": true
+      },
+      "Ln": {
+       "change": -7.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 233.0,
+       "natural_variability_30y": [
+        203.0,
+        266.0
+       ],
+       "within_natural_variability": true
+      },
+      "Md": {
+       "change": -11.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 223.0,
+       "natural_variability_30y": [
+        196.0,
+        259.0
+       ],
+       "within_natural_variability": true
+      },
+      "Mn": {
+       "change": -3.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 243.0,
+       "natural_variability_30y": [
+        213.0,
+        276.0
+       ],
+       "within_natural_variability": true
+      },
+      "Hd": {
+       "change": -15.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 213.0,
+       "natural_variability_30y": [
+        183.0,
+        246.0
+       ],
+       "within_natural_variability": false
+      },
+      "Hn": {
+       "change": -8.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 231.0,
+       "natural_variability_30y": [
+        203.0,
+        264.0
+       ],
+       "within_natural_variability": true
+      }
+     }
+    },
+    "p_mean_winter": {
+     "theme": "precipitation",
+     "label": "Rainfall, winter total",
+     "knmi": {
+      "season": "Winter",
+      "variable": "Neerslag",
+      "indicator": "gemiddelde hoeveelheid"
+     },
+     "unit": "mm",
+     "reference": 238.0,
+     "scenarios": {
+      "Ld": {
+       "change": -1.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 236.0,
+       "natural_variability_30y": [
+        212.0,
+        264.0
+       ],
+       "within_natural_variability": true
+      },
+      "Ln": {
+       "change": 0.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 238.0,
+       "natural_variability_30y": [
+        214.0,
+        267.0
+       ],
+       "within_natural_variability": true
+      },
+      "Md": {
+       "change": 3.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 245.0,
+       "natural_variability_30y": [
+        219.0,
+        274.0
+       ],
+       "within_natural_variability": true
+      },
+      "Mn": {
+       "change": 4.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 248.0,
+       "natural_variability_30y": [
+        221.0,
+        278.0
+       ],
+       "within_natural_variability": true
+      },
+      "Hd": {
+       "change": 0.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 238.0,
+       "natural_variability_30y": [
+        214.0,
+        264.0
+       ],
+       "within_natural_variability": true
+      },
+      "Hn": {
+       "change": 4.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 248.0,
+       "natural_variability_30y": [
+        224.0,
+        278.0
+       ],
+       "within_natural_variability": true
+      }
+     }
+    },
+    "p_days10_winter": {
+     "theme": "precipitation",
+     "label": "Winter days with ≥ 10 mm rain",
+     "knmi": {
+      "season": "Winter",
+      "variable": "Neerslag",
+      "indicator": "aantal dagen ≥ 10 mm"
+     },
+     "unit": "days",
+     "reference": 6.3,
+     "scenarios": {
+      "Ld": {
+       "change": -0.1,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 6.2,
+       "natural_variability_30y": [
+        5.2,
+        7.6
+       ],
+       "within_natural_variability": true
+      },
+      "Ln": {
+       "change": 0.0,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 6.3,
+       "natural_variability_30y": [
+        5.2,
+        7.6
+       ],
+       "within_natural_variability": true
+      },
+      "Md": {
+       "change": 0.3,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 6.6,
+       "natural_variability_30y": [
+        5.4,
+        7.9
+       ],
+       "within_natural_variability": true
+      },
+      "Mn": {
+       "change": 0.6,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 6.9,
+       "natural_variability_30y": [
+        5.6,
+        8.4
+       ],
+       "within_natural_variability": true
+      },
+      "Hd": {
+       "change": 0.3,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 6.6,
+       "natural_variability_30y": [
+        5.4,
+        7.9
+       ],
+       "within_natural_variability": true
+      },
+      "Hn": {
+       "change": 0.7,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 7.0,
+       "natural_variability_30y": [
+        5.7,
+        8.5
+       ],
+       "within_natural_variability": true
+      }
+     }
+    },
+    "deficit_summer": {
+     "theme": "precipitation",
+     "label": "Largest rainfall deficit, Apr-Sep (drought)",
+     "knmi": {
+      "season": "Zomer",
+      "variable": "Droogte",
+      "indicator": "maximaal neerslagtekort april t/m september"
+     },
+     "unit": "mm",
+     "reference": 158.0,
+     "scenarios": {
+      "Ld": {
+       "change": 27.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 201.0,
+       "natural_variability_30y": [
+        171.0,
+        232.0
+       ],
+       "within_natural_variability": false
+      },
+      "Ln": {
+       "change": 18.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 186.0,
+       "natural_variability_30y": [
+        156.0,
+        224.0
+       ],
+       "within_natural_variability": true
+      },
+      "Md": {
+       "change": 28.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 202.0,
+       "natural_variability_30y": [
+        169.0,
+        240.0
+       ],
+       "within_natural_variability": false
+      },
+      "Mn": {
+       "change": 17.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 185.0,
+       "natural_variability_30y": [
+        155.0,
+        221.0
+       ],
+       "within_natural_variability": true
+      },
+      "Hd": {
+       "change": 43.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 226.0,
+       "natural_variability_30y": [
+        188.0,
+        265.0
+       ],
+       "within_natural_variability": false
+      },
+      "Hn": {
+       "change": 20.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 190.0,
+       "natural_variability_30y": [
+        158.0,
+        223.0
+       ],
+       "within_natural_variability": true
+      }
+     }
+    }
+   }
+  },
+  "Vlissingen": {
+   "label": "Vlissingen",
+   "indicators": {
+    "t_mean_year": {
+     "theme": "temperature",
+     "label": "Mean temperature, year",
+     "knmi": {
+      "season": "Jaar",
+      "variable": "Temperatuur",
+      "indicator": "gemiddelde"
+     },
+     "unit": "°C",
+     "reference": 11.2,
+     "scenarios": {
+      "Ld": {
+       "change": 0.9,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 12.1,
+       "natural_variability_30y": [
+        11.7,
+        12.4
+       ],
+       "within_natural_variability": false
+      },
+      "Ln": {
+       "change": 0.8,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 12.0,
+       "natural_variability_30y": [
+        11.7,
+        12.3
+       ],
+       "within_natural_variability": false
+      },
+      "Md": {
+       "change": 1.1,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 12.3,
+       "natural_variability_30y": [
+        12.0,
+        12.6
+       ],
+       "within_natural_variability": false
+      },
+      "Mn": {
+       "change": 1.1,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 12.3,
+       "natural_variability_30y": [
+        11.9,
+        12.5
+       ],
+       "within_natural_variability": false
+      },
+      "Hd": {
+       "change": 1.5,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 12.7,
+       "natural_variability_30y": [
+        12.4,
+        13.0
+       ],
+       "within_natural_variability": false
+      },
+      "Hn": {
+       "change": 1.4,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 12.6,
+       "natural_variability_30y": [
+        12.3,
+        12.9
+       ],
+       "within_natural_variability": false
+      }
+     }
+    },
+    "tmax_mean_summer": {
+     "theme": "temperature",
+     "label": "Mean daily maximum, summer",
+     "knmi": {
+      "season": "Zomer",
+      "variable": "Temperatuur",
+      "indicator": "gemiddeld dagmaximum"
+     },
+     "unit": "°C",
+     "reference": 21.1,
+     "scenarios": {
+      "Ld": {
+       "change": 1.0,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 22.1,
+       "natural_variability_30y": [
+        21.6,
+        22.8
+       ],
+       "within_natural_variability": false
+      },
+      "Ln": {
+       "change": 0.9,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 22.0,
+       "natural_variability_30y": [
+        21.5,
+        22.7
+       ],
+       "within_natural_variability": false
+      },
+      "Md": {
+       "change": 1.4,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 22.5,
+       "natural_variability_30y": [
+        22.0,
+        23.1
+       ],
+       "within_natural_variability": false
+      },
+      "Mn": {
+       "change": 1.3,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 22.4,
+       "natural_variability_30y": [
+        21.8,
+        22.9
+       ],
+       "within_natural_variability": false
+      },
+      "Hd": {
+       "change": 1.8,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 22.9,
+       "natural_variability_30y": [
+        22.4,
+        23.6
+       ],
+       "within_natural_variability": false
+      },
+      "Hn": {
+       "change": 1.6,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 22.7,
+       "natural_variability_30y": [
+        22.1,
+        23.2
+       ],
+       "within_natural_variability": false
+      }
+     }
+    },
+    "warmest_day": {
+     "theme": "temperature",
+     "label": "Warmest day of the year",
+     "knmi": {
+      "season": "Jaar",
+      "variable": "Temperatuur",
+      "indicator": "warmste dag per jaar"
+     },
+     "unit": "°C",
+     "reference": 24.5,
+     "scenarios": {
+      "Ld": {
+       "change": 1.5,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 26.0,
+       "natural_variability_30y": [
+        25.1,
+        26.8
+       ],
+       "within_natural_variability": false
+      },
+      "Ln": {
+       "change": 1.3,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 25.8,
+       "natural_variability_30y": [
+        25.0,
+        26.7
+       ],
+       "within_natural_variability": false
+      },
+      "Md": {
+       "change": 1.8,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 26.3,
+       "natural_variability_30y": [
+        25.4,
+        27.2
+       ],
+       "within_natural_variability": false
+      },
+      "Mn": {
+       "change": 1.5,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 26.0,
+       "natural_variability_30y": [
+        25.1,
+        27.0
+       ],
+       "within_natural_variability": false
+      },
+      "Hd": {
+       "change": 2.2,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 26.7,
+       "natural_variability_30y": [
+        25.8,
+        27.6
+       ],
+       "within_natural_variability": false
+      },
+      "Hn": {
+       "change": 1.9,
+       "change_unit": "°C",
+       "change_range": null,
+       "future": 26.4,
+       "natural_variability_30y": [
+        25.5,
+        27.4
+       ],
+       "within_natural_variability": false
+      }
+     }
+    },
+    "summer_days": {
+     "theme": "temperature",
+     "label": "Summer days, max ≥ 25 °C",
+     "knmi": {
+      "season": "Jaar",
+      "variable": "Temperatuur",
+      "indicator": "aantal zomerse dagen (max temp ≥ 25 °C)"
+     },
+     "unit": "days",
+     "reference": 17.0,
+     "scenarios": {
+      "Ld": {
+       "change": 7.8,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 25.0,
+       "natural_variability_30y": [
+        20.0,
+        31.0
+       ],
+       "within_natural_variability": false
+      },
+      "Ln": {
+       "change": 6.8,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 24.0,
+       "natural_variability_30y": [
+        19.0,
+        30.0
+       ],
+       "within_natural_variability": false
+      },
+      "Md": {
+       "change": 11.0,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 28.0,
+       "natural_variability_30y": [
+        22.0,
+        34.0
+       ],
+       "within_natural_variability": false
+      },
+      "Mn": {
+       "change": 9.0,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 26.0,
+       "natural_variability_30y": [
+        21.0,
+        32.0
+       ],
+       "within_natural_variability": false
+      },
+      "Hd": {
+       "change": 15.0,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 32.0,
+       "natural_variability_30y": [
+        27.0,
+        40.0
+       ],
+       "within_natural_variability": false
+      },
+      "Hn": {
+       "change": 11.0,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 28.0,
+       "natural_variability_30y": [
+        23.0,
+        35.0
+       ],
+       "within_natural_variability": false
+      }
+     }
+    },
+    "tropical_days": {
+     "theme": "temperature",
+     "label": "Tropical days, max ≥ 30 °C",
+     "knmi": {
+      "season": "Jaar",
+      "variable": "Temperatuur",
+      "indicator": "aantal tropische dagen (max temp ≥ 30 °C)"
+     },
+     "unit": "days",
+     "reference": 2.3,
+     "scenarios": {
+      "Ld": {
+       "change": 1.7,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 4.0,
+       "natural_variability_30y": [
+        2.7,
+        6.0
+       ],
+       "within_natural_variability": false
+      },
+      "Ln": {
+       "change": 1.3,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 3.6,
+       "natural_variability_30y": [
+        2.4,
+        5.4
+       ],
+       "within_natural_variability": false
+      },
+      "Md": {
+       "change": 2.3,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 4.6,
+       "natural_variability_30y": [
+        3.2,
+        6.8
+       ],
+       "within_natural_variability": false
+      },
+      "Mn": {
+       "change": 1.5,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 3.8,
+       "natural_variability_30y": [
+        2.6,
+        5.5
+       ],
+       "within_natural_variability": false
+      },
+      "Hd": {
+       "change": 3.6,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 5.9,
+       "natural_variability_30y": [
+        4.2,
+        8.6
+       ],
+       "within_natural_variability": false
+      },
+      "Hn": {
+       "change": 2.3,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 4.6,
+       "natural_variability_30y": [
+        3.2,
+        6.7
+       ],
+       "within_natural_variability": false
+      }
+     }
+    },
+    "days_35": {
+     "theme": "temperature",
+     "label": "Days with max ≥ 35 °C",
+     "knmi": {
+      "season": "Jaar",
+      "variable": "Temperatuur",
+      "indicator": "aantal dagen met max. temp. ≥ 35 °C"
+     },
+     "unit": "days",
+     "reference": 0.1,
+     "scenarios": {
+      "Ld": {
+       "change": 0.3,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 0.4,
+       "natural_variability_30y": [
+        0.1,
+        0.7
+       ],
+       "within_natural_variability": true
+      },
+      "Ln": {
+       "change": 0.2,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 0.3,
+       "natural_variability_30y": [
+        0.0,
+        0.6
+       ],
+       "within_natural_variability": true
+      },
+      "Md": {
+       "change": 0.3,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 0.4,
+       "natural_variability_30y": [
+        0.1,
+        0.7
+       ],
+       "within_natural_variability": true
+      },
+      "Mn": {
+       "change": 0.2,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 0.3,
+       "natural_variability_30y": [
+        0.0,
+        0.5
+       ],
+       "within_natural_variability": true
+      },
+      "Hd": {
+       "change": 0.5,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 0.6,
+       "natural_variability_30y": [
+        0.2,
+        1.0
+       ],
+       "within_natural_variability": false
+      },
+      "Hn": {
+       "change": 0.4,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 0.5,
+       "natural_variability_30y": [
+        0.1,
+        0.9
+       ],
+       "within_natural_variability": false
+      }
+     }
+    },
+    "tropical_nights": {
+     "theme": "temperature",
+     "label": "Tropical nights, min ≥ 20 °C",
+     "knmi": {
+      "season": "Jaar",
+      "variable": "Temperatuur",
+      "indicator": "aantal tropische nachten (min temp ≥ 20 °C)"
+     },
+     "unit": "days",
+     "reference": 1.4,
+     "scenarios": {
+      "Ld": {
+       "change": 1.8,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 3.2,
+       "natural_variability_30y": [
+        1.7,
+        4.6
+       ],
+       "within_natural_variability": false
+      },
+      "Ln": {
+       "change": 1.5,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 2.9,
+       "natural_variability_30y": [
+        1.6,
+        4.5
+       ],
+       "within_natural_variability": false
+      },
+      "Md": {
+       "change": 2.4,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 3.8,
+       "natural_variability_30y": [
+        2.4,
+        5.3
+       ],
+       "within_natural_variability": false
+      },
+      "Mn": {
+       "change": 1.9,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 3.3,
+       "natural_variability_30y": [
+        2.0,
+        4.6
+       ],
+       "within_natural_variability": false
+      },
+      "Hd": {
+       "change": 5.5,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 6.9,
+       "natural_variability_30y": [
+        4.9,
+        9.0
+       ],
+       "within_natural_variability": false
+      },
+      "Hn": {
+       "change": 3.5,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 4.9,
+       "natural_variability_30y": [
+        3.3,
+        6.8
+       ],
+       "within_natural_variability": false
+      }
+     }
+    },
+    "p_mean_summer": {
+     "theme": "precipitation",
+     "label": "Rainfall, summer total",
+     "knmi": {
+      "season": "Zomer",
+      "variable": "Neerslag",
+      "indicator": "gemiddelde hoeveelheid"
+     },
+     "unit": "mm",
+     "reference": 220.0,
+     "scenarios": {
+      "Ld": {
+       "change": -11.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 196.0,
+       "natural_variability_30y": [
+        169.0,
+        224.0
+       ],
+       "within_natural_variability": true
+      },
+      "Ln": {
+       "change": -7.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 205.0,
+       "natural_variability_30y": [
+        180.0,
+        235.0
+       ],
+       "within_natural_variability": true
+      },
+      "Md": {
+       "change": -11.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 196.0,
+       "natural_variability_30y": [
+        172.0,
+        227.0
+       ],
+       "within_natural_variability": true
+      },
+      "Mn": {
+       "change": -4.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 211.0,
+       "natural_variability_30y": [
+        183.0,
+        240.0
+       ],
+       "within_natural_variability": true
+      },
+      "Hd": {
+       "change": -14.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 189.0,
+       "natural_variability_30y": [
+        161.0,
+        220.0
+       ],
+       "within_natural_variability": false
+      },
+      "Hn": {
+       "change": -7.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 205.0,
+       "natural_variability_30y": [
+        180.0,
+        235.0
+       ],
+       "within_natural_variability": true
+      }
+     }
+    },
+    "p_mean_winter": {
+     "theme": "precipitation",
+     "label": "Rainfall, winter total",
+     "knmi": {
+      "season": "Winter",
+      "variable": "Neerslag",
+      "indicator": "gemiddelde hoeveelheid"
+     },
+     "unit": "mm",
+     "reference": 212.0,
+     "scenarios": {
+      "Ld": {
+       "change": 2.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 216.0,
+       "natural_variability_30y": [
+        195.0,
+        242.0
+       ],
+       "within_natural_variability": true
+      },
+      "Ln": {
+       "change": 3.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 218.0,
+       "natural_variability_30y": [
+        195.0,
+        246.0
+       ],
+       "within_natural_variability": true
+      },
+      "Md": {
+       "change": 6.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 225.0,
+       "natural_variability_30y": [
+        201.0,
+        250.0
+       ],
+       "within_natural_variability": true
+      },
+      "Mn": {
+       "change": 6.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 225.0,
+       "natural_variability_30y": [
+        199.0,
+        252.0
+       ],
+       "within_natural_variability": true
+      },
+      "Hd": {
+       "change": 4.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 220.0,
+       "natural_variability_30y": [
+        197.0,
+        246.0
+       ],
+       "within_natural_variability": true
+      },
+      "Hn": {
+       "change": 10.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 233.0,
+       "natural_variability_30y": [
+        208.0,
+        263.0
+       ],
+       "within_natural_variability": true
+      }
+     }
+    },
+    "p_days10_winter": {
+     "theme": "precipitation",
+     "label": "Winter days with ≥ 10 mm rain",
+     "knmi": {
+      "season": "Winter",
+      "variable": "Neerslag",
+      "indicator": "aantal dagen ≥ 10 mm"
+     },
+     "unit": "days",
+     "reference": 5.1,
+     "scenarios": {
+      "Ld": {
+       "change": 0.4,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 5.5,
+       "natural_variability_30y": [
+        4.4,
+        6.8
+       ],
+       "within_natural_variability": true
+      },
+      "Ln": {
+       "change": 0.3,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 5.4,
+       "natural_variability_30y": [
+        4.4,
+        6.6
+       ],
+       "within_natural_variability": true
+      },
+      "Md": {
+       "change": 0.6,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 5.7,
+       "natural_variability_30y": [
+        4.5,
+        7.2
+       ],
+       "within_natural_variability": true
+      },
+      "Mn": {
+       "change": 0.5,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 5.6,
+       "natural_variability_30y": [
+        4.4,
+        7.0
+       ],
+       "within_natural_variability": true
+      },
+      "Hd": {
+       "change": 0.7,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 5.8,
+       "natural_variability_30y": [
+        4.6,
+        7.1
+       ],
+       "within_natural_variability": true
+      },
+      "Hn": {
+       "change": 1.1,
+       "change_unit": "days",
+       "change_range": null,
+       "future": 6.2,
+       "natural_variability_30y": [
+        5.0,
+        7.6
+       ],
+       "within_natural_variability": true
+      }
+     }
+    },
+    "deficit_summer": {
+     "theme": "precipitation",
+     "label": "Largest rainfall deficit, Apr-Sep (drought)",
+     "knmi": {
+      "season": "Zomer",
+      "variable": "Droogte",
+      "indicator": "maximaal neerslagtekort april t/m september"
+     },
+     "unit": "mm",
+     "reference": 207.0,
+     "scenarios": {
+      "Ld": {
+       "change": 20.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 248.0,
+       "natural_variability_30y": [
+        215.0,
+        286.0
+       ],
+       "within_natural_variability": false
+      },
+      "Ln": {
+       "change": 15.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 238.0,
+       "natural_variability_30y": [
+        207.0,
+        273.0
+       ],
+       "within_natural_variability": true
+      },
+      "Md": {
+       "change": 24.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 257.0,
+       "natural_variability_30y": [
+        224.0,
+        292.0
+       ],
+       "within_natural_variability": false
+      },
+      "Mn": {
+       "change": 13.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 234.0,
+       "natural_variability_30y": [
+        203.0,
+        269.0
+       ],
+       "within_natural_variability": true
+      },
+      "Hd": {
+       "change": 29.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 267.0,
+       "natural_variability_30y": [
+        232.0,
+        306.0
+       ],
+       "within_natural_variability": false
+      },
+      "Hn": {
+       "change": 14.0,
+       "change_unit": "%",
+       "change_range": null,
+       "future": 236.0,
+       "natural_variability_30y": [
+        203.0,
+        273.0
+       ],
+       "within_natural_variability": true
+      }
+     }
+    }
+   }
+  }
+ },
+ "italic_check": {
+  "cells": 168,
+  "agree": 165,
+  "rule": "italic in KNMI's table <=> the 1991-2020 mean lies inside the 90 % band of the future 30-year mean (natural variability)"
+ },
+ "notes": {
+  "rainfall_extremes_reference": "Reference amounts of extreme rainfall are the STOWA 2019-19 statistics (user report, footnote 3); the portal bias-corrected their absolute values on 2026-04-22, the relative changes were not changed.",
+  "moderate": "M scenarios are KNMI's supplementary moderate-emission calculations; L and H are the core four.",
+  "low_same_2050_2100": "In L the warming stabilises after 2050, so KNMI gives L the same numbers for 2050 and 2100."
+ },
+ "_missing": []
+}

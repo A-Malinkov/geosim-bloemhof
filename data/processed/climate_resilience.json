@@ -1,0 +1,1331 @@
+{
+ "_written_by": "analysis/climate/design_resilience.py",
+ "_note": "Hazard x design bookkeeping over the 13.24 ha design site. Regional KNMI'23 hazards, uniform over the site, applied to design indicators from the other components. Not a hydrological model and not a microclimate simulation: no temperatures are computed.",
+ "method": {
+  "runoff": "V = A_sealed * P / 1000 m3, A_sealed = A_site - A_green - A_water; coefficient 1 sealed, 0 green and water",
+  "storm_2050": "P_2050 = P_ref * (1 + dP/100); dP and its range from KNMI'23 (national average)",
+  "depth_on_green": "d = V / A_green, the runoff spread evenly over all green (a SuDS loading ratio)",
+  "pond_rise": "h = V / A_water, as if the pond took all runoff",
+  "home_days": "dwellings * tropical (or summer) days per year, range over Vlissingen and De Bilt",
+  "canopy": "union of crown discs (diameter crown_m) of trees on the site, clipped to it",
+  "summer_shade": "share of open ground with under 4 h direct sun on 21 June (shadows.py)"
+ },
+ "limitations": [
+  "Hazards are regional and uniform over the site: they scale every design alike and cannot change their order.",
+  "Proposed trees cast no shade in the sun-hours run; their crowns are counted in canopy cover only, at modelled (mature) size.",
+  "Green includes gardens drawn whole, paving and all (BGT erf today, Rhino gardens in the final design): green and permeable shares are upper bounds.",
+  "No infiltration capacity, soil saturation, sewer capacity, green roofs or surface slope.",
+  "Register trees are municipal trees only; private trees are missing from today's canopy.",
+  "Rotterdam is not a KNMI'23 location; storms are national averages, hot days come from Vlissingen and De Bilt.",
+  "Flood vulnerability exists for today only."
+ ],
+ "site_m2": 132413,
+ "scenarios": {
+  "Ld": {
+   "emissions": "low",
+   "variant": "dry",
+   "label": "Low emissions, dry",
+   "pathway": "SSP1-2.6",
+   "core": true
+  },
+  "Ln": {
+   "emissions": "low",
+   "variant": "wet",
+   "label": "Low emissions, wet",
+   "pathway": "SSP1-2.6",
+   "core": true
+  },
+  "Md": {
+   "emissions": "moderate",
+   "variant": "dry",
+   "label": "Moderate emissions, dry",
+   "pathway": null,
+   "core": false
+  },
+  "Mn": {
+   "emissions": "moderate",
+   "variant": "wet",
+   "label": "Moderate emissions, wet",
+   "pathway": null,
+   "core": false
+  },
+  "Hd": {
+   "emissions": "high",
+   "variant": "dry",
+   "label": "High emissions, dry",
+   "pathway": "SSP5-8.5",
+   "core": true
+  },
+  "Hn": {
+   "emissions": "high",
+   "variant": "wet",
+   "label": "High emissions, wet",
+   "pathway": "SSP5-8.5",
+   "core": true
+  }
+ },
+ "horizon": {
+  "label": "2050",
+  "period": "2036-2065"
+ },
+ "reference_period": "1991-2020",
+ "hazards": {
+  "rain": {
+   "p_hour_1y_summer": {
+    "label": "Hourly rainfall exceeded once a year, summer",
+    "location": "NLavg",
+    "reference_mm": 16.0,
+    "scenarios": {
+     "Ld": {
+      "change_pct": 4.0,
+      "change_range_pct": [
+       2.0,
+       6.0
+      ],
+      "mm": 16.64,
+      "mm_range": [
+       16.32,
+       16.96
+      ]
+     },
+     "Ln": {
+      "change_pct": 6.0,
+      "change_range_pct": [
+       3.0,
+       8.0
+      ],
+      "mm": 16.96,
+      "mm_range": [
+       16.48,
+       17.28
+      ]
+     },
+     "Md": {
+      "change_pct": 5.0,
+      "change_range_pct": [
+       2.0,
+       7.0
+      ],
+      "mm": 16.8,
+      "mm_range": [
+       16.32,
+       17.12
+      ]
+     },
+     "Mn": {
+      "change_pct": 7.0,
+      "change_range_pct": [
+       4.0,
+       10.0
+      ],
+      "mm": 17.12,
+      "mm_range": [
+       16.64,
+       17.6
+      ]
+     },
+     "Hd": {
+      "change_pct": 6.0,
+      "change_range_pct": [
+       2.0,
+       9.0
+      ],
+      "mm": 16.96,
+      "mm_range": [
+       16.32,
+       17.44
+      ]
+     },
+     "Hn": {
+      "change_pct": 11.0,
+      "change_range_pct": [
+       6.0,
+       16.0
+      ],
+      "mm": 17.76,
+      "mm_range": [
+       16.96,
+       18.56
+      ]
+     }
+    }
+   },
+   "p_day_10y_summer": {
+    "label": "Daily rainfall exceeded once in 10 years, summer",
+    "location": "NLavg",
+    "reference_mm": 48.0,
+    "scenarios": {
+     "Ld": {
+      "change_pct": 4.0,
+      "change_range_pct": [
+       1.0,
+       6.0
+      ],
+      "mm": 49.92,
+      "mm_range": [
+       48.48,
+       50.88
+      ]
+     },
+     "Ln": {
+      "change_pct": 5.0,
+      "change_range_pct": [
+       2.0,
+       7.0
+      ],
+      "mm": 50.4,
+      "mm_range": [
+       48.96,
+       51.36
+      ]
+     },
+     "Md": {
+      "change_pct": 5.0,
+      "change_range_pct": [
+       2.0,
+       7.0
+      ],
+      "mm": 50.4,
+      "mm_range": [
+       48.96,
+       51.36
+      ]
+     },
+     "Mn": {
+      "change_pct": 6.0,
+      "change_range_pct": [
+       3.0,
+       10.0
+      ],
+      "mm": 50.88,
+      "mm_range": [
+       49.44,
+       52.8
+      ]
+     },
+     "Hd": {
+      "change_pct": 6.0,
+      "change_range_pct": [
+       2.0,
+       9.0
+      ],
+      "mm": 50.88,
+      "mm_range": [
+       48.96,
+       52.32
+      ]
+     },
+     "Hn": {
+      "change_pct": 9.0,
+      "change_range_pct": [
+       5.0,
+       14.0
+      ],
+      "mm": 52.32,
+      "mm_range": [
+       50.4,
+       54.72
+      ]
+     }
+    }
+   }
+  },
+  "heat": {
+   "tropical_days": {
+    "stations": {
+     "Vlissingen": {
+      "reference": 2.3,
+      "scenarios": {
+       "Ld": 4.0,
+       "Ln": 3.6,
+       "Md": 4.6,
+       "Mn": 3.8,
+       "Hd": 5.9,
+       "Hn": 4.6
+      }
+     },
+     "De Bilt": {
+      "reference": 5.0,
+      "scenarios": {
+       "Ld": 9.9,
+       "Ln": 8.9,
+       "Md": 10.5,
+       "Mn": 8.9,
+       "Hd": 13.7,
+       "Hn": 10.4
+      }
+     }
+    },
+    "label": "Tropical days, max ≥ 30 °C"
+   },
+   "summer_days": {
+    "stations": {
+     "Vlissingen": {
+      "reference": 17.0,
+      "scenarios": {
+       "Ld": 24.8,
+       "Ln": 23.8,
+       "Md": 28.0,
+       "Mn": 26.0,
+       "Hd": 32.0,
+       "Hn": 28.0
+      }
+     },
+     "De Bilt": {
+      "reference": 28.0,
+      "scenarios": {
+       "Ld": 41.0,
+       "Ln": 39.0,
+       "Md": 45.0,
+       "Mn": 42.0,
+       "Hd": 54.0,
+       "Hn": 46.0
+      }
+     }
+    },
+    "label": "Summer days, max ≥ 25 °C"
+   }
+  }
+ },
+ "designs": {
+  "baseline": {
+   "label": "Today",
+   "static": {
+    "site_m2": 132413,
+    "roof_m2": 42679,
+    "green_m2": 40229,
+    "water_m2": 0,
+    "sealed_m2": 92184,
+    "paved_other_m2": 49505,
+    "sealed_share": 0.6962,
+    "green_share": 0.3038,
+    "unsealed_share": 0.3038,
+    "dwellings": 1027,
+    "trees": 104,
+    "trees_kept": 104,
+    "canopy_m2": 4781,
+    "canopy_share": 0.0361,
+    "summer_sun_mean_h": 8.612,
+    "summer_shade_share": 0.051,
+    "summer_shade_m2": 3750,
+    "winter_dark_share": 0.8731,
+    "svf_mean": 0.7848,
+    "green_per_home_m2": 39.2,
+    "canopy_per_home_m2": 4.7,
+    "shade_per_home_m2": 3.7,
+    "walk_to_4_places_m": 316.9
+   },
+   "rain": {
+    "p_hour_1y_summer": {
+     "reference": {
+      "rain_mm": 16.0,
+      "runoff_m3": 1475,
+      "depth_on_green_mm": 37,
+      "pond_rise_m": null
+     },
+     "scenarios": {
+      "Ld": {
+       "rain_mm": 16.64,
+       "runoff_m3": 1534,
+       "depth_on_green_mm": 38,
+       "pond_rise_m": null,
+       "runoff_m3_range": [
+        1504,
+        1563
+       ],
+       "extra_runoff_m3": 59
+      },
+      "Ln": {
+       "rain_mm": 16.96,
+       "runoff_m3": 1563,
+       "depth_on_green_mm": 39,
+       "pond_rise_m": null,
+       "runoff_m3_range": [
+        1519,
+        1593
+       ],
+       "extra_runoff_m3": 88
+      },
+      "Md": {
+       "rain_mm": 16.8,
+       "runoff_m3": 1549,
+       "depth_on_green_mm": 38,
+       "pond_rise_m": null,
+       "runoff_m3_range": [
+        1504,
+        1578
+       ],
+       "extra_runoff_m3": 74
+      },
+      "Mn": {
+       "rain_mm": 17.12,
+       "runoff_m3": 1578,
+       "depth_on_green_mm": 39,
+       "pond_rise_m": null,
+       "runoff_m3_range": [
+        1534,
+        1622
+       ],
+       "extra_runoff_m3": 103
+      },
+      "Hd": {
+       "rain_mm": 16.96,
+       "runoff_m3": 1563,
+       "depth_on_green_mm": 39,
+       "pond_rise_m": null,
+       "runoff_m3_range": [
+        1504,
+        1608
+       ],
+       "extra_runoff_m3": 88
+      },
+      "Hn": {
+       "rain_mm": 17.76,
+       "runoff_m3": 1637,
+       "depth_on_green_mm": 41,
+       "pond_rise_m": null,
+       "runoff_m3_range": [
+        1563,
+        1711
+       ],
+       "extra_runoff_m3": 162
+      }
+     }
+    },
+    "p_day_10y_summer": {
+     "reference": {
+      "rain_mm": 48.0,
+      "runoff_m3": 4425,
+      "depth_on_green_mm": 110,
+      "pond_rise_m": null
+     },
+     "scenarios": {
+      "Ld": {
+       "rain_mm": 49.92,
+       "runoff_m3": 4602,
+       "depth_on_green_mm": 114,
+       "pond_rise_m": null,
+       "runoff_m3_range": [
+        4469,
+        4690
+       ],
+       "extra_runoff_m3": 177
+      },
+      "Ln": {
+       "rain_mm": 50.4,
+       "runoff_m3": 4646,
+       "depth_on_green_mm": 115,
+       "pond_rise_m": null,
+       "runoff_m3_range": [
+        4513,
+        4735
+       ],
+       "extra_runoff_m3": 221
+      },
+      "Md": {
+       "rain_mm": 50.4,
+       "runoff_m3": 4646,
+       "depth_on_green_mm": 115,
+       "pond_rise_m": null,
+       "runoff_m3_range": [
+        4513,
+        4735
+       ],
+       "extra_runoff_m3": 221
+      },
+      "Mn": {
+       "rain_mm": 50.88,
+       "runoff_m3": 4690,
+       "depth_on_green_mm": 117,
+       "pond_rise_m": null,
+       "runoff_m3_range": [
+        4558,
+        4867
+       ],
+       "extra_runoff_m3": 265
+      },
+      "Hd": {
+       "rain_mm": 50.88,
+       "runoff_m3": 4690,
+       "depth_on_green_mm": 117,
+       "pond_rise_m": null,
+       "runoff_m3_range": [
+        4513,
+        4823
+       ],
+       "extra_runoff_m3": 265
+      },
+      "Hn": {
+       "rain_mm": 52.32,
+       "runoff_m3": 4823,
+       "depth_on_green_mm": 120,
+       "pond_rise_m": null,
+       "runoff_m3_range": [
+        4646,
+        5044
+       ],
+       "extra_runoff_m3": 398
+      }
+     }
+    }
+   },
+   "heat_home_days": {
+    "tropical_days": {
+     "reference": [
+      2362,
+      5135
+     ],
+     "scenarios": {
+      "Ld": [
+       4108,
+       10167
+      ],
+      "Ln": [
+       3697,
+       9140
+      ],
+      "Md": [
+       4724,
+       10784
+      ],
+      "Mn": [
+       3903,
+       9140
+      ],
+      "Hd": [
+       6059,
+       14070
+      ],
+      "Hn": [
+       4724,
+       10681
+      ]
+     }
+    },
+    "summer_days": {
+     "reference": [
+      17459,
+      28756
+     ],
+     "scenarios": {
+      "Ld": [
+       25470,
+       42107
+      ],
+      "Ln": [
+       24443,
+       40053
+      ],
+      "Md": [
+       28756,
+       46215
+      ],
+      "Mn": [
+       26702,
+       43134
+      ],
+      "Hd": [
+       32864,
+       55458
+      ],
+      "Hn": [
+       28756,
+       47242
+      ]
+     }
+    }
+   }
+  },
+  "scenario_a": {
+   "label": "Scenario A",
+   "static": {
+    "site_m2": 132413,
+    "roof_m2": 35802,
+    "green_m2": 26054,
+    "water_m2": 671,
+    "sealed_m2": 105688,
+    "paved_other_m2": 69886,
+    "sealed_share": 0.7982,
+    "green_share": 0.1968,
+    "unsealed_share": 0.2018,
+    "dwellings": 1920,
+    "trees": 150,
+    "trees_kept": 86,
+    "canopy_m2": 6878,
+    "canopy_share": 0.0519,
+    "summer_sun_mean_h": 8.806,
+    "summer_shade_share": 0.0703,
+    "summer_shade_m2": 6083,
+    "winter_dark_share": 0.8683,
+    "svf_mean": 0.7038,
+    "green_per_home_m2": 13.6,
+    "canopy_per_home_m2": 3.6,
+    "shade_per_home_m2": 3.2,
+    "walk_to_4_places_m": 253.7
+   },
+   "rain": {
+    "p_hour_1y_summer": {
+     "reference": {
+      "rain_mm": 16.0,
+      "runoff_m3": 1691,
+      "depth_on_green_mm": 65,
+      "pond_rise_m": 2.52
+     },
+     "scenarios": {
+      "Ld": {
+       "rain_mm": 16.64,
+       "runoff_m3": 1759,
+       "depth_on_green_mm": 68,
+       "pond_rise_m": 2.62,
+       "runoff_m3_range": [
+        1725,
+        1792
+       ],
+       "extra_runoff_m3": 68
+      },
+      "Ln": {
+       "rain_mm": 16.96,
+       "runoff_m3": 1792,
+       "depth_on_green_mm": 69,
+       "pond_rise_m": 2.67,
+       "runoff_m3_range": [
+        1742,
+        1826
+       ],
+       "extra_runoff_m3": 101
+      },
+      "Md": {
+       "rain_mm": 16.8,
+       "runoff_m3": 1776,
+       "depth_on_green_mm": 68,
+       "pond_rise_m": 2.65,
+       "runoff_m3_range": [
+        1725,
+        1809
+       ],
+       "extra_runoff_m3": 85
+      },
+      "Mn": {
+       "rain_mm": 17.12,
+       "runoff_m3": 1809,
+       "depth_on_green_mm": 69,
+       "pond_rise_m": 2.7,
+       "runoff_m3_range": [
+        1759,
+        1860
+       ],
+       "extra_runoff_m3": 118
+      },
+      "Hd": {
+       "rain_mm": 16.96,
+       "runoff_m3": 1792,
+       "depth_on_green_mm": 69,
+       "pond_rise_m": 2.67,
+       "runoff_m3_range": [
+        1725,
+        1843
+       ],
+       "extra_runoff_m3": 101
+      },
+      "Hn": {
+       "rain_mm": 17.76,
+       "runoff_m3": 1877,
+       "depth_on_green_mm": 72,
+       "pond_rise_m": 2.8,
+       "runoff_m3_range": [
+        1792,
+        1962
+       ],
+       "extra_runoff_m3": 186
+      }
+     }
+    },
+    "p_day_10y_summer": {
+     "reference": {
+      "rain_mm": 48.0,
+      "runoff_m3": 5073,
+      "depth_on_green_mm": 195,
+      "pond_rise_m": 7.56
+     },
+     "scenarios": {
+      "Ld": {
+       "rain_mm": 49.92,
+       "runoff_m3": 5276,
+       "depth_on_green_mm": 203,
+       "pond_rise_m": 7.86,
+       "runoff_m3_range": [
+        5124,
+        5377
+       ],
+       "extra_runoff_m3": 203
+      },
+      "Ln": {
+       "rain_mm": 50.4,
+       "runoff_m3": 5327,
+       "depth_on_green_mm": 204,
+       "pond_rise_m": 7.94,
+       "runoff_m3_range": [
+        5174,
+        5428
+       ],
+       "extra_runoff_m3": 254
+      },
+      "Md": {
+       "rain_mm": 50.4,
+       "runoff_m3": 5327,
+       "depth_on_green_mm": 204,
+       "pond_rise_m": 7.94,
+       "runoff_m3_range": [
+        5174,
+        5428
+       ],
+       "extra_runoff_m3": 254
+      },
+      "Mn": {
+       "rain_mm": 50.88,
+       "runoff_m3": 5377,
+       "depth_on_green_mm": 206,
+       "pond_rise_m": 8.01,
+       "runoff_m3_range": [
+        5225,
+        5580
+       ],
+       "extra_runoff_m3": 304
+      },
+      "Hd": {
+       "rain_mm": 50.88,
+       "runoff_m3": 5377,
+       "depth_on_green_mm": 206,
+       "pond_rise_m": 8.01,
+       "runoff_m3_range": [
+        5174,
+        5530
+       ],
+       "extra_runoff_m3": 304
+      },
+      "Hn": {
+       "rain_mm": 52.32,
+       "runoff_m3": 5530,
+       "depth_on_green_mm": 212,
+       "pond_rise_m": 8.24,
+       "runoff_m3_range": [
+        5327,
+        5783
+       ],
+       "extra_runoff_m3": 457
+      }
+     }
+    }
+   },
+   "heat_home_days": {
+    "tropical_days": {
+     "reference": [
+      4416,
+      9600
+     ],
+     "scenarios": {
+      "Ld": [
+       7680,
+       19008
+      ],
+      "Ln": [
+       6912,
+       17088
+      ],
+      "Md": [
+       8832,
+       20160
+      ],
+      "Mn": [
+       7296,
+       17088
+      ],
+      "Hd": [
+       11328,
+       26304
+      ],
+      "Hn": [
+       8832,
+       19968
+      ]
+     }
+    },
+    "summer_days": {
+     "reference": [
+      32640,
+      53760
+     ],
+     "scenarios": {
+      "Ld": [
+       47616,
+       78720
+      ],
+      "Ln": [
+       45696,
+       74880
+      ],
+      "Md": [
+       53760,
+       86400
+      ],
+      "Mn": [
+       49920,
+       80640
+      ],
+      "Hd": [
+       61440,
+       103680
+      ],
+      "Hn": [
+       53760,
+       88320
+      ]
+     }
+    }
+   }
+  },
+  "scenario_b": {
+   "label": "Scenario B",
+   "static": {
+    "site_m2": 132413,
+    "roof_m2": 22739,
+    "green_m2": 46454,
+    "water_m2": 671,
+    "sealed_m2": 85288,
+    "paved_other_m2": 62549,
+    "sealed_share": 0.6441,
+    "green_share": 0.3508,
+    "unsealed_share": 0.3559,
+    "dwellings": 1250,
+    "trees": 191,
+    "trees_kept": 93,
+    "canopy_m2": 12996,
+    "canopy_share": 0.0981,
+    "summer_sun_mean_h": 10.1864,
+    "summer_shade_share": 0.0253,
+    "summer_shade_m2": 2478,
+    "winter_dark_share": 0.6679,
+    "svf_mean": 0.8482,
+    "green_per_home_m2": 37.2,
+    "canopy_per_home_m2": 10.4,
+    "shade_per_home_m2": 2.0,
+    "walk_to_4_places_m": 263.2
+   },
+   "rain": {
+    "p_hour_1y_summer": {
+     "reference": {
+      "rain_mm": 16.0,
+      "runoff_m3": 1365,
+      "depth_on_green_mm": 29,
+      "pond_rise_m": 2.03
+     },
+     "scenarios": {
+      "Ld": {
+       "rain_mm": 16.64,
+       "runoff_m3": 1419,
+       "depth_on_green_mm": 31,
+       "pond_rise_m": 2.12,
+       "runoff_m3_range": [
+        1392,
+        1446
+       ],
+       "extra_runoff_m3": 54
+      },
+      "Ln": {
+       "rain_mm": 16.96,
+       "runoff_m3": 1446,
+       "depth_on_green_mm": 31,
+       "pond_rise_m": 2.16,
+       "runoff_m3_range": [
+        1406,
+        1474
+       ],
+       "extra_runoff_m3": 81
+      },
+      "Md": {
+       "rain_mm": 16.8,
+       "runoff_m3": 1433,
+       "depth_on_green_mm": 31,
+       "pond_rise_m": 2.14,
+       "runoff_m3_range": [
+        1392,
+        1460
+       ],
+       "extra_runoff_m3": 68
+      },
+      "Mn": {
+       "rain_mm": 17.12,
+       "runoff_m3": 1460,
+       "depth_on_green_mm": 31,
+       "pond_rise_m": 2.18,
+       "runoff_m3_range": [
+        1419,
+        1501
+       ],
+       "extra_runoff_m3": 95
+      },
+      "Hd": {
+       "rain_mm": 16.96,
+       "runoff_m3": 1446,
+       "depth_on_green_mm": 31,
+       "pond_rise_m": 2.16,
+       "runoff_m3_range": [
+        1392,
+        1487
+       ],
+       "extra_runoff_m3": 81
+      },
+      "Hn": {
+       "rain_mm": 17.76,
+       "runoff_m3": 1515,
+       "depth_on_green_mm": 33,
+       "pond_rise_m": 2.26,
+       "runoff_m3_range": [
+        1446,
+        1583
+       ],
+       "extra_runoff_m3": 150
+      }
+     }
+    },
+    "p_day_10y_summer": {
+     "reference": {
+      "rain_mm": 48.0,
+      "runoff_m3": 4094,
+      "depth_on_green_mm": 88,
+      "pond_rise_m": 6.1
+     },
+     "scenarios": {
+      "Ld": {
+       "rain_mm": 49.92,
+       "runoff_m3": 4258,
+       "depth_on_green_mm": 92,
+       "pond_rise_m": 6.35,
+       "runoff_m3_range": [
+        4135,
+        4339
+       ],
+       "extra_runoff_m3": 164
+      },
+      "Ln": {
+       "rain_mm": 50.4,
+       "runoff_m3": 4299,
+       "depth_on_green_mm": 93,
+       "pond_rise_m": 6.41,
+       "runoff_m3_range": [
+        4176,
+        4380
+       ],
+       "extra_runoff_m3": 205
+      },
+      "Md": {
+       "rain_mm": 50.4,
+       "runoff_m3": 4299,
+       "depth_on_green_mm": 93,
+       "pond_rise_m": 6.41,
+       "runoff_m3_range": [
+        4176,
+        4380
+       ],
+       "extra_runoff_m3": 205
+      },
+      "Mn": {
+       "rain_mm": 50.88,
+       "runoff_m3": 4339,
+       "depth_on_green_mm": 93,
+       "pond_rise_m": 6.47,
+       "runoff_m3_range": [
+        4217,
+        4503
+       ],
+       "extra_runoff_m3": 245
+      },
+      "Hd": {
+       "rain_mm": 50.88,
+       "runoff_m3": 4339,
+       "depth_on_green_mm": 93,
+       "pond_rise_m": 6.47,
+       "runoff_m3_range": [
+        4176,
+        4462
+       ],
+       "extra_runoff_m3": 245
+      },
+      "Hn": {
+       "rain_mm": 52.32,
+       "runoff_m3": 4462,
+       "depth_on_green_mm": 96,
+       "pond_rise_m": 6.65,
+       "runoff_m3_range": [
+        4299,
+        4667
+       ],
+       "extra_runoff_m3": 368
+      }
+     }
+    }
+   },
+   "heat_home_days": {
+    "tropical_days": {
+     "reference": [
+      2875,
+      6250
+     ],
+     "scenarios": {
+      "Ld": [
+       5000,
+       12375
+      ],
+      "Ln": [
+       4500,
+       11125
+      ],
+      "Md": [
+       5750,
+       13125
+      ],
+      "Mn": [
+       4750,
+       11125
+      ],
+      "Hd": [
+       7375,
+       17125
+      ],
+      "Hn": [
+       5750,
+       13000
+      ]
+     }
+    },
+    "summer_days": {
+     "reference": [
+      21250,
+      35000
+     ],
+     "scenarios": {
+      "Ld": [
+       31000,
+       51250
+      ],
+      "Ln": [
+       29750,
+       48750
+      ],
+      "Md": [
+       35000,
+       56250
+      ],
+      "Mn": [
+       32500,
+       52500
+      ],
+      "Hd": [
+       40000,
+       67500
+      ],
+      "Hn": [
+       35000,
+       57500
+      ]
+     }
+    }
+   }
+  },
+  "final": {
+   "label": "Final design",
+   "static": {
+    "site_m2": 132413,
+    "roof_m2": 22104,
+    "green_m2": 48423,
+    "water_m2": 671,
+    "sealed_m2": 83319,
+    "paved_other_m2": 61215,
+    "sealed_share": 0.6292,
+    "green_share": 0.3657,
+    "unsealed_share": 0.3708,
+    "dwellings": 777,
+    "trees": 174,
+    "trees_kept": 82,
+    "canopy_m2": 9657,
+    "canopy_share": 0.0729,
+    "summer_sun_mean_h": 10.29,
+    "summer_shade_share": 0.0315,
+    "summer_shade_m2": 3166,
+    "winter_dark_share": 0.7115,
+    "svf_mean": 0.8218,
+    "green_per_home_m2": 62.3,
+    "canopy_per_home_m2": 12.4,
+    "shade_per_home_m2": 4.1,
+    "walk_to_4_places_m": 269.1
+   },
+   "rain": {
+    "p_hour_1y_summer": {
+     "reference": {
+      "rain_mm": 16.0,
+      "runoff_m3": 1333,
+      "depth_on_green_mm": 28,
+      "pond_rise_m": 1.99
+     },
+     "scenarios": {
+      "Ld": {
+       "rain_mm": 16.64,
+       "runoff_m3": 1386,
+       "depth_on_green_mm": 29,
+       "pond_rise_m": 2.07,
+       "runoff_m3_range": [
+        1360,
+        1413
+       ],
+       "extra_runoff_m3": 53
+      },
+      "Ln": {
+       "rain_mm": 16.96,
+       "runoff_m3": 1413,
+       "depth_on_green_mm": 29,
+       "pond_rise_m": 2.11,
+       "runoff_m3_range": [
+        1373,
+        1440
+       ],
+       "extra_runoff_m3": 80
+      },
+      "Md": {
+       "rain_mm": 16.8,
+       "runoff_m3": 1400,
+       "depth_on_green_mm": 29,
+       "pond_rise_m": 2.09,
+       "runoff_m3_range": [
+        1360,
+        1426
+       ],
+       "extra_runoff_m3": 67
+      },
+      "Mn": {
+       "rain_mm": 17.12,
+       "runoff_m3": 1426,
+       "depth_on_green_mm": 29,
+       "pond_rise_m": 2.13,
+       "runoff_m3_range": [
+        1386,
+        1466
+       ],
+       "extra_runoff_m3": 93
+      },
+      "Hd": {
+       "rain_mm": 16.96,
+       "runoff_m3": 1413,
+       "depth_on_green_mm": 29,
+       "pond_rise_m": 2.11,
+       "runoff_m3_range": [
+        1360,
+        1453
+       ],
+       "extra_runoff_m3": 80
+      },
+      "Hn": {
+       "rain_mm": 17.76,
+       "runoff_m3": 1480,
+       "depth_on_green_mm": 31,
+       "pond_rise_m": 2.21,
+       "runoff_m3_range": [
+        1413,
+        1546
+       ],
+       "extra_runoff_m3": 147
+      }
+     }
+    },
+    "p_day_10y_summer": {
+     "reference": {
+      "rain_mm": 48.0,
+      "runoff_m3": 3999,
+      "depth_on_green_mm": 83,
+      "pond_rise_m": 5.96
+     },
+     "scenarios": {
+      "Ld": {
+       "rain_mm": 49.92,
+       "runoff_m3": 4159,
+       "depth_on_green_mm": 86,
+       "pond_rise_m": 6.2,
+       "runoff_m3_range": [
+        4039,
+        4239
+       ],
+       "extra_runoff_m3": 160
+      },
+      "Ln": {
+       "rain_mm": 50.4,
+       "runoff_m3": 4199,
+       "depth_on_green_mm": 87,
+       "pond_rise_m": 6.26,
+       "runoff_m3_range": [
+        4079,
+        4279
+       ],
+       "extra_runoff_m3": 200
+      },
+      "Md": {
+       "rain_mm": 50.4,
+       "runoff_m3": 4199,
+       "depth_on_green_mm": 87,
+       "pond_rise_m": 6.26,
+       "runoff_m3_range": [
+        4079,
+        4279
+       ],
+       "extra_runoff_m3": 200
+      },
+      "Mn": {
+       "rain_mm": 50.88,
+       "runoff_m3": 4239,
+       "depth_on_green_mm": 88,
+       "pond_rise_m": 6.32,
+       "runoff_m3_range": [
+        4119,
+        4399
+       ],
+       "extra_runoff_m3": 240
+      },
+      "Hd": {
+       "rain_mm": 50.88,
+       "runoff_m3": 4239,
+       "depth_on_green_mm": 88,
+       "pond_rise_m": 6.32,
+       "runoff_m3_range": [
+        4079,
+        4359
+       ],
+       "extra_runoff_m3": 240
+      },
+      "Hn": {
+       "rain_mm": 52.32,
+       "runoff_m3": 4359,
+       "depth_on_green_mm": 90,
+       "pond_rise_m": 6.5,
+       "runoff_m3_range": [
+        4199,
+        4559
+       ],
+       "extra_runoff_m3": 360
+      }
+     }
+    }
+   },
+   "heat_home_days": {
+    "tropical_days": {
+     "reference": [
+      1787,
+      3885
+     ],
+     "scenarios": {
+      "Ld": [
+       3108,
+       7692
+      ],
+      "Ln": [
+       2797,
+       6915
+      ],
+      "Md": [
+       3574,
+       8158
+      ],
+      "Mn": [
+       2953,
+       6915
+      ],
+      "Hd": [
+       4584,
+       10645
+      ],
+      "Hn": [
+       3574,
+       8081
+      ]
+     }
+    },
+    "summer_days": {
+     "reference": [
+      13209,
+      21756
+     ],
+     "scenarios": {
+      "Ld": [
+       19270,
+       31857
+      ],
+      "Ln": [
+       18493,
+       30303
+      ],
+      "Md": [
+       21756,
+       34965
+      ],
+      "Mn": [
+       20202,
+       32634
+      ],
+      "Hd": [
+       24864,
+       41958
+      ],
+      "Hn": [
+       21756,
+       35742
+      ]
+     }
+    }
+   }
+  }
+ },
+ "skipped": [],
+ "observed": {
+  "station": 344,
+  "source": "https://www.daggegevens.knmi.nl/klimatologie/daggegevens",
+  "years": {
+   "2021": {
+    "n_days": 365,
+    "summer_days": 15,
+    "tropical_days": 0,
+    "wettest_day_mm": 32.3
+   },
+   "2022": {
+    "n_days": 365,
+    "summer_days": 39,
+    "tropical_days": 10,
+    "wettest_day_mm": 24.4
+   },
+   "2023": {
+    "n_days": 365,
+    "summer_days": 35,
+    "tropical_days": 5,
+    "wettest_day_mm": 35.2
+   },
+   "2024": {
+    "n_days": 366,
+    "summer_days": 26,
+    "tropical_days": 4,
+    "wettest_day_mm": 42.9
+   },
+   "2025": {
+    "n_days": 365,
+    "summer_days": 28,
+    "tropical_days": 8,
+    "wettest_day_mm": 29.2
+   }
+  },
+  "mean": {
+   "summer_days": 28.6,
+   "tropical_days": 5.4
+  },
+  "note": "Measured at Rotterdam The Hague Airport, complete years only. A handful of years is weather, not climate: compare with the 30-year means with care."
+ },
+ "flood_today": {
+  "high_or_very_high_share": 0.611,
+  "source": "Cyrille Kummer, QGIS flood-vulnerability analysis (team OneDrive, QGIS Files - UPDATED, 2026-10-02); imported, not recomputed",
+  "scenarios": "not computed: Cyrille's QGIS model has to be re-run per scenario"
+ }
+}
