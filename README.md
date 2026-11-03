@@ -283,7 +283,7 @@ numbers here still match `data/processed/`.
 | 4.2 | Geospatial data layers | ✅ done | — |
 | 4.3 | Urban morphological indicators | ✅ done — SVF 0.784, GSI 0.333, FSI 1.003, mix 0.267, Bloemhof; plus street H/W and direct-sun hours. SVF, sun hours, H/W, density and land-use mix also run for scenario_a, scenario_b and the final design | Atanas |
 | 4.4 | KNMI sensors + AI prediction | ✅ done — live feed, sensors, 5 y history, model comparison | Atanas |
-| 4.5 | Wind + noise simulation | 🟡 noise done (baseline, NoiseModelling 6.0.0) · scenario_a wired, not run · wind not started | — |
+| 4.5 | Wind + noise simulation | 🟡 wind done for baseline, A, B and the final design (OpenFOAM on the TU Delft server) · noise done for the baseline (NoiseModelling 6.0.0), A, B and the final design wired, not run | — |
 | 4.6 | CBS socio-demographics | ❌ not started | — |
 | 4.7 | Agent-based land-use model | ✅ done — CA + RL, prefers the `green` programme; Rhino options scored on the same objective | Atanas |
 | 4.8 | Road network optimization | ✅ done — walk network and walks to everyday destinations for baseline, scenario_a and scenario_b. Site grid 376.2 m today → 370.7 m in scenario_a, 376.7 m in scenario_b, 367.7 m in the final design. Walk and drive distance from each site address to Lange Hilleweg and Strevelsweg: baseline done, scenarios wait for the team's entrances and car access | Atanas |

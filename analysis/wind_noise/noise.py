@@ -3,7 +3,7 @@
 noise.py - road-traffic noise (Lden) around the design site, with NoiseModelling.
 
     python analysis/wind_noise/noise.py                         #every case, ~10 min each
-    python analysis/wind_noise/noise.py --scenario scenario_a   #only these
+    python analysis/wind_noise/noise.py --scenario scenario_a   #only these (baseline, scenario_a, scenario_b, final)
     python analysis/wind_noise/noise.py --refresh               #re-fetch OSM and 3DBAG
     python analysis/wind_noise/noise.py --figure-only           #redraw the figures from the stored JSON
 
@@ -176,6 +176,16 @@ def buildings_for(scenario, extent_poly, src):
         #interior streets the design removes. Edge-street traffic dominates the site, but
         #a source left inside a new block is screened by it, so check the map near the blocks.
 
+        #the final design stands flats on shop podiums: two footprints on one spot. The podium
+        #loses what the flats cover (wind_cfd_export.cut_overlaps), so no building sits inside
+        #another; the flats' prism runs from the ground to their roof and screens for both
+        from wind_cfd_export import cut_overlaps
+        new = ~b["identificatie"].astype(str).str.startswith("NL.IMBAG")  #the scenario's own blocks
+        rows, n_cut = cut_overlaps(list(zip(b.index[new], b.loc[new, "height_m"], b.geometry[new])))
+        if n_cut:
+            b.loc[[i for i, _, _ in rows], "geometry"] = [g for _, _, g in rows]
+            print(f"  {n_cut} new blocks overlapped a taller one; the overlap is left to the taller")
+
     b["geometry"] = b.geometry.apply(make_valid).buffer(0)
     b = b[~b.geometry.is_empty]
     out = gpd.GeoDataFrame({"PK": np.arange(1, len(b) + 1),
@@ -292,6 +302,7 @@ CASES = [
     {"scenario": "baseline"},
     {"scenario": "scenario_a"},
     {"scenario": "scenario_b"},
+    {"scenario": "final"},  #the Final Model; its flats on shop podiums are merged in buildings_for()
 ]
 
 

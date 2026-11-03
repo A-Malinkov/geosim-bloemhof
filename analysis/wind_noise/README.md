@@ -45,9 +45,13 @@ propagation: is in `noise_pipeline.groovy`, run headless by `ScriptRunner`.
 Inputs are cached in `cache/noise/` (gitignored).
 
 Writes `data/processed/noise_baseline.json` (2 m Lden grid + summary) and
-`docs/fig_noise_baseline.png`. `--scenario scenario_a` is wired: `buildings_for()`
-takes the scenario's buildings from `analysis/scenarios/scenario_world.py`
-(1,150 demolished, 22 new volumes). It has not been run yet, because it needs
+`docs/fig_noise_baseline.png`. `--scenario scenario_a`, `scenario_b` and `final`
+are wired: `buildings_for()` takes the scenario's buildings from
+`analysis/scenarios/scenario_world.py` (1,150 demolished, 22, 10 or 301 new
+volumes). In the final design 49 flats stand on a shop podium with the same
+footprint; the podium loses what the flats cover (`cut_overlaps()` from
+`wind_cfd_export.py`), so no building sits inside another and the flats' prism,
+ground to roof, screens for both. None has been run yet, because each needs
 NoiseModelling. Traffic sources are unchanged, so cars still drive the old
 interior streets the design removes; check the map near the new blocks.
 
