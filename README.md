@@ -1,5 +1,7 @@
 # Geosimulation final project: Bloemhof, Rotterdam
 
+![The final design in Bloemhof, aerial render](docs/renders/final_aerial.jpg)
+
 An interactive CesiumJS web app backed by Python geospatial analysis. We design a
 residential complex in **Bloemhof** (wijk Feijenoord, Rotterdam-Zuid) and justify
 it with geospatial analysis and simulation.
@@ -14,6 +16,23 @@ coordinates. They are defined in exactly two places:
 [`app/config.js`](app/config.js) for the app and
 [`analysis/common/project.py`](analysis/common/project.py) for the analyses.
 Change the buurt codes there if the area moves, then re-run the analyses.
+
+## The design
+
+The final design replaces the south-western wedge of Bloemhof with low housing
+blocks around shared gardens, a curving walkway, a pond and a shopping centre on
+the corner. The block with the school and community centre stays.
+
+<p align="center">
+  <img src="docs/renders/top_view.jpg" width="49%" alt="The final design from above">
+  <img src="docs/renders/walkway.jpg" width="49%" alt="The walkway between the housing blocks">
+</p>
+<p align="center">
+  <img src="docs/renders/shopping_centre.jpg" width="49%" alt="The shopping centre on the corner, aerial render">
+  <img src="docs/renders/bike_path.jpg" width="49%" alt="The bike path along the site, AI render">
+</p>
+
+Renders by the team. The bike path view is an AI render.
 
 ## 1. Getting set up
 
