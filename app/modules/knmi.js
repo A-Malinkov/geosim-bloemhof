@@ -380,7 +380,6 @@ export async function setup(ctx) {
   if (forecast) {
     const m = forecast.metrics || {};
     const tRes = forecast.results?.temperature_C?.horizons || {};
-    const demo = forecast.demo_series;
 
     // per-horizon comparison against the persistence baseline
     const hRows = Object.entries(tRes).map(([hz, models]) => {
@@ -404,9 +403,6 @@ export async function setup(ctx) {
       `</tbody></table>` +
       `<table class="kv"><thead><tr><th>horizon</th><th>model</th>` +
       `<th>MAE</th><th>vs persistence</th></tr></thead><tbody>${hRows}</tbody></table>` +  //persistence, not the same-hour-yesterday baseline
-      (demo ? chart2(demo.time, demo.actual, demo.predicted,
-                     "actual", "predicted", "#97a3b2", "#eb6834",
-                     `°C · ${demo.model} ${demo.horizon}`) : "") +
       `<p class="muted">Temperature, ${forecast.method?.test_hours?.toLocaleString("en-GB")} ` +
       `held-out hours. "vs persistence" is the improvement over assuming nothing ` +
       `changes. Chronological split: never random, or neighbouring hours leak ` +

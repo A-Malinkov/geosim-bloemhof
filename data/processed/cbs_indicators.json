@@ -1,20 +1,143 @@
 {
-  "_status": "not_computed_yet",
-  "_note": "Placeholder. The app treats _status=not_computed_yet as 'no data' and shows a placeholder panel. Overwrite this file with real output.",
-  "_written_by": "analysis/cbs/fetch_cbs.py",
-  "_schema": {
-    "buurt": "Bloemhof",
-    "code": "BU05991081",
-    "year": 2026,
-    "indicators": [
-      {
-        "label": "Inhabitants",
-        "value": 0,
-        "unit": "",
-        "gemeente": 0,
-        "nl": null
-      }
-    ],
-    "_source": "CBS StatLine OData table 86358NED"
+ "_written_by": "analysis/cbs/fetch_cbs.py",
+ "_source": "CBS StatLine OData, Kerncijfers wijken en buurten",
+ "_note": "Bloemhof against the municipality of Rotterdam. Shares computed from CBS counts. The same in every scenario: it describes today's residents.",
+ "buurt": "Bloemhof",
+ "code": "BU05991081",
+ "gemeente": "Rotterdam",
+ "people": {
+  "year": 2026,
+  "table": "86358NED",
+  "rows": [
+   {
+    "label": "Inhabitants",
+    "unit": "",
+    "bloemhof": 13760,
+    "rotterdam": 673804
+   },
+   {
+    "label": "Density",
+    "unit": "per km²",
+    "bloemhof": 17730,
+    "rotterdam": 3058
+   },
+   {
+    "label": "Households",
+    "unit": "",
+    "bloemhof": 6665,
+    "rotterdam": 341933
+   },
+   {
+    "label": "Mean household size",
+    "unit": "people",
+    "bloemhof": 2.0,
+    "rotterdam": 1.9
+   }
+  ]
+ },
+ "groups": [
+  {
+   "key": "age",
+   "title": "Age",
+   "year": 2026,
+   "note": "share of inhabitants",
+   "categories": [
+    {
+     "label": "0–15",
+     "bloemhof": 17.2,
+     "rotterdam": 14.8
+    },
+    {
+     "label": "15–25",
+     "bloemhof": 14.7,
+     "rotterdam": 13.5
+    },
+    {
+     "label": "25–45",
+     "bloemhof": 32.8,
+     "rotterdam": 31.9
+    },
+    {
+     "label": "45–65",
+     "bloemhof": 23.7,
+     "rotterdam": 23.6
+    },
+    {
+     "label": "65+",
+     "bloemhof": 11.5,
+     "rotterdam": 16.2
+    }
+   ]
+  },
+  {
+   "key": "households",
+   "title": "Households",
+   "year": 2026,
+   "note": "share of households",
+   "categories": [
+    {
+     "label": "single person",
+     "bloemhof": 46.9,
+     "rotterdam": 49.2
+    },
+    {
+     "label": "couple, no children",
+     "bloemhof": 18.7,
+     "rotterdam": 22.3
+    },
+    {
+     "label": "with children",
+     "bloemhof": 34.4,
+     "rotterdam": 28.5
+    }
+   ]
+  },
+  {
+   "key": "origin",
+   "title": "Origin",
+   "year": 2026,
+   "note": "country of origin of the person or their parents",
+   "categories": [
+    {
+     "label": "Netherlands",
+     "bloemhof": 20.5,
+     "rotterdam": 42.1
+    },
+    {
+     "label": "Europe, not NL",
+     "bloemhof": 15.2,
+     "rotterdam": 13.0
+    },
+    {
+     "label": "outside Europe",
+     "bloemhof": 64.4,
+     "rotterdam": 44.9
+    }
+   ]
   }
+ ],
+ "income": {
+  "year": 2023,
+  "table": "85618NED",
+  "rows": [
+   {
+    "label": "Households in the lowest 40 % nationally",
+    "unit": "%",
+    "bloemhof": 62.4,
+    "rotterdam": 51.5
+   },
+   {
+    "label": "Households in the highest 20 % nationally",
+    "unit": "%",
+    "bloemhof": 6.5,
+    "rotterdam": 14.5
+   },
+   {
+    "label": "Mean standardised household income",
+    "unit": "€1,000",
+    "bloemhof": 27.1,
+    "rotterdam": 35.8
+   }
+  ]
+ }
 }

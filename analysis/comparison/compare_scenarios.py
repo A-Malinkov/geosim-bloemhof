@@ -284,7 +284,7 @@ INDICATORS = [
 ]
 NOT_RUN = [("Wind", "pedestrian wind comfort", "OpenFOAM cases set up, not run"),
            ("Noise", "road-traffic noise, Lden", "baseline only, scenarios not run"),
-           ("CBS", "socio-demographics", "not started")]
+           ("CBS", "socio-demographics", "today's residents only, the designs have none yet")]  #the app has a CBS card since 2026-11-03
 NOT_TODAY = {"green_area_m2", "water_area_m2",  #no today value: proposed planting
              "lu_objective_amen", "lu_mix_amen"}  #and the land use with placed amenities
 PERCENT = {"sun_under2h_0320", "sun_under2h_1221", "lu_green_share", "flood_high"}
