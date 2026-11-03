@@ -328,7 +328,11 @@ def main():
                 (r"^\| shops on the site \|", "n_shop", "{:.0f}"),
                 (r"^\| schools on the site \|", "n_education", "{:.0f}"),
                 (r"^\| community halls on the site \|", "n_community", "{:.0f}"),
-                (r"^\| land-use objective J \|", "lu_objective", "{:.3f}")]
+                (r"^\| land-use objective J \|", "lu_objective", "{:.3f}"),
+                (r"^\| wind-speed ratio at 1\.5 m, mean \|", "wind_mean_ratio", "{:.2f}"),  #wind and noise since 2026-11-03
+                (r"^\| open ground windier than open country", "wind_over11", "pct"),
+                (r"^\| road noise Lden, mean", "noise_mean_db", "{:.1f} dB"),
+                (r"^\| above 53 dB Lden", "noise_over53", "pct")]
         for pat, key, fm in rows:
             for sc in ("baseline", "scenario_a", "scenario_b"):
                 v = cmp_[sc].get(key)
