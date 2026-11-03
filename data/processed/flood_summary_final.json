@@ -2,15 +2,13 @@
   "source": "Cyrille Kummer, QGIS, overall risk for the final massing (received 2026-11-03); imported, not recomputed",
   "scenario": "final",
   "cell_size_m": 0.5,
-  "comparable_with_baseline": false,
-  "method_note": "Newer method than today's run. Outside the design site, where the final design changes nothing, it matches today's classes in only 50 % of cells: class 1 is absent and ground under buildings has a class. Not comparable with today's map.",
   "layers": [
     {
-      "id": "overall",
-      "label": "Overall flood vulnerability",
-      "about": "combined score banded into four classes",
+      "id": "overall_new",
+      "label": "Overall flood vulnerability, new method",
+      "about": "overall score banded into four classes, Cyrille's 2026-11-03 method, all ground",
       "kind": "classes",
-      "png": "flood_overall_final.png",
+      "png": "flood_overall_new_final.png",
       "bbox_wgs84": [
         4.482632,
         51.8860572,
@@ -55,7 +53,9 @@
             "4 high": 0.172
           }
         }
-      }
+      },
+      "source": "Cyrille Kummer, QGIS, overall risk for the final massing (received 2026-11-03); imported, not recomputed",
+      "method_note": "Cyrille's 2026-11-03 method: every cell has a class, ground under buildings included, so it is not the old overall layer. Today and the final design were run with it. Outside the design site, where both have a class, they agree in all but 83 of 17.1 million cells."
     }
   ]
 }

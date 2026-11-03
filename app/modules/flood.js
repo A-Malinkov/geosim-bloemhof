@@ -14,10 +14,12 @@
  * Each checkbox follows the scenario switch, like the wind and noise maps: it
  * shows flood_summary[_scenario].json's image for the selected scenario. A
  * design scenario without a run shows nothing (with a notice), rather than
- * today's map under the new buildings. The final design has an overall run
- * since 2026-11-03, made with a newer method, so it is flagged as not
- * comparable with today's map, on the map and in the card. Elevation is the AHN DTM, empty under buildings, so
- * hazard / combined / overall describe open ground.
+ * today's map under the new buildings. Elevation is the AHN DTM, empty under
+ * buildings, so hazard / combined / overall describe open ground.
+ *
+ *   overall_new = overall vulnerability with Cyrille's 2026-11-03 method, on all
+ *                 ground, for today and the final design (since 2026-11-03).
+ *                 The card compares the two; the old layers are today only.
  * ========================================================================== */
 
 export async function setup(ctx) {
@@ -67,7 +69,6 @@ export async function setup(ctx) {
           const layer = viewer.imageryLayers.addImageryProvider(p);
           layer.alpha = 0.8;
           layer.show = false;  //refresh() decides
-          layer.notComparable = sum.comparable_with_baseline === false;  //a run made with a newer method than today's
           return layer;
         }).catch((err) => {
           console.warn(`[flood] ${L.id} overlay failed for ${sc}`, err);
@@ -81,8 +82,6 @@ export async function setup(ctx) {
       const want = current;
       if (on) load(want).then((l) => {
         if (!l && on && want === current) ctx.note(`${L.label}: no run for ${want}`, "warn");
-        if (l?.notComparable && on && want === current)  //say so whenever the flagged map is shown
-          ctx.note(`${L.label}, ${want}: newer method than today's map, do not compare the two`, "warn");
       });
       //each image decides when it resolves, from the state at that moment
       for (const [sc, p] of images) p.then((l) => {
@@ -101,27 +100,28 @@ export async function setup(ctx) {
   }
 
   /* ---- panel: overall vulnerability shares per area ----------------------
-   * The selected scenario's figures when it has a run, else today's, said so. */
+   * The new method's table compares today with the selected design when it has
+   * a run; the old method's table is today only. */
   const pct = (v) => (v == null ? "—" : `${Math.round(v * 100)}`);
   const swatch = (c) =>
     `<i style="width:10px;height:10px;background:${c};display:inline-block;border-radius:2px;vertical-align:-1px"></i>`;
 
-  function table(sum) {
-    const overall = sum.layers.find((l) => l.id === "overall");
-    const combined = sum.layers.find((l) => l.id === "combined");
-    const classes = overall.legend.map((x) => x.label);
+  //rows: [label, stats of one area, mean score or undefined]; mean adds the old method's combined-score column
+  function table(head, legend, rows, mean) {
+    const classes = legend.map((x) => x.label);
     return (
-      `<table class="kv"><thead><tr><th>overall, % of ground</th>` +
-      overall.legend.map((x) => `<th>${swatch(x.colour)} ${x.label.split(" ")[0]}</th>`).join("") +
-      `<th>mean score</th></tr></thead><tbody>` +
-      Object.keys(overall.stats)
-        .map((a) => {
-          const s = overall.stats[a]?.shares || {};
-          const m = combined?.stats[a]?.mean;
+      `<table class="kv"><thead><tr><th>${head}</th>` +
+      legend.map((x) => `<th>${swatch(x.colour)} ${x.label.split(" ")[0]}</th>`).join("") +
+      (mean ? `<th>mean score</th>` : `<th>3–4</th>`) + `</tr></thead><tbody>` +
+      rows
+        .map(([label, st, m]) => {
+          const s = st?.shares || {};
           return (
-            `<tr><td>${a}</td>` +
+            `<tr><td>${label}</td>` +
             classes.map((c) => `<td>${pct(s[c])}</td>`).join("") +
-            `<td>${m == null ? "—" : m.toFixed(1)}</td></tr>`
+            (mean ? `<td>${m == null ? "—" : m.toFixed(1)}</td>`
+              : `<td><b>${pct(s["3"] == null ? null : s["3"] + s["4 high"])}</b></td>`) +  //high or very high
+            `</tr>`
           );
         })
         .join("") +
@@ -130,20 +130,26 @@ export async function setup(ctx) {
   }
 
   async function render(sc) {
-    const sum = await summaryFor(sc);
+    const sum = sc === "baseline" ? data : await summaryFor(sc);
     if (sc !== current) return;  //switched again while loading
-    const own = sum?.layers?.some((l) => l.id === "overall");
+    const overall = data.layers.find((l) => l.id === "overall");
+    const combined = data.layers.find((l) => l.id === "combined");
+    const today = data.layers.find((l) => l.id === "overall_new");  //today's run with the new method
+    const run = sc === "baseline" ? null : sum?.layers?.find((l) => l.id === "overall_new");  //the design's
+    const rows = today ? Object.keys(today.stats).flatMap((a) =>
+      [[`${a}, today`, today.stats[a]], ...(run ? [[`${a}, ${sc}`, run.stats[a]]] : [])]) : [];
     body.innerHTML =
-      (own || sc === "baseline" ? ""
-        : `<p class="muted"><b>No flood run for ${sc}.</b> The table shows today's city; ` +
+      (sc === "baseline" || run ? ""
+        : `<p class="muted"><b>No flood run for ${sc}.</b> The tables show today's city; ` +
           `the map layers stay empty on this scenario.</p>`) +
-      (own && sum.comparable_with_baseline === false  //a run with a newer method: flagged above its table
-        ? `<p class="muted"><b>Overall vulnerability only, newer method.</b> ${sum.method_note}</p>` : "") +
-      table(own ? sum : data) +
+      (today ? table("new method, % of all ground", today.legend, rows) +
+        `<p class="muted">${today.method_note}</p>` : "") +
+      table("old method, % of open ground, today", overall.legend,
+        Object.keys(overall.stats).map((a) => [a, overall.stats[a], combined?.stats[a]?.mean]), true) +
       `<p class="muted">Each factor is scored 1–4: distance to water (0–50 m = 4), ground ` +
       `level (below −0.99 m NAP = 4) and buildings per cell (more than 10 = 4). The combined ` +
-      `score is their sum; <em>overall</em> bands it into four classes. Ground level comes from ` +
-      `AHN, which is empty under buildings, so these describe the open ground. Analysis by ` +
+      `score is their sum; <em>overall</em> bands it into four classes. In the old method ground level comes from ` +
+      `AHN, which is empty under buildings, so its layers describe the open ground. Analysis by ` +
       `Cyrille (QGIS); layers under <em>Flood vulnerability</em>, following the scenario switch.</p>`;
   }
 

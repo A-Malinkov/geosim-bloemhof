@@ -239,12 +239,15 @@ def amenities(sc):
 
 
 def flood(sc):
-    #Cyrille's flood vulnerability, today only
-    d = J("flood_summary.json")
-    if sc != "baseline" or not d:
-        return {}
-    sh = [l for l in d["layers"] if l["id"] == "overall"][0]["stats"]["Design site"]["shares"]
-    return {"flood_high": round(sh["3"] + sh["4 high"], 3)}
+    #Cyrille's flood vulnerability: the old method today only, the new method today and the final design
+    out = {}
+    d = J("flood_summary.json" if sc == "baseline" else f"flood_summary_{sc}.json")  #None while a stub
+    for key, lid in (("flood_high", "overall"), ("flood_high_new", "overall_new")):
+        L = next((l for l in (d or {}).get("layers", []) if l["id"] == lid), None)
+        if L and not (lid == "overall" and sc != "baseline"):  #the old method has today only
+            sh = L["stats"]["Design site"]["shares"]
+            out[key] = round(sh["3"] + sh["4 high"], 3)
+    return out
 
 
 def wind_noise(sc):
@@ -300,12 +303,13 @@ INDICATORS = [
     ("noise_mean_db", "Wind and noise", "Road noise Lden, mean, site + 200 m", " dB", "lower", 1, "noise_*.json"),
     ("noise_over53", "Wind and noise", "Above 53 dB Lden, site + 200 m", "%", "lower", 0, "noise_*.json"),  #Bkl standard value
     ("noise_over70", "Wind and noise", "Above 70 dB Lden, site + 200 m", "%", "lower", 0, "noise_*.json"),  #Bkl limit, municipal roads
-    ("flood_high", "Today only", "Flood vulnerability high or very high", "%", "lower", 0, "flood_summary.json"),
+    ("flood_high_new", "Flood", "Flood classes 3–4, all ground", "%", "lower", 0, "flood_summary*.json"),  #Cyrille's 2026-11-03 method
+    ("flood_high", "Today only", "Flood classes 3–4, open ground, old", "%", "lower", 0, "flood_summary.json"),
 ]
 NOT_RUN = [("CBS", "socio-demographics", "today's residents only, the designs have none yet")]  #the app has a CBS card since 2026-11-03
 NOT_TODAY = {"green_area_m2", "water_area_m2",  #no today value: proposed planting
              "lu_objective_amen", "lu_mix_amen"}  #and the land use with placed amenities
-PERCENT = {"sun_under2h_0320", "sun_under2h_1221", "lu_green_share", "flood_high",
+PERCENT = {"sun_under2h_0320", "sun_under2h_1221", "lu_green_share", "flood_high", "flood_high_new",
            "wind_over11", "wind_sheltered", "noise_over53", "noise_over70"}  #shares, shown as %
 
 

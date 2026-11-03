@@ -7,11 +7,14 @@ QGIS / QGIS Files - UPDATED / BZO_NEW_*.tif). We only clip, warp and colour it
 and summarise it per area.
 
     python analysis/flood/import_cyrille.py [RASTER_DIR]
-    python analysis/flood/import_cyrille.py --scenario final
+    python analysis/flood/import_cyrille.py --scenario baseline final
 
 RASTER_DIR defaults to cache/flood/raw/ (gitignored) and must hold the
 BZO_NEW_*.tif files in LAYERS, from the shared QGIS.zip, 76 MB each.
---scenario imports a design's run from SCENARIO_RUNS instead (overall only).
+--scenario imports the runs in SCENARIO_RUNS instead: overall vulnerability
+with Cyrille's newer method (2026-11-03), for today and the final design, as
+its own layer overall_new. Today's run goes into flood_summary.json beside the
+old seven layers.
 
 Each factor scores 1 (low) to 4 (high), per "QGIS Layer Coding.pdf"
   water proximity   0-50 / 50-100 / 100-250 / 250+ m to water      -> 4..1
@@ -81,14 +84,20 @@ LAYERS = [
      "about": "road distance to water, scored 1–4"},
 ]
 
-#design runs Cyrille sent later, one overall raster each, in cache/flood/raw/
-#the final run uses a newer method than today's, so it is flagged as not comparable (Atanas, 2026-11-03)
+#overall vulnerability with Cyrille's newer method: classes 1-4 on all ground, under buildings too
+OVERALL_NEW = {**LAYERS[0], "id": "overall_new", "label": "Overall flood vulnerability, new method",
+               "about": "overall score banded into four classes, Cyrille's 2026-11-03 method, all ground"}
+NEW_METHOD = ("Cyrille's 2026-11-03 method: every cell has a class, ground under buildings "
+              "included, so it is not the old overall layer. Today and the final design were "
+              "run with it. Outside the design site, where both have a class, they agree in all "
+              "but 83 of 17.1 million cells.")
+
+#runs Cyrille sent later, one overall raster each, in cache/flood/raw/ (Atanas, 2026-11-03)
 SCENARIO_RUNS = [
-    {"scenario": "final", "layer": "overall", "file": "OverallRiskFinalMassing.tif",
-     "source": "Cyrille Kummer, QGIS, overall risk for the final massing (received 2026-11-03)",
-     "note": "Newer method than today's run. Outside the design site, where the final design "
-             "changes nothing, it matches today's classes in only 50 % of cells: class 1 is "
-             "absent and ground under buildings has a class. Not comparable with today's map."},
+    {"scenario": "baseline", "layer": OVERALL_NEW, "file": "OverallRiskOldReclassified.tif",
+     "source": "Cyrille Kummer, QGIS, today's city reclassified with the new method (received 2026-11-03)"},
+    {"scenario": "final", "layer": OVERALL_NEW, "file": "OverallRiskFinalMassing.tif",
+     "source": "Cyrille Kummer, QGIS, overall risk for the final massing (received 2026-11-03)"},
 ]
 
 
@@ -190,23 +199,24 @@ def layer_entry(L, a, tr, crs, masks, png, source_file):
 
 
 def import_scenario(run, areas):
-    #one design run: flood_<layer>_<scenario>.png and flood_summary_<scenario>.json, as today's layout
+    #one later run: flood_<layer>[_<scenario>].png, in flood_summary[_<scenario>].json
     import rasterio.features
     path = RAW / run["file"]
     if not path.exists():
         sys.exit(f"Missing {path}. Copy Cyrille's raster there (cache/ is gitignored).")
-    L = next(l for l in LAYERS if l["id"] == run["layer"])
+    L, sc = run["layer"], run["scenario"]
+    sfx = "" if sc == "baseline" else f"_{sc}"  #the baseline keeps the plain names
     a, tr, crs = read(None, path)
     masks = {n: rasterio.features.geometry_mask([p], a.shape, tr, invert=True) for n, p in areas.items()}
-    entry = layer_entry(L, a, tr, crs, masks, f"flood_{L['id']}_{run['scenario']}.png", run["file"])
-    write_processed(f"flood_summary_{run['scenario']}.json", {
-        "source": run["source"] + "; imported, not recomputed",
-        "scenario": run["scenario"],
-        "cell_size_m": 0.5,
-        "comparable_with_baseline": False,  #the app says so next to the table
-        "method_note": run["note"],
-        "layers": [entry],
-    })
+    entry = layer_entry(L, a, tr, crs, masks, f"flood_{L['id']}{sfx}.png", run["file"])
+    entry.update({"source": run["source"] + "; imported, not recomputed", "method_note": NEW_METHOD})
+    if sc == "baseline":  #today: beside the old seven layers, replacing an earlier import of this one
+        summary = json.loads((PROCESSED / "flood_summary.json").read_text())
+        summary["layers"] = [l for l in summary["layers"] if l["id"] != L["id"]] + [entry]
+    else:
+        summary = {"source": run["source"] + "; imported, not recomputed", "scenario": sc,
+                   "cell_size_m": 0.5, "layers": [entry]}
+    write_processed(f"flood_summary{sfx}.json", summary)
 
 
 def main():
@@ -246,6 +256,9 @@ def main():
                                              f"BZO_NEW_{L['file']}.tif"))
 
     write_processed("flood_summary.json", summary)
+    for run in SCENARIO_RUNS:  #today's new-method run, put back beside the old layers when its raster is here
+        if run["scenario"] == "baseline" and (RAW / run["file"]).exists():
+            import_scenario(run, areas)
 
     global summary_overall
     ov = next(l for l in summary["layers"] if l["id"] == "overall")["stats"]

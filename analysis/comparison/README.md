@@ -96,7 +96,8 @@ Wind (OpenFOAM, the design site's open ground at 1.5 m) and road noise
 | road noise Lden, mean, site + 200 m | 56.0 dB | 56.6 dB | 57.0 dB | 56.8 dB | lower |
 | above 53 dB Lden, site + 200 m | 68 % | 69 % | 72 % | 70 % | lower |
 | above 70 dB Lden, site + 200 m | 11 % | 11 % | 12 % | 11 % | lower |
-| flood vulnerability high or very high | 61 % | not run | not run | not run | lower |
+| flood classes 3–4, all ground (new method) | 82 % | not run | not run | 80 % | lower |
+| flood classes 3–4, open ground (old method) | 61 % | not run | not run | not run | lower |
 
 Sources: dwellings from `road_metrics.json` (BAG today, the road network's
 estimate in the scenarios), demolition and heights from `design_massing.geojson`,
@@ -108,7 +109,8 @@ and `shadow_summary*.json`, H/W from `canyon_hw_*.json`, trees from
 `design_planting.geojson`, walking from `road_metrics.json` and
 `amenity_placement.json` (today with its own amenities, and the placed ones),
 land use from `landuse_scenarios.json` (the site, open ground between blocks
-counted vacant as on today's grid), flood from `flood_summary.json`.
+counted vacant as on today's grid), flood from `flood_summary.json` and
+`flood_summary_final.json`.
 
 **A trades daylight for homes.** It nearly doubles the dwellings (1,027 to an
 estimated 1,920) and its share of open ground with under 2 h of sun at the

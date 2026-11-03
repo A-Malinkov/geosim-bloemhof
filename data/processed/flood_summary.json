@@ -371,6 +371,60 @@
           }
         }
       }
+    },
+    {
+      "id": "overall_new",
+      "label": "Overall flood vulnerability, new method",
+      "about": "overall score banded into four classes, Cyrille's 2026-11-03 method, all ground",
+      "kind": "classes",
+      "png": "flood_overall_new.png",
+      "bbox_wgs84": [
+        4.482632,
+        51.8860572,
+        4.5221643,
+        51.9022074
+      ],
+      "legend": [
+        {
+          "label": "1 low",
+          "colour": "#5d82aa"
+        },
+        {
+          "label": "2",
+          "colour": "#62bb7d"
+        },
+        {
+          "label": "3",
+          "colour": "#fb9f50"
+        },
+        {
+          "label": "4 high",
+          "colour": "#7a0403"
+        }
+      ],
+      "source_file": "OverallRiskOldReclassified.tif",
+      "stats": {
+        "Bloemhof": {
+          "covered_share": 1.0,
+          "shares": {
+            "1 low": 0.0,
+            "2": 0.363,
+            "3": 0.567,
+            "4 high": 0.07
+          }
+        },
+        "Design site": {
+          "covered_share": 1.0,
+          "shares": {
+            "1 low": 0.0,
+            "2": 0.178,
+            "3": 0.73,
+            "4 high": 0.092
+          }
+        }
+      },
+      "source": "Cyrille Kummer, QGIS, today's city reclassified with the new method (received 2026-11-03); imported, not recomputed",
+      "method_note": "Cyrille's 2026-11-03 method: every cell has a class, ground under buildings included, so it is not the old overall layer. Today and the final design were run with it. Outside the design site, where both have a class, they agree in all but 83 of 17.1 million cells."
     }
   ]
 }

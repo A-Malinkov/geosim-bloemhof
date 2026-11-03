@@ -2,7 +2,7 @@
  * modules/comparison.js - component 9: scenario comparison
  * OWNER: Atanas Malinkov
  *
- * Today against the two Rhino options on the design site, one row per
+ * Today against the Rhino options and the final design on the site, one row per
  * indicator, written by analysis/comparison/compare_scenarios.py into
  *   data/processed/scenario_comparison.json
  * Each scenario cell shows the value and its change against today, green when
@@ -36,13 +36,14 @@ const ROWS = [  //key, label, digits, as a percentage
   ["wind_over11", "Windier than open country (> 1.1)", 0, true],  //OpenFOAM, open ground at 1.5 m
   ["noise_mean_db", "Road noise Lden, site + 200 m (dB)", 1, false],  //NoiseModelling
   ["noise_over53", "Above 53 dB Lden, site + 200 m", 0, true],
+  ["flood_high_new", "Flood vulnerability high or very high", 0, true],  //Cyrille's new method, all ground
 ];
 
 export async function setup(ctx) {
   const body = ctx.registerPanel({
     id: "comparison",
     title: "Scenario comparison",
-    subtitle: "design site · today against A and B",
+    subtitle: "design site · today against A, B and the final design",
     order: 7,
   });
   const data = await ctx.loadJson(PATH, { quiet: true });

@@ -300,9 +300,17 @@
    "source": "noise_*.json"
   },
   {
+   "key": "flood_high_new",
+   "theme": "Flood",
+   "label": "Flood classes 3\u20134, all ground",
+   "unit": "%",
+   "better": "lower",
+   "source": "flood_summary*.json"
+  },
+  {
    "key": "flood_high",
    "theme": "Today only",
-   "label": "Flood vulnerability high or very high",
+   "label": "Flood classes 3\u20134, open ground, old",
    "unit": "%",
    "better": "lower",
    "source": "flood_summary.json"
@@ -384,6 +392,7 @@
   "noise_over53": 0.676,
   "noise_over70": 0.111,
   "flood_high": 0.611,
+  "flood_high_new": 0.822,
   "hw_classes": {
    "< 0.4 open": 0.516,
    "0.4\u20130.7": 0.349,
@@ -633,6 +642,7 @@
   "noise_mean_db": 56.8,
   "noise_over53": 0.705,
   "noise_over70": 0.113,
+  "flood_high_new": 0.804,
   "hw_classes": {
    "< 0.4 open": 0.833,
    "0.4\u20130.7": 0.083,

@@ -40,31 +40,41 @@ water-proximity score is real: OSM has a 772 m water body there.
   overall cover open ground only (62 % of cells).
 - "Buildings per cell" counts buildings, not floor area or coverage, so many
   small buildings score higher than one large one.
-- Today's city has all seven layers. The final design has the overall layer only,
-  and from a newer method (below). Scenario A and B have no run: the app's layers
-  follow the scenario switch and show nothing (with a notice) there, and
-  `flood_summary_scenario_a.json` / `_scenario_b.json` are stubs.
+- Today's city has all seven layers. The final design has only the new method's
+  overall layer (below), which today has too. Scenario A and B have no run: the
+  app's layers follow the scenario switch and show nothing (with a notice) there,
+  and `flood_summary_scenario_a.json` / `_scenario_b.json` are stubs.
 
-## The final design's run
+## The new method: today and the final design
 
-Cyrille sent `OverallRiskFinalMassing.tif` on 2026-11-03: overall vulnerability for
-the final massing, on the same 0.5 m grid as today's. Copy it to `cache/flood/raw/`, then
+On 2026-11-03 Cyrille sent two overall rasters made with a newer method, on the same
+0.5 m grid as today's: `OverallRiskOldReclassified.tif` (today's city) and
+`OverallRiskFinalMassing.tif` (the final massing). Copy both to `cache/flood/raw/`, then
 
 ```bash
-python analysis/flood/import_cyrille.py --scenario final
+python analysis/flood/import_cyrille.py --scenario baseline final
 ```
 
-writes `flood_overall_final.png` and `flood_summary_final.json`. Design site: class 2
-20 %, class 3 63 %, class 4 17 %, no class 1.
+adds them as their own layer, `overall_new`: `flood_overall_new.png` goes into
+`flood_summary.json` beside the old seven layers, and `flood_overall_new_final.png`
+into `flood_summary_final.json`. A full re-import of the old layers puts today's
+new-method run back when its raster is there.
 
-**It is not comparable with today's map.** Outside the design site, where the final
-design changes nothing, it matches today's classes in only 50 % of cells: today's
-class 1 became class 2 in 94 % of its cells, class 1 is absent everywhere, and
-ground under buildings now has a class (99.7 % of Bloemhof covered against 64.5 %).
-So the method changed between the runs. The summary carries
-`comparable_with_baseline: false`, the app says so on the map and in the card, and
-the scenario comparison keeps using today's run only. A comparison needs today's
-city re-run with the same method.
+The new method gives every cell a class, ground under buildings included (100 % of
+Bloemhof covered against 64.5 % in the old run), so it is not the old overall layer.
+Outside the design site, where both runs have a class, today and the final design
+agree in all but 83 of 17.1 million cells, so the two are comparable. Class 1 is
+absent on the site and covers only 65 cells in Bloemhof.
+
+| design site, % of ground | 2 | 3 | 4 | 3–4 |
+|---|---|---|---|---|
+| today | 18 | 73 | 9 | 82 |
+| final design | 20 | 63 | 17 | 80 |
+
+The final design moves ground both ways: classes 3–4 fall from 82 % to 80 %, but
+class 4 almost doubles. The app's flood card shows both rows, and the scenario
+comparison carries the 3–4 share as `flood_high_new`. Today's old-method share
+(61 % of open ground) stays as `flood_high`, today only.
 
 ## Adding a design scenario
 
