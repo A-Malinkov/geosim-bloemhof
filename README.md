@@ -15,13 +15,6 @@ coordinates. They are defined in exactly two places:
 [`analysis/common/project.py`](analysis/common/project.py) for the analyses.
 Change the buurt codes there if the area moves, then re-run the analyses.
 
----
-
-> **Using an AI assistant on this project?** Point it at
-> [CLAUDE.md](CLAUDE.md) (or [AGENTS.md](AGENTS.md) for tools that read that
-> instead). They carry the conventions and the data-source traps that cost us
-> the most time, so an assistant starting cold does not rediscover them.
-
 ## 1. Getting set up
 
 
@@ -87,41 +80,10 @@ Serve from the project root so the app can reach `../data/processed/`.
 **VS Code Live Server**: right-click `app/index.html` → *Open with Live Server*.
 Check its root is the project folder; if the data files 404, use `http.server`.
 
----
-
-## 2. Who owns what
-
-**Only edit your own module and your own analysis folder.**
-
-| # | Component | Your JS file | Your analysis folder |
-|---|-----------|--------------|----------------------|
-| 1 | 3D city model + proposed massing | `app/modules/scenarios.js` | `analysis/scenarios/` |
-| 2 | Data layers (imagery, AHN, buildings) | `app/modules/layers.js` | - |
-| 2b| **3D vegetation**: *Atanas Malinkov* | `app/modules/vegetation.js` | `analysis/morphology/` |
-| 3 | **Morphology indicators (SVF, density, height, land-use mix)**: *Atanas Malinkov* | `app/modules/indicators.js` | `analysis/morphology/` |
-| 4 | KNMI weather + AI prediction | `app/modules/knmi.js` | `analysis/knmi/` |
-| 4c| Climate 2050: KNMI'23 scenarios against the designs | `app/modules/climate.js` | `analysis/climate/` |
-| 5 | Wind + noise simulation | `app/modules/wind_noise.js` | `analysis/wind_noise/` |
-| 6 | CBS socio-demographics | `app/modules/cbs.js` | `analysis/cbs/` |
-| 7 | **Agent-based land-use model**: *Atanas Malinkov* | `app/modules/landuse.js` | `analysis/abm_landuse/` |
-| 8 | Road network optimization | `app/modules/roads.js` | `analysis/roads/` |
-| 8b| Public-transport stops and frequencies | `app/modules/transit.js` | `analysis/transit/` |
-| 9 | Design scenarios | `app/modules/scenarios.js` | `analysis/scenarios/` |
-
-### Shared files: go through one person
-`app/main.js` · `app/index.html` · `app/style.css` · `app/config.js` ·
-`analysis/common/project.py`
-
-(`app/config.local.js` is yours alone and is never committed: put your token
-there, nothing else.)
-
-These are the only files two people can collide on. If you need something added
-there, ask the coordinator rather than editing it yourself. In practice you
-should almost never need to, because of the module contract below.
 
 ---
 
-## 3. How a module works
+## 2. How a module works
 
 Every file in `app/modules/` exports one function:
 
@@ -157,19 +119,9 @@ under `layerPanel`, so the panel can be tidied without editing anyone's module.
 Reuse the CSS classes in `style.css` (`.kv`, `.ph`, `.muted`, `.delta`, `.seg`,
 `.feed`) instead of adding global styles.
 
-### The data hand-off
-Python writes JSON into `data/processed/`; the app fetches it. That is the only
-coupling between the two halves, so you can work on either side independently.
-
-Each expected file already exists as a **stub** containing `"_status":
-"not_computed_yet"` and a `_schema` block describing what to put in it.
-`ctx.loadJson()` treats a stub as "no data", so the app shows the placeholder
-panel until you overwrite it with real output. **Read the stub before you write
-the real file**: it tells you the shape the JS expects.
-
 ---
 
-## 4. The height datum: read this before adding any 3D layer
+## 3. The height datum: read this before adding any 3D layer
 
 Cesium places everything relative to the **WGS84 ellipsoid**. Dutch data is almost
 always in **NAP** (Normaal Amsterdams Peil). At Bloemhof these differ by
@@ -197,7 +149,7 @@ pixel, in both ellipsoid and NAP. If your layer is ~43 m out, you will see it.
 
 ---
 
-## 5. Data sources
+## 4. Data sources
 
 All verified reachable on 2026-09-21. URLs live in `config.js` and
 `analysis/common/project.py`.
@@ -247,7 +199,7 @@ and work fine from the browser.
 
 ---
 
-## 6. Folder layout
+## 5. Folder layout
 
 ```
 app/
@@ -274,30 +226,8 @@ you run the scripts once to fill in the rest.
 
 ---
 
-## Project status
 
-Maintained by hand. Run `python analysis/check_docs.py` to verify the
-numbers here still match `data/processed/`.
-
-| # | Component | Status | Owner |
-|---|---|---|---|
-| 4.1 | 3D city model + proposed massing | existing buildings ✅ · design site chosen ✅ · scenario_a massing ✅ (Rhino OPTION 1) · scenario_b massing ✅ (Rhino OPTION 2) | — |
-| 4.2 | Geospatial data layers | ✅ done | — |
-| 4.3 | Urban morphological indicators | ✅ done — SVF 0.784, GSI 0.333, FSI 1.003, mix 0.267, Bloemhof; plus street H/W and direct-sun hours. SVF, sun hours, H/W, density and land-use mix also run for scenario_a, scenario_b and the final design | Atanas |
-| 4.4 | KNMI sensors + AI prediction | ✅ done — live feed, sensors, 5 y history, model comparison | Atanas |
-| 4.4c | Climate 2050: design resilience | ✅ done — official KNMI'23 scenarios for 2050 (all six, national average, De Bilt, Vlissingen) against today, A, B and the final design: sealed-surface runoff, crown cover, summer shade, home-days above 30 °C (`analysis/climate/`, app card). Not our AI and not a forecast | — |
-| 4.5 | Wind + noise simulation | 🟡 wind done for baseline, A, B and the final design (OpenFOAM on the TU Delft server) · noise done for the baseline (NoiseModelling 6.0.0), A, B and the final design wired, not run | — |
-| 4.6 | CBS socio-demographics | ✅ done: Bloemhof against Rotterdam, people, age, households and origin (CBS 2026) and income (2023), in a dashboard card (`analysis/cbs/fetch_cbs.py`, `app/modules/cbs.js`) | Atanas |
-| 4.7 | Agent-based land-use model | ✅ done — CA + RL, prefers the `green` programme; Rhino options scored on the same objective | Atanas |
-| 4.8 | Road network optimization | ✅ done — walk network and walks to everyday destinations for baseline, scenario_a and scenario_b. Site grid 376.2 m today → 370.7 m in scenario_a, 376.7 m in scenario_b, 367.7 m in the final design. Walk and drive distance from each site address to Lange Hilleweg and Strevelsweg: baseline done, scenarios wait for the team's entrances and car access | Atanas |
-| 4.9 | Scenario comparison | ✅ done — indicator by indicator on the design site, no overall score (`analysis/comparison/`, six figures, app card). Wind and noise included for every scenario; CBS shown as today only | Atanas |
-
-**6 of 9 complete.** The remaining components carry the heaviest rubric
-weight, and 4.9 depends on all of them writing outputs keyed
-`baseline` / `scenario_a` / `scenario_b`, which the module contract already
-does, so do not build anything that cannot be re-run per scenario.
-
-## 7. What already works
+## 6. What already works
 
 Components **2b (3D vegetation)** and **3 (all four morphology indicators)** are
 done, and the weather dashboard is live (Atanas Malinkov). To reproduce from
@@ -389,7 +319,7 @@ Everything else is a wired-up skeleton waiting for its owner.
 
 ---
 
-## 8. Troubleshooting
+## 7. Troubleshooting
 
 | Symptom | Cause |
 |---|---|

@@ -73,7 +73,6 @@ def main():
         checks += [
             ("SVF combined", r"Sky View Factor, pedestrian level", f"{g['mean']:.3f}", [MAIN]),
             ("SVF combined", r"\*\*Sky View Factor\*\* \|", f"{g['mean']:.3f}", [MORPH]),
-            ("SVF in the status table", r"\| 4\.3 \|", f"{g['mean']:.3f}", [MAIN]),
         ]
     if veg:
         checks += [("trees combined", r"Trees · per hectare", f"{veg['combined']['n_trees']:,}", [MAIN]),
@@ -83,8 +82,6 @@ def main():
         checks += [
             ("GSI combined", r"GSI · FSI · storeys", f"{b['gsi']:.3f}", [MAIN]),
             ("FSI combined", r"GSI · FSI · storeys", f"{b['fsi']:.3f}", [MAIN]),
-            ("GSI in status table", r"\| 4\.3 \|", f"{b['gsi']:.3f}", [MAIN]),
-            ("FSI in status table", r"\| 4\.3 \|", f"{b['fsi']:.3f}", [MAIN]),
             ("GSI row", r"\*\*GSI\*\* ground space index", f"{b['gsi']:.3f}", [MORPH]),
             ("FSI row", r"\*\*FSI\*\* floor space index", f"{b['fsi']:.3f}", [MORPH]),
             ("storey height", r"measured, not assumed", f"{den['parameters']['storey_height_m']:.2f}", [MORPH]),
@@ -93,7 +90,6 @@ def main():
         b = lu["combined"]
         checks += [
             ("land-use combined", r"Land-use mix, Shannon", f"{b['shannon_area']:.3f}", [MAIN]),
-            ("mix in status table", r"\| 4\.3 \|", f"{b['shannon_area']:.3f}", [MAIN]),
             ("Bloemhof SVF", r"^\| Sky View Factor, pedestrian level",
              f"{svf['per_buurt']['Bloemhof']['open_ground']['mean']:.3f}", [MAIN]),
             ("Shannon row", r"\*\*land-use mix\*\* Shannon", f"{b['shannon_area']:.3f}", [MORPH]),
@@ -203,7 +199,6 @@ def main():
         checks += [
             ("roads: site grid baseline", r"^\| \*\*mean of the four\*\*", f"{b['site_grid']['mean_of_types_m']:.1f} m", [ROADS]),
             ("roads: site dwellings baseline", r"^\| \*\*mean of the four\*\*", f"{bs['mean_of_types_m']:.1f} m", [ROADS]),
-            ("roads: site grid in status table", r"^\| 4\.8 \|", f"{b['site_grid']['mean_of_types_m']:.1f} m", [MAIN]),
             ("roads: site intersections baseline", r"^\| intersection density", f"{bs['intersection_density_km2']:.1f}", [ROADS]),
             ("roads: study-area intersections", r"^\| intersection density",
              f"{b['areas']['study_area']['intersection_density_km2']:.1f}", [ROADS]),
@@ -218,7 +213,6 @@ def main():
             checks += [
                 (f"roads: site grid {sc}", r"^\| \*\*mean of the four\*\*", f"{a['site_grid']['mean_of_types_m']:.1f} m", [ROADS]),
                 (f"roads: site dwellings {sc}", r"^\| \*\*mean of the four\*\*", f"{as_['mean_of_types_m']:.1f} m", [ROADS]),
-                (f"roads: site grid {sc} in status table", r"^\| 4\.8 \|", f"{a['site_grid']['mean_of_types_m']:.1f} m", [MAIN]),
                 (f"roads: site intersections {sc}", r"^\| intersection density", f"{as_['intersection_density_km2']:.1f}", [ROADS]),
                 (f"roads: study-area intersections {sc}", r"^\| intersection density",
                  f"{a['areas']['study_area']['intersection_density_km2']:.1f}", [ROADS]),
