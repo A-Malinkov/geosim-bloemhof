@@ -7,9 +7,11 @@ QGIS / QGIS Files - UPDATED / BZO_NEW_*.tif). We only clip, warp and colour it
 and summarise it per area.
 
     python analysis/flood/import_cyrille.py [RASTER_DIR]
+    python analysis/flood/import_cyrille.py --scenario final
 
 RASTER_DIR defaults to cache/flood/raw/ (gitignored) and must hold the
 BZO_NEW_*.tif files in LAYERS, from the shared QGIS.zip, 76 MB each.
+--scenario imports a design's run from SCENARIO_RUNS instead (overall only).
 
 Each factor scores 1 (low) to 4 (high), per "QGIS Layer Coding.pdf"
   water proximity   0-50 / 50-100 / 100-250 / 250+ m to water      -> 4..1
@@ -36,7 +38,9 @@ sys.path.insert(0, str(HERE.parent))
 from common.project import (PROCESSED, ROOT, STUDY_AREA,  #noqa: E402
                             buurt_polygons, design_site_polygon, write_processed)
 
-RAW = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "cache" / "flood" / "raw"
+ARGS = [a for a in sys.argv[1:] if not a.startswith("--")]  #positional args, flags left out
+ONLY = sys.argv[sys.argv.index("--scenario") + 1:] if "--scenario" in sys.argv else None
+RAW = pathlib.Path(ARGS[0]) if ARGS and ONLY is None else ROOT / "cache" / "flood" / "raw"
 MAX_PX = 2000          #long side of the overlay PNG (~1.35 m per pixel)
 
 #Colours are Cyrille's, from the QGIS project (QGIS_Final.Project.Updated.2.qgz).
@@ -77,14 +81,24 @@ LAYERS = [
      "about": "road distance to water, scored 1–4"},
 ]
 
+#design runs Cyrille sent later, one overall raster each, in cache/flood/raw/
+#the final run uses a newer method than today's, so it is flagged as not comparable (Atanas, 2026-11-03)
+SCENARIO_RUNS = [
+    {"scenario": "final", "layer": "overall", "file": "OverallRiskFinalMassing.tif",
+     "source": "Cyrille Kummer, QGIS, overall risk for the final massing (received 2026-11-03)",
+     "note": "Newer method than today's run. Outside the design site, where the final design "
+             "changes nothing, it matches today's classes in only 50 % of cells: class 1 is "
+             "absent and ground under buildings has a class. Not comparable with today's map."},
+]
+
 
 def hex_rgb(h):
     return [int(h[i:i + 2], 16) for i in (1, 3, 5)]
 
 
-def read(name):
+def read(name, path=None):
     import rasterio
-    with rasterio.open(RAW / f"BZO_NEW_{name}.tif") as r:
+    with rasterio.open(path or RAW / f"BZO_NEW_{name}.tif") as r:  #path: a scenario run's own file name
         a = r.read(1).astype("float32")
         a[(a <= -9999) | (a < -1e30)] = np.nan
         return a, r.transform, r.crs
@@ -149,18 +163,69 @@ def shares(a, L, mask):
     return out
 
 
+def study_areas():
+    #the buurt(en) and the design site, the polygons every share is computed over
+    by_code = buurt_polygons()
+    areas = {name: by_code[code] for code, name in STUDY_AREA.buurten}
+    areas["Design site"] = design_site_polygon()
+    return areas
+
+
+def layer_entry(L, a, tr, crs, masks, png, source_file):
+    #warp and colour one raster into data/processed/<png>, and its summary entry
+    from PIL import Image
+    w, bbox = warp(a, tr, crs)
+    Image.fromarray(colourise(w, L), "RGBA").save(PROCESSED / png, optimize=True)
+    legend = ([{"label": lab, "colour": c} for lab, c in zip(L["labels"], L["colours"])]
+              if L["kind"] != "ramp" else
+              [{"label": str(s), "colour": c} for s, c in L["stops"]])
+    entry = {"id": L["id"], "label": L["label"], "about": L["about"], "kind": L["kind"],
+             "png": png, "bbox_wgs84": [round(b, 7) for b in bbox],
+             "legend": legend, "source_file": source_file,
+             "stats": {n: shares(a, L, m) for n, m in masks.items()}}
+    site = entry["stats"]["Design site"]
+    print(f"  {L['id']:9s} {w.shape[1]}x{w.shape[0]} px   design site: "
+          f"{site.get('shares') or {'mean': site.get('mean')}}")
+    return entry
+
+
+def import_scenario(run, areas):
+    #one design run: flood_<layer>_<scenario>.png and flood_summary_<scenario>.json, as today's layout
+    import rasterio.features
+    path = RAW / run["file"]
+    if not path.exists():
+        sys.exit(f"Missing {path}. Copy Cyrille's raster there (cache/ is gitignored).")
+    L = next(l for l in LAYERS if l["id"] == run["layer"])
+    a, tr, crs = read(None, path)
+    masks = {n: rasterio.features.geometry_mask([p], a.shape, tr, invert=True) for n, p in areas.items()}
+    entry = layer_entry(L, a, tr, crs, masks, f"flood_{L['id']}_{run['scenario']}.png", run["file"])
+    write_processed(f"flood_summary_{run['scenario']}.json", {
+        "source": run["source"] + "; imported, not recomputed",
+        "scenario": run["scenario"],
+        "cell_size_m": 0.5,
+        "comparable_with_baseline": False,  #the app says so next to the table
+        "method_note": run["note"],
+        "layers": [entry],
+    })
+
+
 def main():
     import rasterio.features
-    from PIL import Image
+
+    if ONLY is not None:  #--scenario: a design's run only, today's import untouched
+        areas = study_areas()
+        for run in SCENARIO_RUNS:
+            if not ONLY or run["scenario"] in ONLY:
+                print(f"[flood] {run['scenario']}")
+                import_scenario(run, areas)
+        return 0
 
     missing = [L["file"] for L in LAYERS if not (RAW / f"BZO_NEW_{L['file']}.tif").exists()]
     if missing:
         sys.exit(f"Missing rasters in {RAW}: {missing}. Extract them from the shared "
                  "folder's QGIS.zip (QGIS/QGIS Files - UPDATED/).")
 
-    by_code = buurt_polygons()
-    areas = {name: by_code[code] for code, name in STUDY_AREA.buurten}
-    areas["Design site"] = design_site_polygon()
+    areas = study_areas()
 
     summary = {
         "source": "Cyrille Kummer, QGIS flood-vulnerability analysis (team OneDrive, "
@@ -177,19 +242,8 @@ def main():
         if masks is None:
             masks = {n: rasterio.features.geometry_mask([p], a.shape, tr, invert=True)
                      for n, p in areas.items()}
-        w, bbox = warp(a, tr, crs)
-        Image.fromarray(colourise(w, L), "RGBA").save(PROCESSED / f"flood_{L['id']}.png", optimize=True)
-        legend = ([{"label": lab, "colour": c} for lab, c in zip(L["labels"], L["colours"])]
-                  if L["kind"] != "ramp" else
-                  [{"label": str(s), "colour": c} for s, c in L["stops"]])
-        entry = {"id": L["id"], "label": L["label"], "about": L["about"], "kind": L["kind"],
-                 "png": f"flood_{L['id']}.png", "bbox_wgs84": [round(b, 7) for b in bbox],
-                 "legend": legend, "source_file": f"BZO_NEW_{L['file']}.tif",
-                 "stats": {n: shares(a, L, m) for n, m in masks.items()}}
-        summary["layers"].append(entry)
-        site = entry["stats"]["Design site"]
-        print(f"  {L['id']:9s} {w.shape[1]}x{w.shape[0]} px   design site: "
-              f"{site.get('shares') or {'mean': site.get('mean')}}")
+        summary["layers"].append(layer_entry(L, a, tr, crs, masks, f"flood_{L['id']}.png",
+                                             f"BZO_NEW_{L['file']}.tif"))
 
     write_processed("flood_summary.json", summary)
 

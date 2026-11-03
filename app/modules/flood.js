@@ -12,10 +12,11 @@
  *   water / elevation / density / roads = the single factors
  *
  * Each checkbox follows the scenario switch, like the wind and noise maps: it
- * shows flood_summary[_scenario].json's image for the selected scenario. Only
- * today's city has been analysed, so a design scenario shows nothing (with a
- * notice) until a run for it is imported, rather than today's map under the
- * new buildings. Elevation is the AHN DTM, empty under buildings, so
+ * shows flood_summary[_scenario].json's image for the selected scenario. A
+ * design scenario without a run shows nothing (with a notice), rather than
+ * today's map under the new buildings. The final design has an overall run
+ * since 2026-11-03, made with a newer method, so it is flagged as not
+ * comparable with today's map, on the map and in the card. Elevation is the AHN DTM, empty under buildings, so
  * hazard / combined / overall describe open ground.
  * ========================================================================== */
 
@@ -66,6 +67,7 @@ export async function setup(ctx) {
           const layer = viewer.imageryLayers.addImageryProvider(p);
           layer.alpha = 0.8;
           layer.show = false;  //refresh() decides
+          layer.notComparable = sum.comparable_with_baseline === false;  //a run made with a newer method than today's
           return layer;
         }).catch((err) => {
           console.warn(`[flood] ${L.id} overlay failed for ${sc}`, err);
@@ -79,6 +81,8 @@ export async function setup(ctx) {
       const want = current;
       if (on) load(want).then((l) => {
         if (!l && on && want === current) ctx.note(`${L.label}: no run for ${want}`, "warn");
+        if (l?.notComparable && on && want === current)  //say so whenever the flagged map is shown
+          ctx.note(`${L.label}, ${want}: newer method than today's map, do not compare the two`, "warn");
       });
       //each image decides when it resolves, from the state at that moment
       for (const [sc, p] of images) p.then((l) => {
@@ -133,6 +137,8 @@ export async function setup(ctx) {
       (own || sc === "baseline" ? ""
         : `<p class="muted"><b>No flood run for ${sc}.</b> The table shows today's city; ` +
           `the map layers stay empty on this scenario.</p>`) +
+      (own && sum.comparable_with_baseline === false  //a run with a newer method: flagged above its table
+        ? `<p class="muted"><b>Overall vulnerability only, newer method.</b> ${sum.method_note}</p>` : "") +
       table(own ? sum : data) +
       `<p class="muted">Each factor is scored 1–4: distance to water (0–50 m = 4), ground ` +
       `level (below −0.99 m NAP = 4) and buildings per cell (more than 10 = 4). The combined ` +

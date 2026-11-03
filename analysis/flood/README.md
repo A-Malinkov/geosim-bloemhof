@@ -40,9 +40,31 @@ water-proximity score is real: OSM has a 772 m water body there.
   overall cover open ground only (62 % of cells).
 - "Buildings per cell" counts buildings, not floor area or coverage, so many
   small buildings score higher than one large one.
-- Baseline only. The app's layers already follow the scenario switch and show
-  nothing (with a notice) on a scenario without a run; `flood_summary_<scenario>.json`
-  are stubs.
+- Today's city has all seven layers. The final design has the overall layer only,
+  and from a newer method (below). Scenario A and B have no run: the app's layers
+  follow the scenario switch and show nothing (with a notice) there, and
+  `flood_summary_scenario_a.json` / `_scenario_b.json` are stubs.
+
+## The final design's run
+
+Cyrille sent `OverallRiskFinalMassing.tif` on 2026-11-03: overall vulnerability for
+the final massing, on the same 0.5 m grid as today's. Copy it to `cache/flood/raw/`, then
+
+```bash
+python analysis/flood/import_cyrille.py --scenario final
+```
+
+writes `flood_overall_final.png` and `flood_summary_final.json`. Design site: class 2
+20 %, class 3 63 %, class 4 17 %, no class 1.
+
+**It is not comparable with today's map.** Outside the design site, where the final
+design changes nothing, it matches today's classes in only 50 % of cells: today's
+class 1 became class 2 in 94 % of its cells, class 1 is absent everywhere, and
+ground under buildings now has a class (99.7 % of Bloemhof covered against 64.5 %).
+So the method changed between the runs. The summary carries
+`comparable_with_baseline: false`, the app says so on the map and in the card, and
+the scenario comparison keeps using today's run only. A comparison needs today's
+city re-run with the same method.
 
 ## Adding a design scenario
 

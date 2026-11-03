@@ -1,9 +1,61 @@
 {
-  "_status": "not_computed_yet",
-  "_note": "Placeholder. The app treats _status=not_computed_yet as 'no data': the layer shows nothing on this scenario, with a notice. Overwrite this file with real output.",
-  "_written_by": "analysis/flood/import_cyrille.py (only today's city has been analysed)",
-  "_schema": {
-    "scenario": "<scenario>",
-    "layers": "as flood_summary.json: [{id, label, png (flood_<id>_<scenario>.png, warped to EPSG:4326), bbox_wgs84, legend, stats}]"
-  }
+  "source": "Cyrille Kummer, QGIS, overall risk for the final massing (received 2026-11-03); imported, not recomputed",
+  "scenario": "final",
+  "cell_size_m": 0.5,
+  "comparable_with_baseline": false,
+  "method_note": "Newer method than today's run. Outside the design site, where the final design changes nothing, it matches today's classes in only 50 % of cells: class 1 is absent and ground under buildings has a class. Not comparable with today's map.",
+  "layers": [
+    {
+      "id": "overall",
+      "label": "Overall flood vulnerability",
+      "about": "combined score banded into four classes",
+      "kind": "classes",
+      "png": "flood_overall_final.png",
+      "bbox_wgs84": [
+        4.482632,
+        51.8860572,
+        4.5221643,
+        51.9022074
+      ],
+      "legend": [
+        {
+          "label": "1 low",
+          "colour": "#5d82aa"
+        },
+        {
+          "label": "2",
+          "colour": "#62bb7d"
+        },
+        {
+          "label": "3",
+          "colour": "#fb9f50"
+        },
+        {
+          "label": "4 high",
+          "colour": "#7a0403"
+        }
+      ],
+      "source_file": "OverallRiskFinalMassing.tif",
+      "stats": {
+        "Bloemhof": {
+          "covered_share": 0.997,
+          "shares": {
+            "1 low": 0.0,
+            "2": 0.365,
+            "3": 0.551,
+            "4 high": 0.084
+          }
+        },
+        "Design site": {
+          "covered_share": 0.988,
+          "shares": {
+            "1 low": 0.0,
+            "2": 0.196,
+            "3": 0.632,
+            "4 high": 0.172
+          }
+        }
+      }
+    }
+  ]
 }
