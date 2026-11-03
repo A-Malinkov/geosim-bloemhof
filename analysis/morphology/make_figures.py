@@ -530,69 +530,12 @@ def fig_abm(ca, rl):
     save(fig, "fig_landuse_abm.png")
 
 
-def fig_rl_comparison(runs):
-    #Linear Q-learning vs the convolutional DQN, against a random policy.
-    #
-    #`runs` maps a scenario label to (linear_json, dqn_json); the random-policy
-    #baseline is stored in the DQN output and applies to both agents, since
-    #the problem is the same.
-    fig = plt.figure(figsize=(7.4, 5.4))
-    gs = fig.add_gridspec(2, len(runs), height_ratios=[1.0, 1.0], hspace=0.55,
-                          wspace=0.3, top=0.86, bottom=0.10, left=0.09, right=0.98)
-    for j, (label, (lin, dqn)) in enumerate(runs.items()):
-        ax = fig.add_subplot(gs[0, j])
-        tidy(ax, xgrid=True)
-        rnd = dqn["random_policy"]
-        rows = [("random policy, mean", rnd["mean"], MUTED),
-                ("random policy, best of %d" % rnd["episodes"], rnd["best"], MUTED),
-                ("linear Q, end of training", lin["objective_last_decile_mean"], SERIES_1),
-                ("linear Q, best episode", lin["best_objective"], SERIES_1),
-                *([("linear Q, greedy policy", lin["greedy_objective"], SERIES_1)] if "greedy_objective" in lin else []),  #its learned policy, since 2026-10-30
-                ("DQN, end of training", dqn["objective_last_decile_mean"], SERIES_2),
-                ("DQN, best episode", dqn["best_objective"], SERIES_2),
-                ("DQN, greedy policy", dqn["greedy_objective"], SERIES_2)]
-        if dqn.get("hill_climb"):  #the baseline both agents should beat: direct optimisation
-            rows.append(("hill climbing", dqn["hill_climb"]["best_objective"], INK))
-        y = np.arange(len(rows))
-        vals = [v for _, v, _ in rows]
-        lo, hi = min(vals), max(vals)
-        pad = (hi - lo) * 0.25 + 1e-3
-        ax.barh(y, [v - (lo - pad) for v in vals], left=lo - pad,
-                color=[c for *_, c in rows], height=0.6)
-        for yi, v in zip(y, vals):
-            ax.text(v + pad * 0.05, yi, f"{v:.3f}", va="center", fontsize=7.5, color=INK_2)
-        ax.set_yticks(y, [r[0] for r in rows] if j == 0 else [""] * len(rows))
-        ax.invert_yaxis()
-        ax.set_xlim(lo - pad, hi + pad)
-        ax.set_title(label, loc="left", fontsize=9, color=INK)
-        ax.set_xlabel("objective over the site")
-
-        ax2 = fig.add_subplot(gs[1, j])
-        tidy(ax2, ygrid=True)
-        for run, col, name in ((lin, SERIES_1, "linear Q"), (dqn, SERIES_2, "DQN")):
-            c = np.array(run["learning_curve"])
-            k = max(1, len(c) // 20)
-            sm = np.convolve(c, np.ones(k) / k, mode="valid")
-            ax2.plot(np.arange(len(sm)) + k // 2, sm, color=col, lw=1.8, label=name)
-        ax2.axhline(rnd["mean"], color=MUTED, lw=1, ls="--", label="random mean")
-        ax2.set_xlabel("training episode")
-        if j == 0:
-            ax2.set_ylabel("objective (smoothed)")
-            ax2.legend(frameon=False, fontsize=7.5)
-    fig.suptitle("Linear Q-learning vs a convolutional DQN, same problem",
-                 x=0.012, y=0.995, ha="left", fontsize=11, fontweight="bold", color=INK)
-    fig.text(0.012, 0.945, "Both agents re-plan the design site on the same objective; "
-             "the random policy is the baseline to beat", fontsize=8.5, color=INK_2,
-             ha="left", va="top")
-    save(fig, "fig_landuse_rl_comparison.png")
-
-
-def fig_rl_training(lin, dqn):
-    #Training curves of both agents, against the random policy and hill climbing.
+def fig_rl_training(lin):
+    #Training curve of the RL agent, against the random policy and hill climbing.
     fig, ax = plt.subplots(figsize=(7.4, 3.6))
     fig.subplots_adjust(top=0.80, bottom=0.15, left=0.09, right=0.80)
     tidy(ax, ygrid=True)
-    for run, col, name in ((lin, SERIES_1, "linear Q-learning"), (dqn, SERIES_2, "deep Q-network")):
+    for run, col, name in ((lin, SERIES_1, "linear Q-learning"),):  #one agent
         c = np.array(run["learning_curve"])
         x = np.arange(1, len(c) + 1)
         ax.plot(x, c, color=col, lw=0.8, alpha=0.35)  #every episode
@@ -601,16 +544,16 @@ def fig_rl_training(lin, dqn):
         ax.plot(x[k - 1:], sm, color=col, lw=2.0)
         ax.text(x[-1] + 2, sm[-1], name, color=col, fontsize=8.5, va="center", zorder=5,
                 bbox=dict(facecolor=ax.get_facecolor(), edgecolor="none", pad=1.5))  #direct label at the line end, readable over the other curve
-    rnd = dqn["random_policy"]["mean"]
+    rnd = lin["random_policy"]["mean"]  #both baselines live in landuse_rl.json
     ax.axhline(rnd, color=MUTED, lw=1.2, ls="--")
     ax.text(ax.get_xlim()[1], rnd, " random policy", color=INK_2, fontsize=8.5, va="center")
-    if dqn.get("hill_climb"):  #the direct optimiser both agents should beat
-        hc = dqn["hill_climb"]["best_objective"]
+    if lin.get("hill_climb"):  #the direct optimiser the agent should beat
+        hc = lin["hill_climb"]["best_objective"]
         ax.axhline(hc, color=INK, lw=1.2, ls=":")
         ax.text(ax.get_xlim()[1], hc, " hill climbing", color=INK, fontsize=8.5, va="center")
     ax.set_xlabel("training episode")
     ax.set_ylabel("objective over the design site")
-    fig.suptitle("How the two RL agents learn", x=0.012, y=0.99, ha="left",
+    fig.suptitle("How the RL agent learns", x=0.012, y=0.99, ha="left",
                  fontsize=11, fontweight="bold", color=INK)
     fig.text(0.012, 0.905, f"Objective at the end of each episode, thin; 10-episode mean, thick · "
              f"the site today scores {lin['baseline_objective']:.3f}", fontsize=8.5, color=INK_2, ha="left")
@@ -785,12 +728,8 @@ def main():
             fig_abm(abm, rl)
             if rl and rl.get("site_mask"):
                 fig_rl_site(abm, rl)
-            #one run per agent since the housing term went into the objective (2026-10-30)
-            names = {"Objective with housing": ("landuse_rl.json", "landuse_rl_dqn.json")}
-            if all((PROCESSED / f).exists() for pair in names.values() for f in pair):
-                runs = {k: tuple(json.loads((PROCESSED / f).read_text()) for f in pair) for k, pair in names.items()}
-                fig_rl_comparison(runs)
-                fig_rl_training(*runs["Objective with housing"])  #the training curves on their own
+            if rl and rl.get("random_policy"):  #the training curve against both baselines
+                fig_rl_training(rl)
     else:
         print("  (skipping ABM figure: run ca_landuse.py first)")
 

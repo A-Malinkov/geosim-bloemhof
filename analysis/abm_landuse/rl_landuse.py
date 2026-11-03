@@ -17,7 +17,8 @@ Bloemhof is context and is not scored.
 Q is linear in 13 features of a cell (neighbours of each use, access, water).
 Linear on purpose, so the weights can be read. Two features are constant for
 every candidate and act as bias terms. Epsilon-greedy with TD(0) updates.
-rl_dqn.py is the deep version and does not score better.
+Two baselines run beside it, a random policy and hill climbing on the objective
+itself. Hill climbing beats the agent in seconds.
 
     python analysis/abm_landuse/ca_landuse.py     #first, builds the grid
     python analysis/abm_landuse/rl_landuse.py
@@ -29,6 +30,7 @@ import json
 import math
 import pathlib
 import sys
+import time
 
 import numpy as np
 
@@ -112,6 +114,8 @@ PARAMS = {
     "eps_end": 0.05,
     "candidates": 40,  #cells sampled per decision, the full grid is too many
     "seed": 0,
+    "random_episodes": 30,  #episodes of a purely random policy, the baseline to beat
+    "hill_climb": 56400,  #evaluations for the hill-climbing baseline, 0 is off
 }
 
 
@@ -214,6 +218,52 @@ def main():
                   f"objective {final:.4f}  best {best_obj:.4f}")
 
     greedy_obj, greedy_grid = run_episode(0.0, learn=False)  #the learned policy itself: no exploration, no update
+
+    #baseline 1: a random use on a random empty cell at every step, its own generator so training is untouched
+    def random_episode(rr):
+        g = grid0.copy()
+        free = site & (g == VACANT)
+        for _ in range(n_new):
+            rr.random()  #the draw an epsilon-greedy step makes, kept so the published baseline reproduces
+            ai = int(rr.choice(np.arange(len(PLACEABLE))))
+            r_, c_ = np.unravel_index(int(rr.choice(np.flatnonzero(free.ravel()))), g.shape)
+            g[r_, c_] = PLACEABLE[ai]
+            free[r_, c_] = False
+        return objective(g, p["cell"], site, homes_today)
+
+    rr = np.random.default_rng(p["seed"])
+    rand = [random_episode(rr) for _ in range(p["random_episodes"])]
+    print(f"  random policy over {len(rand)} episodes: mean {np.mean(rand):.4f}, best {np.max(rand):.4f}")
+
+    #baseline 2: hill climbing on the objective itself, from a random plan, one cell changed at a time
+    def hill_climb(budget):
+        hr = np.random.default_rng(p["seed"] + 1)
+        cells = [tuple(c) for c in np.argwhere(site & (grid0 == VACANT))]
+        g = grid0.copy()
+        for (r_, c_), u in zip(cells, hr.choice(len(PLACEABLE), size=len(cells))):  #a random start
+            g[r_, c_] = PLACEABLE[u]
+        cur = objective(g, p["cell"], site, homes_today)
+        best, best_g, evals, accepted = cur, g.copy(), 1, 0
+        while evals < budget:
+            r_, c_ = cells[int(hr.integers(len(cells)))]
+            old = g[r_, c_]
+            g[r_, c_] = hr.choice([u for u in PLACEABLE if u != old])  #one cell to another use
+            new = objective(g, p["cell"], site, homes_today); evals += 1
+            if new >= cur:  #accept equal moves too, so it can walk along plateaus
+                cur, accepted = new, accepted + 1
+            else:
+                g[r_, c_] = old
+            if cur > best:
+                best, best_g = cur, g.copy()
+        return best, best_g, evals, accepted
+
+    hc = None
+    if p["hill_climb"]:
+        th = time.time()
+        hb, hg, he, ha = hill_climb(p["hill_climb"])
+        hc = {"evaluations": he, "accepted_moves": ha, "best_objective": round(hb, 4),
+              "score": site_score(hg, p["cell"], site), "seconds": round(time.time() - th, 1)}
+        print(f"  hill climbing, {he} evaluations: best {hb:.4f} ({time.time() - th:.0f} s)")
     greedy_score = site_score(greedy_grid, p["cell"], site)
     g = best_grid  #report the best episode's plan, which may include lucky exploration
     score = site_score(g, p["cell"], site)
@@ -259,12 +309,15 @@ def main():
         "improvement_over_training": round(last - first, 4),
         "best_objective": round(best_obj, 4),
         "score": score,
-        "greedy_objective": round(greedy_obj, 4),  #one run of the learned policy, no exploration, as rl_dqn.py reports
+        "greedy_objective": round(greedy_obj, 4),  #one run of the learned policy, no exploration
         "greedy_score": greedy_score,
+        "random_policy": {"episodes": len(rand), "mean": round(float(np.mean(rand)), 4),
+                          "sd": round(float(np.std(rand)), 4), "best": round(float(np.max(rand)), 4)},  #the baseline to beat
+        "hill_climb": hc,  #direct optimisation of the same objective, the baseline any learner should beat
         "learned_weights": learned,
-        "caveat": "Linear Q-learning was chosen over a deep network so the "
-                  "learned weights can be read and argued with. A DQN would "
-                  "likely score similarly and explain nothing.",
+        "caveat": "Linear Q-learning was chosen so the learned weights can be "
+                  "read and argued with. Hill climbing on the objective itself "
+                  "scores higher in seconds: the objective is cheap to compute.",
         "grid": {"nx": nx, "ny": ny},
         "colours": COLOURS,
         "png": f"landuse_rl{tag}_best.png",

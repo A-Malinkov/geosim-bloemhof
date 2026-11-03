@@ -51,5 +51,5 @@ cost you time:
     `_<scenario>` suffix and every missing one has a stub.
 
 12. **Know the AI results before writing about them.** The weather LSTM beats gradient boosting in only one of six forecasts; the
-    land-use DQN scores below a random policy; the RL agent demolishes housing
+    land-use RL agent is beaten by plain hill climbing; it also demolishes housing
     unless told not to. CLAUDE.md has the summary, the READMEs the detail.

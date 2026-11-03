@@ -44,8 +44,7 @@ jupyterlab~=4.4
 ipykernel~=6.30
 
 # ---------------------------------------------------------------------------
-# OPTIONAL, only for the LSTM in analysis/knmi/train_forecast.py and the
-# deep Q-network in analysis/abm_landuse/rl_dqn.py.
+# OPTIONAL, only for the LSTM in analysis/knmi/train_forecast.py.
 # PyTorch is ~780 MB, so it is deliberately NOT a core requirement: five of us
 # never touch the AI component and should not pay for it. The script runs all
 # the other models without it and says the LSTM was skipped.

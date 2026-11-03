@@ -47,7 +47,6 @@ const WMO = {
 const SERIES = [
   { key: "temperature_2m",      label: "temp",   unit: "°C",  colour: "#eb6834" },
   { key: "wind_speed_10m",      label: "wind",   unit: "m/s", colour: "#2a78d6" },
-  { key: "wind_gusts_10m",      label: "gusts",  unit: "m/s", colour: "#4a3aa7" },
   { key: "precipitation",       label: "rain",   unit: "mm",  colour: "#1baf7a" },
   { key: "relative_humidity_2m", label: "humidity", unit: "%", colour: "#e87ba4" },
 ];
@@ -55,7 +54,7 @@ const SERIES = [
 const CURRENT_VARS = [
   "temperature_2m", "apparent_temperature", "relative_humidity_2m",
   "precipitation", "weather_code", "cloud_cover",
-  "wind_speed_10m", "wind_direction_10m", "wind_gusts_10m", "is_day",
+  "wind_speed_10m", "wind_direction_10m", "is_day",  //gusts dropped 2026-11-03
 ].join(",");
 
 const HOURLY_VARS = SERIES.map((s) => s.key).join(",");
@@ -255,7 +254,6 @@ export async function setup(ctx) {
       <table class="kv"><tbody>
         <tr><td>wind</td><td>${c.wind_speed_10m?.toFixed(1) ?? "-"} m/s from
             ${dir != null ? `${compass(dir)} (${dir}°)` : "-"}</td></tr>
-        <tr><td>gusts</td><td>${c.wind_gusts_10m?.toFixed(1) ?? "-"} m/s</td></tr>
         <tr><td>humidity</td><td>${c.relative_humidity_2m ?? "-"} %</td></tr>
         <tr><td>cloud</td><td>${c.cloud_cover ?? "-"} %</td></tr>
         <tr><td>precipitation</td><td>${c.precipitation ?? "-"} mm</td></tr>
@@ -321,7 +319,7 @@ export async function setup(ctx) {
   if (obs) {
     const u = obs.units || {};
     const rows = Object.entries(obs.values || {})
-      .filter(([, v]) => v !== null && v !== undefined);
+      .filter(([k, v]) => v !== null && v !== undefined && k !== "wind_gust");  //gusts left out of the app (2026-11-03)
     obsEl.innerHTML =
       `<h4>KNMI station sensors</h4>` +
       `<table class="kv"><tbody>` +

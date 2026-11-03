@@ -10,9 +10,8 @@
  *
  *   RL agent             analysis/abm_landuse/rl_landuse.py   -> landuse_rl.json
  *       Rules are LEARNED: the agent is given only the objective. Its weights
- *       can be read off and compared with the CA's rules. A convolutional DQN
- *       (rl_dqn.py -> landuse_rl_dqn.json) is run on the same problem for
- *       comparison, with hill climbing as the baseline both should beat. Since
+ *       can be read off and compared with the CA's rules. A random policy and
+ *       hill climbing run beside it as the baselines it should beat. Since
  *       2026-10-30 the objective has a housing term, so there is one run each
  *       and no separate housing rule.
  *
@@ -50,8 +49,6 @@ export async function setup(ctx) {
                                 { quiet: true });
   const rl = await ctx.loadJson("../data/processed/landuse_rl.json",
                                 { quiet: true });
-  const dqn = await ctx.loadJson("../data/processed/landuse_rl_dqn.json",
-                                 { quiet: true });
   const rhino = await ctx.loadJson("../data/processed/landuse_scenarios.json",
                                    { quiet: true });  //the Rhino options on the same objective, keyed by scenario
 
@@ -237,13 +234,6 @@ export async function setup(ctx) {
     render();
   }));
 
-  /* ---- validation + RL --------------------------------------------------- */
-  const v = ca.validation || {};
-  const vrows = Object.entries(v).filter(([k]) => !k.startsWith("_"))
-    .map(([k, x]) => `<tr><td>${k.replace("erase_", "erased ").replace("pct", " %")}</td>` +
-                     `<td>${(x.agreement_mean * 100).toFixed(1)} %</td>` +
-                     `<td>${x.kappa_mean.toFixed(3)}</td></tr>`).join("");
-
   /* ---- how much of the ranking is our choice of weights? ----------------
    * The ranking above is a single number per scenario and reads as a verdict.
    * It is a verdict under three weights we picked, and the gap between the top
@@ -291,12 +281,6 @@ export async function setup(ctx) {
   }
 
   body.querySelector("#luRl").innerHTML =
-    (vrows ? `<h4>Validation</h4>` +
-      `<table class="kv"><thead><tr><th>test</th><th>agreement</th><th>κ</th></tr></thead>` +
-      `<tbody>${vrows}</tbody></table>` +
-      `<p class="muted">Erase a share of developed cells, restore the original ` +
-      `demand, and see how much of the real map the CA rebuilds. κ discounts ` +
-      `chance agreement.</p>` : "") +
     (rl ? `<h4>RL agent: re-plans the design site, not a Rhino option</h4>` +
       `<table class="kv"><tbody>` +
       `<tr><td>algorithm</td><td>${rl.algorithm}</td></tr>` +
@@ -337,23 +321,20 @@ export async function setup(ctx) {
   }
 
   function comparisonTable() {
-    if (!rl || !dqn?.random_policy) return "";
+    if (!rl?.random_policy) return "";
     const f = (x) => (x == null ? "-" : x.toFixed(3));
-    const rows = [["random policy, mean", dqn.random_policy.mean],
+    const rows = [["random policy, mean", rl.random_policy.mean],
                   ["linear agent, best episode", rl.best_objective],
                   ...(rl.greedy_objective != null ? [["linear agent, learned policy", rl.greedy_objective]] : []),  //no exploration
-                  ["DQN, best episode", dqn.best_objective],
-                  ["DQN, learned policy", dqn.greedy_objective],
-                  ...(dqn.hill_climb ? [["hill climbing", dqn.hill_climb.best_objective]] : [])];
-    return `<h4>Linear agent vs deep Q-network</h4>` +
+                  ...(rl.hill_climb ? [["hill climbing", rl.hill_climb.best_objective]] : [])];
+    return `<h4>Agent against its baselines</h4>` +
       `<table class="kv"><thead><tr><th>site re-plan</th><th>objective</th></tr></thead><tbody>` +
       rows.map(([n, v]) => `<tr><td>${n}</td><td>${f(v)}</td></tr>`).join("") +
       `</tbody></table>` +
-      `<p class="muted">Same site, objective and reward; only the agent differs. ` +
+      `<p class="muted">Same site and objective. ` +
       `<em>Random</em> is a purely random policy, the baseline to beat. ` +
-      `<em>Best</em> is the best training episode; a <em>learned policy</em> is one run of ` +
-      `the trained agent with no exploration. The DQN is a convolutional ` +  //what the DQN is
-      `network that reads the grid itself and scores every cell and use at once. ` +
+      `<em>Best</em> is the best training episode; the <em>learned policy</em> is one run of ` +
+      `the trained agent with no exploration. ` +
       `<em>Hill climbing</em> optimises the objective directly, no learning.</p>` +
       verdict();  //what the numbers say, from the numbers
   }
@@ -361,13 +342,11 @@ export async function setup(ctx) {
   //one sentence on the comparison, generated so it cannot outlive a re-run
   function verdict() {
     const parts = [];
-    if (rl.best_objective >= dqn.best_objective) parts.push("the linear agent's best plan beats or matches the DQN's");
-    if (dqn.greedy_objective < dqn.random_policy.mean + 0.01)  //below or level with random: nothing learned
-      parts.push(`the DQN's learned policy scores ${dqn.greedy_objective < dqn.random_policy.mean ? "below" : "level with"} ` +
-        `the random policy, so with ${dqn.parameters?.episodes ?? "these"} episodes it has not learned the problem`);
-    const hc = dqn.hill_climb?.best_objective;
-    if (hc != null && hc >= Math.max(rl.best_objective, dqn.best_objective))
-      parts.push(`hill climbing beats both agents in ${dqn.hill_climb.seconds} s`);
+    if (rl.greedy_objective != null && rl.greedy_objective > rl.random_policy.mean)
+      parts.push("the agent's learned policy beats the random policy");
+    const hc = rl.hill_climb?.best_objective;
+    if (hc != null && hc >= rl.best_objective)
+      parts.push(`hill climbing beats the agent in ${rl.hill_climb.seconds} s`);
     return parts.length ? `<p class="muted">Result: ${parts.join("; ")}.</p>` : "";
   }
 

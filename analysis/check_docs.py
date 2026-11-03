@@ -2,7 +2,7 @@
 """
 check_docs.py - do the numbers in the READMEs still match the outputs?
 
-The READMEs quote results (MAE, kappa, GSI, FSI, objectives) and nothing ties
+The READMEs quote results (MAE, GSI, FSI, objectives) and nothing ties
 them to data/processed/, so every re-run can leave them stale. It happened
 three times here, the KNMI README after a retrain (22 of 27 MAE values), the
 ABM README after a rasteriser fix and the top README with an old forecast.
@@ -51,7 +51,6 @@ def main():
     den, lu = load("density_summary.json"), load("landuse_summary.json")
     ca, rl, fc = load("landuse_abm.json"), load("landuse_rl.json"), load("knmi_forecast.json")
     ws = load("landuse_weight_sensitivity.json")
-    dqn = load("landuse_rl_dqn.json")
     rm = load("road_metrics.json")  #4.8 road network
     edge = load("edge_access.json")  #4.8 distance to the edge streets
 
@@ -128,7 +127,6 @@ def main():
             ("CA mix headline", r"Land-use model \| CA prefers", f"{sc['score']['landuse_mix']:.3f}", [MAIN]),
             ("CA objective row", rf"^\| {pref} \*\*★\*\* \|", f"{sc['objective_best']:.3f}", [ABM]),  #the starred programme row, not the rules table
             ("CA mix in that row", rf"^\| {pref} \*\*★\*\* \|", f"{sc['score']['landuse_mix']:.3f}", [ABM]),
-            ("CA kappa", r"^\| 10 % \|", f"{ca['validation']['erase_10pct']['kappa_mean']:.3f}", [ABM]),
         ]
     if rl:
         checks += [
@@ -280,18 +278,15 @@ def main():
                            (f"morph: W median {k}", r"^\| street width W, median \|", f"{h['w_m_median']:.1f} m", [MORPH])]
 
     #numbers in the agent table (analysis/abm_landuse/README.md), one run each since 2026-10-30
-    if rl and dqn:
-        checks += [("ABM: random policy mean", r"^\| random policy, mean \|", f"{dqn['random_policy']['mean']:.3f}", [ABM]),
+    if rl and rl.get("random_policy"):  #both baselines live in landuse_rl.json since 2026-11-03
+        checks += [("ABM: random policy mean", r"^\| random policy, mean \|", f"{rl['random_policy']['mean']:.3f}", [ABM]),
                    ("ABM: linear best", r"^\| linear agent, best episode \|", f"{rl['best_objective']:.3f}", [ABM]),
                    ("ABM: linear housing cells", r"^\| linear agent, best episode \|", f"| {rl['score']['residential_cells']} |", [ABM]),
                    *([("ABM: linear learned policy", r"^\| linear agent, learned policy \|", f"{rl['greedy_objective']:.3f}", [ABM]),
                       ("ABM: linear learned-policy housing cells", r"^\| linear agent, learned policy \|",
-                       f"| {rl['greedy_score']['residential_cells']} |", [ABM])] if "greedy_objective" in rl else []),
-                   ("ABM: DQN best", r"^\| DQN, best episode \|", f"{dqn['best_objective']:.3f}", [ABM]),
-                   ("ABM: DQN housing cells", r"^\| DQN, best episode \|", f"| {dqn['score']['residential_cells']} |", [ABM]),
-                   ("ABM: DQN learned policy", r"^\| DQN, learned policy \|", f"{dqn['greedy_objective']:.3f}", [ABM])]
-        if dqn.get("hill_climb"):
-            h = dqn["hill_climb"]
+                       f"| {rl['greedy_score']['residential_cells']} |", [ABM])] if "greedy_objective" in rl else [])]
+        if rl.get("hill_climb"):
+            h = rl["hill_climb"]
             checks += [("ABM: hill climbing best", r"^\| hill climbing", f"{h['best_objective']:.3f}", [ABM]),
                        ("ABM: hill climbing housing cells", r"^\| hill climbing", f"| {h['score']['residential_cells']} |", [ABM])]
 
@@ -418,18 +413,12 @@ def main():
             ("ABM README: 'it still gives up housing cells, about half' (40-60 % kept)",
              0.4 <= rl["score"]["residential_cells"] / rl["baseline_score"]["residential_cells"] <= 0.6),
         ]
-    if dqn and rl:
-        claims += [
-            ("ABM README: 'the DQN does not do better': its learned policy is below the linear agent's",
-             dqn["greedy_objective"] < rl.get("greedy_objective", rl["best_objective"])),
-            ("ABM README: 'its best episode matches the linear agent's' (within 0.01)",
-             abs(dqn["best_objective"] - rl["best_objective"]) < 0.01),
-            ("ABM README: 'its learned policy is no better than the random policy' (within 0.01)",
-             dqn["greedy_objective"] < dqn["random_policy"]["mean"] + 0.01),
-        ]
-        if dqn.get("hill_climb"):
-            claims.append(("ABM README: 'hill climbing beats both agents'",
-                           dqn["hill_climb"]["best_objective"] > max(rl["best_objective"], dqn["best_objective"])))
+    if rl and rl.get("random_policy"):
+        claims.append(("ABM README: 'the agent's learned policy beats the random policy'",
+                       rl.get("greedy_objective", rl["best_objective"]) > rl["random_policy"]["mean"]))
+        if rl.get("hill_climb"):
+            claims.append(("ABM README: 'hill climbing beats the agent'",
+                           rl["hill_climb"]["best_objective"] > rl["best_objective"]))
     if dsite and all(k in dsite for k in ("baseline", "scenario_a", "scenario_b", "final")):
         designs = ("scenario_a", "scenario_b", "final")
         claims += [
