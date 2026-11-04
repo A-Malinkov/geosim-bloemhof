@@ -32,7 +32,8 @@ def main():
     import matplotlib.pyplot as plt
     import rasterio
     from rasterio.enums import Resampling
-    from rasterio.windows import from_bounds
+    from rasterio.transform import array_bounds
+    from rasterio.windows import Window, from_bounds  #Window: to cut the box to the raster
 
     site = design_site_polygon()
     x0, y0, x1, y1 = site.bounds
@@ -43,11 +44,15 @@ def main():
         tif = PROCESSED / f"shadow_hours{sfx}.tif"
         summ = json.loads((PROCESSED / f"shadow_summary{sfx}.json").read_text())
         with rasterio.open(tif) as src:
-            win = from_bounds(x0, y0, x1, y1, src.transform)
+            #whole cells, cut to the raster: the box runs past the raster's south edge
+            win = (from_bounds(x0, y0, x1, y1, src.transform).round_offsets().round_lengths()
+                   .intersection(Window(0, 0, src.width, src.height)))
             hours = src.read(1, window=win)
             wt = src.window_transform(win)
+        hb = array_bounds(*hours.shape, wt)  #what the hours array really covers
         with rasterio.open(RAW / "ahn_ndsm_05m.tif") as src:
-            ndsm = src.read(1, window=from_bounds(x0, y0, x1, y1, src.transform),
+            #read over the hours array's own bounds, so the two grids match cell for cell
+            ndsm = src.read(1, window=from_bounds(hb[0], hb[1], hb[2], hb[3], src.transform),
                             out_shape=hours.shape, resampling=Resampling.nearest,
                             masked=True).filled(np.nan)
         #Same mask as shadows.py's statistics. The AHN DTM is empty under
