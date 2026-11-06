@@ -15,7 +15,6 @@ const PATH = "../data/processed/scenario_comparison.json";
 const SCEN = [["baseline", "Today"], ["scenario_a", "A"], ["scenario_b", "B"], ["final", "Final"]];  //final: the Rhino Final Model
 const ROWS = [  //key, label, digits, as a percentage
   ["dwellings", "Dwellings", 0, false],
-  ["buildings_demolished", "Buildings demolished", 0, false],
   ["fsi", "FSI", 2, false],
   ["svf_mean", "Sky view factor", 2, false],
   ["sun_under2h_0320", "Under 2 h sun, equinox", 0, true],

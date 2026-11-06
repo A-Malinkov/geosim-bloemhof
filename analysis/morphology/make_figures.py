@@ -663,6 +663,101 @@ def fig_rl_site(ca, rl, out="fig_landuse_rl_site.png",
     save(fig, out)
 
 
+def fig_hill_climb(ca, rl, out="fig_landuse_hill_climb.png"):
+    #The site today, the RL agent's best plan and the hill-climbing plan, side by side.
+    import matplotlib.patches as mpatches
+
+    classes, cols, cmap = lu_cmap(ca)
+    site = np.array(rl["site_mask"], dtype=bool)
+    hc = rl["hill_climb"]
+    plans = (("Design site today", rl["today_grid"], rl["baseline_score"], rl["baseline_objective"]),
+             ("RL agent, best plan", rl["best_grid"], rl["score"], rl["best_objective"]),
+             ("Hill climbing", hc["grid"], hc["score"], hc["best_objective"]))
+
+    #crop to the site with a little fixed context, as in fig_rl_site
+    rows, cols_ = np.where(site)
+    m = 3
+    r0, r1 = max(0, rows.min() - m), min(site.shape[0], rows.max() + m + 1)
+    c0, c1 = max(0, cols_.min() - m), min(site.shape[1], cols_.max() + m + 1)
+    crop = (slice(r0, r1), slice(c0, c1))
+
+    fig, axes = plt.subplots(1, 3, figsize=(10.5, 4.3))
+    fig.subplots_adjust(left=0.02, right=0.98, top=0.74, bottom=0.12, wspace=0.06)
+    for ax, (title, g, sc, obj) in zip(axes, plans):
+        g = np.array(g, dtype="int16")
+        ax.imshow(g[crop], cmap=cmap, vmin=0, vmax=len(classes) - 1, interpolation="nearest")
+        veil = np.where(site[crop], 0.0, 0.6)  #the fixed surroundings, washed out
+        ax.imshow(np.dstack([np.full(veil.shape, c) for c in to_rgba(SURFACE)[:3]] + [veil]),
+                  interpolation="nearest")
+        outline_site(ax, site[crop])
+        ax.set_xticks([]); ax.set_yticks([])
+        for sp in ax.spines.values():
+            sp.set_visible(False)
+        d = sc["mean_distance_to_amenity_m"]
+        ax.set_title(f"{title}, objective {obj:.3f}\n"
+                     f"mix {sc['landuse_mix']:.3f} · green {100 * sc['green_share']:.0f} %\n"
+                     f"{sc['residential_cells']} housing cells · "
+                     f"{'–' if d is None else f'{d:.0f} m'} to amenity",
+                     fontsize=9, color=INK, pad=4)  #two short lines, so the three captions do not run together
+
+    handles = [mpatches.Patch(color=cols[classes.index(k)], label=k) for k in LU_LEGEND]
+    leg = fig.legend(handles=handles, frameon=False, fontsize=8, ncol=len(handles),
+                     loc="lower center", bbox_to_anchor=(0.5, 0.0), handlelength=1.1)
+    for t in leg.get_texts():
+        t.set_color(INK_2)
+    fig.suptitle("Hill climbing beats the RL agent on the same objective",
+                 x=0.012, y=0.99, ha="left", fontsize=11, fontweight="bold", color=INK)
+    fig.text(0.012, 0.915,
+             f"Hill climbing: random start, one cell changed at a time, kept if the objective does not drop · "
+             f"{hc['evaluations']:,} tries, {hc['accepted_moves']:,} kept, {hc['seconds']:.0f} s · "
+             f"RL: {rl['parameters']['episodes']} training episodes",
+             fontsize=8.5, color=INK_2, ha="left", va="top")
+    save(fig, out)
+
+
+def fig_rl_plan(ca, rl, out="fig_landuse_rl_plan.png"):
+    #The RL agent's best plan on its own, large and sharp, for a slide.
+    import matplotlib.patches as mpatches
+
+    classes, cols, cmap = lu_cmap(ca)
+    site = np.array(rl["site_mask"], dtype=bool)
+    plan = np.array(rl["best_grid"], dtype="int16")
+    sc = rl["score"]
+
+    #crop to the site with a little fixed context, as in fig_rl_site
+    rows, cols_ = np.where(site)
+    m = 2
+    r0, r1 = max(0, rows.min() - m), min(site.shape[0], rows.max() + m + 1)
+    c0, c1 = max(0, cols_.min() - m), min(site.shape[1], cols_.max() + m + 1)
+    crop = (slice(r0, r1), slice(c0, c1))
+
+    fig, ax = plt.subplots(figsize=(6.4, 4.6))
+    fig.subplots_adjust(left=0.01, right=0.99, top=0.84, bottom=0.11)
+    ax.imshow(plan[crop], cmap=cmap, vmin=0, vmax=len(classes) - 1, interpolation="nearest")
+    veil = np.where(site[crop], 0.0, 0.6)  #the fixed surroundings, washed out
+    ax.imshow(np.dstack([np.full(veil.shape, c) for c in to_rgba(SURFACE)[:3]] + [veil]),
+              interpolation="nearest")
+    outline_site(ax, site[crop])
+    ax.set_xticks([]); ax.set_yticks([])
+    for sp in ax.spines.values():
+        sp.set_visible(False)
+
+    handles = [mpatches.Patch(color=cols[classes.index(k)], label=k) for k in LU_LEGEND]
+    leg = fig.legend(handles=handles, frameon=False, fontsize=9, ncol=len(handles),
+                     loc="lower center", bbox_to_anchor=(0.5, 0.0), handlelength=1.1)
+    for t in leg.get_texts():
+        t.set_color(INK_2)
+    d = sc["mean_distance_to_amenity_m"]
+    fig.suptitle(f"The RL agent's best plan, objective {rl['best_objective']:.3f}",
+                 x=0.02, y=0.98, ha="left", fontsize=12, fontweight="bold", color=INK)
+    fig.text(0.02, 0.905, f"mix {sc['landuse_mix']:.3f} · green {100 * sc['green_share']:.0f} % · "
+             f"{sc['residential_cells']} housing cells · {'–' if d is None else f'{d:.0f} m'} to amenity · "
+             f"25 m cells, surroundings fixed", fontsize=9.5, color=INK_2, ha="left", va="top")
+    fig.savefig(DOCS / out, dpi=300, facecolor=fig.get_facecolor())  #300 dpi, sharper than the 150 dpi house figures
+    plt.close(fig)
+    print(f"  wrote docs/{out}")
+
+
 #==================================================================== main
 def main():
     need = [PROCESSED / "svf.tif", PROCESSED / "svf_summary.json",
@@ -730,6 +825,10 @@ def main():
                 fig_rl_site(abm, rl)
             if rl and rl.get("random_policy"):  #the training curve against both baselines
                 fig_rl_training(rl)
+            if rl and (rl.get("hill_climb") or {}).get("grid"):  #the hill-climbing plan next to the agent's
+                fig_hill_climb(abm, rl)
+            if rl and rl.get("best_grid"):  #the agent's plan alone, at slide resolution
+                fig_rl_plan(abm, rl)
     else:
         print("  (skipping ABM figure: run ca_landuse.py first)")
 

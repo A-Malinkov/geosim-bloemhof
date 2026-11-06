@@ -262,7 +262,8 @@ def main():
         th = time.time()
         hb, hg, he, ha = hill_climb(p["hill_climb"])
         hc = {"evaluations": he, "accepted_moves": ha, "best_objective": round(hb, 4),
-              "score": site_score(hg, p["cell"], site), "seconds": round(time.time() - th, 1)}
+              "score": site_score(hg, p["cell"], site), "seconds": round(time.time() - th, 1),
+              "grid": hg.tolist()}  #the plan itself, for the figure next to the RL agent's
         print(f"  hill climbing, {he} evaluations: best {hb:.4f} ({time.time() - th:.0f} s)")
     greedy_score = site_score(greedy_grid, p["cell"], site)
     g = best_grid  #report the best episode's plan, which may include lucky exploration

@@ -615,8 +615,7 @@ FIGURES = [  #one dict per figure: the function and its control parameters
     {"fn": fig_scorecard, "out": "fig_compare_scorecard.png", "w": 10.5, "full_at": 0.5, "min_change": 0.02},
     {"fn": fig_tradeoff, "out": "fig_compare_tradeoff.png", "w": 11,
      "panels": [("sun_under2h_0320", "Shade at the equinox, lower is better", "Open ground under 2 h sun (%)", True),
-                ("walk_grid_m", "Walking, lower is better", "Mean walk to 4 everyday places, site grid (m)", False)],
-     "then": {"walk_grid_m": "walk_grid_amen_m"}},  #arrow from housing only to the option with the placed amenities
+                ("walk_grid_amen_m", "Walking, lower is better", "Mean walk to 4 everyday places (m)", False)]},  #with the placed amenities only, today with its own (Atanas, 2026-11-04)
     {"fn": fig_distributions, "out": "fig_compare_distributions.png", "w": 13, "rasters": True},
     {"fn": fig_difference, "out": "fig_compare_difference_maps.png", "w": 13, "rasters": True},
     {"fn": fig_walking, "out": "fig_compare_walking.png", "w": 11},
